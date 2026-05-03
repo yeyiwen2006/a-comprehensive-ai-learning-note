@@ -1,0 +1,26 @@
+# Word 原稿和 Office 临时文件不得上传
+*.docx
+~$*
+
+# OCR 和转换临时目录
+_ocr_tmp/
+_tmp/
+local-only/
+../local-only/
+../_tmp/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 系统和编辑器文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 本地环境和密钥
+.env
+.env.*
+*.pem
+*.key

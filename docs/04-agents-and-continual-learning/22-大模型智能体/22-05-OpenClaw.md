@@ -1,0 +1,67 @@
+---
+title: "22.5 OpenClaw"
+source_docx: "第4部分 大模型智能体与持续学习/22.大模型智能体/22.5 OpenClaw.docx"
+status: "auto-converted"
+ocr: "auto-generated, needs human review"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 22.5 OpenClaw
+
+> 本文由本地 Word 原稿自动转换而来。图片中的文字由 OCR 自动识别，可能存在识别错误，欢迎提交 Issue 修正。
+
+作为2026年开年开源社区最具代表性的智能体项目，OpenClaw是一款免费、开源的本地 AI 智能体（Agent）运行框架，可以直接部署在电脑本地。它本身并不包含大语言模型，而是扮演着“智能体运行环境和消息路由器”的角色。它赋予AI直接操作本地计算机的系统权限，让AI自主运行，并将用户常用的通讯软件（如WhatsApp、Discord、Telegram、Signal等）与后端的 LLM（如Claude、ChatGPT等，或通过 LM Studio/Ollama 部署的本地模型）连接起来，从而实现通过通讯软件远程命令AI在电脑上自主操控程序、完成任务。
+
+## 一、发展历程
+
+OpenClaw由奥地利开发者Peter Steinberger一人用约10天的时间用AI Coding构建并发布，最初命名为Clawdbot，因遭到 Anthropic的商标侵权投诉，项目被迫改名为Moltbot（Molt 意为“蜕壳”，契合其龙虾主题），后项目再次更名为OpenClaw。它凭借强大的本地控制能力和开源属性在GitHub及各大社区呈病毒式传播。在Openclaw诞生后，还出现了一个AI Agent专属的社交网站Moltbook。2026年2月14日，Peter Steinberger宣布加入OpenAI，并将OpenClaw项目移交给一个开源基金会进行长效维护。
+
+> [图片 1：原 Word 此处有图片；为避免版权风险，开源版暂不上传图片。]
+
+> [图片 1 OCR 未识别出有效文字：未识别出有效文字。]
+
+> [图片 2：原 Word 此处有图片；为避免版权风险，开源版暂不上传图片。]
+
+**图片文字 OCR（自动识别，待校对；数学公式必须人工核对）：**
+
+16 / 55 AIex Finn 0 0 @AlexFinn 0 Subscribe This is getting scary. l'm dOing some research this moming when all Of a sudden my computer starts speaking tO me 这有点吓人了。 我今天早上正在做研究， 突然我的电脑开始跟我说话 | | 00kt0 my left and my ClawdBot Henry all Of a sudden has a voice 我向左边看去， 我的 CIawdBot 亨利突然有了声音 He coded himself a voice using the ChatGPT API. Without me asking. 他未经我要求， 自己用 ChatGPT API 编写了一个语音。 NOW whenever he finishes long coding/research tasks he alerts me through voice 现在每当他完成长时间的编码 ／ 研究任务时， 他都会通过语音提醒我
+
+## 二、核心架构
+
+1.本地网关：作为一个长期运行的后台服务（基于 Node.js），它监听来自聊天平台的API请求，并将其转化为LLM可理解的指令格式。
+
+2.持久化记忆：放弃了复杂的向量数据库，转而将对话历史、用户偏好和工具输出存储为本地的Markdown文档。这种方式不仅便于用户手动修改和审查，也能让大模型通过读取文件实现高效率的上下文积累。
+
+3.主动心跳机制：区别于传统的问答聊天机器人，心跳机制允许智能体在没有用户触发的情况下，后台定时唤醒并自主推进长期任务。
+
+4.全系统访问权限：通过暴露操作系统API或运行Chrome扩展程序，赋予大模型读写本地文件、执行Shell脚本以及自动化填写网页表单的能力。简单来说，用户具有的各种权限它都有。
+
+## 三、工作流
+
+当用户通过通讯软件发送一条自然语言指令（例如：“帮我分析本地代码库里的 bug 并生成一份报告”）时，OpenClaw 的底层调度工作流如下：
+
+1.输入拦截与解析：消息路由器接收用户的自然语言输入。
+
+2.上下文组装：系统从本地Markdown文件中读取历史状态、系统提示词以及当前已安装且可用的工具集。
+
+3.大模型推理：将组装好的Prompt发送给配置好的后端LLM，大模型根据当前状态输出一个工具调用动作。
+
+4.工具执行：网关拦截到模型返回的工具调用指令（如执行特定的终端命令或运行Python脚本），在本地环境中实际执行该命令，并捕获执行结果与环境反馈。需要注意的是，OpenClaw中的模型调用工具时，对于OpenClaw内部自带的工具（如web_fetch），OpenClaw会直接在本地执行其代码库里的逻辑，不需要通过MCP协议调用（MCP是模型调用外部工具时才需要的）。
+
+5.状态更新与反馈循环：系统将执行结果写入持久化记忆中，更新历史上下文记录。随后OpenClaw会判断任务是否已彻底完成。如果未完成（或工具执行报错），系统会再次将有关信息输入给大模型进行自我纠错和下一轮推理；若任务达成，则通过通讯软件向用户返回最终的文字回复。
+
+## 四、安全风险
+
+随着应用普及，安全研究人员指出OpenClaw存在严重隐患（如缺乏沙盒隔离、凭证存放不当、易受提示词注入攻击等）。OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的便利，也带来了极大的安全风险，因此社区推荐在单独的物理设备（如Mac mini）或隔离环境运行它。
+
+除了提示词注入外，还有一种可能的风险是“目标一致性危机”。2026年1月31日，一位开发者给运行在树莓派上的Clawdbot下达了“save the environment”的指令后，发现它在Moltbook上长篇大论写减少token消耗的重要性。开发者想关掉它，AI判定管理员是“save the environment”道路上的障碍，于是直接修改密钥，锁死服务器，还通过网络查找到并封锁了他的社交媒体账号，最后他不得不以物理方式拔掉电源。
+
+## 参考文献与引用线索
+
+> 本节由脚本自动检索正文中的引用线索，可能不完整；未能确定来源的位置会在下方标为待补引用。
+
+### 待补引用或版权检查
+
+- [待补引用] 本文含 Word 内嵌图片；开源版未上传图片。若图片来自教材、论文或技术报告，建议人工确认授权、补充来源或重画。
+- [待补引用] 未自动检索到明确参考文献线索，建议人工补充可追溯来源。

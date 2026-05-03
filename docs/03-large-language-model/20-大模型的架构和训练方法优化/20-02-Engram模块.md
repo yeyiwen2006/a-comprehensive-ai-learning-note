@@ -1,0 +1,57 @@
+---
+title: "20.2 Engram模块"
+source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.2 Engram模块.docx"
+status: "auto-converted"
+ocr: "auto-generated, needs human review"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 20.2 Engram模块
+
+> 本文由本地 Word 原稿自动转换而来。图片中的文字由 OCR 自动识别，可能存在识别错误，欢迎提交 Issue 修正。
+
+传统的大模型架构缺少原生的知识查找方式，只能通过多层计算来低效地模拟检索。如前文为“The capital of France is”时，无法直接查找出“Paris”，只能通过大量参数计算得出。Engram基于条件记忆（Conditional Memory）机制，将记忆（静态知识）与计算（推理能力）解耦，基于哈希查找实现了一种高效率的知识存取方式，从而将更多参数层“腾出来”用于推理。
+
+由于单个token级别的语义记忆在embedding中，跨越上下文的语义通过Attention推理优于直接记忆，故Engram解决的实际上是2-3个token构成的“短语”的记忆问题。
+
+## 一、Engram模块的基本原理
+
+所谓的“静态知识库”实际上是一个长度为S的哈希表，用于存储词组对应的Embedding向量，参数量为S*d_model。和常见的哈希表初始化为空不同，Engram模块的哈希表初始化时表内的值（参数）均为随机值，后续运用梯度下降更新。研究证明，在模型总参数一定的情况下，除去维度固定的Attention模块外，其余参数20％-30％分配给静态记忆，70％-80％分配给MoE最优。
+
+Engram模块基于NLP中的N-gram方法，N取2和3。推理时，如前文最后三个token为“ABC”时，从哈希表中找2-gram“BC”和3-gram“ABC”对应的几个Engram语义向量，再通过门控机制，按合适的权重加权，加到原向量上。
+
+N取2和3是因为，N=2和N=3覆盖了绝大多数的固定搭配、短语、成语和专有名词（如“New York”“Machine Learning”），这是静态记忆收益最高的区间。N=1对应的是单个词，已经由 Transformer最底层的Embedding Layer完成了，没必要重复存储；N增大，可能的组合呈指数级增长（V^N），但实际在语料中出现的频率却急剧下降，且长序列通常包含复杂的逻辑结构，这部分更适合交给Attention机制动态推导，而不是死记硬背。
+
+> [图片 1：原 Word 此处有图片；为避免版权风险，开源版暂不上传图片。]
+
+**图片文字 OCR（自动识别，待校对；数学公式必须人工核对）：**
+
+MOE Attention Engram Transformer Block Vocab Embedding Scaled Dot Product lnear Concat lnear -Gram Embedding Hash the Great lnput Hidden 3-Gram Embedding Hash Alexander the Great Only： Alexander the Great： could tame the horse BucephaIus Figure 1 | The Engram Architecture. The module augments the backbone by retrieving static 一 gram memory and fusing it with dynanuc hidden states via context-aware gatmg. This module is applied only t0 specific layers to decouple memory from compute, leaving the standard input embedding and un-embedding module intact.
+
+## 二、哈希查找
+
+对于输入token序列（为了让查表更紧凑，模型首先将token ID映射到规范形式，如Token ID 105 ("The")和Token ID 203 ("the")映射到同一个ID，减少有效词表大小），对于当前第i个token，系统提取其前缀的N-gram，多头哈希函数H_k计算出K个不同的索引，分别提取这K个位置的Embedding向量。取K个不同的索引是为了缓解哈希冲突，如N-gram A映射到 [42, 88]，N-gram B映射到 [42, 15]，42号槽位发生了冲突（Dirty），它混合了A和B的特征，变成了噪声，训练会让模型学会“信任”干净的槽位，而忽略那个冲突的槽位。
+
+如果不用多头，为了避免冲突，必须把表开得非常非常大；使用了多头哈希，可以用一个相对较小（比如S=1亿）的表，容忍一定的碰撞，只要有干净的即可。
+
+## 三、门控机制
+
+查找得到向量后，将它们与原始输入向量进行门控加和。门控机制类似于一个去掉Softmax的小型Cross-Attention模块，可以根据输入语境确定每个查找到的向量以多大权重聚合进来。由输入向量得到Q、Engram向量矩阵得到K和V，Q和K点乘也就是根据输入决定每个维度的权重分数（这里是独立计算每个向量注入的权重，故不归一化），然后再将每个检索得到的V向量按权重加权得到Engram_Output向量。最后与原输入向量相加：h_{next} = h_{input} + Engram_Output。
+
+如输入“capital of France”，模型处于“知识饥渴”状态，查表得到的“Paris”对应向量点积分数高（极大化“Paris”作为下一个词出现的概率），因哈希冲突查到的无关的“Apple”对应向量点积分数低，结果“Paris”相关向量被强力注入，辅助预测；代码推理任务下，所有向量所有维度权重几乎全0，相当于将Engram模块旁路。
+
+## 四、和硬件的协同性
+
+1.异步计算和存储：在训练时，为便于反向传播梯度，Engram模块分布在多块GPU上；在推理时，则存储在CPU上，在GPU进行前几层Attention计算时，CPU也在根据输入序列的token ID进行哈希查找，找到N-gram向量，到GPU执行到需要检索的步骤时完成门控嵌入即可。
+
+2.分层设计：自然语言中的N-gram 遵循Zipfian分布，即少量高频模式贡献了绝大多数的记忆访问，故可以构建一种多级缓存层次结构（Multi-Level Cache Hierarchy）：将高频访问的嵌入缓存于更快的存储介质中（如GPU HBM或主机DRAM），而将大量低频的长尾模式存放在容量更大但速度较慢的存储介质中（如NVMe SSD）。这种分层设计使Engram能够扩展到极大规模的记忆容量，同时对有效访问延迟的影响保持在最低水平。
+
+## 参考文献与引用线索
+
+> 本节由脚本自动检索正文中的引用线索，可能不完整；未能确定来源的位置会在下方标为待补引用。
+
+### 待补引用或版权检查
+
+- [待补引用] 本文含 Word 内嵌图片；开源版未上传图片。若图片来自教材、论文或技术报告，建议人工确认授权、补充来源或重画。
+- [待补引用] 未自动检索到明确参考文献线索，建议人工补充可追溯来源。
