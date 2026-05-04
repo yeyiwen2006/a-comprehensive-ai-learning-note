@@ -5,6 +5,6 @@ type: dataset
 authors:
   - family-names: "Ye"
     given-names: "Yiwen"
-repository-code: "https://github.com/yeyiwen2006/a_comprehensive_ai_learning_note"
+repository-code: "https://github.com/yeyiwen2006/a-comprehensive-ai-learning-note"
 license: "CC-BY-NC-SA-4.0"
 abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, continual learning, world models, multimodal generation, and embodied AI."

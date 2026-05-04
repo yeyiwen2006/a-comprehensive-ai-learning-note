@@ -9,7 +9,6 @@ local_only: false
 
 # 5.5 AdamW优化器
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 AdamW优化器（Adam with Decoupled Weight Decay）是对Adam优化器的一种改进。
 

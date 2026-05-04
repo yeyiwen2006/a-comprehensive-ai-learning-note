@@ -9,7 +9,6 @@ local_only: false
 
 # 22.5 OpenClaw
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 作为2026年开年开源社区最具代表性的智能体项目，OpenClaw是一款免费、开源的本地 AI 智能体（Agent）运行框架，可以直接部署在电脑本地。它本身并不包含大语言模型，而是扮演着“智能体运行环境和消息路由器”的角色。它赋予AI直接操作本地计算机的系统权限，让AI自主运行，并将用户常用的通讯软件（如WhatsApp、Discord、Telegram、Signal等）与后端的 LLM（如Claude、ChatGPT等，或通过 LM Studio/Ollama 部署的本地模型）连接起来，从而实现通过通讯软件远程命令AI在电脑上自主操控程序、完成任务。
 

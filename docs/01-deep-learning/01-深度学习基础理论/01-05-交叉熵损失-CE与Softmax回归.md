@@ -9,7 +9,6 @@ local_only: false
 
 # 1.5 交叉熵损失（CE）与Softmax回归
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、交叉熵损失函数（Cross Entropy,CE）
 
@@ -109,7 +108,7 @@ $$
 $$
 \partial_{o_j}l(\mathbf{y},\hat{\mathbf{y}})
 =\frac{\exp(o_j)}{\sum_{k=1}^{q}\exp(o_k)}-y_j
-=\operatorname{softmax}(\mathbf{o})_j-y_j
+=\mathrm{softmax}(\mathbf{o})_j-y_j
 $$
 
 换句话说，导数是 softmax 模型分配的概率与实际发生情况（由独热标签向量表示）之间的差异。
@@ -182,6 +181,7 @@ $$
 
 多标签交叉熵损失的代码实现：
 
+```python
 import torch
 
 import torch.nn as nn
@@ -217,6 +217,8 @@ num_elements = bce_per_element.numel()  # N × C = 2 × 3 = 6
 manual_loss = total_loss / num_elements
 
 print(f"手动计算的平均损失: {manual_loss.item()}")
+
+```
 
 ## 参考文献
 

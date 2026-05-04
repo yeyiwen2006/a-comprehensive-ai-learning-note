@@ -9,7 +9,6 @@ local_only: false
 
 # 36.2 RSSM与Block-Causal Transformer
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、RSSM
 

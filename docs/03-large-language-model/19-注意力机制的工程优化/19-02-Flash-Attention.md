@@ -9,7 +9,6 @@ local_only: false
 
 # 19.2 Flash Attention
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、Flash Attention解决的核心问题
 

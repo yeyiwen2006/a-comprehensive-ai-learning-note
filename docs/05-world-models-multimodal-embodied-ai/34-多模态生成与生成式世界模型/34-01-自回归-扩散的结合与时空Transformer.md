@@ -9,7 +9,6 @@ local_only: false
 
 # 34.1 自回归、扩散的结合与时空Transformer
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、自回归生成的世界模型
 

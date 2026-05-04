@@ -9,7 +9,6 @@ local_only: false
 
 # 11.4 环境模型与Dyna-Q算法
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、无环境模型的Q-Learning存在的问题
 

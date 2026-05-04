@@ -9,7 +9,6 @@ local_only: false
 
 # 19.7 稀疏注意力（Sparse Attention）
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 ## 一、核心思想：认为并非所有 token 对之间都需要进行交互。通过引入结构性稀疏模式，只计算注意力矩阵中一部分重要的元素，将复杂度从O(n^2) 降低到 O(n*sqrt(n))或O(nlogn)。
 

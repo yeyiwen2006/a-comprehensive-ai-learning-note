@@ -8,7 +8,7 @@
 2. 不把 .docx、OCR 临时图片或未经筛选的本地图片素材放进 Git 仓库。
 3. 尽量保留 Word 正文顺序，并在图片位置插入稳定的重建占位。
 4. 只在章节中保留已核验参考文献，不公开自动检索出的引用线索。
-5. 按用户最新要求：第40章“世界模型与科学发现”也进入公开 Markdown 目录。
+5. 按用户要求同步公开 Markdown 目录中的章节内容。
 """
 
 from __future__ import annotations
@@ -747,7 +747,7 @@ def build_directory_markdown(records: list[ConvertedDoc]) -> str:
     lines = [
         "# 目录",
         "",
-        "本目录由脚本根据本地 Word 原稿自动生成。第40章“世界模型与科学发现”已纳入公开 Markdown 目录。",
+        "本目录由脚本根据本地 Word 原稿自动生成。",
         "",
     ]
     for top in sorted(grouped):
@@ -845,7 +845,7 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 - 第4部分：大模型智能体与持续学习
 - 第5部分：世界模型、多模态生成与具身智能
 
-当前上传 Markdown 文档数：`{upload_count}`。第40章“世界模型与科学发现”已纳入公开目录。
+当前上传 Markdown 文档数：`{upload_count}`。
 
 ## 推荐入口
 
@@ -1021,7 +1021,7 @@ def build_citation() -> str:
         authors:
           - family-names: "Ye"
             given-names: "Yiwen"
-        repository-code: "https://github.com/yeyiwen2006/a_comprehensive_ai_learning_note"
+        repository-code: "https://github.com/yeyiwen2006/a-comprehensive-ai-learning-note"
         license: "CC-BY-NC-SA-4.0"
         abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, continual learning, world models, multimodal generation, and embodied AI."
         """
@@ -1040,7 +1040,7 @@ def build_changelog() -> str:
         - 从本地 Word 原稿自动生成 Markdown。
         - 放弃普通 OCR 公式文本，图片位置改为稳定重建占位。
         - 按作者要求不上传 Word 原稿，图片按类型筛选后可作为公开资源上传。
-        - 按作者最新要求，第40章“世界模型与科学发现”已纳入公开 GitHub 目录。
+        - 同步第40章“世界模型与科学发现”的公开 Markdown 内容。
         """
     )
 
@@ -1107,7 +1107,6 @@ def build_ocr_report(records: list[ConvertedDoc]) -> str:
             "- 普通 OCR 已确认不适合本资料中的公式、表格、代码截图和复杂论文图。",
             "- Word 原稿和本地图片提取目录不上传；经筛选的视觉图片可以放在 `assets/images/` 下作为公开资源。",
             "- 纯文字、公式和表格图片应转写为正文 Markdown/LaTeX，并保持与正文排版统一。",
-            "- 第40章“世界模型与科学发现”已纳入公开 Markdown 目录。",
         ]
     )
     return "\n".join(lines).rstrip() + "\n"
@@ -1159,7 +1158,7 @@ def build_structure_doc() -> str:
         - `TODO.md`：OCR 校对、引用补充和版权检查待办。
         - `OCR质量报告.md`：每个文档的正文、图片和 OCR 统计。
         - `引用与版权清理报告.md`：参考文献正确性和图片版权核验事项。
-        - `docs/`：由 Word 原稿自动转换出的 Markdown 正文，第40章也在此公开目录内。
+        - `docs/`：由 Word 原稿自动转换出的公开 Markdown 正文。
         - `tools/convert_docx_to_markdown.py`：批量转换脚本。
         - `tools/winrt_ocr.ps1`：调用 Windows 自带 OCR 的辅助脚本。
         - `tools/validate_generated_markdown.py`：上传前安全验证脚本。
@@ -1180,7 +1179,7 @@ def build_structure_doc() -> str:
         - `is_chapter40`：判断文档是否属于第40章。
         - `is_note_doc`：判断某个 docx 是否属于需要转换的笔记正文。
         - `discover_docx`：扫描本地 Word 原稿，得到待转换文档列表。
-        - `output_path_for_doc`：根据上传规则计算 Markdown 输出路径，第40章与其他章节一样输出到公开 `docs/`。
+        - `output_path_for_doc`：根据上传规则计算 Markdown 输出路径。
         - `extract_usage_text`：抽取 `使用说明.docx` 内容，用于生成 README。
         - `normalize_text`：统一换行和空白。
         - `clean_ocr_text`：清理 OCR 常见中文间隔空格。

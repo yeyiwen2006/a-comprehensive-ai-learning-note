@@ -9,7 +9,6 @@ local_only: false
 
 # 17.9 为什么Online RL比SFT更能避免“灾难性遗忘”
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 研究指出，On-Policy RL在避免“灾难性遗忘”上优于SFT（《RL’S RAZOR: WHY ONLINE REINFORCEMENT LEARNING FORGETS LESS》，MIT，2025）。相比于利用SFT微调，用On-Policy RL微调后的模型输出的策略与原预训练模型输出策略间的KL散度更小。（这里的KL散度工程上用的是在输入为新任务的情况下求出的期望，这是一个经验性的发现，即模型在新任务上的分布偏移量能预测它在旧任务上的遗忘程度；论文预测指标是Forward KL，但也指出RL之所以遗忘少，是因为它在优化过程中隐式地最小化了反向KL散度）
 

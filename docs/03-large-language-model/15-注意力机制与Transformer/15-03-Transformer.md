@@ -9,7 +9,6 @@ local_only: false
 
 # 15.3 Transformer
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 Transformer是Google于2017年提出的架构，是目前所有大模型架构的基础。
 

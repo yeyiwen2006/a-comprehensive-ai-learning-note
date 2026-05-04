@@ -9,7 +9,6 @@ local_only: false
 
 # 20.6 多专家On-policy Distillation
 
-> 本文由本地 Word 原稿自动转换而来。图片内容暂不使用自动 OCR；含公式、图示或表格的图片会在后续人工重建为 Markdown/LaTeX。
 
 DeepSeek-V4采用了多专家On-policy Distillation的方法，先基于预训练模型，用SFT和RL训练多个领域专家，再将其知识蒸馏到统一的学生模型中。
 
