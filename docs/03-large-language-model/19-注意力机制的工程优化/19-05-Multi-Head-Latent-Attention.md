@@ -1,8 +1,8 @@
 ---
 title: "19.5 Multi-Head Latent Attention"
 source_docx: "第3部分 大语言模型/19.注意力机制的工程优化/19.5 Multi-Head Latent Attention.docx"
-status: "auto-converted"
-ocr: "disabled; image content awaits manual reconstruction"
+status: "image-reconstructed"
+ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
@@ -22,44 +22,126 @@ DeepSeek提出的MLA（Multi-Head Latent Attention）旨在解决现代GPU显存
 
 ## 二、第一步：生成C_KV
 
-在运用KV Cache的标准多头注意力中，我们每次读入一个token（x_t），都会生成d_model维（维度较高，如1024维）的向量k_t和v_t（其中包含了各个头，如第1-32维为第1个头，以此类推），存入显存：
+在运用 KV Cache 的标准多头注意力中，我们每次读入一个 token（$x_t$），都会生成 $d_{\mathrm{model}}$ 维（维度较高，如 1024 维）的向量 $k_t$ 和 $v_t$（其中包含了各个头，如第 1-32 维为第 1 个头，以此类推），存入显存：
 
-> [图片内容待重建：img-15936ef4fb1b-0001] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-MLA认为，由于不同头的向量相关性较高，这里很多维事实上是“浪费”的，我们只需要用一个共用的降维矩阵W_down_KV将真正有用的信息存入一个极低维度（如64维）、所有头共用的向量C_KV_t，后续每个头再乘以升维矩阵的不同列（保留不同头的多样性）即可。得到C_KV_t的表达式：
+在标准 MHA 中，当前 token 的 Key 和 Value 由输入向量直接投影得到：
 
-> [图片内容待重建：img-15936ef4fb1b-0002] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+k_t = x_t W_K,\qquad v_t = x_t W_V
+$$
+
+MLA 认为，由于不同头的向量相关性较高，这里很多维事实上是“浪费”的，我们只需要用一个共用的降维矩阵 $W_{DKV}$ 将真正有用的信息存入一个极低维度（如 64 维）、所有头共用的向量 $c_{KV,t}$，后续每个头再乘以升维矩阵的不同列（保留不同头的多样性）即可。得到 $c_{KV,t}$ 的表达式：
+
+$$
+c_{KV,t} = x_t W_{DKV}
+$$
+
 位置信息单独储存：
 
-> [图片内容待重建：img-15936ef4fb1b-0003] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+k_t^R = \mathrm{RoPE}(x_t W_{KR})
+$$
+
 ## 三、第二步：运用结合律对注意力计算进行优化
 
-> [图片内容待重建：img-15936ef4fb1b-0004] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-我们先让Query去乘固定的参数矩阵W_UK^T，得到一个新的、被变换过的Query，记为 Q_absorbed，则对于第i个注意力头，当前（第t个）Token和第j个Token间的注意力权重为：
+原本的注意力分数可以看成 Query 与升维解压后的 Key 做点积：
 
-> [图片内容待重建：img-15936ef4fb1b-0005] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-由于Q_absorbed是对于当前Token而言的，因此这一步只涉及1个Token的计算，开销极小。接下来乘以C_KV^T，我们只需要存储t*64维的压缩向量C_KV，而永远不需要在显存里复原巨大的t*1024维的K矩阵。在完成“矩阵吸收”后，这步就变成了Q(i)_absorbed对C_KV^T进行MQA操作，但却有了MHA的性能。
+$$
+\mathrm{Score} \propto q_t \cdot (c_{KV} \cdot W_{UK})^T
+$$
 
-我们还需要加上解耦位置编码，单独计算RoPE部分的分数。从而对于第i个注意力头，当前（第t个）Token和第j个Token间的注意力权重为：
+利用矩阵乘法结合律 $(AB)C=A(BC)$，可以把 Key 侧的升维矩阵 $W_{UK}$ 移动到 Query 侧：
 
-> [图片内容待重建：img-15936ef4fb1b-0006] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-15936ef4fb1b-0007] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+\mathrm{Score} \propto (q_t \cdot W_{UK}^T) \cdot c_{KV}^T
+$$
+
+我们先让 Query 去乘固定的参数矩阵 $W_{UK}^T$，得到一个新的、被变换过的 Query，记为 $Q_{\mathrm{absorbed}}$，则对于第 $i$ 个注意力头，当前（第 $t$ 个）Token 和第 $j$ 个 Token 间的注意力权重为：
+
+$$
+\mathrm{Score}_{t,j}^{(i)}
+=
+\frac{Q_{\mathrm{absorbed}}^{(i)} \cdot (c_{KV,j})^T}{\sqrt{d}}
+$$
+
+由于 $Q_{\mathrm{absorbed}}$ 是对于当前 Token 而言的，因此这一步只涉及 1 个 Token 的计算，开销极小。接下来乘以 $C_{KV}^T$，我们只需要存储 $t*64$ 维的压缩向量 $C_{KV}$，而永远不需要在显存里复原巨大的 $t*1024$ 维的 K 矩阵。在完成“矩阵吸收”后，这步就变成了 $Q_{\mathrm{absorbed}}^{(i)}$ 对 $C_{KV}^T$ 进行类似 MQA 的操作，但保留了 MHA 中不同头的表达能力。
+
+我们还需要加上解耦位置编码，单独计算 RoPE 部分的分数。从而对于第 $i$ 个注意力头，当前（第 $t$ 个）Token 和第 $j$ 个 Token 间的注意力权重为：
+
+$$
+\mathrm{Score}_{t,j}^{(i)}
+=
+\frac{
+\left(q_t^{C,(i)} \cdot (W_{UK}^{(i)})^T\right) \cdot c_{KV,j}
++
+q_t^{R,(i)} \cdot (k_j^R)^T
+}{\sqrt{d}}
+$$
+
+其中，第一项 $\left(q_t^{C,(i)} \cdot (W_{UK}^{(i)})^T\right) \cdot c_{KV,j}$ 是内容分数，用于比较当前 token 与历史 token 的语义内容；第二项 $q_t^{R,(i)} \cdot (k_j^R)^T$ 是 RoPE 位置分数，用于比较二者的相对位置信息。
+
+$R_{lt}^{(i)}$ 是第 $i$ 个头独有的、携带位置信息的 Query 向量，可理解为上式中的 $q_t^{R,(i)}$；$k_j^R$ 通常是各头共享的 RoPE Key 向量。它们做点积后，相当于在标准注意力中保留位置匹配能力，使模型仍然能判断 token 之间的相对距离。
+
 ## 四、运用分配律对信息聚合（注意力权重*V）进行优化
 
-设C_KV_j向量的维度为d_c，升维后每个头的特征维度为d_h。
+设 $c_{KV,j}$ 向量的维度为 $d_c$，升维后每个头的特征维度为 $d_h$。在第 $i$ 个头中，注意力分布、压缩潜变量和 Value 升维矩阵分别为：
 
-> [图片内容待重建：img-15936ef4fb1b-0008] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-15936ef4fb1b-0009] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-在只看第i个头的特征维度（有d_h个）的情况下：对于每一个j，都需要执行一次C_KV_j*W_UV，以计算出它的V，再乘标量P_t,j，单个token的V值计算的时间复杂度O(1*d_c*d_h+d_h)也就是；第1-t个token的都要这样计算然后求和，单个头的计算复杂度O(t*d_c*d_h).
+$$
+P_{t,:}^{(i)} = \mathrm{Softmax}(\mathrm{Score}_{t,:}^{(i)}),\qquad
+P_{t,j}^{(i)} =
+\frac{\exp(\mathrm{Score}_{t,j}^{(i)})}{\sum_{r=1}^{t}\exp(\mathrm{Score}_{t,r}^{(i)})},\qquad
+c_{KV,j}\in \mathbb{R}^{d_c},\qquad
+W_{UV}^{(i)}\in \mathbb{R}^{d_c \times d_h}
+$$
 
-> [图片内容待重建：img-15936ef4fb1b-0010] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-15936ef4fb1b-0011] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-这一步对于第j个token执行一次权重P_t,j（标量）*C_KV_j（d_c维向量），再对每一个历史token（共t个）得到的值相加，计算复杂度O(t*d_c).
+如果按标准路径先把每个历史 token 的压缩潜变量升维成 Value，再做加权求和，则第 $i$ 个头的输出是：
 
-> [图片内容待重建：img-15936ef4fb1b-0012] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-15936ef4fb1b-0013] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-这步C_sum为1*d_c维，W_UV为d_c*d_h维，单个头计算的时间复杂度O(1*d_c*d_h).
+$$
+y_t^{(i)}
+=
+\sum_{j=1}^{t}
+\left(P_{t,j}^{(i)} \cdot (c_{KV,j} \cdot W_{UV}^{(i)})\right)
+$$
 
-总体而言，计算复杂度降低了d_h倍。
+这种写法对每个历史位置 $j$ 都要执行一次 $c_{KV,j} \cdot W_{UV}^{(i)}$ 的升维计算，然后再乘以标量权重 $P_{t,j}^{(i)}$ 并求和。单个头的主要复杂度约为 $O(t \cdot d_c \cdot d_h)$。
+
+DeepSeek 利用矩阵乘法的分配律，把固定的升维矩阵 $W_{UV}^{(i)}$ 移到求和符号之外：
+
+$$
+\begin{aligned}
+y_t^{(i)}
+&= \sum_{j=1}^{t}\left(P_{t,j}^{(i)} \cdot c_{KV,j} \cdot W_{UV}^{(i)}\right) \\
+&= \left(\sum_{j=1}^{t}P_{t,j}^{(i)} \cdot c_{KV,j}\right) \cdot W_{UV}^{(i)}
+\end{aligned}
+$$
+
+于是计算可以拆成两个阶段。第一阶段先在压缩空间内聚合：
+
+$$
+\tilde c_{sum}^{(i)}
+=
+\sum_{j=1}^{t}\left(P_{t,j}^{(i)} \cdot c_{KV,j}\right)
+$$
+
+$\tilde c_{sum}^{(i)}$ 是一个 $d_c$ 维低维向量。虽然 $c_{KV,j}$ 来自共享 KV Cache，但每个头的注意力权重 $P_{t,j}^{(i)}$ 不同，所以每个头聚合出的 $\tilde c_{sum}^{(i)}$ 也不同。这个阶段只做标量乘低维向量再求和，复杂度约为 $O(t \cdot d_c)$。
+
+第二阶段再做延迟升维：
+
+$$
+y_t^{(i)} = \tilde c_{sum}^{(i)} \cdot W_{UV}^{(i)}
+$$
+
+这一步把聚合后的低维结果映射回第 $i$ 个头的 $d_h$ 维特征空间。由于升维只对聚合后的结果做一次，而不是对 $t$ 个历史 token 分别做 $t$ 次，单个头这部分复杂度约为 $O(d_c \cdot d_h)$。
+
+计算出所有 $H$ 个头的 $y_t^{(i)}$ 后，将它们拼接起来，并通过输出投影矩阵 $W_O$ 得到最终的隐状态输出：
+
+$$
+y_t
+=
+\mathrm{Concat}\left(y_t^{(1)}, y_t^{(2)}, \ldots, y_t^{(H)}\right) \cdot W_O
+$$
+
+总体而言，MLA 把“先逐 token 升维再聚合”改成“先在压缩空间聚合再延迟升维”，主要复杂度从 $O(t \cdot d_c \cdot d_h)$ 变为 $O(t \cdot d_c + d_c \cdot d_h)$，当历史长度 $t$ 较大时可近似理解为降低约 $d_h$ 倍。
 
 ## 参考文献
 

@@ -1,8 +1,8 @@
 ---
 title: "19.4 Multi-Query与Grouped-Query Attention"
 source_docx: "第3部分 大语言模型/19.注意力机制的工程优化/19.4 Multi-Query与Grouped-Query Attention.docx"
-status: "auto-converted"
-ocr: "disabled; image content awaits manual reconstruction"
+status: "image-reconstructed"
+ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
@@ -18,11 +18,42 @@ MHA（Multi-Head）：H个 Query Heads，H个Key Heads，H个 Value Heads
 
 MQA（Multi-Query）：H个 Query Heads，1个 Key Head，1个 Value Head
 
-> [图片内容待重建：img-2f70b403483f-0001] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-计算第i个头的注意力分数时：
+**参数量对比**
 
-> [图片内容待重建：img-2f70b403483f-0002] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-2f70b403483f-0003] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+- **MHA**：参数矩阵总大小约为 $3d_{model}^2$，因为 $Q$、$K$、$V$ 三个投影各占一份。
+- **MQA**：参数矩阵 $W_Q$ 大小仍为 $d_{model} \times d_{model}$，但 $W_K$ 和 $W_V$ 都缩小为 $d_{model} \times d_k$。
+- 因为 MQA 只保留 1 组 Key/Value 头，$W_K,W_V$ 的参数量相对 MHA 减少 $H$ 倍。
+
+计算第 $i$ 个头的注意力分数时，MQA 保持 Query 投影为多头，而 Key/Value 只做单头投影并被所有 Query 头共享。
+
+- **Query 投影（保持多头）**：
+
+$$
+Q_i = XW_{Q_i}, \quad Q_i \in \mathbb{R}^{B \times L \times d_k}
+$$
+
+- **Key/Value 投影（单头）**：
+
+$$
+K = XW_K, \quad V = XW_V, \quad K,V \in \mathbb{R}^{B \times L \times d_k}
+$$
+
+这里 $K$ 和 $V$ 没有下标 $i$，表示所有头共用这一组 Key/Value。
+
+- **广播（Broadcasting）与计算**：为了逐行点积注意力计算，需要在逻辑上将 $K$ 和 $V$ 沿着 Head 维度广播，使其形状与 $Q_i$ 匹配。
+
+$$
+\mathrm{Attention}_i(Q_i,K,V)=\mathrm{softmax}\left(\frac{Q_iK^T}{\sqrt{d_k}}\right)V
+$$
+
+最后将所有头的输出拼接（Concat），并通过 $W_O$ 输出层。
+
+**为什么 MQA 更快？**
+
+- **KV Cache 减少 $H$ 倍**：由于所有头共享 $K,V$，需要存储的 KV Cache 数据量直接变为原来的 $1/H$；例如 $H=8$ 时，显存占用约为原来的 $1/8$。
+- **降低内存带宽压力**：在推理时，GPU 需要从显存搬运的数据量大幅减少，从而缓解 Memory Wall（内存墙）问题。
+- **提升 TPS**：显存占用和内存带宽压力下降后，Token 生成速度（TPS）通常会提升。
+
 ## 二、GQA（Grouped-Query Attention）
 
 MQA提高了速度，却容易影响生成质量。为了平衡MHA的高质量和MQA的高速度，现代模型引入了GQA，将Query头分组，每组共享一个Key/Value 头。
