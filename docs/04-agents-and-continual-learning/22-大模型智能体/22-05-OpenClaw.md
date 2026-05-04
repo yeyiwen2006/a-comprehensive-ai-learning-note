@@ -1,8 +1,8 @@
 ---
 title: "22.5 OpenClaw"
 source_docx: "第4部分 大模型智能体与持续学习/22.大模型智能体/22.5 OpenClaw.docx"
-status: "auto-converted"
-ocr: "disabled; image content awaits manual reconstruction"
+status: "synced-from-docx"
+ocr: "not applicable; Star History chart retained as visual figure"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
@@ -52,4 +52,4 @@ OpenClaw由奥地利开发者Peter Steinberger一人用约10天的时间用AI Co
 
 ## 参考文献
 
-暂无已核验参考文献。
+- OpenClaw. (2026). [OpenClaw GitHub repository](https://github.com/openclaw/openclaw).
