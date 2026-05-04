@@ -133,7 +133,19 @@ $$
 
 由于b(s_t)与策略θ无关，它不影响优化过程。证明：
 
-> [图片内容待重建：img-8aced48e53a8-0009] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+关键证明在于：项 $\mathbb{E}\left[\sum_t \nabla_\theta \log \pi_\theta(a_t \mid s_t)\cdot b(s_t)\right]$ 的期望值为零。这是因为：
+
+$$
+\begin{aligned}
+\mathbb{E}\left[\nabla_\theta \log \pi_\theta(a_t \mid s_t)b(s_t)\right]
+&= b(s_t)\sum_a \pi_\theta(a \mid s_t)\nabla_\theta \log \pi_\theta(a \mid s_t) \\
+&= b(s_t)\nabla_\theta\left(\sum_a \pi_\theta(a \mid s_t)\right) \\
+&= b(s_t)\nabla_\theta 1 \\
+&= 0
+\end{aligned}
+$$
+
+这意味着，只要基线 $b(s_t)$ 不依赖于动作 $a_t$，即它是状态的一个函数，那么它在左侧期望上就不会对梯度估计产生系统性影响，因此不会引入偏差，保持了梯度估计的无偏性。
 
 ## 四、总结
 
