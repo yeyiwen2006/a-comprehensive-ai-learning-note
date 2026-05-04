@@ -32,4 +32,4 @@ Hymba在所有输入的开头固定插入128个可学习的Embedding。这解决
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Dong, X., Fu, Y., Diao, S., et al. (2025). [Hymba: A Hybrid-head Architecture for Small Language Models](https://arxiv.org/abs/2411.13676). ICLR 2025.

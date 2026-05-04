@@ -54,4 +54,6 @@ DeepSeek原论文中插图如下：
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Stern, M., Shazeer, N., & Uszkoreit, J. (2018). [Blockwise Parallel Decoding for Deep Autoregressive Models](https://arxiv.org/abs/1811.03115). NeurIPS 2018.
+- Gloeckle, F., Idrissi, B. Y., Roziere, B., et al. (2024). [Better & Faster Large Language Models via Multi-token Prediction](https://arxiv.org/abs/2404.19737). ICML 2024.
+- DeepSeek-AI. (2024). [DeepSeek-V3 Technical Report](https://arxiv.org/abs/2412.19437). arXiv:2412.19437.

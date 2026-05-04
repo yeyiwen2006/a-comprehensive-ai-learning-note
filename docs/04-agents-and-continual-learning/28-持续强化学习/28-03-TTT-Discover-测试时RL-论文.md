@@ -56,4 +56,4 @@ TTT-Discover结合了搜索（Search）和学习（Learning）。其核心循环
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Yuksekgonul, M., Koceja, D., Li, X., et al. (2026). [Learning to Discover at Test Time](https://arxiv.org/abs/2601.16175). arXiv:2601.16175.

@@ -56,4 +56,4 @@ local_only: false
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Shen, Z., Zhang, M., Zhao, H., Yi, S., & Li, H. (2021). [Efficient Attention: Attention with Linear Complexities](https://arxiv.org/abs/1812.01243). WACV 2021.

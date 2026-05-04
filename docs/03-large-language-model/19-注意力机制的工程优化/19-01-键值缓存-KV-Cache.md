@@ -68,4 +68,4 @@ KV Cache在显存中需要连续空间，导致大量的显存碎片浪费（类
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Kwon, W., Li, Z., Zhuang, S., et al. (2023). [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180). SOSP 2023.

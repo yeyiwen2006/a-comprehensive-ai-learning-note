@@ -41,4 +41,4 @@ Memory Sparse Attention（MSA）是盛大集团研究团队提出的一种长上
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Chen, Y., Chen, R., Yi, S., et al. (2026). [MSA: Memory Sparse Attention for Efficient End-to-End Memory Model Scaling to 100M Tokens](https://arxiv.org/abs/2603.23516). arXiv:2603.23516.

@@ -60,4 +60,4 @@ DiscoRL是一个由机器通过完全自主的元学习（Meta-learning）过程
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Oh, J., Farquhar, G., Kemaev, I., et al. (2025). [DiscoRL: Discovering State-Of-The-Art Reinforcement Learning Algorithms](https://www.nature.com/articles/s41586-025-09761-x). Nature.

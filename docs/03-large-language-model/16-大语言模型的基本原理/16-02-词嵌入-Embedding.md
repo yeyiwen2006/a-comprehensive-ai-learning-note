@@ -29,4 +29,5 @@ Tokenizer（分词器）把句子切分成词（Token），然后去词表里查
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Vaswani, A., Shazeer, N., Parmar, N., et al. (2017). [Attention Is All You Need](https://arxiv.org/abs/1706.03762). NeurIPS 2017.
+- Radford, A., Narasimhan, K., Salimans, T., & Sutskever, I. (2018). [Improving Language Understanding by Generative Pre-Training](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf). OpenAI.

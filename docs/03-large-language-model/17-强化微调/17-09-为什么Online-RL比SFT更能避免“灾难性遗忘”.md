@@ -47,4 +47,4 @@ M-Step（M-Projection）：用策略梯度更新参数pi，使其逼近q。
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Shenfeld, I., Pari, J., & Agrawal, P. (2025). [RL's Razor: Why Online Reinforcement Learning Forgets Less](https://arxiv.org/abs/2509.04259). arXiv:2509.04259.

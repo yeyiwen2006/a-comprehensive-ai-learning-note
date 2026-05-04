@@ -32,4 +32,4 @@ Ring Attention做法：每张显卡存一个Query块（Q矩阵的若干行，也
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Liu, H., Zaharia, M., & Abbeel, P. (2023). [Ring Attention with Blockwise Transformers for Near-Infinite Context](https://arxiv.org/abs/2310.01889). arXiv:2310.01889.

@@ -173,4 +173,5 @@ B.现代优化的修改
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Behrouz, A., Zhong, P., & Mirrokni, V. (2024). [Titans: Learning to Memorize at Test Time](https://arxiv.org/abs/2501.00663). arXiv:2501.00663.
+- Behrouz, A., Razaviyayn, M., Zhong, P., & Mirrokni, V. (2025). [Nested Learning: The Illusion of Deep Learning Architectures](https://arxiv.org/abs/2512.24695). arXiv:2512.24695.

@@ -38,4 +38,4 @@ local_only: false
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Li, B., Ni, J., Qu, C., et al. (2026). [Reinforced Attention Learning](https://arxiv.org/abs/2602.04884). arXiv:2602.04884.

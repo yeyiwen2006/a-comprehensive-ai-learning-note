@@ -176,4 +176,6 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Babenko, A., & Lempitsky, V. (2012). [The Inverted Multi-Index](https://ieeexplore.ieee.org/document/6248018). CVPR 2012.
+- Johnson, J., Douze, M., & Jegou, H. (2017). [Billion-scale similarity search with GPUs](https://arxiv.org/abs/1702.08734). IEEE Transactions on Big Data.
+- Malkov, Y. A., & Yashunin, D. A. (2018). [Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs](https://arxiv.org/abs/1603.09320). IEEE TPAMI.

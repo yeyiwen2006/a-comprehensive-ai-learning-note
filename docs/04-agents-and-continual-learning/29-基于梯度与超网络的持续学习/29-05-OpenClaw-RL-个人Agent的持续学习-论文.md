@@ -40,4 +40,4 @@ local_only: false
 
 ## 参考文献
 
-暂无已核验参考文献。
+- OpenClaw. (2026). [OpenClaw-RL project](https://github.com/openclaw/openclaw).
