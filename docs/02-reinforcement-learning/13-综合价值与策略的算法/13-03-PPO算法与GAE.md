@@ -14,19 +14,93 @@ PPO由TRPO衍生而来。TRPO提出了运用重要性采样、限制更新范围
 
 ## 一、PPO-Penalty
 
-> [图片内容待重建：img-5005ec8df6b4-0001] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+目标函数如下：
+
+$$
+J^{\mathrm{PEN}}(\theta)
+=
+\mathbb{E}_t
+\left[
+\frac{\pi_\theta(a_t\mid s_t)}
+{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
+A_t
+-
+\beta\cdot
+D_{\mathrm{KL}}
+\left(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s_t)
+\Vert
+\pi_\theta(\cdot\mid s_t)
+\right)
+\right]
+$$
+
+* 第一项：TRPO 中的代理目标，即 Ratio $\times$ Advantage，负责让策略变好。
+* 第二项：KL 散度惩罚项，$D_{\mathrm{KL}}$ 衡量新旧策略分布的差异。
+* $\beta$：惩罚系数。$\beta$ 越大，越不允许策略剧烈变化。
+
 这里第一项同TRPO，即找到一个新策略，让获得奖励在新策略下的期望最大；第二项的前向KL散度主要意在确保旧策略π_old概率高的区域，如预训练中学习到的常见的人类语言模式和世界基础知识，新策略π_new概率也高，避免模型为了获取更高的Reward而丢弃预训练中学习到的知识而发生“模式崩塌”；而对于一些旧策略概率较低的高难度问题解法，新策略在提高概率的同时不会受到过度的惩罚。这样可以保证每次更新都在一个可信的“信任区域”内进行。
 
-> [图片内容待重建：img-5005ec8df6b4-0002] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0003] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+PPO-Penalty 的精髓在于它不是使用固定的 $\beta$，而是根据每一轮更新后的实际 KL 散度值动态调整。设：
+
+$$
+d = D_{\mathrm{KL}}(\pi_{\mathrm{old}},\pi_{\mathrm{new}})
+$$
+
+设定一个目标 KL 值 $d_{\mathrm{targ}}$，例如 $0.01$：
+
+1. 如果 $d < d_{\mathrm{targ}}/1.5$，说明策略变动太小、过于保守，于是减小 $\beta$，例如：
+
+$$
+\beta \leftarrow \beta/2
+$$
+
+让下一轮步子迈大一点。
+
+2. 如果 $d > d_{\mathrm{targ}}\times 1.5$，说明策略变动太大、过于激进，于是增大 $\beta$，例如：
+
+$$
+\beta \leftarrow 2\beta
+$$
+
+让下一轮受到的惩罚更重。
+
 ## 二、PPO-Clip（主流）
 
-> [图片内容待重建：img-5005ec8df6b4-0004] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+r_t(\theta)=
+\frac{\pi_\theta(a_t\mid s_t)}
+{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
+$$
+
+$$
+J^{\mathrm{CLIP}}(\theta)
+=
+\mathbb{E}_t
+\left[
+\min\left(
+r_t(\theta)A_t,\,
+\mathrm{clip}(r_t(\theta),1-\epsilon,1+\epsilon)A_t
+\right)
+\right]
+$$
+
 上式中A_t表示动作的相对价值（下面会讲），我们希望新策略能让价值在该策略下的期望最大，经重要性采样可得上式，J对θ的导数即为此时参数网络更新的梯度。A_t大于0时，我们会希望pi_θ更大，这等价于让r_t更大。E_t是按旧策略采样获得的数据。
 
 在工程中，我们先按照pi_old走若干步，然后开始若干次更新。在每一轮策略更新中固定pi_old仍为采集数据时用的策略（在代码实现里就是对过去的样本直接算术平均），重复若干次下述操作：
 
-> [图片内容待重建：img-5005ec8df6b4-0005] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+当 $A_t>0$，即动作是好的：
+
+* 原本希望 $r_t$ 越大越好，也就是增加该动作概率。
+* Clip 限制：一旦 $r_t>1+\epsilon$，公式这一项变成 $(1+\epsilon)A_t$，这是一个常数，导数为 $0$。
+* 结果：策略更新停止，防止因为某个动作偶然得到高分，就把它的概率无限提高。
+
+当 $A_t<0$，即动作是不好的：
+
+* 原本希望 $r_t$ 越小越好，也就是降低该动作概率。
+* Clip 限制：一旦 $r_t<1-\epsilon$，公式这一项变成 $(1-\epsilon)A_t$，导数为 $0$。
+* 结果：策略更新停止，防止因为某个动作导致负分，就过度破坏策略结构。
+
 一旦超出范围，目标函数J直接被“抹平”，以最大化目标函数为目的的本轮策略更新“失去动力”，自然就停止了。
 
 ## 三、为什么PPO-Clip效果更优？
@@ -39,33 +113,225 @@ PPO由TRPO衍生而来。TRPO提出了运用重要性采样、限制更新范围
 
 ## 四、损失函数
 
-> [图片内容待重建：img-5005ec8df6b4-0006] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0007] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+L_{\mathrm{total}}
+=
+-
+\underbrace{L^{\mathrm{CLIP}}}_{\text{Actor loss}}
++
+c_1
+\underbrace{L^{\mathrm{VF}}}_{\text{Critic loss}}
+-
+c_2
+\underbrace{S}_{\text{Entropy}}
+$$
+
+注意符号的微妙之处：这里假设优化器执行的是梯度下降，即最小化（minimize）。
+
+* $L^{\mathrm{CLIP}}$：我们希望最大化奖励。为了用梯度下降优化，需要加负号，写成 $-L^{\mathrm{CLIP}}$。
+* $L^{\mathrm{VF}}$：我们希望最小化预测误差（MSE），所以直接是 $+L^{\mathrm{VF}}$。
+* $S$：我们希望最大化熵（鼓励探索）。为了用梯度下降优化，需要加负号，写成 $-S$。
+
+把它们加在一起，PyTorch/TensorFlow 的优化器就可以一键优化所有目标。
+
 反向传播时，Loss的不同项就会将各个梯度分别传给不同模块的对应变量：
 
-> [图片内容待重建：img-5005ec8df6b4-0008] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+```text
+输入图像 --> [共享 CNN 层] --> 提取出的特征向量
+                         |
+                         +-----------------------------+
+                         |                             |
+                    [Actor 头]                    [Critic 头]
+                    输出动作概率                  输出价值 V
+```
+
 ## 五、优势函数A_t：GAE（Generalized Advantage Estimation）
 
-> [图片内容待重建：img-5005ec8df6b4-0009] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0010] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0011] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0012] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0013] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+Advantage $A_t$ 衡量动作 $a_t$ 比该状态下“平均表现”好多少。理论定义为：
+
+$$
+A_t=Q(s_t,a_t)-V(s_t)
+$$
+
+但在实际计算中，我们无法直接得知 $Q$，只能通过采样估计。
+
+情况一：单步估计（1-step estimation）
+
+如果我们只看一步未来，那么动作 $a_t$ 的 $Q$ 值可以被估计为：
+
+$$
+r_t+\gamma V(s_{t+1})
+$$
+
+此时 $A_t$ 的估计值直接等于 TD Error：
+
+$$
+\hat{A}_t^{(1)}
+=
+\underbrace{r_t+\gamma V(s_{t+1})}_{\approx Q(s_t,a_t)}
+-V(s_t)
+=\delta_t
+$$
+
+PPO 默认使用 GAE 来计算优势函数。这是一个非常精妙的设计，它将 TD Error 做了指数加权移动平均：
+
+$$
+\hat{A}_t^{\mathrm{GAE}}
+=
+\delta_t
++(\gamma\lambda)\delta_{t+1}
++(\gamma\lambda)^2\delta_{t+2}
++\cdots
+$$
+
+其中 $\lambda$ 是一个范围在 $[0,1]$ 之间的超参数。
+
+通过 $\lambda$ 可以调节 TD Error 的作用：
+
+当 $\lambda=0$ 时，属于高偏差、低方差：
+
+$$
+\hat{A}_t
+=
+\delta_t
+=
+r_t+\gamma V(s_{t+1})-V(s_t)
+$$
+
+此时 $A_t$ 完全等于当前的单步 TD Error。
+
+* 优点：方差小，只依赖一步随机奖励 $r_t$。
+* 缺点：偏差大，严重依赖 Critic 网络 $V(s_{t+1})$ 的准确性。如果 Critic 没训练好，估计就是错的。
+
+当 $\lambda=1$ 时，属于无偏差、高方差：
+
+$$
+\hat{A}_t
+=
+\sum_{l=0}^{\infty}\gamma^l\delta_{t+l}
+=
+\left(
+\sum_{l=0}^{\infty}\gamma^lr_{t+l}
+\right)
+-V(s_t)
+$$
+
+此时公式展开后，中间的 $V$ 项会相互抵消，最终变成 Monte Carlo Returns（真实回报）减去 Baseline。
+
+* 优点：偏差小，真实回报是最准确的“事实”。
+* 缺点：方差极大，因为累加了每一步环境的随机性。
+
 那这里A_t是用什么动作计算得到的呢？后面会提到，PPO实际运行时先用老策略走一定步数，再统一计算途中各个t时刻的优势函数，再更新。因此A_t就是用这些步数的实际动作算出来的。
 
 ## 六、在工程中的运行流程（如OpenAI Baselines或Stable Baselines3）
 
 在工程中，走一步更新一次意味着串行计算，GPU利用率极低。基于我们已经通过重要性采样保证了数据的可复用性，我们往往以一个“大循环”为单位：每一次都一次性走若干步（如2048步），收集一批数据，运用这批数据训练更新策略，再扔掉这批数据。
 
-> [图片内容待重建：img-5005ec8df6b4-0014] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+初始化：初始化 Actor 网络 $\pi_\theta$ 和 Critic 网络 $V_\phi$。
+
+大循环（For each iteration）：
+
+1. 数据收集阶段（Interaction）：
+
+* 使用当前策略 $\pi_{\theta_{\mathrm{old}}}$ 在环境中运行 $T$ 步，例如 2048 步。
+* 收集轨迹数据：
+
+$$
+\{s_t,a_t,r_t,s_{t+1},\log\pi_{\mathrm{old}}(a_t\mid s_t)\}
+$$
+
+* 利用 Critic 网络计算状态价值 $V(s_t)$。
+
+2. 优势计算阶段（Advantage）：
+
+* 计算 TD Error：
+
+$$
+\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)
+$$
+
+* 计算 GAE（Generalized Advantage Estimation）$\hat{A}_t$。这是一个递归公式，用来在偏差和方差之间做平衡。
+
 注：在收集数据的过程中，一般我们会顺便把V(s_t)算出来，这是因为在 PPO 的工程实现中，Actor和Critic通常共享部分底层网络（CNN/MLP）。当让Actor选择动作a_t时，必须把s_t喂进网络。既然数据已经流过网络了，顺便让Critic输出一下V(s_t)，几乎不增加额外的计算成本。如果不存下来，等到训练阶段，还得把s_t重新喂一遍网络来得到V(s_t)用于计算优势，重复计算，浪费GPU。
 
-> [图片内容待重建：img-5005ec8df6b4-0015] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
 注：优势是在走完动作步后、更新策略梯度前统一计算的，GAE是TD Error加权后，再一直从t累加到2048得到的。
 
-> [图片内容待重建：img-5005ec8df6b4-0016] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0017] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
-> [图片内容待重建：img-5005ec8df6b4-0018] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+3. 优化更新阶段（Optimization）：
+
+* 重要：此时 $\pi_{\theta_{\mathrm{old}}}$ 固定不动，作为分母；优化的是新的 $\pi_\theta$，作为分子。
+* 将收集到的 $T$ 个数据打乱，分成多个 mini-batch，例如每个 batch 64 个数据。
+* Epoch 循环，例如重复 10 次。
+
+对每个 mini-batch：
+
+1. 计算新概率比率：
+
+$$
+r_t(\theta)=
+\frac{\pi_\theta(a\mid s)}
+{\pi_{\mathrm{old}}(a\mid s)}
+$$
+
+2. 计算 Clip 损失 $L^{\mathrm{CLIP}}$。
+3. 计算 Critic 的价值损失：
+
+$$
+L^{\mathrm{VF}}=
+\left(
+V_\phi(s_t)-V_{\mathrm{target}}
+\right)^2
+$$
+
+4. 计算熵正则项 $S$，用于鼓励探索。
+5. 计算总损失：
+
+$$
+L=
+-
+L^{\mathrm{CLIP}}
++
+c_1L^{\mathrm{VF}}
+-
+c_2S
+$$
+
+6. 反向传播，更新 $\theta$ 和 $\phi$。
+
+4. 同步策略：
+
+* 本轮更新结束后，令：
+
+$$
+\pi_{\theta_{\mathrm{old}}}\leftarrow\pi_\theta
+$$
+
+* 清空数据缓冲区，进入下一次大循环。
+
+假设参数设置如下：
+
+* `n_steps`，缓冲区大小：$2048$。
+* `batch_size`，小批次大小：$64$。
+* `n_epochs`，复用次数：$10$。
+
+在一个“大循环”里，反向传播发生的次数是：
+
+1. 数据分批：2048 个数据被分成：
+
+$$
+2048/64=32
+$$
+
+个 mini-batch。
+
+2. 一轮遍历：这 32 个 mini-batch 会被依次喂给 GPU，产生 32 次反向传播。
+3. 多轮复用：重复跑 10 个 epoch。
+4. 总次数：
+
+$$
+32\times 10=320
+$$
+
+因此，一个大循环中一共产生 320 次反向传播。
 
 ## 参考文献
 
