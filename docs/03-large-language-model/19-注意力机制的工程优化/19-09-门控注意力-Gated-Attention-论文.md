@@ -40,4 +40,4 @@ local_only: false
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Qiu, Z., Wang, Z., Zheng, B., et al. (2025). [Gated Attention for Large Language Models: Non-linearity, Sparsity, and Attention-Sink-Free](https://arxiv.org/abs/2505.06708). arXiv:2505.06708.
