@@ -56,6 +56,38 @@ def warn(message: str) -> None:
     print(f"[WARN] {message}")
 
 
+def validate_github_math_blocks(path: Path, repo_root: Path, text: str, failures: list[str]) -> None:
+    """检查 $$ 块级公式是否按 GitHub 能稳定渲染的方式独立成段。"""
+
+    lines = text.splitlines()
+    in_math_block = False
+    for index, line in enumerate(lines):
+        if line.strip() != "$$":
+            continue
+
+        line_no = index + 1
+        previous_blank = index == 0 or not lines[index - 1].strip()
+        next_blank = index == len(lines) - 1 or not lines[index + 1].strip()
+
+        if not in_math_block:
+            if not previous_blank:
+                fail(
+                    f"块级数学公式开始标记 $$ 前需要空行，避免 GitHub 解析失败: {path.relative_to(repo_root)}:{line_no}",
+                    failures,
+                )
+            in_math_block = True
+        else:
+            if not next_blank:
+                fail(
+                    f"块级数学公式结束标记 $$ 后需要空行，避免 GitHub 解析失败: {path.relative_to(repo_root)}:{line_no}",
+                    failures,
+                )
+            in_math_block = False
+
+    if in_math_block:
+        fail(f"块级数学公式 $$ 标记未闭合: {path.relative_to(repo_root)}", failures)
+
+
 def validate_no_banned_files(repo_root: Path, failures: list[str]) -> None:
     local_only_warned = False
     for path in repo_root.rglob("*"):
@@ -99,6 +131,7 @@ def validate_markdown_files(repo_root: Path, failures: list[str]) -> None:
                 f"检测到 GitHub 不兼容的数学公式分隔符，请使用 $...$ 或 $$...$$: {path.relative_to(repo_root)}",
                 failures,
             )
+        validate_github_math_blocks(path, repo_root, text, failures)
         if relative_posix.startswith("docs/") and "40-" in path.name:
             fail(f"第40章不应上传到 docs: {path.relative_to(repo_root)}", failures)
 
