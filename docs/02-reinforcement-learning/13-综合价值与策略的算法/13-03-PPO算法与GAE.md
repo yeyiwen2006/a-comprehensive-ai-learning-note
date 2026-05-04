@@ -229,9 +229,9 @@ $$
 
 初始化：初始化 Actor 网络 $\pi_\theta$ 和 Critic 网络 $V_\phi$。
 
-大循环（For each iteration）：
+大循环（For each iteration）包括四个阶段：
 
-1. 数据收集阶段（Interaction）：
+**1. 数据收集阶段（Interaction）**
 
 * 使用当前策略 $\pi_{\theta_{\mathrm{old}}}$ 在环境中运行 $T$ 步，例如 2048 步。
 * 收集轨迹数据：
@@ -242,7 +242,7 @@ $$
 
 * 利用 Critic 网络计算状态价值 $V(s_t)$。
 
-2. 优势计算阶段（Advantage）：
+**2. 优势计算阶段（Advantage）**
 
 * 计算 TD Error：
 
@@ -256,7 +256,7 @@ $$
 
 注：优势是在走完动作步后、更新策略梯度前统一计算的，GAE是TD Error加权后，再一直从t累加到2048得到的。
 
-3. 优化更新阶段（Optimization）：
+**3. 优化更新阶段（Optimization）**
 
 * 重要：此时 $\pi_{\theta_{\mathrm{old}}}$ 固定不动，作为分母；优化的是新的 $\pi_\theta$，作为分子。
 * 将收集到的 $T$ 个数据打乱，分成多个 mini-batch，例如每个 batch 64 个数据。
@@ -264,7 +264,7 @@ $$
 
 对每个 mini-batch：
 
-1. 计算新概率比率：
+* 计算新概率比率：
 
 $$
 r_t(\theta)=
@@ -272,8 +272,8 @@ r_t(\theta)=
 {\pi_{\mathrm{old}}(a\mid s)}
 $$
 
-2. 计算 Clip 损失 $L^{\mathrm{CLIP}}$。
-3. 计算 Critic 的价值损失：
+* 计算 Clip 损失 $L^{\mathrm{CLIP}}$。
+* 计算 Critic 的价值损失：
 
 $$
 L^{\mathrm{VF}}=
@@ -282,8 +282,8 @@ V_\phi(s_t)-V_{\mathrm{target}}
 \right)^2
 $$
 
-4. 计算熵正则项 $S$，用于鼓励探索。
-5. 计算总损失：
+* 计算熵正则项 $S$，用于鼓励探索。
+* 计算总损失：
 
 $$
 L=
@@ -295,9 +295,9 @@ c_1L^{\mathrm{VF}}
 c_2S
 $$
 
-6. 反向传播，更新 $\theta$ 和 $\phi$。
+* 反向传播，更新 $\theta$ 和 $\phi$。
 
-4. 同步策略：
+**4. 同步策略**
 
 * 本轮更新结束后，令：
 
