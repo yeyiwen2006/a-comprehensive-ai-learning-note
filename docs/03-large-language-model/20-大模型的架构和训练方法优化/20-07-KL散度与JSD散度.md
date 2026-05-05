@@ -1,8 +1,8 @@
 ---
 title: "20.7 KL散度与JSD散度"
 source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.7 KL散度与JSD散度.docx"
-status: "auto-converted"
-ocr: "disabled; image content awaits manual reconstruction"
+status: "image-reconstructed"
+ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
@@ -20,13 +20,44 @@ D(P||Q)=sigma(pi*log(pi/qi)),i=1,2,...,V
 
 对于LLM，自回归输出n个token的KL散度：
 
-> [图片内容待重建：img-80ae6162db62-0001] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\sum_Y P(Y)\log\frac{P(Y)}{Q(Y)}.
+$$
+
 由于直接对所有可能的序列求和是不可行的（有V^n种可能），需利用自回归特性将其分解：
 
-> [图片内容待重建：img-80ae6162db62-0002] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\mathbb{E}_{Y\sim P}
+\left[
+\sum_{t=1}^{n}
+\left(
+\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})
+\right)
+\right]
+=
+\sum_{t=1}^{n}
+\mathbb{E}_{Y\sim P}
+\left[
+\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}
+\right].
+$$
+
 这里的处理难点在于“Y~P”，需要考虑整个序列的概率分布。注意到右边的条件概率的条件为y<t，对于给定已知的y<t分布，由自回归特性，yt的分布也会随之确定，Y={y1,...,yt}的分布也就已知。因此可以改写为：
 
-> [图片内容待重建：img-80ae6162db62-0003] 原 Word 此处有图片。为避免版权风险，开源版暂不上传图片；自动 OCR 已弃用，后续将依据原稿人工重建为 Markdown/LaTeX。
+$$
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\sum_{t=1}^{n}
+\mathbb{E}_{y_{<t}\sim P(y_{<t})}
+\left[
+D_{\mathrm{KL}}\left(P(y_t\mid y_{<t})\Vert Q(y_t\mid y_{<t})\right)
+\right].
+$$
+
 这意味着，两个序列分布的KL散度，等于每一步条件概率分布之间KL散度的期望之和（期望是基于分布P生成的历史轨迹计算的）。
 
 ## 参考文献
