@@ -212,4 +212,7 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Peters, J., & Schaal, S. (2007). [Reinforcement Learning by Reward-Weighted Regression for Operational Space Control](https://dl.acm.org/doi/10.1145/1273496.1273590). ICML.
+- Peng, X. B., Kumar, A., Zhang, G., & Levine, S. (2019). [Advantage-Weighted Regression: Simple and Scalable Off-Policy Reinforcement Learning](https://arxiv.org/abs/1910.00177). arXiv:1910.00177.
+- Nair, A., Dalal, M., Gupta, A., & Levine, S. (2020). [Accelerating Online Reinforcement Learning with Offline Datasets](https://arxiv.org/abs/2006.09359). arXiv:2006.09359.
+- Wallace, B., Gokul, A., Ermon, S., & Naik, N. (2024). [Diffusion Model Alignment Using Direct Preference Optimization](https://arxiv.org/abs/2311.12908). CVPR.

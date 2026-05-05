@@ -124,4 +124,5 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Bardes, A., Garrido, Q., Ponce, J., et al. (2024). [V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video](https://arxiv.org/abs/2404.08471). arXiv:2404.08471.
+- Assran, M., Duval, Q., Misra, I., et al. (2023). [Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture](https://arxiv.org/abs/2301.08243). CVPR.

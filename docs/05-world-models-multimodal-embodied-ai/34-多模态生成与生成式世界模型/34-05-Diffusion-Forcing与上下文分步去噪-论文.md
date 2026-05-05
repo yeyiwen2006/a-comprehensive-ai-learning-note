@@ -121,4 +121,4 @@ Diffusion Forcing（DF，以近期噪声k=2，远期噪声k=K为例）：
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Chen, B., Monso, D. M., Du, Y., Simchowitz, M., Tedrake, R., & Sitzmann, V. (2024). [Diffusion Forcing: Next-token Prediction Meets Full-Sequence Diffusion](https://arxiv.org/abs/2407.01392). NeurIPS.

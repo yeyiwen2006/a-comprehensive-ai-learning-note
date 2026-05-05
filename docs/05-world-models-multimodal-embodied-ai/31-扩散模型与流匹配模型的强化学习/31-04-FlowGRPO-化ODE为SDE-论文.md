@@ -39,4 +39,5 @@ local_only: false
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Liu, J., Liu, G., Liang, J., et al. (2025). [Flow-GRPO: Training Flow Matching Models via Online RL](https://arxiv.org/abs/2505.05470). arXiv:2505.05470.
+- Shao, Z., Wang, P., Zhu, Q., et al. (2024). [DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300). arXiv:2402.03300.

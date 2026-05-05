@@ -80,4 +80,5 @@ LeWM在Push-T和Reacher上表现很好，但在简单的Two-Room环境中不如P
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Maes, H., Le Lidec, Q., Scieur, D., LeCun, Y., & Balestriero, R. (2026). [LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels](https://arxiv.org/abs/2603.19312). arXiv:2603.19312.
+- Assran, M., Duval, Q., Misra, I., et al. (2023). [Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture](https://arxiv.org/abs/2301.08243). CVPR.

@@ -111,4 +111,6 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Li, T., & He, K. (2025). [Back to Basics: Let Denoising Generative Models Denoise](https://arxiv.org/abs/2511.13720). arXiv:2511.13720.
+- Ho, J., Jain, A., & Abbeel, P. (2020). [Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239). NeurIPS.
+- Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., & Le, M. (2023). [Flow Matching for Generative Modeling](https://arxiv.org/abs/2210.02747). ICLR.

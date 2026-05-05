@@ -121,4 +121,9 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Salimans, T., & Ho, J. (2022). [Progressive Distillation for Fast Sampling of Diffusion Models](https://arxiv.org/abs/2202.00512). ICLR.
+- Song, Y., Dhariwal, P., Chen, M., & Sutskever, I. (2023). [Consistency Models](https://arxiv.org/abs/2303.01469). ICML.
+- Yin, T., Gharbi, M., Zhang, R., Shechtman, E., Durand, F., Freeman, W. T., & Park, T. (2024). [One-step Diffusion with Distribution Matching Distillation](https://arxiv.org/abs/2311.18828). CVPR.
+- Huang, X., Li, Z., He, G., Zhou, M., & Shechtman, E. (2025). [Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion](https://arxiv.org/abs/2506.08009). arXiv:2506.08009.
+- Savva, G., Michel, O., Lu, D., Waiwitlikhit, S., Meehan, T., Mishra, D., Poddar, S., Lu, J., & Xie, S. (2026). [Solaris: Building a Multiplayer Video World Model in Minecraft](https://arxiv.org/abs/2602.22208). arXiv:2602.22208.
+- Goyal, S., Agrawal, S., Anil, G. G., Jain, P., Paul, S., & Kusupati, A. (2026). [ELT: Elastic Looped Transformers for Visual Generation](https://arxiv.org/abs/2604.09168). arXiv:2604.09168.

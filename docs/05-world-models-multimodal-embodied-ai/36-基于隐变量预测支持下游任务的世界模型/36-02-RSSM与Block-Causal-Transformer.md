@@ -398,4 +398,7 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Hafner, D., Lillicrap, T., Fischer, I., et al. (2019). [Learning Latent Dynamics for Planning from Pixels](https://arxiv.org/abs/1811.04551). ICML.
+- Hafner, D., Lillicrap, T., Ba, J., & Norouzi, M. (2020). [Dream to Control: Learning Behaviors by Latent Imagination](https://arxiv.org/abs/1912.01603). ICLR.
+- Hafner, D., Pasukonis, J., Ba, J., & Lillicrap, T. (2023). [Mastering Diverse Domains through World Models](https://arxiv.org/abs/2301.04104). arXiv:2301.04104.
+- Hafner, D., Yan, W., & Lillicrap, T. (2025). [Training Agents Inside of Scalable World Models](https://arxiv.org/abs/2509.24527). arXiv:2509.24527.

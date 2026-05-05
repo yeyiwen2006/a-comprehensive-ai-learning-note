@@ -193,4 +193,5 @@ $$
 
 ## 参考文献
 
-暂无已核验参考文献。
+- Dosovitskiy, A., Beyer, L., Kolesnikov, A., et al. (2021). [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](https://arxiv.org/abs/2010.11929). ICLR.
+- Peebles, W., & Xie, S. (2023). [Scalable Diffusion Models with Transformers](https://arxiv.org/abs/2212.09748). ICCV.

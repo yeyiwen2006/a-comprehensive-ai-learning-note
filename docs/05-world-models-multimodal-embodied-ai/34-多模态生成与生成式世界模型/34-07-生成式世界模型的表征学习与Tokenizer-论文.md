@@ -122,4 +122,6 @@ INFOTOK提出了基于信息论中的ELBO进行自适应路由的方法：
 
 ## 参考文献
 
-暂无已核验参考文献。
+- van den Oord, A., Vinyals, O., & Kavukcuoglu, K. (2017). [Neural Discrete Representation Learning](https://arxiv.org/abs/1711.00937). NeurIPS.
+- Esser, P., Rombach, R., & Ommer, B. (2021). [Taming Transformers for High-Resolution Image Synthesis](https://arxiv.org/abs/2012.09841). CVPR.
+- Rombach, R., Blattmann, A., Lorenz, D., Esser, P., & Ommer, B. (2022). [High-Resolution Image Synthesis with Latent Diffusion Models](https://arxiv.org/abs/2112.10752). CVPR.
