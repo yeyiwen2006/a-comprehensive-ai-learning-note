@@ -1,13 +1,13 @@
 ---
-title: "39.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）"
-source_docx: "第5部分 世界模型、多模态生成与具身智能/39.统一架构的多模态理解-生成模型/39.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）.docx"
+title: "38.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）"
+source_docx: "第5部分 世界模型、多模态生成与具身智能/38.统一架构的多模态理解-生成模型/38.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）.docx"
 status: "auto-converted"
 ocr: "no pending image placeholders in public Markdown"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 39.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）
+# 38.8 Uni-3DAR：跨尺度3D结构的统一理解与生成（论文）
 
 
 > 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
