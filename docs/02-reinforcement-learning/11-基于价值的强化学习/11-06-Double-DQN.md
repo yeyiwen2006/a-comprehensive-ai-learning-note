@@ -15,20 +15,20 @@ local_only: false
 DQN普遍存在过高估计Q值的问题。这是因为其更新目标为：
 
 $$
-y=r+\gamma\max_{a'}Q(s',a';w^-)
+y=r+\gamma\max_{a'}Q(s',a';w^{-})
 $$
 
 神经网络的输出Q(s',a')总是包含噪声（估计误差）。由于取max，往往最后留下的是被高估的结果，这种高估会随着贝尔曼方程的迭代不断向回传播，导致整个系统的Q值普遍虚高。假设误差epsilon服从均匀分布，我们可以推导出估计值的最大值与真实值最大值之间的期望偏差：
 
 为了让数学推导可行，文中做了一些简化的假设，但这些假设不影响结论的普适性：
 
-- **真实价值相等**：假设在状态 $s$ 下，所有动作 $a$ 的真实期望回报 $Q^*(s,a)$ 都一样，记为 $V^*(s)$。
+- **真实价值相等**：假设在状态 $s$ 下，所有动作 $a$ 的真实期望回报 $Q^{*}(s,a)$ 都一样，记为 $V^{*}(s)$。
 - **为什么要这样假设**：如果真实价值本身有高有低，那么 $\max$ 操作选到最大值是理所应当的。这里要证明的是：即使所有动作真实价值都一样，仅仅因为有噪声，$\max$ 操作也会导致评估结果偏高。
-- **噪声分布**：神经网络的估算误差 $\epsilon_a=Q_{w^-}(s,a)-V^*(s)$ 服从区间 $[-1,1]$ 上的均匀分布，且 $\mathbb{E}[\epsilon_a]=0$。
+- **噪声分布**：神经网络的估算误差 $\epsilon_a=Q_{w^{-}}(s,a)-V^{*}(s)$ 服从区间 $[-1,1]$ 上的均匀分布，且 $\mathbb{E}[\epsilon_a]=0$。
 - **独立性**：不同动作的估算误差相互独立。
 - **动作数量**：动作空间大小为 $m$。
 
-我们的目标是计算：在这种情况下，神经网络估算出的最大值 $\max_a Q_{w^-}(s,a)$ 比真实值 $V^*(s)$ 高出多少，即计算期望 $\mathbb{E}[\max_a\epsilon_a]$。
+我们的目标是计算：在这种情况下，神经网络估算出的最大值 $\max_a Q_{w^{-}}(s,a)$ 比真实值 $V^{*}(s)$ 高出多少，即计算期望 $\mathbb{E}[\max_a\epsilon_a]$。
 
 因为 $\epsilon_a$ 服从 $[-1,1]$ 上的均匀分布，其分布函数为：
 
@@ -44,28 +44,28 @@ $$
 现在需要求 $m$ 个误差中的最大值 $\max_a\epsilon_a$ 的分布。如果 $m$ 个数的最大值都小于等于 $x$，那么这 $m$ 个数每一个都必须小于等于 $x$。由于它们相互独立，联合概率等于各自概率的乘积：
 
 $$
-P\left(\max_a\epsilon_a\le x\right)
+P(\max_a\epsilon_a\le x)
 =\prod_{a=1}^{m}P(\epsilon_a\le x)
-=\left(\frac{1+x}{2}\right)^m
+=(\frac{1+x}{2})^{m}
 $$
 
 最后一步是求这个“最大误差”的数学期望。期望定义为 $\mathbb{E}[X]=\int x\cdot p(x)dx$，其中 $p(x)$ 是概率密度函数，也就是分布函数的导数。文中给出的积分公式为：
 
 $$
-\mathbb{E}\left[\max_a\epsilon_a\right]
-=\int_{-1}^{1}x\cdot\frac{d}{dx}P\left(\max_a\epsilon_a\le x\right)dx
+\mathbb{E}[\max_a\epsilon_a]
+=\int_{-1}^{1}x\cdot\frac{d}{dx}P(\max_a\epsilon_a\le x)dx
 $$
 
 积分结果为：
 
 $$
-=\left[\left(\frac{x+1}{2}\right)^m\frac{mx-1}{m+1}\right]_{-1}^{1}
+=[(\frac{x+1}{2})^{m}\frac{mx-1}{m+1}]_{-1}^{1}
 $$
 
 最终得到：
 
 $$
-\mathbb{E}\left[\max_a Q_{w^-}(s,a)-\max_{a'}Q_*(s,a')\right]=\frac{m-1}{m+1}
+\mathbb{E}[\max_a Q_{w^{-}}(s,a)-\max_{a'}Q_*(s,a')]=\frac{m-1}{m+1}
 $$
 
 如果只有一个动作可以选择，没有max操作，那么随着每一次采样：
@@ -97,7 +97,7 @@ $$
 Double DQN打破了这个链条：使用训练网络w来决定哪个动作最好，因为训练网络更新最及时，能反映最新的策略；使用目标网络w-来计算选定动作的Q值。Double DQN的更新目标变为：
 
 $$
-y_{DDQN}=r+\gamma Q\left(s',\arg\max_{a'}Q(s',a';w);w^-\right)
+y_{DDQN}=r+\gamma Q(s',\arg\max_{a'}Q(s',a';w);w^{-})
 $$
 
 其中 $\arg\max_{a'}Q(s',a';w)$ 表示由训练网络选择动作。

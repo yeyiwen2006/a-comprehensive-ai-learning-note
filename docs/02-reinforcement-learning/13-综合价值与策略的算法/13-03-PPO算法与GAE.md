@@ -20,19 +20,19 @@ $$
 J^{\mathrm{PEN}}(\theta)
 =
 \mathbb{E}_t
-\left[
+[
 \frac{\pi_\theta(a_t\mid s_t)}
 {\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
 A_t
 -
 \beta\cdot
 D_{\mathrm{KL}}
-\left(
+(
 \pi_{\theta_{\mathrm{old}}}(\cdot\mid s_t)
 \Vert
 \pi_\theta(\cdot\mid s_t)
-\right)
-\right]
+)
+]
 $$
 
 * 第一项：TRPO 中的代理目标，即 Ratio $\times$ Advantage，负责让策略变好。
@@ -77,12 +77,12 @@ $$
 J^{\mathrm{CLIP}}(\theta)
 =
 \mathbb{E}_t
-\left[
-\min\left(
+[
+\min(
 r_t(\theta)A_t,\,
 \mathrm{clip}(r_t(\theta),1-\epsilon,1+\epsilon)A_t
-\right)
-\right]
+)
+]
 $$
 
 上式中A_t表示动作的相对价值（下面会讲），我们希望新策略能让价值在该策略下的期望最大，经重要性采样可得上式，J对θ的导数即为此时参数网络更新的梯度。A_t大于0时，我们会希望pi_θ更大，这等价于让r_t更大。E_t是按旧策略采样获得的数据。
@@ -180,7 +180,7 @@ $$
 =
 \delta_t
 +(\gamma\lambda)\delta_{t+1}
-+(\gamma\lambda)^2\delta_{t+2}
++(\gamma\lambda)^{2}\delta_{t+2}
 +\cdots
 $$
 
@@ -208,11 +208,11 @@ $$
 $$
 \hat{A}_t
 =
-\sum_{l=0}^{\infty}\gamma^l\delta_{t+l}
+\sum_{l=0}^{\infty}\gamma^{l}\delta_{t+l}
 =
-\left(
-\sum_{l=0}^{\infty}\gamma^lr_{t+l}
-\right)
+(
+\sum_{l=0}^{\infty}\gamma^{l}r_{t+l}
+)
 -V(s_t)
 $$
 
@@ -277,9 +277,9 @@ $$
 
 $$
 L^{\mathrm{VF}}=
-\left(
+(
 V_\phi(s_t)-V_{\mathrm{target}}
-\right)^2
+)^{2}
 $$
 
 * 计算熵正则项 $S$，用于鼓励探索。

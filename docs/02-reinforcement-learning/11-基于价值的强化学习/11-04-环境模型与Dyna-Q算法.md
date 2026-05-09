@@ -17,7 +17,7 @@ local_only: false
 在标准的 Q-Learning（Model-Free）中，价值函数的更新公式是：
 
 $$
-Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a'}Q(S',a')-Q(S,A)]
+Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a^{\prime}}Q(S^{\prime},a^{\prime})-Q(S,A)]
 $$
 
 请注意，这个更新只发生在一步之间。
@@ -58,7 +58,7 @@ $$
 利用刚才获得的真实经验 $(S,A,R,S')$，使用 Q-Learning 的更新公式更新 $Q$ 值：
 
 $$
-Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a'}Q(S',a')-Q(S,A)]
+Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a^{\prime}}Q(S^{\prime},a^{\prime})-Q(S,A)]
 $$
 
 这一步保证了算法具有 Model-Free 算法的无偏性。
@@ -68,7 +68,7 @@ $$
 利用真实经验更新环境模型。对于确定性环境，我们只需简单地记录结果：
 
 $$
-Model(S,A)\leftarrow(R,S')
+\mathrm{Model}(S,A)\leftarrow(R,S^{\prime})
 $$
 
 这意味着：如果将来在“想象”中遇到状态 $S$ 并尝试动作 $A$，模型将告诉智能体结果是 $R$ 和 $S'$。
@@ -86,13 +86,13 @@ Repeat $N$ times:
 3. 模型预测：将 $(\tilde{S},\tilde{A})$ 输入模型，得到预测的奖励 $\tilde{R}$ 和下一状态 $\tilde{S}'$：
 
 $$
-(\tilde{R},\tilde{S}')\leftarrow Model(\tilde{S},\tilde{A})
+(\tilde{R},\tilde{S}^{\prime})\leftarrow \mathrm{Model}(\tilde{S},\tilde{A})
 $$
 
 4. 模拟更新（Simulated Update）：再次利用 Q-Learning 公式更新 $Q$ 值，但这使用的是模拟数据：
 
 $$
-Q(\tilde{S},\tilde{A})\leftarrow Q(\tilde{S},\tilde{A})+\alpha[\tilde{R}+\gamma\max_{a'}Q(\tilde{S}',a')-Q(\tilde{S},\tilde{A})]
+Q(\tilde{S},\tilde{A})\leftarrow Q(\tilde{S},\tilde{A})+\alpha[\tilde{R}+\gamma\max_{a^{\prime}}Q(\tilde{S}^{\prime},a^{\prime})-Q(\tilde{S},\tilde{A})]
 $$
 
 在高级版本的环境模型中，我们未必要让它选择走过的 $(s_t,a_t)$，而是可以更随机地选择。由于环境模型学习了环境的规律，它往往具有泛化性能，可以输出一个预测值。

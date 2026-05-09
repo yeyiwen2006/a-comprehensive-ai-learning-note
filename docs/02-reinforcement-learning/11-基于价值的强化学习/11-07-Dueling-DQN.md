@@ -37,7 +37,7 @@ $$
 方案 A：Max 约束（理论最优）
 
 $$
-Q(s,a)=V(s)+\left(A(s,a)-\max_{a'}A(s,a')\right)
+Q(s,a)=V(s)+(A(s,a)-\max_{a'}A(s,a'))
 $$
 
 - 数学含义：强制让最大的优势值为 $0$。
@@ -46,7 +46,7 @@ $$
 方案 B：Mean 约束（工程最优）
 
 $$
-Q(s,a)=V(s)+\left(A(s,a)-\frac{1}{|\mathcal{A}|}\sum_{a'}A(s,a')\right)
+Q(s,a)=V(s)+(A(s,a)-\frac{1}{|\mathcal{A}|}\sum_{a'}A(s,a'))
 $$
 
 - 数学含义：强制让所有动作的优势值之和为 $0$，也就是平均值为 $0$。
