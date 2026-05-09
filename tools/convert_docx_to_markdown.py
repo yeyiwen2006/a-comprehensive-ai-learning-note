@@ -305,13 +305,15 @@ def is_note_doc(source_root: Path, path: Path) -> bool:
         return False
     if is_root_usage_doc(source_root, path):
         return False
+    if is_chapter40(path, source_root):
+        return False
     return path.suffix.lower() == ".docx"
 
 
 def discover_docx(source_root: Path, only_sample: bool, max_docs: int | None) -> list[Path]:
     docs = sorted(p for p in source_root.rglob("*.docx") if is_note_doc(source_root, p))
     if only_sample:
-        prefixes = ["1.2 ", "13.3 ", "15.3 ", "25.1 ", "34.1 ", "40.1 "]
+        prefixes = ["1.2 ", "13.3 ", "15.3 ", "25.1 ", "34.1 "]
         sample: list[Path] = []
         for prefix in prefixes:
             found = next((p for p in docs if p.name.startswith(prefix)), None)
@@ -324,10 +326,7 @@ def discover_docx(source_root: Path, only_sample: bool, max_docs: int | None) ->
 
 
 def output_path_for_doc(source_root: Path, repo_root: Path, local_only_root: Path, docx_path: Path) -> tuple[Path, bool]:
-    """计算 Markdown 输出位置。
-
-    第40章已改为公开上传，与其他章节一样输出到 docs 目录。
-    """
+    """计算 Markdown 输出位置。"""
 
     rel = docx_path.relative_to(source_root)
     top = rel.parts[0]
@@ -851,8 +850,6 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 
 - [学习路径](学习路径.md)
 - [完整目录](目录.md)
-- [图片重建与OCR处理报告](OCR质量报告.md)
-- [引用与版权清理报告](引用与版权清理报告.md)
 - [免责声明](DISCLAIMER.md)
 - [贡献说明](CONTRIBUTING.md)
 
@@ -867,6 +864,10 @@ Word 原稿中有部分内容是图片格式。早期转换曾尝试使用普通
 每个图片位置都有稳定的 `img-...` 重建 ID。后续会依据本地 Word 原稿和本地图片清单，按章节逐张处理：函数图像、结构示意图、流程图等需要保留视觉信息的内容会作为公开图片资源引用；纯文字、公式和表格会人工转写为 Markdown/LaTeX，并保持与正文一致的排版；无法确认的内容会明确标注为待复核。
 
 开源仓库不上传 Word 原稿、整包图片提取目录或普通 OCR 生成的乱码公式。对教材截图、论文图、技术报告图等材料，会优先核对来源与授权；不适合直接复用的图片会改为重画、文字化说明或保留待复核标记。
+
+## 贡献与维护说明
+
+欢迎通过 Issue 或 Pull Request 指出概念、公式、引用、图片转写和排版问题。作者目前为在校学生，可能无法及时查看或合并 PR；如未及时处理，请谅解。
 
 ## 资料来源与可靠性
 
@@ -922,6 +923,8 @@ def build_contributing() -> str:
         # 贡献说明
 
         欢迎通过 Issue 或 Pull Request 帮助改进这份 AI 学习笔记。
+
+        作者目前为在校学生，可能无法及时查看或合并 Pull Request；如未及时处理，请谅解。
 
         ## 推荐反馈类型
 
@@ -1040,99 +1043,7 @@ def build_changelog() -> str:
         - 从本地 Word 原稿自动生成 Markdown。
         - 放弃普通 OCR 公式文本，图片位置改为稳定重建占位。
         - 按作者要求不上传 Word 原稿，图片按类型筛选后可作为公开资源上传。
-        - 同步第40章“世界模型与科学发现”的公开 Markdown 内容。
-        """
-    )
-
-
-def build_todo(records: list[ConvertedDoc]) -> str:
-    lines = [
-        "# TODO",
-        "",
-        "本文件记录开源后仍需人工处理的事项。图片内容已放弃普通 OCR，需要按章节逐张分类处理：文字、公式和表格转写为 Markdown/LaTeX；函数图像、结构图、流程图和手写示意图等保留为图片资源或重画。",
-        "",
-        "## 图片内容待重建",
-        "",
-        "- [ ] 按 `local-only/image-reconstruction/manifest.jsonl` 从第 1 章开始逐张分类处理图片内容。",
-        "- [ ] 将可确认的公式写为 LaTeX，将表格写为 Markdown 表格或 HTML 表格。",
-        "- [ ] 将必须保留视觉信息的图片放到 `assets/images/` 并在 Markdown 中正常引用。",
-        "- [ ] 对无法确认的图片内容保留明确的待复核标记，不猜测公式。",
-        "",
-    ]
-    lines.extend(["", "## 参考文献与版权检查", ""])
-    ref_risky = [record for record in records if record.missing_reference_notes]
-    for record in sorted(ref_risky, key=lambda item: (-len(item.missing_reference_notes), item.source_rel))[:120]:
-        location = record.output_rel or f"local-only: {record.source_rel}"
-        lines.append(f"- [ ] {location}")
-        for note in record.missing_reference_notes[:3]:
-            lines.append(f"  - {note}")
-    if not ref_risky:
-        lines.append("- 暂无。")
-
-    lines.extend(
-        [
-            "",
-            "## 后续建设",
-            "",
-            "- [ ] 人工重建核心学习路径中的图片公式、图示和表格，并检查转写内容是否与正文排版统一。",
-            "- [ ] 给论文笔记补充原论文标题、作者、年份、会议或 arXiv 链接。",
-            "- [ ] 对疑似教材、论文或技术报告截图的内容核对授权；不适合直接复用时进行重画、改写说明或删除图片依赖。",
-            "- [ ] 未来可考虑迁移到 MkDocs、VitePress 或 Docusaurus，提供站内搜索和侧边栏导航。",
-        ]
-    )
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def build_ocr_report(records: list[ConvertedDoc]) -> str:
-    lines = [
-        "# 图片重建与OCR处理报告",
-        "",
-        "本报告由转换脚本自动生成，用于说明每个 Word 文档的正文抽取和图片重建状态。普通 OCR 已弃用，不再把 OCR 文本写入公开 Markdown。",
-        "",
-        "| 文档 | 上传状态 | 正文字数 | 图片数 | 图片重建状态 |",
-        "|---|---:|---:|---:|---|",
-    ]
-    for record in sorted(records, key=lambda item: item.source_rel):
-        status = "local-only" if record.local_only else "upload"
-        doc_label = record.output_rel or record.source_rel
-        rebuild_status = "待重建" if record.image_count else "无图片"
-        lines.append(
-            f"| {doc_label} | {status} | {record.text_chars} | {record.image_count} | {rebuild_status} |"
-        )
-    lines.extend(
-        [
-            "",
-            "## 说明",
-            "",
-            "- 普通 OCR 已确认不适合本资料中的公式、表格、代码截图和复杂论文图。",
-            "- Word 原稿和本地图片提取目录不上传；经筛选的视觉图片可以放在 `assets/images/` 下作为公开资源。",
-            "- 纯文字、公式和表格图片应转写为正文 Markdown/LaTeX，并保持与正文排版统一。",
-        ]
-    )
-    return "\n".join(lines).rstrip() + "\n"
-
-
-def build_reference_report(records: list[ConvertedDoc]) -> str:
-    return textwrap.dedent(
-        """\
-        # 引用与版权清理报告
-
-        本报告记录公开版资料中仍需人工核验的参考文献和版权事项。为保证参考文献正确性，仓库不再公开自动检索出的“引用线索”，也不把未核验来源写入章节参考文献。
-
-        ## 当前原则
-
-        - 章节末尾只保留“参考文献”栏目。
-        - 未经人工核验的来源不写入参考文献。
-        - 自动 OCR 或脚本抽取出的疑似来源只作为本地排查线索，不作为公开参考文献。
-        - 后续补充参考文献时，应优先使用原论文、官方文档、教材页面、作者项目页、DOI 或 arXiv 页面。
-        - 图片、截图、教材图和论文图需要同时核对来源、授权和是否适合直接复用。
-
-        ## 待处理事项
-
-        - [ ] 按章节人工核验并补充真实参考文献。
-        - [ ] 对标题含“论文”的笔记补充原论文标题、作者、年份、会议或 arXiv/DOI 链接。
-        - [ ] 对已上传到 `assets/images/` 的图片补充必要来源说明或替换为可复用版本。
-        - [ ] 对无法确认来源或授权的图片进行重画、文字化说明或保留待复核标记。
+        - 同步公开 Markdown 内容，并按当前 Word 目录移除不再公开的旧章节。
         """
     )
 
@@ -1155,9 +1066,6 @@ def build_structure_doc() -> str:
         - `CHANGELOG.md`：开源版更新记录。
         - `目录.md`：自动生成的全量上传目录。
         - `学习路径.md`：面向不同学习目标的阅读路线。
-        - `TODO.md`：OCR 校对、引用补充和版权检查待办。
-        - `OCR质量报告.md`：每个文档的正文、图片和 OCR 统计。
-        - `引用与版权清理报告.md`：参考文献正确性和图片版权核验事项。
         - `docs/`：由 Word 原稿自动转换出的公开 Markdown 正文。
         - `tools/convert_docx_to_markdown.py`：批量转换脚本。
         - `tools/winrt_ocr.ps1`：调用 Windows 自带 OCR 的辅助脚本。
@@ -1176,7 +1084,7 @@ def build_structure_doc() -> str:
         - `sanitize_dirname`：把章节目录名转换成较短、稳定的目录名。
         - `markdown_link`：生成适合 Markdown 的 URL 编码链接。
         - `is_root_usage_doc`：判断是否为根目录使用说明。
-        - `is_chapter40`：判断文档是否属于第40章。
+        - `is_chapter40`：判断文档是否属于当前不公开导出的第40章。
         - `is_note_doc`：判断某个 docx 是否属于需要转换的笔记正文。
         - `discover_docx`：扫描本地 Word 原稿，得到待转换文档列表。
         - `output_path_for_doc`：根据上传规则计算 Markdown 输出路径。
@@ -1192,7 +1100,7 @@ def build_structure_doc() -> str:
         - `missing_reference_notes`：根据文件名、图片数量和疑似来源文本生成内部核验提示。
         - `convert_single_doc`：转换单个 Word 文档，生成 Markdown 并返回统计记录。
         - `clean_outputs`：清理导出目录中的旧生成物，不接触 Word 原稿。
-        - `build_directory_markdown`：生成包含第1-40章的完整上传目录。
+        - `build_directory_markdown`：生成当前公开章节的完整上传目录。
         - `build_learning_path_markdown`：生成学习路径。
         - `build_readme`：生成 GitHub 首页。
         - `build_disclaimer`：生成免责声明。
@@ -1201,9 +1109,6 @@ def build_structure_doc() -> str:
         - `build_gitignore`：生成上传安全忽略规则。
         - `build_citation`：生成 `CITATION.cff`。
         - `build_changelog`：生成初始更新记录。
-        - `build_todo`：生成 OCR、引用和版权待办。
-        - `build_ocr_report`：生成 OCR 质量报告。
-        - `build_reference_report`：生成引用与版权清理报告。
         - `build_structure_doc`：生成本项目结构说明。
         - `write_project_files`：写入项目外壳和报告文件。
         - `main`：组织清理、扫描、转换、报告生成和进度输出。
@@ -1232,9 +1137,6 @@ def write_project_files(repo_root: Path, records: list[ConvertedDoc], usage_text
         "CHANGELOG.md": build_changelog(),
         "目录.md": build_directory_markdown(records),
         "学习路径.md": build_learning_path_markdown(),
-        "TODO.md": build_todo(records),
-        "OCR质量报告.md": build_ocr_report(records),
-        "引用与版权清理报告.md": build_reference_report(records),
     }
     for relative, content in files.items():
         (repo_root / relative).write_text(content, encoding="utf-8")

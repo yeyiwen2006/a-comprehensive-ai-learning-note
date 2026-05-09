@@ -145,9 +145,6 @@ def validate_required_files(repo_root: Path, failures: list[str]) -> None:
         "CHANGELOG.md",
         "目录.md",
         "学习路径.md",
-        "TODO.md",
-        "OCR质量报告.md",
-        "引用与版权清理报告.md",
     ]
     for relative in required:
         if not (repo_root / relative).exists():
