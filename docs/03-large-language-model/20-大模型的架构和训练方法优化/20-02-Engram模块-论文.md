@@ -1,14 +1,16 @@
 ---
-title: "20.2 Engram模块"
-source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.2 Engram模块.docx"
+title: "20.2 Engram模块（论文）"
+source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.2 Engram模块（论文）.docx"
 status: "image-reconstructed"
 ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 20.2 Engram模块
+# 20.2 Engram模块（论文）
 
+
+> 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 
 传统的大模型架构缺少原生的知识查找方式，只能通过多层计算来低效地模拟检索。如前文为“The capital of France is”时，无法直接查找出“Paris”，只能通过大量参数计算得出。Engram基于条件记忆（Conditional Memory）机制，将记忆（静态知识）与计算（推理能力）解耦，基于哈希查找实现了一种高效率的知识存取方式，从而将更多参数层“腾出来”用于推理。
 
