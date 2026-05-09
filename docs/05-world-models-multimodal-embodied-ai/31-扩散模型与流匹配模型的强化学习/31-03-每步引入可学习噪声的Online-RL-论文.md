@@ -55,10 +55,12 @@ $$
 由于每一步 $\tau\rightarrow\tau+\delta$ 都服从已知的高斯分布，整个去噪轨迹的联合概率密度就可以被精确分解并计算。给定一条从 $\tau=0$ 到 $\tau=1$ 的离散去噪轨迹，其总动作对数似然为每一步转移概率对数的累加：
 
 $$
+\begin{aligned}
 \log\pi_\theta(\mathbf{a}_t|\mathbf{o}_t)
-=
+&=
 \sum_{\tau=0}^{1-\delta}
 \log p_\theta(\mathbf{A}_t^{\tau+\delta}|\mathbf{A}_t^\tau,\mathbf{o}_t)
+\end{aligned}
 $$
 
 因为 $p_\theta$ 是由参数化的高斯分布构成，上式变得完全可计算，从而可以直接用于 PPO 等基于策略梯度的 RL 算法的目标函数中。

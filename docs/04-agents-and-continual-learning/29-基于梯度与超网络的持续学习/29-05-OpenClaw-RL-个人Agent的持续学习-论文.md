@@ -44,7 +44,9 @@ local_only: false
    该方法采用标准的带有非对称裁剪的 PPO 代理目标函数：
 
 $$
-L_{\mathrm{PPO}} =
+\begin{aligned}
+L_{\mathrm{PPO}}
+&=
 -\mathbb{E}_t
 \left[
 \min\left(
@@ -52,6 +54,7 @@ L_{\mathrm{PPO}} =
 \mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon_{\mathrm{high}})A_t
 \right)
 \right]
+\end{aligned}
 $$
 
 其中，$\rho_t=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\mathrm{old}}(a_t\mid s_t)}$ 是新旧策略的概率比率。
@@ -69,10 +72,12 @@ $$
    token 级别的优势计算公式为：
 
 $$
-A_t =
+\begin{aligned}
+A_t
+&=
 \log \pi_{\mathrm{teacher}}(a_t\mid s_{\mathrm{enhanced}})
--
-\log \pi_\theta(a_t\mid s_t)
+-\log \pi_\theta(a_t\mid s_t)
+\end{aligned}
 $$
 
 这里是在比较学生上下文和教师上下文下生成学生动作的概率，只是评价学生模型生成的token的好坏，并没有让教师生成新token并进行KL散度损失计算。这和在线自蒸馏并不一样。
@@ -84,22 +89,24 @@ $$
 如果我们对 KL 散度求梯度，即我们要更新学生模型参数 $\theta$ 的方向，其核心可以近似推导为：
 
 $$
+\begin{aligned}
 \nabla_\theta D_{\mathrm{KL}}(\pi_\theta\|\pi)
-\approx
--
-\left(
+&\approx
+-\left(
 \log \pi_{\mathrm{teacher}}(a_t)
--
-\log \pi_\theta(a_t)
+-\log \pi_\theta(a_t)
 \right)
 \nabla_\theta \log \pi_\theta(a_t)
+\end{aligned}
 $$
 
 现在再看强化学习。标准的策略梯度（Policy Gradient）算法更新参数 $\theta$ 的基本公式是：
 
 $$
+\begin{aligned}
 \nabla_\theta L_{\mathrm{PG}}
-= -A_t \cdot \nabla_\theta \log \pi_\theta(a_t)
+&= -A_t \cdot \nabla_\theta \log \pi_\theta(a_t)
+\end{aligned}
 $$
 
 两式对应即得。值得注意的是，真实的KL散度梯度含有期望项，但是在实际的大模型工程中，对每个步骤都计算全词表的期望会导致计算量爆炸。考虑到a_t就是我们在这一步由学生模型策略真实采样生成的 Token，所以a_t本身就可以作为这个期望的一个无偏估计量。
@@ -123,15 +130,18 @@ $$
 Binary RL 能够覆盖所有带有评分的交互轮次，而 OPD 能够在用户或环境给出明确指导时提供高分辨率的逐 token 纠正。由于两者共享相同的 PPO 损失函数架构，论文提出通过直接加权两者的优势函数来进行联合优化：
 
 $$
-A_t =
+\begin{aligned}
+A_t
+&=
 \omega_{\mathrm{binary}} r_{\mathrm{final}}
-+
+\\
+&\quad+
 \omega_{\mathrm{opd}}
 \left(
 \log \pi_{\mathrm{teacher}}(a_t\mid s_{\mathrm{enhanced}})
--
-\log \pi_\theta(a_t\mid s_t)
+-\log \pi_\theta(a_t\mid s_t)
 \right)
+\end{aligned}
 $$
 
 其中，$\omega_{\mathrm{binary}}$ 与 $\omega_{\mathrm{opd}}$ 用于控制终局评分与指导性蒸馏信号的相对权重。

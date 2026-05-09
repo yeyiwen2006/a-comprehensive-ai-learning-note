@@ -45,39 +45,49 @@ $$
 在流匹配的 SDE 采样中，每一步的去噪转移概率是一个高斯分布。设定当前步的时间间隔为 $\Delta t$，噪声方差为 $\sigma_{t_k}^2\Delta t$。新策略（当前正在优化的模型）和旧策略（收集数据时的参考模型）的概率密度函数都可以写成高斯形式。重要性比值定义为新旧策略概率之比 $r_{t_k}(\theta)$，取自然对数后为：
 
 $$
+\begin{aligned}
 \log r_{t_k}(\theta)
-=
+&=
 -\frac{1}{2\sigma_{t_k}^2\Delta t}
 \left\|x_{t_k-\Delta t}-\mu_\theta\right\|^2
-+
+\\
+&\quad+
 \frac{1}{2\sigma_{t_k}^2\Delta t}
 \left\|x_{t_k-\Delta t}-\mu_{\theta_{old}}\right\|^2
+\end{aligned}
 $$
 
 关键点来了：在强化学习中，训练数据的轨迹 $x_{t_k-\Delta t}$ 是由旧策略 $p_{\theta_{old}}$ 采样生成的。因此它必然满足：
 
 $$
+\begin{aligned}
 x_{t_k-\Delta t}
-=
+&=
 \mu_{\theta_{old}}+\sqrt{\sigma_{t_k}^2\Delta t}\cdot\epsilon
+\end{aligned}
 $$
 
 这里 $\epsilon\sim\mathcal{N}(0,I)$ 是标准高斯噪声。将这个 $x_{t_k-\Delta t}$ 代入对数公式，并定义新旧策略的均值差为 $\Delta\mu=\mu_{\theta_{old}}-\mu_\theta$，公式展开并化简后得到：
 
 $$
+\begin{aligned}
 \log r_{t_k}(\theta)
-=
+&=
 -\frac{\|\Delta\mu\|^2}{2\sigma_{t_k}^2\Delta t}
--
+\\
+&\quad-
 \frac{\epsilon^T\Delta\mu}{\sigma_{t_k}\sqrt{\Delta t}}
+\end{aligned}
 $$
 
 对上述公式求高斯噪声 $\epsilon$ 的数学期望，由于 $\mathbb{E}[\epsilon]=0$，第二项被消去：
 
 $$
+\begin{aligned}
 \mathbb{E}_{\epsilon}\left[\log r_{t_k}(\theta)\right]
-=
+&=
 -\frac{\|\Delta\mu\|^2}{2\sigma_{t_k}^2\Delta t}
+\end{aligned}
 $$
 
 因为 $\|\Delta\mu\|^2>0$（只要策略更新了，均值就会有差异），所以对数重要性比值的期望严格小于 0。
@@ -87,14 +97,18 @@ $$
 - RatioNorm 的解法：为了修复这个问题，论文引入了 RatioNorm 技术。该技术对数重要性比值进行标准化处理，强行将其分布重新居中到零附近。这样一来，截断边界就能再次精准地“卡”住过大的策略更新，确保了最终导出的图像目标函数 $\mathcal{J}_{Flow}(\theta)$ 能够平稳收敛。
 
 $$
+\begin{aligned}
 \log \tilde{r}_{t_k}(\theta)
-=
+&=
 \sigma_{t_k}\sqrt{\Delta t}
 \left(
 \log r_{t_k}(\theta)
-+
-\frac{\|\Delta\mu_\theta(x_{t_k},t_k)\|^2}{2\sigma_{t_k}^2\Delta t}
+\right.
+\\
+&\quad\left.
++\frac{\|\Delta\mu_\theta(x_{t_k},t_k)\|^2}{2\sigma_{t_k}^2\Delta t}
 \right)
+\end{aligned}
 $$
 
 ## 参考文献
