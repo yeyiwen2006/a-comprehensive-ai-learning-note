@@ -26,8 +26,13 @@
 
 - [学习路径](学习路径.md)
 - [完整目录](目录.md)
+- [LaTeX 版本](latex-project/README.md)
 - [免责声明](DISCLAIMER.md)
 - [贡献说明](CONTRIBUTING.md)
+
+## LaTeX 版本
+
+本仓库同时提供 LaTeX 排版项目，位于 [latex-project](latex-project/README.md)。该版本由公开 Markdown 内容整理生成，入口为 `latex-project/main.tex`，可用于本地编译 PDF 或进行排版调整；Markdown 版本仍作为主要阅读和维护版本，若两者存在差异，请以 Markdown 文档为准。
 
 ## 图片与OCR说明
 

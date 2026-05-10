@@ -20,6 +20,8 @@ from urllib.parse import unquote
 
 
 PUBLIC_IMAGE_ROOT = Path("assets") / "images"
+LATEX_IMAGE_ROOT = Path("latex-project") / "images"
+ALLOWED_IMAGE_ROOTS = (PUBLIC_IMAGE_ROOT, LATEX_IMAGE_ROOT)
 
 IMAGE_SUFFIXES = {
     ".png",
@@ -105,7 +107,9 @@ def validate_no_banned_files(repo_root: Path, failures: list[str]) -> None:
             continue
 
         suffix = path.suffix.lower()
-        if suffix in IMAGE_SUFFIXES and not str(relative).replace("\\", "/").startswith("assets/images/"):
+        relative_posix = str(relative).replace("\\", "/")
+        allowed_image_roots = tuple(str(root).replace("\\", "/") + "/" for root in ALLOWED_IMAGE_ROOTS)
+        if suffix in IMAGE_SUFFIXES and not relative_posix.startswith(allowed_image_roots):
             fail(f"图片只能放在公开资源目录 assets/images 下: {path.relative_to(repo_root)}", failures)
         if suffix in BANNED_SUFFIXES:
             fail(f"禁止上传的文件类型: {path.relative_to(repo_root)}", failures)
