@@ -11,6 +11,7 @@
 \usepackage{hyperref}
 \usepackage{bookmark}
 \usepackage{caption}
+\usepackage{titlesec}
 \usepackage{fancyhdr}
 \usepackage{microtype}
 \usepackage{fancyvrb}
@@ -49,6 +50,8 @@
 
 \definecolor{latexprojectBlue}{HTML}{1F4E79}
 \definecolor{latexprojectGray}{HTML}{555555}
+\definecolor{latexprojectLightBlue}{HTML}{EAF3FB}
+\definecolor{latexprojectRule}{HTML}{B6CFE5}
 
 \hypersetup{
   unicode=true,
@@ -134,6 +137,37 @@
     numbering = false
   }
 }
+\newcommand{\latexprojectSectionNumber}[1]{%
+  \begingroup
+  \setlength{\fboxsep}{2.2pt}%
+  \colorbox{latexprojectLightBlue}{\textcolor{latexprojectBlue}{\sffamily\bfseries #1}}%
+  \endgroup
+}
+\titleformat{\section}[hang]
+  {\Large\bfseries\sffamily\color{latexprojectBlue!88!black}}
+  {\latexprojectSectionNumber{\thesection}}
+  {0.75em}
+  {}
+  [\vspace{0.16em}{\color{latexprojectRule}\titlerule[0.6pt]}]
+\titleformat{name=\section,numberless}[block]
+  {\Large\bfseries\sffamily\color{latexprojectBlue!88!black}}
+  {}
+  {0pt}
+  {}
+  [\vspace{0.16em}{\color{latexprojectRule}\titlerule[0.6pt]}]
+\titleformat{\subsection}[hang]
+  {\normalsize\bfseries\sffamily\color{latexprojectGray}}
+  {}
+  {0pt}
+  {\textcolor{latexprojectBlue}{\rule[-0.18em]{2.2pt}{1.15em}}\hspace{0.55em}}
+\titleformat{\subsubsection}[hang]
+  {\normalsize\bfseries\color{latexprojectGray!92!black}}
+  {}
+  {0pt}
+  {\textcolor{latexprojectBlue!70!black}{\raisebox{0.15ex}{\scriptsize$\blacktriangleright$}}\hspace{0.45em}}
+\titlespacing*{\section}{0pt}{1.2em plus 0.25em minus 0.1em}{0.55em}
+\titlespacing*{\subsection}{0pt}{0.82em plus 0.18em minus 0.08em}{0.28em}
+\titlespacing*{\subsubsection}{0pt}{0.58em plus 0.12em minus 0.06em}{0.2em}
 
 \AtBeginEnvironment{longtable}{\small}
 \AtBeginEnvironment{quote}{\small\color{latexprojectGray}}
