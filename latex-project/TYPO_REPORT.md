@@ -3,12 +3,12 @@
 本报告只检查 Markdown 结构和配对类问题，不改动源文档。条目为正则与轻量解析的疑似结果，建议人工确认后再修改源 Markdown。
 
 - 扫描 Markdown 文件：215
-- 疑似语法问题：357
+- 疑似语法问题：359
 
 ## 规则统计
 
 - 列表标记后缺少空格：4
-- 有序列表标记后缺少空格：350
+- 有序列表标记后缺少空格：352
 - 标题缺少空格：3
 
 ## 明细
@@ -319,12 +319,14 @@
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 29 | 有序列表标记后缺少空格 | `1.` | 【1.】概率路径 |
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 101 | 有序列表标记后缺少空格 | `2.` | 【2.】生成概率速度 |
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 130 | 有序列表标记后缺少空格 | `3.` | 【3.】训练目标 |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 35 | 有序列表标记后缺少空格 | `1.` | 【1.】Perception |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 39 | 有序列表标记后缺少空格 | `2.` | 【2.】Reasoning |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 43 | 有序列表标记后缺少空格 | `3.` | 【3.】Prediction |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 49 | 有序列表标记后缺少空格 | `4.` | 【4.】Interaction |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 65 | 有序列表标记后缺少空格 | `1.` | 【1.】世界重建类 |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 74 | 有序列表标记后缺少空格 | `2.` | 【2.】世界预测类 |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 23 | 有序列表标记后缺少空格 | `1.` | 【1.】赋予大模型对世界的“接地”理解、空间认知能力与想象力，在创作、游戏、空间建模、科学发... |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 25 | 有序列表标记后缺少空格 | `2.` | 【2.】成为具身智能重要的组成部分和训练环境，赋予具身智能在物理世界中行动前规划并预测后果的... |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 41 | 有序列表标记后缺少空格 | `1.` | 【1.】Perception |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 45 | 有序列表标记后缺少空格 | `2.` | 【2.】Reasoning |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 49 | 有序列表标记后缺少空格 | `3.` | 【3.】Prediction |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 55 | 有序列表标记后缺少空格 | `4.` | 【4.】Interaction |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 69 | 有序列表标记后缺少空格 | `1.` | 【1.】世界重建类 |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 75 | 有序列表标记后缺少空格 | `2.` | 【2.】世界预测类 |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-02-世界模型的主要技术路线.md | 19 | 有序列表标记后缺少空格 | `1.` | 【1.】自回归模型 |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-02-世界模型的主要技术路线.md | 29 | 有序列表标记后缺少空格 | `2.` | 【2.】扩散模型 |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-02-世界模型的主要技术路线.md | 39 | 有序列表标记后缺少空格 | `3.` | 【3.】代表成果（含自回归、扩散） |
