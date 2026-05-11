@@ -1,5 +1,9 @@
 # 更新记录
 
+## 2026-05-12
+
+- 同步本地 Word 对 `32.1 世界模型概况` 和 `33.5 具身智能的未来展望` 的文字修改到 Markdown 与 LaTeX，并保持既有参考文献不变。
+
 ## 2026-05-11
 
 - 加入The bitter lesson：新增 `1.6 The Bitter Lesson`，同步本地 Word 纯文本内容到 Markdown 和 LaTeX，并更新目录与公开范围统计。
