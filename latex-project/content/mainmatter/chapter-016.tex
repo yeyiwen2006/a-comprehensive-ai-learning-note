@@ -71,8 +71,8 @@ BERT 为代表的编码器架构在模型规模极大时，可能不如自回归
 
 目前主流的实现方法是通过一些方式，将各个模态的信息``对齐''到统一的高维语义空间中进行处理，从而在预训练中融合多个模态的数据。无论输入的是文本、图像还是音频，输入信息经过不同方式处理后，最终都会统一到同一个高维语义空间中。比如，``猫''这个词语和一张猫的图片在这个语义空间中距离较近，和一张西瓜的图片在空间中距离较远。具体实现方式可见多模态部分介绍。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-71}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-71}}
+\hypertarget{ux53c2ux8003ux6587ux732e-72}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-72}}
 
 \begin{itemize}
 \tightlist
@@ -116,8 +116,8 @@ Tokenizer（分词器）把句子切分成词（Token），然后去词表里查
   根据 spaCy 分词器分词：\texttt{{[}"Do",\ "n\textquotesingle{}t",\ "you",\ "love",\ "{[}emoji{]}",\ "Transformers",\ "?",\ "We",\ "sure",\ "do",\ "."{]}}，对应的 ID 序列为 \texttt{{[}91,\ 8123,\ 21313,\ 3123,\ 41251,\ 151,\ 9859,\ 115,\ 1515,\ 3134,\ 4114{]}}。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-72}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-72}}
+\hypertarget{ux53c2ux8003ux6587ux732e-73}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-73}}
 
 \begin{itemize}
 \tightlist
@@ -169,7 +169,7 @@ x_{T+1} = \arg\max P(x_{T+1} \mid x_1, x_2, \ldots, x_T)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0017.jpeg}
+\includegraphics{images/image-0018.jpeg}
 \caption{贪心搜索树状示例}
 \end{figure}
 
@@ -184,7 +184,7 @@ x_{T+1} = \arg\max P(x_{T+1} \mid x_1, x_2, \ldots, x_T)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0018.jpeg}
+\includegraphics{images/image-0019.jpeg}
 \caption{波束搜索树状示例}
 \end{figure}
 
@@ -212,14 +212,14 @@ x_{T+1} \sim P(x_{T+1} \mid x_1, x_2, \ldots, x_T) \mathcjk{，\mathcjk{在} } S
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0019.jpeg}
+\includegraphics{images/image-0020.jpeg}
 \caption{Top-p 采样分布示意图}
 \end{figure}
 
 也可以将Top-k与Top-p结合：先选K个，再从中选概率p。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-73}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-73}}
+\hypertarget{ux53c2ux8003ux6587ux732e-74}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-74}}
 
 \begin{itemize}
 \tightlist
@@ -423,8 +423,8 @@ MoE架构：把经过不同方式微调得到的模型作为不同专家。
 
 基于可验证奖励的强化学习即运用数学题答案、编程题输出结果等客观、可验证的结果作为奖励信号，有效避免了Reward Hacking问题。模型在训练过程中自行探索最优的路径，最终获得正确答案。值得一提的是，这个探索出的路径甚至可能是人类从未发明过的，也就意味着通过RLVR，我们有可能让模型在对应任务上取得超出人类水平的表现。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-74}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-74}}
+\hypertarget{ux53c2ux8003ux6587ux732e-75}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-75}}
 
 \begin{itemize}
 \tightlist
@@ -989,8 +989,8 @@ Router 的梯度回传路径变成了：
 
 通过不断调整连续的权重 \(g_i\)，如果某个未被选中的专家（比如 Expert 7）的潜在分值慢慢被推高，最终超过了 Top-K 的阈值，它就会在某一时刻``突然''被选中。Router 就是通过这种``曲线救国''的方式，利用连续的权重梯度，最终实现了离散选择的优化。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-75}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-75}}
+\hypertarget{ux53c2ux8003ux6587ux732e-76}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-76}}
 
 \begin{itemize}
 \tightlist
@@ -1265,8 +1265,8 @@ W'=\mathrm{round}(W\times\mathrm{Scale})
 
 缩放后的图像 \(I_{resized}\) 会被置于目标网格的中心或左上角。对于未能完全填满的边缘空白区域，由于 \(H'\le H_{target}\) 且 \(W'\le W_{target}\)，算法会使用背景色（如均值像素或纯黑）进行零填充（Zero-Padding），得到最终准备切分的标准图像 \(I_{padded}\in\mathbb{R}^{H_{target}\times W_{target}\times3}\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-76}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-76}}
+\hypertarget{ux53c2ux8003ux6587ux732e-77}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-77}}
 
 \begin{itemize}
 \tightlist

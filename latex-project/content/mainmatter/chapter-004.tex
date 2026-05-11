@@ -55,8 +55,8 @@ X_t = c + \phi_1 X_{t-1} + \phi_2 X_{t-2} + \cdots + \phi_p X_{t-p} + \epsilon_t
   计算机视觉：也可以用``给定之前所有生成的概率，预测下一个像素的概率分布''的方法生成非常清晰、高质量的图像，但缺点是非常慢，因为必须逐个像素顺序生成，无法并行。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-15}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-15}}
+\hypertarget{ux53c2ux8003ux6587ux732e-16}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-16}}
 
 \begin{itemize}
 \tightlist
@@ -275,8 +275,8 @@ B. 计算循环层参数的梯度（\(W_{xh}, W_{hh}, b_h\)）
 
 所需的机制：需要一个``重置''机制，能够在检测到逻辑中断时，有选择地清除过去的、不再相关的记忆，从而更好地初始化新场景的学习。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-16}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-16}}
+\hypertarget{ux53c2ux8003ux6587ux732e-17}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-17}}
 
 \begin{itemize}
 \tightlist
@@ -404,8 +404,8 @@ s\_\{t'\} = f\_\{dec\}(y\_\{t'-1\}\^{}\{true\}, s\_\{t'-1\})
 
 推理时，则没有真实标签可用，只能使用解码器自己上一步的预测结果作为当前步的输入。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-17}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-17}}
+\hypertarget{ux53c2ux8003ux6587ux732e-18}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-18}}
 
 \begin{itemize}
 \tightlist
@@ -606,8 +606,8 @@ Z_t = \sigma(X_t W_{xz} + H_{t-1}W_{hz} + b_z)
 
 通过重置门和更新门的协同工作，GRU能够动态地、有选择地管理记忆，从而在各种序列建模任务中取得优异的效果。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-18}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-18}}
+\hypertarget{ux53c2ux8003ux6587ux732e-19}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-19}}
 
 \begin{itemize}
 \tightlist
@@ -733,8 +733,8 @@ o_t = \sigma(W_o [h_{t-1}, x_t] + b_o)
 
 整体上，相对于GRU而言，LSTM参数更多，计算更复杂，通常在更复杂的数据集上表现更优，数据量不大时则相对GRU无显著优势。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-19}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-19}}
+\hypertarget{ux53c2ux8003ux6587ux732e-20}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-20}}
 
 \begin{itemize}
 \tightlist
@@ -781,8 +781,8 @@ O_t = H_t^{(L)}W_{hq} + b_q
 
 与多层感知机一样，隐藏层数目 \(L\) 和隐藏单元数目 \(h\) 都是超参数，可以由我们调整。另外，用门控循环单元或长短期记忆网络的隐状态来代替上式中的隐状态进行计算，可以很容易地得到深度门控循环神经网络或深度长短期记忆神经网络。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-20}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-20}}
+\hypertarget{ux53c2ux8003ux6587ux732e-21}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-21}}
 
 \begin{itemize}
 \tightlist
@@ -874,6 +874,8 @@ P(x_1, \ldots, x_T)
 
 注：这里 \(\rho_1(h_1)\) 内部已经包含了对经过各种 \(h_2, \ldots, h_T\) 路径的求和。
 
+\includegraphics{images/image-0010.png}
+
 为保证 \(t=T\) 时公式形式的一致性，初始化 \(\rho_T(h_T)=1\)。前向和后向递归都允许我们对 \(T\) 个隐变量在 \(O(kT)\)（线性而不是指数）时间内对 \((h_1,\ldots,h_T)\) 的所有值求和，这是使用图模型进行概率推理的巨大好处之一。它也是通用消息传递算法的一个非常特殊的例子。
 
 \begin{enumerate}
@@ -928,13 +930,15 @@ P(x_j \mid x_{-j}) \propto \sum_{h_j}\pi_j(h_j)\rho_j(h_j)P(x_j \mid h_j)
 
 双向层的使用在实践中非常少，并且仅仅应用于部分场合。例如，填充缺失的单词、词元注释（例如，用于命名实体识别），以及作为序列处理流水线中的一个步骤对序列进行编码（例如，用于机器翻译）。在相关后续章节中，将介绍如何使用双向循环神经网络编码文本序列。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-21}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-21}}
+\hypertarget{ux53c2ux8003ux6587ux732e-22}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-22}}
 
 \begin{itemize}
 \tightlist
 \item
   Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+\item
+  Doucet, A., de Freitas, N., \& Gordon, N. (Eds.). (2001). \href{https://doi.org/10.1007/978-1-4757-3437-9}{Sequential Monte Carlo Methods in Practice}. Springer.
 \item
   Schuster, M., \& Paliwal, K. K. (1997). \href{https://doi.org/10.1109/78.650093}{Bidirectional recurrent neural networks}. IEEE Transactions on Signal Processing.
 \end{itemize}
@@ -970,8 +974,8 @@ P(x_j \mid x_{-j}) \propto \sum_{h_j}\pi_j(h_j)\rho_j(h_j)P(x_j \mid h_j)
 
 在每个时间步，解码器预测了输出词元的概率分布。类似于语言模型，可以使用softmax来获得分布，并通过计算交叉熵损失函数来进行优化。另外，为了让不同长度的序列可以以相同形状的小批量加载。 特定的填充词元被添加到序列的末尾， 我们应该将填充词元的预测排除在损失函数的计算之外。用sequence\_mask函数可通过零值化屏蔽不相关的项， 以便后面任何不相关预测的计算都是与零的乘积，结果都等于零（交叉熵损失-sigma(pi*logqi),pi=0）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-22}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-22}}
+\hypertarget{ux53c2ux8003ux6587ux732e-23}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-23}}
 
 \begin{itemize}
 \tightlist

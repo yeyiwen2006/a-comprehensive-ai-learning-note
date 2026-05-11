@@ -29,7 +29,7 @@ MQA（Multi-Query）：H个 Query Heads，1个 Key Head，1个 Value Head
 - **Query 投影（保持多头）**：
 
 $$
-Q_i = XW_{Q_i}, \quad Q_i \in \mathbb{R}^{B \times L \times d_k}
+Q_i = XW_Q^i, \quad Q_i \in \mathbb{R}^{B \times L \times d_k}
 $$
 
 - **Key/Value 投影（单头）**：

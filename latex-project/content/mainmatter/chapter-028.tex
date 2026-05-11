@@ -171,8 +171,8 @@ W_i = W_{i-1} - \eta \nabla_W l_i(W_{i-1})
   每次运用不能``开箱即用''，而是需要从元参数出发进行若干步微调。由于当前工业界的模型部署高度依赖所有并发请求共享同一套静态的模型权重，这种方式不仅大大增加了首字延迟，还会导致推理阶段需要保存计算图和存储优化器状态，整体计算开销骤增。此外，由于用户的Prompt是不可控的，如果输入包含噪声、对抗性特征或极度模糊的指令，基于伪标签的梯度下降极易将模型推向乱码等输出。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
+\hypertarget{ux53c2ux8003ux6587ux732e-144}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-144}}
 
 \begin{itemize}
 \tightlist
@@ -387,8 +387,8 @@ J(\eta)
   \textbf{跨底层架构的零样本泛化}：因为元网络仅通过智能体的输出接口（\(\pi, y, z\) 等）生成标量目标，它不仅能在完全未见过的连续控制或离散空间（如 ProcGen、NetHack）中实现 SOTA 级别的 Zero-shot 迁移，甚至能直接作用于比发现阶段大数倍的全新神经网络架构上。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-144}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-144}}
+\hypertarget{ux53c2ux8003ux6587ux732e-145}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-145}}
 
 \begin{itemize}
 \tightlist
@@ -714,8 +714,8 @@ TTT-Discover 选择 PUCT 的原因是：
   利用长尾分布：论文发现高奖励的解往往很少（长尾）。PUCT 通过 \(P(s)\)（基于排名的先验）能够迅速锁定那些``虽然探索次数少，但排名很高''的潜力股，从而在有限计算预算内找到极值解。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-145}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-145}}
+\hypertarget{ux53c2ux8003ux6587ux732e-146}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-146}}
 
 \begin{itemize}
 \tightlist
@@ -857,8 +857,8 @@ y^* = \arg\max_y \mathbb{E}_{x \sim \mathcal{D}}\left[\mathbb{E}_{y \sim \pi_\th
   Mass-covering 行为：Forward KL 具有 ``Mass-covering'' 的特性，它鼓励策略分布 \(\pi_\theta\) 覆盖参考分布 \(\pi_{\mathrm{ref}}\) 中的高概率区域，而不是仅仅集中在某一个峰值上。这使得模型能生成更多样化的解（Unique Solutions），从而更有利于后续的进化迭代。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-146}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-146}}
+\hypertarget{ux53c2ux8003ux6587ux732e-147}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-147}}
 
 \begin{itemize}
 \tightlist

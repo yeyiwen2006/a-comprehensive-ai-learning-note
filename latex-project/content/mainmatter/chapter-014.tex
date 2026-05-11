@@ -152,8 +152,8 @@ r(s,a)
   解决复合误差：因为 GAIL 匹配的是整个分布（Occupancy Measure），而不是单步误差。即使智能体偏离了轨迹，判别器也会给出相应的反馈，促使其回到正确的分布上来。这使得 GAIL 具有长期一致性，鲁棒性远强于 BC。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-60}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-60}}
+\hypertarget{ux53c2ux8003ux6587ux732e-61}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-61}}
 
 \begin{itemize}
 \tightlist
@@ -543,11 +543,25 @@ MBPO 的分支推演从真实经验池中的状态出发：
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  每个训练 batch 同时从 \(\mathcal D_{\mathrm{env}}\) 和 \(\mathcal D_{\mathrm{model}}\) 采样。
+  \textbf{混合采样}：从两个池子中按照一定比例采样构建训练 Batch。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    从 \(\mathcal D_{\mathrm{env}}\) 采一小部分，保证真实性。
+  \item
+    从 \(\mathcal D_{\mathrm{model}}\) 采绝大部分，利用模型的高效性。
+  \item
+    例如：Batch Size = 256，其中真实数据 10\%，模型数据 90\%。
+  \end{itemize}
 \item
-  模型数据占比可以较高，例如 95\%，真实数据用于校准模型生成数据的偏差。
-\item
-  每个真实环境步之后，可以执行多次 SAC 更新，例如 20 次。
+  \textbf{SAC 更新}：利用这个混合 Batch 更新 Actor 和 Critic 的参数（梯度下降）。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    注：MBPO 的特点是``环境动一步，网络练多步''。通常真实环境每走 1 步，SAC 会进行 \(G\) 次（例如 20 次）梯度更新。这极大地提高了样本利用率。
+  \end{itemize}
 \item
   这样既利用模型数据提升样本效率，又保留 SAC 在连续控制任务中的稳定优化能力。
 \end{enumerate}
@@ -594,8 +608,8 @@ for \_ in range(G\_updates): \# 环境每走1步，SAC训练G次(如 20 次)
 
 更新SAC参数;
 
-\hypertarget{ux53c2ux8003ux6587ux732e-61}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-61}}
+\hypertarget{ux53c2ux8003ux6587ux732e-62}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}
 
 \begin{itemize}
 \tightlist
@@ -923,8 +937,8 @@ L(\theta)
 
 因此，CQL不是直接限制策略动作，而是通过训练更保守的Q函数，让策略在优化时自然避开被高估的OOD动作。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-62}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}
+\hypertarget{ux53c2ux8003ux6587ux732e-63}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-63}}
 
 \begin{itemize}
 \tightlist
@@ -1161,8 +1175,8 @@ a_j'=\mu_j'(o_j')
 
 训练方法：先训练子智能体（大模型）；在子智能体训练完毕后，冻结子智能体的参数，用端到端的强化学习方法训练编排器（刚开始先用小模型充当子智能体，后续再换为大模型）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-63}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-63}}
+\hypertarget{ux53c2ux8003ux6587ux732e-64}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-64}}
 
 \begin{itemize}
 \tightlist
@@ -1596,8 +1610,8 @@ LLM的状态s是已生成的Token序列。在文本生成中，定义``距离目
 
 GORL 需要模型在训练时不断改变目标进行探索。LLM 的推理成本极高。在海量目标空间下进行充分探索，其计算量呈指数级增长。目前的 RLVR（如GRPO算法）通过组内相对比较已经非常耗能，GORL的多目标采样会让训练成本更难以承受。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-64}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-64}}
+\hypertarget{ux53c2ux8003ux6587ux732e-65}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-65}}
 
 \begin{itemize}
 \tightlist
@@ -1664,7 +1678,7 @@ V^{*}(s,g)=\gamma^{d^{*}(s,g)},\quad 0<\gamma<1
 
 这里 \(V\) 是当前状态 \(s\) 和目标 \(g\) 的函数。从中可以看出，传递强化学习是目标导向的强化学习的一种变体。
 
-由于 \(0<\gamma<1\)，距离越短价值越大，因此由三角不等式可以得到：
+我们将三角不等式的两边同时作为 \(\gamma\) 的指数。由于 \(0<\gamma<1\)，指数函数 \(f(x)=\gamma^x\) 是单调递减的。因此，不等号方向会反转：
 
 \[
 \gamma^{d^{*}(s,g)} \ge \gamma^{d^{*}(s,w)+d^{*}(w,g)}
@@ -1724,9 +1738,13 @@ L^{TRL}(\theta)=\mathbb{E}_{(s_i,a_i,s_k,s_j)\sim D}[w(s_i,s_j)\cdot L_\kappa(Q_
 \hypertarget{ux76eeux6807ux503cux7684ux8ba1ux7b97}{%
 \paragraph{1. 目标值的计算}\label{ux76eeux6807ux503cux7684ux8ba1ux7b97}}
 
+根据我们之前推导的公式，目标值不再是 \(r+\gamma V\)，而是两个子问题的乘积：
+
 \[
 T_{TRL}=\bar{Q}(s_i,a_i,s_k)\cdot \bar{V}(s_k,s_j)
 \]
+
+这里 \(s_k\) 是从数据集里采样出来的、位于 \(s_i\) 和 \(s_j\) 之间的一个行为子目标。
 
 \(L_\kappa(\cdot)\) 这步操作相当于对不同 \(s_k\) 取最大值，即这个损失函数设计的核心目的是让价值函数 \(Q(s_i,a_i,s_j)\) 拟合对于不同 \(s_k\)，\(T_{TRL}\) 的最大值。
 
@@ -1748,13 +1766,13 @@ w(s_i,s_j)=\frac{1}{(1+d(s_i,s_j))^{\lambda}},\quad d(s_i,s_j)=\log_\gamma Q(s_i
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  从数据集中采样由 \(s_i\)、\(s_k\)、\(s_j\) 构成的目标三元组，并读取对应动作 \(a_i\)。
+  \textbf{收集碎片}：从离线轨迹中随机切出三点 \((s_i,s_k,s_j)\)。
 \item
-  进行局部对齐，用 \(\bar{Q}(s_i,a_i,s_k)\) 与 \(\bar{V}(s_k,s_j)\) 组合得到传递目标 \(T_{TRL}\)。
+  \textbf{局部对齐}：检查当前的神经网络是否满足 \(Q(i,j)\approx Q(i,k)\cdot Q(k,j)\)。
 \item
-  使用 expectile 损失偏好更高价值的中间状态组合，从而近似 \(\max\) 操作。
+  \textbf{择优录取}：通过 \(\kappa\) 权重，如果发现某一种 \(k\) 的切分方式能产生更大的价值（代表更短的路径），就让 \(Q(i,j)\) 向这个更大的值靠拢。
 \item
-  借助距离重权化先训练短距离任务，再用较准确的短距离估计支撑更长距离目标。
+  \textbf{由小及大}：优先训练距离近的点对，逐渐建立起对整个大地图（长时序）的价值感知。
 \end{enumerate}
 
 \hypertarget{ux4e94ux95eeux9898ux4e0eux6311ux6218}{%
@@ -1762,8 +1780,8 @@ w(s_i,s_j)=\frac{1}{(1+d(s_i,s_j))^{\lambda}},\quad d(s_i,s_j)=\log_\gamma Q(s_i
 
 虽然 TRL 解决了 \(O(T)\) 的递归问题，但它也引入了一个新开销：它需要对状态空间中的点对（Pairs）进行采样。相比于 TD 学习只需采样相邻点，TRL 对数据集的覆盖质量和采样多样性有更高的要求。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-65}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-65}}
+\hypertarget{ux53c2ux8003ux6587ux732e-66}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-66}}
 
 \begin{itemize}
 \tightlist

@@ -352,7 +352,7 @@ $$
 
 $$
 \begin{aligned}
-a_j \bullet a_i
+a_i \bullet a_j
 &=
 \begin{cases}
 (a_{j,a} \odot a_{i,a},\, a_{j,a} \otimes a_{i,b} + a_{j,b},\, a_{i,c}), & \mathrm{if}\ a_{j,c} = 0, \\
@@ -406,7 +406,7 @@ $$
 1. **数据分块与编码（Tokenization & Patching）**：将输入的连续视频帧序列离散化，每一帧被切割为 $S$ 个 Patch，并映射为特征向量序列。
 2. **复合位置编码注入（Spatiotemporal Positional Encoding）**：为每个 Token 注入两个维度的位置信息：一个是它在当前帧内的二维空间坐标 $(x, y)$，另一个是它所在的时间步 $t$。
 3. **块因果注意力计算（Block-Causal Attention Calculation）**：同帧并行计算时，在第 $t$ 个 Block 内部，执行 $S$ 个 Token 的全连接自注意力计算，提取当前帧的高分辨率空间语义和物体关系。历史特征提取时，同帧这 $S$ 个 Token 共同作为 Query，去 attend 过去所有帧（1 到 $t - 1$）生成的 Key 和 Value，捕获时序上的物理动力学。
-4. **下一帧块级自回归预测（Block-wise Autoregressive Generation）**：不同于经典 GPT 必须逐个 Token 吐出，BCT 在完成前 $t$ 帧的上下文建模后，可以直接将其作为上下文先验，向第 $t + 1$ 帧的完整空间块注入，并行且高效地生成第 $t + 1$ 帧的完整空间表征。
+4. **下一帧块级自回归预测（Block-wise Autoregressive Generation）**：不同于经典 GPT 必须逐个 Token 吐出，BCT 在完成前 $t$ 帧的上下文建模后，可以直接将其作为上下文先验（Contextual Priors），结合诸如 Shortcut Forcing 等机制，并行且高效地生成第 $t + 1$ 帧的完整空间表征。
 
 也就是说，在生成第 $t+1$ 帧时，它刚开始是噪声向量的组合，前 $t$ 帧的信息在 Attention 模块中作为上下文不断与之融合。
 

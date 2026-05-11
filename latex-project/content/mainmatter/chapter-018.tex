@@ -295,8 +295,8 @@ q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
 
 应用：对于 Transformer/LLM（参数巨大，计算相对稀疏），动态量化通常能带来1.5x到2x的推理加速。因为``加载权重的收益''远大于``动态计算量化参数的开销''；对于 CNN（如 ResNet，计算密集型），动态量化效果往往不如静态量化，甚至可能比纯FP32慢，因为 CNN 的权重复用率高，计算量大，频繁的动态转换开销占比过高。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
+\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
 
 \begin{itemize}
 \tightlist
@@ -547,8 +547,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 这样可以使模型分布稳定在教师``圈定''的合理范围内，保证输出质量。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
+\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
 
 \begin{itemize}
 \tightlist
@@ -579,8 +579,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 流程通常包括：训练一个大模型 -\textgreater{} 评估参数重要性（如根据绝对值大小或梯度） -\textgreater{} 移除不重要的参数 -\textgreater{} 对剪枝后的模型进行微调。现代方法常采用迭代剪枝。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
+\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
 
 \begin{itemize}
 \tightlist
@@ -735,8 +735,8 @@ r = x - \mathrm{DEQUANT}_{\mathrm{mse}}(\mathrm{idx}).
 \tilde{x} = \tilde{x}_{\mathrm{mse}} + \tilde{x}_{\mathrm{qjl}}.
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
+\hypertarget{ux53c2ux8003ux6587ux732e-90}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-90}}
 
 \begin{itemize}
 \tightlist

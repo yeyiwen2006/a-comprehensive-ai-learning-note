@@ -197,8 +197,8 @@ V-JEPA 2.1 的深度自监督彻底改变了这一点。
 
 预训练完成后，我们得到了一个不懂人类语言，但对物理世界、物体外观和运动规律有着极深理解的模型。在V-JEPA 2和LLM之间加入一个投影器（Projector，通常是多层感知机MLP），把V-JEPA 2提取出的纯视觉特征（视觉Token），``翻译''并映射到大语言模型能够理解的输入空间（文本嵌入空间）中。然后用大规模的``图像/视频-文本''问答对齐数据来训练这个整体系统，就可以让其逐步学会了如何理解由V-JEPA 2传递过来的视觉信息，并能通过LLM的处理用自然语言回答关于视频内容的问题，实现初步的空间推理。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-192}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-192}}
+\hypertarget{ux53c2ux8003ux6587ux732e-193}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-193}}
 
 \begin{itemize}
 \tightlist
@@ -264,8 +264,8 @@ V-JEPA 2.1 的深度自监督彻底改变了这一点。
 \mathrm{Curvature}(z_{t-1}, z_t, z_{t+1}) = 1 - \frac{\Delta z_t \cdot \Delta z_{t+1}}{\|\Delta z_t\|\,\|\Delta z_{t+1}\|}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-193}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-193}}
+\hypertarget{ux53c2ux8003ux6587ux732e-194}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-194}}
 
 \begin{itemize}
 \tightlist
@@ -510,8 +510,8 @@ LeWM在Push-T和Reacher上表现很好，但在简单的Two-Room环境中不如P
 
 不过，论文附录又补充了一个nuance。简单环境Two-Room中，LeWM虽然下游规划差一些，但probing指标上并不一定差，这说明简单环境的planning gap不一定完全来自``潜在表征信息不足''，也可能与动力学建模或规划过程有关。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-194}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-194}}
+\hypertarget{ux53c2ux8003ux6587ux732e-195}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-195}}
 
 \begin{itemize}
 \tightlist
