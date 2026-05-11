@@ -1162,6 +1162,18 @@ A^{(b)}
   Ye, W., Liu, S., Kurutach, T., Abbeel, P., \& Gao, Y. (2021). \href{https://arxiv.org/abs/2111.00210}{Mastering Atari Games with Limited Data}. NeurIPS.
 \item
   Zhang, Z., Ren, H., Sun, Y., Sheng, Y., Wang, H., Wu, Z., Lin, H., Bacon, P.-L., \& Yu, Y. (2026). \href{https://openreview.net/forum?id=gB1yFEd106}{Towards Practical World Model-based Reinforcement Learning for Vision-Language-Action Models}. ICLR 2026 Workshop on World Models.
+\item
+  Gemini Robotics Team, Choromanski, K., Devin, C., Du, Y., Dwibedi, D., et al.~(2025). \href{https://arxiv.org/abs/2512.10675}{Evaluating Gemini Robotics Policies in a Veo World Simulator}. arXiv:2512.10675.
+\item
+  Wang, S., Liu, S., Ye, W., You, J., \& Gao, Y. (2024). \href{https://arxiv.org/abs/2403.00564}{EfficientZero V2: Mastering Discrete and Continuous Control with Limited Data}. arXiv:2403.00564.
+\item
+  Zhou, G., Swaminathan, S., Raju, R. V., Guntupalli, J. S., Lehrach, W., Ortiz, J., Dedieu, A., Lázaro-Gredilla, M., \& Murphy, K. (2024). \href{https://arxiv.org/abs/2410.05364}{Diffusion Model Predictive Control}. arXiv:2410.05364.
+\item
+  Yang, Y., Liu, J., Zhang, Z., Zhou, S., Tan, R., Yang, J., Du, Y., \& Gan, C. (2025). \href{https://arxiv.org/abs/2507.12508}{MindJourney: Test-Time Scaling with World Models for Spatial Reasoning}. arXiv:2507.12508.
+\item
+  Yu, S., Zhang, Y., Wang, Z., et al.~(2026). \href{https://arxiv.org/abs/2602.08236}{When and How Much to Imagine: Adaptive Test-Time Scaling with World Models for Visual Spatial Reasoning}. arXiv:2602.08236.
+\item
+  Zhang, M., Zhuo, L., Tan, T., et al.~(2025). \href{https://arxiv.org/abs/2511.15407}{IPR-1: Interactive Physical Reasoner}. arXiv:2511.15407.
 \end{itemize}
 
 \clearpage
@@ -1791,35 +1803,44 @@ LaST-R1的做法是，给定当前视觉观测和语言指令，不会直接生�
 \subsubsection{（二）核心算法：LAPO}\label{ux4e8cux6838ux5fc3ux7b97ux6cd5lapo}}
 
 \[
+\begin{aligned}
 \mathcal{L}_{\mathrm{total}}(\theta)
-= \mathcal{L}_{\mathrm{action}}(\theta)
-+ \lambda_1 \mathcal{L}_{\mathrm{latent}}(\theta)
-+ \lambda_2 \mathcal{L}_{\mathrm{value}}(\theta)
-+ \lambda_3 \mathcal{L}_{\mathrm{end}}(\theta)
+&= \mathcal{L}_{\mathrm{action}}(\theta)
+\\
+&\quad + \lambda_1 \mathcal{L}_{\mathrm{latent}}(\theta)
+\\
+&\quad + \lambda_2 \mathcal{L}_{\mathrm{value}}(\theta)
+\\
+&\quad + \lambda_3 \mathcal{L}_{\mathrm{end}}(\theta)
+\end{aligned}
 \]
 
 其中\(\mathcal{L}_{\mathrm{action}}\)和\(\mathcal{L}_{\mathrm{latent}}\)来自下面的PPO风格表达式，\(k\)分别取隐状态\(z\)和动作\(a\)：
 
 \[
+\begin{aligned}
 \mathcal{L}_{\mathrm{policy}}(\theta)
-= -\mathbb{E}_t
+&= -\mathbb{E}_t
 \left[
 \sum_{k\in\{z,a\}}
 \min\left(
 r_t^k(\theta)\hat{A}_t,\,
-\operatorname{clip}\left(r_t^k(\theta), 1-\epsilon_{\min}, 1+\epsilon_{\max}\right)\hat{A}_t
+\mathrm{clip}\left(r_t^k(\theta), 1-\epsilon_{\min}, 1+\epsilon_{\max}\right)\hat{A}_t
 \right)
 \right]
+\end{aligned}
 \]
 
 其中对于隐状态的策略比值计算转化如下：
 
 \[
+\begin{aligned}
 r_t^z(\theta)
-=
+&=
 \frac{\pi_\theta\left(\mathbf{Z}_t^{\mathrm{old}}\mid \cdot\right)}
 {\pi_{\theta_{\mathrm{old}}}\left(\mathbf{Z}_t^{\mathrm{old}}\mid \cdot\right)}
-=
+\\
+&=
 \exp\left(
 -\frac{1}{2\sigma^2}
 \sum_{i=1}^{N_z}
@@ -1827,6 +1848,7 @@ r_t^z(\theta)
 \mathbf{z}_{t,i}^{\mathrm{old}}-\mathbf{z}_{t,i}^{\theta}
 \right\|^2
 \right)
+\end{aligned}
 \]
 
 \(\mathcal{L}_{\mathrm{value}}\)是PPO风格的策略函数。
@@ -1842,6 +1864,12 @@ r_t^z(\theta)
   Unitree Robotics. (2025). \href{https://github.com/unitreerobotics/unifolm-world-model-action}{UnifoLM-WMA-0: World-Model-Action Architecture for General Robots}. GitHub repository.
 \item
   Li, L., Zhang, Q., Yu, M., Gao, Z., Luo, Y., Xue, N., Yang, S., Zhu, X., Wang, R., Shen, Y., Han, F., \& Xu, Y. (2026). \href{https://arxiv.org/abs/2601.21998}{Causal World Modeling for Robot Control}. arXiv:2601.21998.
+\item
+  Song, Z., Qin, S., Chen, T., Lin, L., \& Wang, G. (2025). \href{https://arxiv.org/abs/2508.09822}{Physical Autoregressive Model for Robotic Manipulation without Action Pretraining}. arXiv:2508.09822.
+\item
+  Song, Z., Li, Q., Qin, S., et al.~(2026). \href{https://arxiv.org/abs/2603.00110}{Learning Physics from Pretrained Video Models: A Multimodal Continuous and Sequential World Interaction Models for Robotic Manipulation}. arXiv:2603.00110.
+\item
+  Gao, S., Liang, W., Zheng, K., et al.~(2026). \href{https://arxiv.org/abs/2602.06949}{DreamDojo: A Generalist Robot World Model from Large-Scale Human Videos}. arXiv:2602.06949.
 \item
   Chen, H., Liu, J., Yan, Z., et al.~(2026). \href{https://arxiv.org/abs/2604.28192}{LaST-R1: Reinforcing Robotic Manipulation via Adaptive Physical Latent Reasoning}. arXiv:2604.28192.
 \end{itemize}
@@ -2135,6 +2163,8 @@ h_l^{\mathrm{prior}} - h_l^{\mathrm{post}}
 \tightlist
 \item
   Yuan, T., Dong, Z., Liu, Y., \& Zhao, H. (2026). \href{https://arxiv.org/abs/2603.16666}{Fast-WAM: Do World Action Models Need Test-time Future Imagination?}. arXiv:2603.16666.
+\item
+  Luo, H., Zhang, W., Feng, Y., et al.~(2026). \href{https://arxiv.org/abs/2605.00078}{Being-H0.7: A Latent World-Action Model from Egocentric Videos}. arXiv:2605.00078.
 \end{itemize}
 
 \clearpage
