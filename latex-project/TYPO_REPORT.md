@@ -317,9 +317,9 @@
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 29 | 有序列表标记后缺少空格 | `1.` | 【1.】概率路径 |
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 101 | 有序列表标记后缺少空格 | `2.` | 【2.】生成概率速度 |
 | docs/05-world-models-multimodal-embodied-ai/30-扩散模型与流匹配模型的原理和架构/30-08-离散流匹配-论文.md | 130 | 有序列表标记后缺少空格 | `3.` | 【3.】训练目标 |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 23 | 有序列表标记后缺少空格 | `1.` | 【1.】赋予模型空间认知能力与可能的生成能力。纵观人类，美术作品和文创产品的创造、建筑物的设... |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 25 | 有序列表标记后缺少空格 | `2.` | 【2.】成为具身智能重要的组成部分和训练环境，赋予具身智能在物理世界中行动前规划并预测后果的... |
-| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 27 | 有序列表标记后缺少空格 | `3.` | 【3.】部分观点认为是实现AGI必不可少的部分。实现具有人类水平的智能可能需要对物理世界的状... |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 23 | 有序列表标记后缺少空格 | `1.` | 【1.】赋予模型对物理世界的直觉推理能力和对三维空间的认知能力。纵观人类，美术作品和文创产品... |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 25 | 有序列表标记后缺少空格 | `2.` | 【2.】生成世界将成为一种新的范式，赋能创意、游戏等产业和内容生成行业。 |
+| docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 27 | 有序列表标记后缺少空格 | `3.` | 【3.】成为具身智能重要的组成部分和训练环境。一方面，赋予具身智能在物理世界中行动前预测后果... |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 43 | 有序列表标记后缺少空格 | `1.` | 【1.】Perception |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 47 | 有序列表标记后缺少空格 | `2.` | 【2.】Reasoning |
 | docs/05-world-models-multimodal-embodied-ai/32-世界模型的基本知识/32-01-世界模型概况.md | 51 | 有序列表标记后缺少空格 | `3.` | 【3.】Prediction |
