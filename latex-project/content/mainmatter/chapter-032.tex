@@ -198,7 +198,7 @@ P(st+1\textbar st,at)
   代表成果（含自回归、扩散）
 \end{enumerate}
 
-Sora系列（OpenAI）、Genie系列（Google DeepMind）、Seedance系列（Bytedance Seed）、Veo系列（Google DeepMind）、DIAMOND（Microsoft Research）、Lingbot-World（蚂蚁灵波）、Lingbot-VA（蚂蚁灵波）、Cosmos（NVIDIA）、UnifoLM-WMA（宇树科技）。
+Sora系列（OpenAI）、Genie系列（Google DeepMind）、Seedance系列（Bytedance Seed）、Veo系列（Google DeepMind）、DIAMOND（Microsoft Research）、Lingbot-World（蚂蚁灵波）、Lingbot-VA（蚂蚁灵波）、Cosmos（NVIDIA）、UnifoLM-WMA（宇树科技）、Gemini Omni（Google DeepMind）。
 
 \hypertarget{ux4e8cux5efaux6a21ux89c6ux89d2ux4e0eux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}{%
 \subsection{二、建模视角与对象的世界模型}\label{ux4e8cux5efaux6a21ux89c6ux89d2ux4e0eux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}}
@@ -312,11 +312,59 @@ z_{t+1}\sim p(z_{t+1}\mid z_t,a_t)
 \begin{itemize}
 \tightlist
 \item
+  Brooks, T., Peebles, B., Holmes, C., et al.~(2024). \href{https://openai.com/index/video-generation-models-as-world-simulators/}{Video generation models as world simulators}. OpenAI.
+\item
+  OpenAI. (2025). \href{https://openai.com/index/sora-2-system-card/}{Sora 2 System Card}. OpenAI.
+\item
+  Bruce, J., Dennis, M., Edwards, A., et al.~(2024). \href{https://arxiv.org/abs/2402.15391}{Genie: Generative Interactive Environments}. ICML.
+\item
+  Parker-Holder, J., Ball, P., Bruce, J., et al.~(2024). \href{https://deepmind.google/blog/genie-2-a-large-scale-foundation-world-model/}{Genie 2: A large-scale foundation world model}. Google DeepMind.
+\item
+  Parker-Holder, J., \& Fruchter, S. (2025). \href{https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/}{Genie 3: A new frontier for world models}. Google DeepMind.
+\item
+  Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
+\item
+  Team Seedance, Chen, D., Chen, L., et al.~(2026). \href{https://arxiv.org/abs/2604.14148}{Seedance 2.0: Advancing Video Generation for World Complexity}. arXiv:2604.14148.
+\item
+  Google DeepMind. (2025). \href{https://deepmind.google/models/veo/}{Veo 3.1}. Google DeepMind model page.
+\item
+  Alonso, E., Jelley, A., Micheli, V., et al.~(2024). \href{https://arxiv.org/abs/2405.12399}{Diffusion for World Modeling: Visual Details Matter in Atari}. NeurIPS.
+\item
+  Robbyant Team: Gao, Z., Wang, Q., Zeng, Y., et al.~(2026). \href{https://arxiv.org/abs/2601.20540}{Advancing Open-source World Models}. arXiv:2601.20540.
+\item
+  Li, L., Zhang, Q., Luo, Y., et al.~(2026). \href{https://arxiv.org/abs/2601.21998}{Causal World Modeling for Robot Control}. arXiv:2601.21998.
+\item
+  NVIDIA: Agarwal, N., Ali, A., Bala, M., et al.~(2025). \href{https://arxiv.org/abs/2501.03575}{Cosmos World Foundation Model Platform for Physical AI}. arXiv:2501.03575.
+\item
+  Unitree Robotics. (2025). \href{https://github.com/unitreerobotics/unifolm-world-model-action}{UnifoLM-WMA-0: World-Model-Action Architecture for General Robots}. GitHub repository.
+\item
+  Google DeepMind. (2026). \href{https://deepmind.google/models/gemini-omni/}{Gemini Omni}. Google DeepMind model page.
+\item
+  World Labs team. (2025). \href{https://www.worldlabs.ai/blog/rtfm}{RTFM: A Real-Time Frame Model}. World Labs Research Preview.
+\item
+  Wu, F., Wei, J., Li, R., Xu, Y., Li, J., Ye, D., \& Lin, G. (2025). \href{https://arxiv.org/abs/2512.02793}{IC-World: In-Context Generation for Shared World Modeling}. arXiv:2512.02793.
+\item
+  Kipf, T., van der Pol, E., \& Welling, M. (2020). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. ICLR.
+\item
+  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2023). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR.
+\item
+  World Labs team. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. World Labs.
+\item
   Hafner, D., Pasukonis, J., Ba, J., \& Lillicrap, T. (2023). \href{https://arxiv.org/abs/2301.04104}{Mastering Diverse Domains through World Models}. arXiv:2301.04104.
+\item
+  Ren, Z., Wei, Y., Guo, X., Zhao, Y., Kang, B., Feng, J., \& Jin, X. (2025). \href{https://arxiv.org/abs/2501.09781}{VideoWorld: Exploring Knowledge Learning from Unlabeled Videos}. arXiv:2501.09781.
+\item
+  Ren, Z., Wei, Y., Yu, X., Luo, G., Zhao, Y., Kang, B., Feng, J., \& Jin, X. (2026). \href{https://arxiv.org/abs/2602.10102}{VideoWorld 2: Learning Transferable Knowledge from Real-world Videos}. arXiv:2602.10102.
 \item
   Assran, M., Duval, Q., Misra, I., et al.~(2023). \href{https://arxiv.org/abs/2301.08243}{Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture}. CVPR.
 \item
-  Bruce, J., Dennis, M., Edwards, A., et al.~(2024). \href{https://arxiv.org/abs/2402.15391}{Genie: Generative Interactive Environments}. ICML.
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
+\item
+  Assran, M., Bardes, A., Fan, D., et al.~(2025). \href{https://arxiv.org/abs/2506.09985}{V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}. arXiv:2506.09985.
+\item
+  Mur-Labadia, L., Muckley, M., Bar, A., et al.~(2026). \href{https://arxiv.org/abs/2603.14482}{V-JEPA 2.1: Unlocking Dense Features in Video Self-Supervised Learning}. arXiv:2603.14482.
+\item
+  Maes, H., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
 \end{itemize}
 
 \clearpage
