@@ -59,7 +59,7 @@
 | `assets/images/04-agents-and-continual-learning/29-02/img-b0a535036e88-0007.png` | `images/image-0048.png` |
 | `assets/images/05-world-models-multimodal-embodied-ai/32-04/abm-autonomous-learning-architecture.png` | `images/image-0049.png` |
 | `assets/images/05-world-models-multimodal-embodied-ai/32-04/system-a-b-interaction.png` | `images/image-0050.png` |
-| `assets/images/05-world-models-multimodal-embodied-ai/33-02/img-ba31c3d2938e-0018.png` | `images/image-0051.png` |
+| `assets/images/05-world-models-multimodal-embodied-ai/33-03/img-ba31c3d2938e-0018.png` | `images/image-0051.png` |
 | `assets/images/05-world-models-multimodal-embodied-ai/36-基于隐变量预测支持下游任务的世界模型/36-05-adm-any-step-dynamics.png` | `images/image-0052.png` |
 | `assets/images/05-world-models-multimodal-embodied-ai/36-基于隐变量预测支持下游任务的世界模型/36-05-adm-v2-architecture.png` | `images/image-0053.png` |
 | `assets/images/05-world-models-multimodal-embodied-ai/36-基于隐变量预测支持下游任务的世界模型/36-05-paroll-rollout-init.png` | `images/image-0054.png` |
