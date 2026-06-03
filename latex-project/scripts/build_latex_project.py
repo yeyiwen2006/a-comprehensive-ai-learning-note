@@ -38,7 +38,7 @@ PART_TITLES = {
     "02-reinforcement-learning": "第2部分 强化学习",
     "03-large-language-model": "第3部分 大语言模型",
     "04-agents-and-continual-learning": "第4部分 大模型智能体与持续学习",
-    "05-world-models-multimodal-embodied-ai": "第5部分 世界模型、多模态生成与具身智能",
+    "05-multimodal-world-models-embodied-ai": "第5部分 多模态生成、世界模型与具身智能",
 }
 
 TYPO_PATTERNS: list[tuple[str, re.Pattern[str]]] = [

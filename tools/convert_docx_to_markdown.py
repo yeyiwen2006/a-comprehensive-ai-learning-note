@@ -61,7 +61,7 @@ TOP_DIR_SLUGS = {
     "第2部分 强化学习": "02-reinforcement-learning",
     "第3部分 大语言模型": "03-large-language-model",
     "第4部分 大模型智能体与持续学习": "04-agents-and-continual-learning",
-    "第5部分 世界模型、多模态生成与具身智能": "05-world-models-multimodal-embodied-ai",
+    "第5部分 多模态生成、世界模型与具身智能": "05-multimodal-world-models-embodied-ai",
 }
 
 
@@ -804,7 +804,7 @@ def build_learning_path_markdown() -> str:
         7. 第4部分：25.检索增强生成
         8. 第4部分：26.上下文与记忆
 
-        ## 路线 D：世界模型、多模态生成与具身智能
+        ## 路线 D：多模态生成、世界模型与具身智能
 
         适合已经具备深度学习、Transformer 和生成模型基础，想了解前沿研究方向的读者。
 
@@ -830,7 +830,7 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
     usage_excerpt = usage_text[:2800].strip()
     return f"""# A Comprehensive AI Learning Note
 
-这是一份面向人工智能学习者的中文学习笔记，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、持续学习、世界模型、多模态生成与具身智能等方向。
+这是一份面向人工智能学习者的中文学习笔记，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、持续学习、多模态生成、世界模型与具身智能等方向。
 
 本仓库由作者叶逸文的本地 Word 笔记自动转换而来。原始 Word 文件不上传 GitHub；本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本。
 
@@ -840,7 +840,7 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 - 第2部分：强化学习
 - 第3部分：大语言模型
 - 第4部分：大模型智能体与持续学习
-- 第5部分：世界模型、多模态生成与具身智能
+- 第5部分：多模态生成、世界模型与具身智能
 
 当前上传 Markdown 文档数：`{upload_count}`。
 
@@ -1024,7 +1024,7 @@ def build_citation() -> str:
             given-names: "Yiwen"
         repository-code: "https://github.com/yeyiwen2006/a-comprehensive-ai-learning-note"
         license: "CC-BY-NC-SA-4.0"
-        abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, continual learning, world models, multimodal generation, and embodied AI."
+        abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, continual learning, multimodal generation, world models, and embodied AI."
         """
     )
 
