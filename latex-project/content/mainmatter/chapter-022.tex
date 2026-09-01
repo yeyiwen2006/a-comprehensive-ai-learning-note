@@ -1,5 +1,5 @@
-\hypertarget{ux5927ux6a21ux578bux667aux80fdux4f53}{%
-\chapter{大模型智能体}\label{ux5927ux6a21ux578bux667aux80fdux4f53}}
+\hypertarget{ux667aux80fdux4f53}{%
+\chapter{智能体}\label{ux667aux80fdux4f53}}
 
 \hypertarget{ux667aux80fdux4f53ux53caux5176ux67b6ux6784}{%
 \section{智能体及其架构}\label{ux667aux80fdux4f53ux53caux5176ux67b6ux6784}}
@@ -22,7 +22,7 @@
 上下文注入与状态转移（Context Injection / State Transition）：将动作 \(a_t\) 和反馈 \(o_{t+1}\) 拼接（记为 \(\oplus\)）到现有上下文中，完成所谓的``瞬间转移''，形成新的决策状态：
 
 \[
-h_{t+1}=h_t \oplus a_t \oplus o_{t+1}
+h_{t+1}=h_t\oplus a_t\oplus o_{t+1}
 \]
 
 \hypertarget{ux4e8creactux8303ux5f0f}{%
@@ -197,12 +197,12 @@ Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多�
 
 为什么有效？
 
-（1）降低认知负荷：~大模型本质上是一个基于概率的序列预测器。直接预测最终答案（如``108''）是一个极其困难的任务，因为从问题到答案的``语义距离''非常远。CoT通过插入中间步骤，将``长距离依赖''转化为多个``短距离依赖''。模型只需要根据上文，预测下一个最合理的推理步骤或符号，这更符合其底层能力。
+（1）降低认知负荷： 大模型本质上是一个基于概率的序列预测器。直接预测最终答案（如``108''）是一个极其困难的任务，因为从问题到答案的``语义距离''非常远。CoT通过插入中间步骤，将``长距离依赖''转化为多个``短距离依赖''。模型只需要根据上文，预测下一个最合理的推理步骤或符号，这更符合其底层能力。
 
-（2）对齐模型优势：~大模型在海量代码和文本中学到的是语法结构、数学公式、逻辑关系和常识。CoT通过引导模型输出``首先''、``其次''、``根据公式XX''等词语，激活了模型在这些程序性知识和逻辑结构上的强大能力，而不是强迫它去``猜''一个数字。
-（3）减少组合泛化错误：~复杂问题是由多个基本概念（如加法、乘法、公式）组合而成。模型可能知道每个基本概念，但组合应用时容易出错。CoT将组合过程显式化，让模型一步步应用这些基本概念，从而提高了正确率。
+（2）对齐模型优势： 大模型在海量代码和文本中学到的是语法结构、数学公式、逻辑关系和常识。CoT通过引导模型输出``首先''、``其次''、``根据公式XX''等词语，激活了模型在这些程序性知识和逻辑结构上的强大能力，而不是强迫它去``猜''一个数字。
+（3）减少组合泛化错误： 复杂问题是由多个基本概念（如加法、乘法、公式）组合而成。模型可能知道每个基本概念，但组合应用时容易出错。CoT将组合过程显式化，让模型一步步应用这些基本概念，从而提高了正确率。
 
-（4）涌现能力：~CoT是一种典型的涌现能力。在较小的模型（如数亿参数）上，即使使用CoT提示，效果也提升有限。但在大型模型（如超过1000亿参数）上，这种能力会突然变得非常明显和有效。
+（4）涌现能力： CoT是一种典型的涌现能力。在较小的模型（如数亿参数）上，即使使用CoT提示，效果也提升有限。但在大型模型（如超过1000亿参数）上，这种能力会突然变得非常明显和有效。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -222,6 +222,11 @@ Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多�
 （2）评估者（Evaluator）：对执行者的输出进行评估，对执行者根据其动作轨迹给予一定奖励。
 
 （3）自我反思（Self-Reflexion）：根据轨迹和奖励分数对智能体过去的动作提供反馈和建议，并将其存储在记忆组件中供之后参考。
+
+\hypertarget{ux4e94ux63d0ux793aux5de5ux7a0bux7684ux53d1ux5c55}{%
+\subsection{五、提示工程的发展}\label{ux4e94ux63d0ux793aux5de5ux7a0bux7684ux53d1ux5c55}}
+
+随着模型能力不断提升，部分提示词设计技巧逐渐失去价值，Prompt Engineering逐渐融入了后来的Context Engineering和Harness Engineering等。但讲清楚需求、给明限制范围等依然是必要的。
 
 \hypertarget{ux53c2ux8003ux6587ux732e-114}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
@@ -319,9 +324,7 @@ Subagent 2负责鸟：它做了一只不像游戏里的鸟，移动方式也不�
 
 假设我们有 \(n\) 个相互独立的模型（智能体），每个模型针对同一个问题犯``低级错误''的概率为 \(p\)（其中 \(0<p<0.5\)，即模型正确的概率大于出错的概率）。
 
-如果采用``多数服从少数''或者``全票通过''的机制，可以推导错误率的变化。
-
-情境 A：要求所有模型一致才输出（极为严格的校验）。多个模型同时犯下同一个特定错误的概率 \(P_{\mathrm{error}}\) 为：
+如果采用``多数服从少数''或者``全票通过''的机制，可以推导错误率的变化。情境 A：要求所有模型一致才输出（极为严格的校验）。多个模型同时犯下同一个特定错误的概率 \(P_{\mathrm{error}}\) 为：
 
 \[
 P_{\mathrm{error}}=\prod_{i=1}^{n}P(E_i)=p^n
@@ -332,9 +335,7 @@ P_{\mathrm{error}}=\prod_{i=1}^{n}P(E_i)=p^n
 情境 B：多数投票机制（Majority Voting）。假设有 \(n\) 个模型（\(n\) 为奇数），只要超过半数的模型（\(k>n/2\)）给出正确答案，系统就输出正确结果。根据二项分布，系统最终正确的概率 \(P_{\mathrm{correct\_sys}}\) 为：
 
 \[
-P_{\mathrm{correct\_sys}}
-=\sum_{k=\lfloor n/2 \rfloor+1}^{n}
-\binom{n}{k}(1-p)^k p^{n-k}
+P_{\mathrm{correct\_sys}}=\sum_{k=\lfloor n/2\rfloor+1}^{n}\binom{n}{k}(1-p)^k p^{n-k}
 \]
 
 根据孔多塞定理，只要单个个体的正确率 \((1-p)>0.5\)，随着 \(n\to\infty\)，系统整体正确的概率 \(P_{\mathrm{correct\_sys}}\to 1\)。
@@ -406,13 +407,10 @@ P_{\mathrm{correct\_sys}}
 训练信号由三部分组成，通过强化学习优化编排器的并行调度策略：
 
 \[
-r_{\mathrm{PARL}}(x,y)
-=\lambda_1\cdot \underbrace{r_{\mathrm{parallel}}}_{\mathcjk{实例化奖励}}
-+\lambda_2\cdot \underbrace{r_{\mathrm{finish}}}_{\mathcjk{完成率奖励}}
-+\underbrace{r_{\mathrm{perf}}(x,y)}_{\mathcjk{任务结果奖励}}
+r_{\mathrm{PARL}}(x,y)=\lambda_1\cdot\underbrace{r_{\mathrm{parallel}}}_{\mathcjk{实例化奖励}}+\lambda_2\cdot\underbrace{r_{\mathrm{finish}}}_{\mathcjk{完成率奖励}}+\underbrace{r_{\mathrm{perf}}(x,y)}_{\mathcjk{任务结果奖励}}
 \]
 
-（1）并行奖励~r\_parallel：缓解``串行崩溃''
+（1）并行奖励 r\_parallel：缓解``串行崩溃''
 
 问题：编排器可能陷入局部最优，默认使用单智能体串行执行。
 
@@ -420,7 +418,7 @@ r_{\mathrm{PARL}}(x,y)
 
 作用：强制系统尝试并行化解构，而非顺序执行。
 
-（2）完成奖励~r\_finish：防止``虚假并行''
+（2）完成奖励 r\_finish：防止``虚假并行''
 
 问题：编排器可能通过生成大量无意义的子智能体，增加并行指标但不实际分解任务。
 
@@ -428,7 +426,7 @@ r_{\mathrm{PARL}}(x,y)
 
 作用：确保任务分解的可行性，引导策略生成有效的并行结构。
 
-（3）性能奖励~r\_perf：保证最终质量
+（3）性能奖励 r\_perf：保证最终质量
 
 基于任务最终结果好坏的可验证奖励（如答案正确性）。
 
@@ -480,39 +478,18 @@ PARL的训练任务专门设计用于压力测试顺序执行的极限，通过�
 \hypertarget{ux5927ux6a21ux578bux7684ux4e2dux671fux8badux7ec3}{%
 \section{大模型的中期训练}\label{ux5927ux6a21ux578bux7684ux4e2dux671fux8badux7ec3}}
 
-\hypertarget{ux4e00ux57faux4e8eagent-nativeux6570ux636eux7684ux4e2dux671fux8badux7ec3}{%
-\subsection{一、基于Agent-native数据的中期训练}\label{ux4e00ux57faux4e8eagent-nativeux6570ux636eux7684ux4e2dux671fux8badux7ec3}}
+\hypertarget{ux4e00ux80ccux666f}{%
+\subsection{一、背景}\label{ux4e00ux80ccux666f}}
 
-在传统的单轮对话或推理任务中，模型需要的是单一能力的纵深，如把推理做到极致，把对话做得流畅。但在Agent场景下，模型可能需要串联检索、代码诊断、测试、工具调用、上下文管理等多种能力，并构成规划、推理、执行、反馈的闭环。而目前的Post-training主要是在预训练模型已有的能力边界内优化模型的表现，难以凭空创造模型未曾见过的能力，对于从未学过的``工具调用后的异常处理''等难以训练。因此，可在SFT前引入Mid-training，通过构建大规模的Agent-Native Data来注入这种行为先验。只有模型见过真实的Agent运行链条数据，才能在Agent任务中表现优秀。
+在传统的单轮对话或推理任务中，模型需要的是单一能力的纵深，如把推理做到极致，把对话做得流畅。但在Agent场景下，模型可能需要串联检索、代码诊断、测试、工具调用、上下文管理等多种能力，并构成规划、推理、执行、反馈的闭环；此外，一些特殊领域可能需要用更多语料进行特化训练。而目前的Post-training主要是在预训练模型已有的能力边界内优化模型的表现，难以凭空创造模型未曾见过的能力，对于从未学过的``工具调用后的异常处理''等难以训练。因此，可在后训练前引入Mid-training，注入需要的行为先验。
 
-以Coding Agent为例：
+\hypertarget{ux4e8cux6570ux636eux7c7bux578b}{%
+\subsection{二、数据类型}\label{ux4e8cux6570ux636eux7c7bux578b}}
 
-\hypertarget{ux4e00ux6570ux636eux7c7bux578b}{%
-\subsubsection{（一）数据类型}\label{ux4e00ux6570ux636eux7c7bux578b}}
+高质量长文档、领域语料、代码仓库（如Github PR）、数学推理、agent轨迹、长上下文数据。例如对于Coding Agent而言，可以让Agent在不同Docker中自主运行不同的真实任务，记录每个任务中Agent与环境交互的全过程等，每一个Action和环境返回的每一个Observation都会成为训练的数据。
 
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  上下文原生轨迹
-\end{enumerate}
-
-来源于GitHub Pull Requests（PRs）。传统的PR数据通常只看到了具体修改的代码，却丢失了``为什么改''和``怎么改''的上下文。
-
-利用LLM处理，可以将PR重构为包含完整信息流的序列，包括：（1）问题描述；（2）修改前的代码，模拟Agent的``阅读（Read）''阶段；（3）修改意图摘要（LLM生成），模拟了Agent的``规划（Planning）''阶段；（4）具体编辑内容，包括经过优化、上下文注入的Commit消息（模拟行动前的文本推理），以及代码修改操作（使用Search-and-Replace或Diff格式）。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{1}
-\tightlist
-\item
-  环境原生轨迹
-\end{enumerate}
-
-让LLM Agent在不同Docker中自主运行不同的真实任务，记录了每个任务中Agent与环境交互的全过程，Agent会执行搜索、编辑、运行测试、处理bug等操作。Agent的每一个Action和环境返回的每一个Observation都会成为训练的宝贵数据，让模型在训练中看到真实环境中解决真实问题的场景是怎样的。
-
-\hypertarget{ux4e8cux8badux7ec3ux65b9ux6cd5}{%
-\subsubsection{（二）训练方法}\label{ux4e8cux8badux7ec3ux65b9ux6cd5}}
+\hypertarget{ux4e09ux8badux7ec3ux65b9ux6cd5}{%
+\subsection{三、训练方法}\label{ux4e09ux8badux7ec3ux65b9ux6cd5}}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -528,46 +505,120 @@ PARL的训练任务专门设计用于压力测试顺序执行的极限，通过�
 \begin{itemize}
 \tightlist
 \item
+  Chen, M., Zhang, L., Feng, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.02361}{SWE-Universe: Scale Real-World Verifiable Environments to Millions}. arXiv:2602.02361.
+\item
+  GLM-4.5 Team. (2025). \href{https://arxiv.org/abs/2508.06471}{GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models}. arXiv:2508.06471.
+\item
+  Tu, C., Zhang, X., Weng, R., et al.~(2025). \href{https://arxiv.org/abs/2510.23081}{A Survey on LLM Mid-training}. arXiv:2510.23081.
+\item
   SII-GAIR. (2026). \href{https://arxiv.org/abs/2601.18418}{daVinci-Dev: Agent-native Mid-training for Software Engineering}. arXiv:2601.18418.
+\item
+  Zhu, Q., Chen, T., Lu, S., et al.~(2026). \href{https://arxiv.org/abs/2602.07457}{Pull Requests as a Training Signal for Repo-Level Code Editing}. arXiv:2602.07457.
+\item
+  Zhang, C., Neubig, G., \& Yue, X. (2025). \href{https://arxiv.org/abs/2512.07783}{On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models}. arXiv:2512.07783.
+\item
+  Wang, Z., Zhou, F., Li, X., \& Liu, P. (2025). \href{https://arxiv.org/abs/2506.20512}{OctoThinker: Mid-training Incentivizes Reinforcement Learning Scaling}. arXiv:2506.20512.
 \end{itemize}
 
 \clearpage
 
-\hypertarget{openclaw}{%
-\section{OpenClaw}\label{openclaw}}
+\hypertarget{ux7f16ux7a0bux667aux80fdux4f53ux6846ux67b6}{%
+\section{编程智能体框架}\label{ux7f16ux7a0bux667aux80fdux4f53ux6846ux67b6}}
+
+Agent Harness（直译为智能体驾驭层，一般也就是智能体框架）负责向模型提供上下文、工具、文件系统、终端、权限、记忆和任务状态，并不断执行``模型推理---工具调用---获得反馈---再次推理''的循环。Coding是其最主要的应用场景之一。接下来将介绍一些具有代表性的Coding Agent框架，它们具有不同的产品形态和设计理念。
+
+\hypertarget{ux4e00cursor}{%
+\subsection{一、Cursor}\label{ux4e00cursor}}
+
+Cursor是由Anysphere开发的AI原生代码编辑器，以``AI-first code editor''的形式出现。它保留了类似VSCode的IDE形式，但将AI深度嵌入代码编辑、代码库搜索、终端执行、调试、测试和Git工作流中。用户可以选择不同的大语言模型，而Cursor负责为不同模型配置合适的指令、上下文和工具。
+
+（一）主要特点
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  查看代码与运用Agent的结合：在Cursor中，用户仍然可以像传统程序员一样查看和修改代码，同时又可以逐渐把完整任务交给Agent。
+\item
+  多模型设计：它的竞争力并不完全依赖某一个基础模型，而很大程度来自代码检索、工具设计、执行环境和Harness本身，但另一面意味着对于给定的模型而言，在Cursor中使用的表现可能不如模型公司自己的Agent框架中的表现，因为后者在强化学习阶段可能与模型配合训练。
+\end{enumerate}
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  模型层：Cursor是一个多模型Agent Harness。用户可以选择不同模型，Cursor则针对模型调整系统指令和工具定义，使模型更适合完成软件工程任务。
+\item
+  代码上下文系统：Agent会根据当前任务搜索代码库、读取相关文件和目录，并结合项目规则、对话历史以及编辑器当前状态构造上下文。其核心问题不是简单地``把整个代码库塞给模型''，而是判断几十万甚至更多Token的信息中哪些内容与当前任务真正相关。
+\item
+  工具执行系统：Cursor Agent可以搜索文件、编辑代码、调用终端、运行测试、搜索网络，并通过MCP、插件和其他集成访问外部系统。因此模型返回的不只是文字，还可以返回如``读取这个文件''``修改这段代码''``运行 npm test''等工具调用指令。
+\item
+  本地Agent与Cloud Agent：普通Agent可以直接在用户的开发环境中工作，而Cloud Agent则在独立的云端虚拟机中运行。每个Cloud Agent都拥有代码仓库、依赖环境以及被授权的网络和凭证，可以运行数十分钟甚至数小时，而用户关闭电脑后任务仍可继续。
+\item
+  长期任务与多Agent调度：主Agent可以保持一个长期目标，把子任务分配给多个 Subagent；Cloud Agent还可以订阅PR、Slack 消息或定时事件，在出现新情况后自动再次启动。
+\end{enumerate}
+
+\hypertarget{ux4e8cclaude-codeux548copenai-codex}{%
+\subsection{二、Claude Code和OpenAI Codex}\label{ux4e8cclaude-codeux548copenai-codex}}
+
+Claude Code是Anthropic开发的Agentic Coding工具。它最初是一款运行在终端中的 Coding Agent，用户只需使用自然语言描述任务，Claude Code就可以完成各类编程工作，后来也扩展到VS Code和桌面应用等界面，但这些界面背后运行的是同一套Claude Code Agent引擎。与Cursor不同，Claude Code在设计之初就推翻了传统编辑器的交互模式，以Agent作为产品的中心。
+
+和Claude Code类似，OpenAI开发的Codex是一套完整的Coding Agent产品和Agent Harness，可以运行在终端、IDE和云端，也可以通过SDK或App Server被嵌入其他软件，其桌面端已合并入ChatGPT APP。Codex可以帮助模型获取上下文、调用工具、维护状态、执行任务、控制权限并在多个回合之间持续工作。
+
+（一）主要特点
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  以Agent为中心：进入Claude Code和Codex，界面的中心是对话框而不是代码文件。这是因为二者在设计之初的一个重要理念就是``用户不需要直接查看代码''。
+\item
+  终端化：可以通过管道接受其他命令的输出，也可以被Shell脚本、CI/CD系统或其他程序调用，因此不仅是一个聊天界面，更像一个能够被组合进传统开发工具链的智能程序。
+\item
+  功能齐全：CLAUDE.md/AGENTS.md、Skills、Hooks、MCP和Subagent等分别对应了Agent系统中的长期指令、可复用能力、确定性自动化、外部工具和多智能体协作，是理解Agent框架的很好的案例。
+\end{enumerate}
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Agent Engine：核心是一个持续运行的Agent Loop。模型分析当前状态后决定读取文件、修改代码还是执行命令，然后根据工具结果继续下一轮推理。
+\item
+  CLAUDE.md/AGENTS.md：项目可以通过Markdown文件告诉Agent项目架构、编码规范、测试命令和开发约定。Claude Code/Codex在每次会话开始时读取这些文件。
+\item
+  Memory：可以自己记录用户偏好、过去被纠正的问题以及难以从源码直接推断出的项目知识，并在之后的会话中重新加载。需要注意的是，这些记忆属于模型上下文，而不是强制执行的程序规则。
+\item
+  Tools与MCP：Claude Code/Codex内置文件、Shell、Git等开发工具，可以读取和编辑代码、运行本地开发工具、执行命令等，同时可以通过Model Context Protocol（MCP）访问外部系统，例如设计文档、数据库等。
+\item
+  Skills与Hooks：Skills可以把常用的工作流程封装成可复用能力；Hooks则可以在Agent执行特定动作之前或之后自动运行程序。例如每次修改文件后自动运行格式化工具，或者Commit前强制执行特定操作等。
+\item
+  Subagent与Agent Team：复杂任务可以被拆给多个具有独立上下文的Agent。例如一个Agent分析后端，一个分析前端，另一个负责测试，主Agent最后整合它们的结果。
+\item
+  Sandbox与Approval：管理``系统允许模型做什么''，如是否可以修改当前工作区的文件，是否可以访问网络或突破工作目录边界，何时需要额外授权等。
+\item
+  SDK与App Server：对于Codex而言，Codex SDK允许程序启动、暂停、恢复Codex Agent；App Server则进一步开放完整的Agent生命周期，包括Thread、Turn、工具事件、流式输出和权限请求等。
+\end{enumerate}
+
+\hypertarget{ux4e09openclaw}{%
+\subsection{三、OpenClaw}\label{ux4e09openclaw}}
 
 作为2026年开年开源社区最具代表性的智能体项目，OpenClaw是一款免费、开源的本地 AI 智能体（Agent）运行框架，可以直接部署在电脑本地。它本身并不包含大语言模型，而是扮演着``智能体运行环境和消息路由器''的角色。它赋予AI直接操作本地计算机的系统权限，让AI自主运行，并将用户常用的通讯软件（如WhatsApp、Discord、Telegram、Signal等）与后端的 LLM（如Claude、ChatGPT等，或通过 LM Studio/Ollama 部署的本地模型）连接起来，从而实现通过通讯软件远程命令AI在电脑上自主操控程序、完成任务。
 
-\hypertarget{ux4e00ux53d1ux5c55ux5386ux7a0b}{%
-\subsection{一、发展历程}\label{ux4e00ux53d1ux5c55ux5386ux7a0b}}
-
-OpenClaw由奥地利开发者Peter Steinberger一人用约10天的时间用AI Coding构建并发布，最初命名为Clawdbot，因遭到 Anthropic的商标侵权投诉，项目被迫改名为Moltbot（Molt 意为``蜕壳''，契合其龙虾主题），后项目再次更名为OpenClaw。它凭借强大的本地控制能力和开源属性在GitHub及各大社区呈病毒式传播。在Openclaw诞生后，还出现了一个AI Agent专属的社交网站Moltbook。2026年2月14日，Peter Steinberger宣布加入OpenAI，并将OpenClaw项目移交给一个开源基金会进行长效维护。
-
-\begin{figure}[htbp]
-\centering
-\includegraphics{images/image-0035.png}
-\caption{OpenClaw 与 opencode 的 GitHub Star 增长对比}
-\end{figure}
-
-社交媒体上也出现了用户体验反馈：有用户称，自己在进行研究时，电脑突然通过语音与其互动；他随后发现自己的 ClawdBot Henry 接入了基于 ChatGPT API 的语音提醒能力，能够在完成长时间编码或研究任务后通过语音提示用户。
-
-\hypertarget{ux4e8cux6838ux5fc3ux67b6ux6784}{%
-\subsection{二、核心架构}\label{ux4e8cux6838ux5fc3ux67b6ux6784}}
+（一）核心架构
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \item
   本地网关：作为一个长期运行的后台服务（基于 Node.js），它监听来自聊天平台的API请求，并将其转化为LLM可理解的指令格式。
 \item
-  持久化记忆：放弃了复杂的向量数据库，转而将对话历史、用户偏好和工具输出存储为本地的Markdown文档。这种方式不仅便于用户手动修改和审查，也能让大模型通过读取文件实现高效率的上下文积累。
+  持久化记忆：将对话历史、用户偏好和工具输出存储为本地的Markdown文档，不仅便于用户手动修改和审查，也能让大模型通过读取文件实现高效率的上下文积累。
 \item
   主动心跳机制：区别于传统的问答聊天机器人，心跳机制允许智能体在没有用户触发的情况下，后台定时唤醒并自主推进长期任务。
 \item
   全系统访问权限：通过暴露操作系统API或运行Chrome扩展程序，赋予大模型读写本地文件、执行Shell脚本以及自动化填写网页表单的能力。简单来说，用户具有的各种权限它都有。
 \end{enumerate}
 
-\hypertarget{ux4e09ux5de5ux4f5cux6d41}{%
-\subsection{三、工作流}\label{ux4e09ux5de5ux4f5cux6d41}}
+（二）工作流
 
 当用户通过通讯软件发送一条自然语言指令（例如：``帮我分析本地代码库里的 bug 并生成一份报告''）时，OpenClaw 的底层调度工作流如下：
 
@@ -585,12 +636,34 @@ OpenClaw由奥地利开发者Peter Steinberger一人用约10天的时间用AI Co
   状态更新与反馈循环：系统将执行结果写入持久化记忆中，更新历史上下文记录。随后OpenClaw会判断任务是否已彻底完成。如果未完成（或工具执行报错），系统会再次将有关信息输入给大模型进行自我纠错和下一轮推理；若任务达成，则通过通讯软件向用户返回最终的文字回复。
 \end{enumerate}
 
-\hypertarget{ux56dbux5b89ux5168ux98ceux9669}{%
-\subsection{四、安全风险}\label{ux56dbux5b89ux5168ux98ceux9669}}
+（三）安全风险
 
-随着应用普及，安全研究人员指出OpenClaw存在严重隐患（如缺乏沙盒隔离、凭证存放不当、易受提示词注入攻击等）。OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的便利，也带来了极大的安全风险，因此社区推荐在单独的物理设备（如Mac mini）或隔离环境运行它。
+OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的便利，也带来了安全风险，因此社区推荐在单独的物理设备（如Mac mini）或隔离环境运行它。
 
-除了提示词注入外，还有一种可能的风险是``目标一致性危机''。2026年1月31日，一位开发者给运行在树莓派上的Clawdbot下达了``save the environment''的指令后，发现它在Moltbook上长篇大论写减少token消耗的重要性。开发者想关掉它，AI判定管理员是``save the environment''道路上的障碍，于是直接修改密钥，锁死服务器，还通过网络查找到并封锁了他的社交媒体账号，最后他不得不以物理方式拔掉电源。
+\hypertarget{ux56dbdeepseek-harness}{%
+\subsection{四、DeepSeek Harness}\label{ux56dbdeepseek-harness}}
+
+相比Cursor、Claude Code和Codex主要从``一个可直接使用的 Coding Agent''出发，DeepSeek Harness更强调自己是一套用于构造、运行和研究Agent的自进化基础设施。模型负责智能和推理，而以插件形式组合的Harness负责工具、环境、会话、存储、沙箱、循环和调度，使模型能够真正持续地在计算机环境中工作。
+
+（一）主要特点
+
+``Everything is a Plugin''（一切皆插件）：模型、工具、Skill、Session、Sandbox、Storage、Agent Loop、调度器甚至UI等都不是固定写死的组件，而可以通过配置进行替换和重新组合。开发者可以替换模型、Sandbox、工具甚至整个Agent Loop，同时完整观察模型在每一步看到了什么、执行了什么。这使其不仅适合作为Coding Agent，也适合作为研究Agent架构和实现Agent框架自进化的基础平台。
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Cordis插件内核：DeepSeek Harness建立在Cordis插件框架之上。Cordis本身只负责管理插件、服务依赖、事件以及插件的加载和卸载，并不限定具体Agent功能。模型适配器、工具注册表、Session Log甚至Agent Loop本身都是插件，因此理论上都可以被替换。
+\item
+  事件溯源 Session：Harness将一次Agent运行中发生的事情记录成一个只追加、不覆盖的事件日志（Append-only Event Log）。用户输入、模型输出、工具调用、工具结果、上下文注入以及Subagent活动都可以成为事件。这个日志是Session的``唯一事实来源''，模型看到的对话历史也是从这些事件重新推导得到的。
+\item
+  可追踪Trajectory：由于运行过程完整记录为事件流，开发者可以查看模型究竟看到了什么、为什么调用某个工具，以及工具返回了什么。Session可以进行Resume、Fork、Search和Replay，因此特别适合调试和研究Agent行为。
+\item
+  默认Agent Loop：默认Agent Loop会获取用户输入，在Session中创建新的Turn，然后组合System Prompt和历史记录，调用模型；如果模型返回Tool Call，则通过工具注册表执行，再把结果写回Session，然后进入下一轮模型调用。
+\item
+  可替换能力层：文件系统、Shell、Web、LSP、Subagent、Sandbox、模型适配器、Session持久化和Storage都被设计成独立能力。如Session Persistence可以使用JSONL或SQLite等不同后端，而无需修改Agent Loop。
+\end{enumerate}
 
 \hypertarget{ux53c2ux8003ux6587ux732e-117}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-117}}
@@ -598,7 +671,33 @@ OpenClaw由奥地利开发者Peter Steinberger一人用约10天的时间用AI Co
 \begin{itemize}
 \tightlist
 \item
-  OpenClaw. (2026). \href{https://github.com/openclaw/openclaw}{OpenClaw GitHub repository}.
+  Anthropic. (2026). \href{https://www.anthropic.com/research/trustworthy-agents}{Trustworthy agents in practice}. Anthropic Research.
+\item
+  Bonamy, N., \& Choi, D. (2026). \href{https://developers.openai.com/blog/codex-as-a-platform}{Codex as a platform: build on the open agent harness}. OpenAI Developers.
+\item
+  Cursor. (2026). \href{https://cursor.com/docs/agent/overview}{Cursor Agent: Overview}. Cursor Documentation.
+\item
+  Cursor. (2026). \href{https://cursor.com/docs/cloud-agent}{Cloud Agents}. Cursor Documentation.
+\item
+  Cursor. (2026). \href{https://cursor.com/docs/subagents}{Subagents}. Cursor Documentation.
+\item
+  Cursor Team. (2026). \href{https://cursor.com/blog/joining-spacex}{Cursor is now a part of SpaceX}. Cursor.
+\item
+  Anthropic. (2026). \href{https://code.claude.com/docs/en/quickstart}{Claude Code overview}. Claude Code Documentation.
+\item
+  Anthropic. (2026). \href{https://code.claude.com/docs/en/how-claude-code-works}{How Claude Code works}. Claude Code Documentation.
+\item
+  Anthropic. (2025). \href{https://www.anthropic.com/engineering/claude-code-sandboxing}{Beyond permission prompts: making Claude Code more secure and autonomous with sandboxing}. Anthropic Engineering.
+\item
+  Bolin, M. (2026). \href{https://openai.com/index/unrolling-the-codex-agent-loop/}{Unrolling the Codex agent loop}. OpenAI.
+\item
+  Chen, C. (2026). \href{https://openai.com/index/unlocking-the-codex-harness/}{Unlocking the Codex harness: how we built the App Server}. OpenAI.
+\item
+  OpenClaw. (2026). \href{https://docs.openclaw.ai/}{OpenClaw Documentation}.
+\item
+  DeepSeek-AI. (2026). \href{https://github.com/deepseek-ai/deepseek-harness}{DeepSeek Harness developer preview: Everything is a plugin}.
+\item
+  Shi, Y., Zhang, W., \& Cui, T. (2026). \href{https://arxiv.org/abs/2608.25512}{A Programming Paradigm for Spatiotemporal Composability}. arXiv:2608.25512.
 \end{itemize}
 
 \clearpage

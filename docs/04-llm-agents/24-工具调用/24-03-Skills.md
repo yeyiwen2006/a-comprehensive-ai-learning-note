@@ -1,0 +1,36 @@
+---
+title: "24.3 Skills"
+source_docx: "第4部分 大模型智能体/24.工具调用/24.3 Skills.docx"
+status: "manually-rebuilt-from-current-docx"
+ocr: "not applicable; source contains no Word images"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 24.3 Skills
+
+## 一、基本思想
+
+Agent的skills，可以理解为它的“专项能力包”，是一组可复用的本地指令、工作流程、参考资料，必要时还会配套脚本、模板或工具约束。一个Agent在面对任务时，如果调用了合适的 skill，就不必每次都从零开始推理，而是能按照既定的稳定流程完成工作。
+
+核心价值：
+
+1.能把经验固化下来，如固定步骤、常见陷阱和验证方法，保证反复一致地执行；
+
+2.降低出错率，skill往往会明确告诉Agent该读哪些文件、按什么顺序操作、什么时候该停下来确认，所以比临时发挥更可靠；
+
+3.提升效率，面对复杂任务时，Agent不需要重新组织全部流程，而是直接套用合适的 skill，把时间花在真正需要判断和创造的部分。
+
+一个好的skill，不只是“会做什么”，还应说明“为什么这样做、做到什么程度、如何验证结果”。这样一来，Agent的能力就不再是模糊的，而是可解释、可检查、可持续改进的。
+
+## 二、用skills封装工具调用接口
+
+如果用模型的Context Window直接存储工具信息，并把工具调用结果也放进上下文，那上下文会被塞满，效率低下。而且模型通过MCP调用工具时，仍然有时会出现输出格式对不上等情形。
+
+我们可以用skills封装工具接口，具体而言，即让模型通过运行封装在skills里的代码（在必要的时候模型也会补充一些脚本），来实现工具调用，工具调用的结果不直接注入上下文，而是由这段代码或模型自己写的代码在Sandbox处理。
+
+这样，一方面有效发挥模型强大的编程能力，提高了成功率；另一方面让数据由模型通过代码间接控制，而非直接控制，从而避免大量token被不必要地注入上下文，提高了效率。
+
+## 参考文献
+
+- Anthropic. (2026). [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview). Claude API Docs.

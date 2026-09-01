@@ -60,8 +60,9 @@ TOP_DIR_SLUGS = {
     "第1部分 深度学习": "01-deep-learning",
     "第2部分 强化学习": "02-reinforcement-learning",
     "第3部分 大语言模型": "03-large-language-model",
-    "第4部分 大模型智能体与持续学习": "04-agents-and-continual-learning",
-    "第5部分 多模态生成、世界模型与具身智能": "05-multimodal-world-models-embodied-ai",
+    "第4部分 大模型智能体": "04-llm-agents",
+    "第5部分 扩散模型与多模态生成": "05-diffusion-multimodal-generation",
+    "第6部分 具身智能与世界模型": "06-embodied-ai-world-models",
 }
 
 
@@ -749,9 +750,10 @@ def build_directory_markdown(records: list[ConvertedDoc]) -> str:
         "本目录由脚本根据本地 Word 原稿自动生成。",
         "",
     ]
-    for top in sorted(grouped):
+    natural_key = lambda value: [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", value)]
+    for top in sorted(grouped, key=natural_key):
         lines.extend([f"## {top}", ""])
-        for record in sorted(grouped[top], key=lambda item: item.source_rel):
+        for record in sorted(grouped[top], key=lambda item: natural_key(item.source_rel)):
             assert record.output_rel is not None
             link = markdown_link(record.output_rel)
             flags = []
@@ -800,20 +802,24 @@ def build_learning_path_markdown() -> str:
         3. 第3部分：17.强化微调
         4. 第3部分：19.注意力机制的工程优化
         5. 第4部分：22.大模型智能体
-        6. 第4部分：23.工具调用
-        7. 第4部分：25.检索增强生成
-        8. 第4部分：26.上下文与记忆
+        6. 第4部分：23.大模型的推理增强
+        7. 第4部分：24.工具调用
+        8. 第4部分：25.上下文与记忆
 
         ## 路线 D：多模态生成、世界模型与具身智能
 
         适合已经具备深度学习、Transformer 和生成模型基础，想了解前沿研究方向的读者。
 
-        1. 第5部分：30.扩散模型与流匹配模型的原理和架构
-        2. 第5部分：31.扩散模型与流匹配模型的强化学习
-        3. 第5部分：32.具身智能的基本知识
-        4. 第5部分：33.世界模型的基本知识
-        5. 第5部分：34.多模态生成与生成式世界模型
-        6. 第5部分：35-40 相关论文笔记与科学发现专题
+        1. 第5部分：26.扩散模型
+        2. 第5部分：27.流匹配模型
+        3. 第5部分：28.多模态生成
+        4. 第5部分：29.统一多模态理解-生成模型
+        5. 第6部分：30.具身智能的基本知识
+        6. 第6部分：31.VLA模型
+        7. 第6部分：32.世界模型
+        8. 第6部分：33.世界-动作模型
+        9. 第6部分：34.具身智能的数据范式
+        10. 第6部分：35.具身智能的展望
 
         ## 阅读提示
 
@@ -830,7 +836,7 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
     usage_excerpt = usage_text[:2800].strip()
     return f"""# A Comprehensive AI Learning Note
 
-这是一份面向人工智能学习者的中文学习笔记，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、持续学习、多模态生成、世界模型与具身智能等方向。
+这是一份面向人工智能学习者的中文学习笔记，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、扩散模型、多模态生成、世界模型与具身智能等方向。
 
 本仓库由作者叶逸文的本地 Word 笔记自动转换而来。原始 Word 文件不上传 GitHub；本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本。
 
@@ -839,8 +845,9 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 - 第1部分：深度学习
 - 第2部分：强化学习
 - 第3部分：大语言模型
-- 第4部分：大模型智能体与持续学习
-- 第5部分：多模态生成、世界模型与具身智能
+- 第4部分：大模型智能体
+- 第5部分：扩散模型与多模态生成
+- 第6部分：具身智能与世界模型
 
 当前上传 Markdown 文档数：`{upload_count}`。
 
@@ -1024,7 +1031,7 @@ def build_citation() -> str:
             given-names: "Yiwen"
         repository-code: "https://github.com/yeyiwen2006/a-comprehensive-ai-learning-note"
         license: "CC-BY-NC-SA-4.0"
-        abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, continual learning, multimodal generation, world models, and embodied AI."
+        abstract: "A Chinese AI learning note covering deep learning, reinforcement learning, large language models, agents, diffusion models, multimodal generation, world models, and embodied AI."
         """
     )
 

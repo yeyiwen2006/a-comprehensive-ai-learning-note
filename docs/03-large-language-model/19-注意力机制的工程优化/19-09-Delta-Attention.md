@@ -106,7 +106,7 @@ $$
 
 整体架构：
 
-![Kimi Delta Attention 混合架构示意图](../../../assets/images/04-agents-and-continual-learning/27-02/img-217551af194a-0013.png)
+![Kimi Delta Attention 混合架构示意图](../../../assets/images/03-large-language-model/19-09/kimi-delta-attention-architecture.png)
 
 ## 四、KDA与RNN
 

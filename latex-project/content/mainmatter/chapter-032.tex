@@ -1,362 +1,1290 @@
-\hypertarget{ux4e16ux754cux6a21ux578bux7684ux57faux672cux77e5ux8bc6}{%
-\chapter{世界模型的基本知识}\label{ux4e16ux754cux6a21ux578bux7684ux57faux672cux77e5ux8bc6}}
+\hypertarget{ux4e16ux754cux6a21ux578b}{%
+\chapter{世界模型}\label{ux4e16ux754cux6a21ux578b}}
 
-\hypertarget{ux4e16ux754cux6a21ux578bux6982ux51b5}{%
-\section{世界模型概况}\label{ux4e16ux754cux6a21ux578bux6982ux51b5}}
+\hypertarget{ux4e16ux754cux6a21ux578bux6982ux8ff0}{%
+\section{世界模型概述}\label{ux4e16ux754cux6a21ux578bux6982ux8ff0}}
 
-\hypertarget{ux4e00ux4e3aux4ec0ux4e48ux9700ux8981ux4e16ux754cux6a21ux578b}{%
-\subsection{一、为什么需要世界模型？}\label{ux4e00ux4e3aux4ec0ux4e48ux9700ux8981ux4e16ux754cux6a21ux578b}}
+\hypertarget{ux4e00ux4e16ux754cux6a21ux578bux7684ux5b9aux4e49}{%
+\subsection{一、世界模型的定义}\label{ux4e00ux4e16ux754cux6a21ux578bux7684ux5b9aux4e49}}
 
-现在的AI已经在文本生成、数学推理、编程乃至操控计算机等方面上展现出了强大的能力，对数学研究、软件开发等起到了一定的作用，甚至独立进行初步的算法研究。根本原因在于：现在的LLM（包括多模态大模型）的预训练方法是``预测下一个语言token''，数学证明和代码本身就是离散的文本序列，能通过Next token prediction被建模；后训练方法主要是RLVR，数学代码运行在公理化的数字世界中，所有规则是符号化、显式定义的；可以在计算机中获得即时、廉价的验证，以实现几乎零成本的RL Scaling。
-
-但如果考虑到与物理世界交互，上述条件将不再成立。模型需要能对与模型互动的环境进行建模，以预测行动带来的后果。在数字世界中，环境可以通过文本token的形式被编码，LLM已经承担了这一功能；但在物理世界中，例如我们希望机器人在现实世界中顺利执行新的任务，就要求模型能从直接来自现实世界的连续高维数据（像素、传感器数据）中对环境进行建模，理解物理世界的因果关系和行动带来的结果，从而采取正确的动作。
-
-除了具身行动之外，需要在物理世界推理的场景也需要世界模型。如一个能设计新型显微镜的AI，必须理解光与观测对象的相互作用（散射、吸收、荧光、像差）；一个能设计微流控芯片或类器官培养装置的AI，需要对流体力学、扩散、表面张力有内在的模拟能力。这些不是查文献就能解决的，需要AI能根据事物之间相互影响的物理规律，在全新的情境中进行近似的物理模拟。
-
-多模态大语言模型虽然也能输入并理解多模态信息，但AI的空间推理能力依然远未接近人类水平，如在估计距离、方向、大小等任务上表现不佳，难以处理单一物体的旋转，还会在推理中因为语言无法清楚地描述指代而常产生指代混乱。问题的根源在于，模型的核心能力是由数据和训练目标共同决定的，尽管数据是多模态的，但训练目标只监督文本token。模型从其他模态的数据中提取信息，用于语言模态的推理。如训练数据中有大量图文，模型可能学到``看到斜坡，就容易掉落''，但这样的监督信号不足以让模型形成对世界动态因果逻辑的抽象，因为浅层相关就足够预测文本了，模型会把更多精力放在让文本本身更通顺上，除非专门要求模型预测未来、用少量变量解释共同机制等，这就变成我们讨论的世界模型了。
-
-世界模型的落地方向包括但不限于如下：
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  赋予模型对物理世界的直觉推理能力和对三维空间的认知能力。纵观人类，美术作品和文创产品的创造、建筑物的设计、显微镜等工具的发明、DNA双螺旋结构的发现等，都离不开对三维空间和物理直觉的推理。部分观点认为这是实现人类水平智能和赋予智能``接地性''必不可少的部分。
-\item
-  生成世界将成为一种新的范式，赋能创意、游戏等产业和内容生成行业。
-\item
-  成为具身智能重要的组成部分和训练环境。一方面，赋予具身智能在物理世界中行动前预测后果的能力，从而使智能体可以进行规划；另一方面，通过生成模拟数据解决具身智能训练数据不足的难题，对具身智能的发展起着关键的作用。
-\end{enumerate}
-
-\hypertarget{ux4e8cux4e16ux754cux6a21ux578bux7684ux5b9aux4e49}{%
-\subsection{二、世界模型的定义}\label{ux4e8cux4e16ux754cux6a21ux578bux7684ux5b9aux4e49}}
-
-如果说LLM的核心是``Next token prediction''，那么世界模型的核心就是``Next state prediction''。世界模型定义为给定当前状态和动作，预测下一个（实际上往往可能是未来若干个，这里简化定义）状态的系统：
+LLM在数字世界已经具备了强大的能力，但对物理世界的理解却并不充分。世界模型是可能的一种解决方案。如果说LLM的核心是``Next token prediction''，那么世界模型的核心就是``Next state prediction''。世界模型定义为给定当前状态和动作，预测下一个（实际上往往可能是未来若干个，这里简化定义）状态的系统：
 
 P(st+1\textbar st,at)
 
-当然，除了预测能力之外，广义的世界模型还包括重建能力，如根据纯文字描述生成视频第一帧，然后再预测等。
+世界模型作为对物理世界的建模，应当能处理多模态（不仅限于视觉，也包括传感器数据、光谱数据等各种多模态数据）输入，生成显式或隐式的世界状态表征，并有效预测在给定动作下的下一状态。
 
-世界模型作为对世界的建模，应当能处理多模态（不仅限于视觉，也包括传感器数据、光谱数据等各种多模态数据）输入，生成显式或隐式的世界状态表征，并有效预测在给定动作下的下一状态。这需要新的模型架构、新的训练任务（而不仅仅是Next token prediction或RLVR）以及海量可扩展的训练数据。
+\hypertarget{ux4e8cux4e16ux754cux6a21ux578bux7684ux8d77ux6e90rlux4e2dux7684ux4e16ux754cux6a21ux578b}{%
+\subsection{二、世界模型的起源：RL中的世界模型}\label{ux4e8cux4e16ux754cux6a21ux578bux7684ux8d77ux6e90rlux4e2dux7684ux4e16ux754cux6a21ux578b}}
 
-\hypertarget{ux4e09ux7269ux7406ux4e16ux754caiux7cfbux7edfux7684ux5168ux80fdux529bux94fe}{%
-\subsection{三、物理世界AI系统的全能力链}\label{ux4e09ux7269ux7406ux4e16ux754caiux7cfbux7edfux7684ux5168ux80fdux529bux94fe}}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-17}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-17}}
 
-真正理解物理世界的AI系统，不是只会看图、解题或生成视频，而是要沿着一条连续能力链发展：Perception -\textgreater{} Reasoning \& Prediction -\textgreater{} Interaction，即``看到了什么、这背后为什么会这样、接下来会发生什么、应该如何行动并用反馈修正自己''。
+人类在感知世界时，会根据自身有限的感官信息在脑海中建立对世界的心理模型。我们做出的决定和行动正是基于这个内部模型。受此认知科学理念的启发，本文探讨了为强化学习（RL）环境构建生成式神经网络模型。
+
+研究者将智能体划分为世界模型和控制模型。世界模型学习环境在空间和时间上的压缩表示；控制模型利用从世界模型中提取的特征作为输入，训练一个策略来完成任务。
+
+这种方法的优势在于，它不仅能高效处理信度分配（Credit Assignment）问题，还能允许智能体在其世界模型生成的虚拟``梦境''中进行自我训练，然后再将策略迁移到真实环境中，这也就是基于模型的强化学习。
+
+\hypertarget{ux4e8cux4e16ux754cux6a21ux578bux7684ux67b6ux6784ux548cux8badux7ec3}{%
+\subsubsection{（二）世界模型的架构和训练}\label{ux4e8cux4e16ux754cux6a21ux578bux7684ux67b6ux6784ux548cux8badux7ec3}}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
-  Perception
+  感知模型：输入t时刻的视觉像素等多模态信息，用变分自编码器（VAE）等将其压缩成一个小型的向量，即隐变量z\_t。
+\item
+  预测模型：维护隐状态h\_t，运用类似RNN的结构记录历史记忆，以保证长时间内符合物理定律。输入隐状态h\_t、当前状态信息z\_t和动作输出a\_t对未来状态的预测z*\_t+1。可以直接输出采样，或输出未来状态的概率密度函数。根据预测的z*\_t+1和真实下一状态对应的隐变量z\_t+1的差距构造损失函数学习。
 \end{enumerate}
 
-从图像、视频、点云、传感器数据等多模态信息提供的不完整片段里，提取出物理状态信息，并能够以此重建完整的物理世界结构。物理感知不是语义识别，而是恢复隐藏在观测背后的latent physical state，真正重要的物理变量很多并不直接出现在像素里。这不仅需要识别几何对象，还要理解物体之间的空间位置关系，并能推断物体的内在物理属性（比如质量、密度、材质、刚度），以服务于后续推理和预测。
+\hypertarget{ux4e09ux63a7ux5236ux6a21ux578bux548cux4e16ux754cux6a21ux578bux7684ux534fux540c}{%
+\subsubsection{（三）控制模型和世界模型的协同}\label{ux4e09ux63a7ux5236ux6a21ux578bux548cux4e16ux754cux6a21ux578bux7684ux534fux540c}}
+
+控制模型即被通过强化学习训练的策略网络、价值网络等。一般和世界模型有三种协同方法：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{1}
-\tightlist
 \item
-  Reasoning
+  控制模型的输入不包括世界模型的输出，但在对控制模型输出进行组采样等的时候，结合世界模型的输出。
+\item
+  将世界模型的输出一并输入控制模型。
+\item
+  将二者直接合一，保留多头输出。
 \end{enumerate}
 
-对于一个能用于长链条推理、新场景和科学研究的物理世界AI系统，可能需要能调用在先验中学习到的物理知识，进行因果推理、解释和分析，避免让模型的预测就只停留在模式匹配，在需要依赖长链推理的复杂情形下往往会生成不符合物理规律的解。
+\hypertarget{ux56dbux8badux7ec3ux5de5ux4f5cux6d41}{%
+\subsubsection{（四）训练工作流}\label{ux56dbux8badux7ec3ux5de5ux4f5cux6d41}}
+
+训练的过程是以下步骤的循环：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  冻结模型权重，智能体与真实环境互动，收集状态-动作对数据。
+\item
+  运用数据训练感知模型。
+\item
+  再冻结感知模型，训练预测模型。
+\item
+  最后冻结感知模型和预测模型，训练控制模型。
+\end{enumerate}
+
+\hypertarget{ux4e94ux5bf9ux6297ux6027ux7b56ux7565ux53caux5176ux907fux514d}{%
+\subsubsection{（五）对抗性策略及其避免}\label{ux4e94ux5bf9ux6297ux6027ux7b56ux7565ux53caux5176ux907fux514d}}
+
+由于世界模型只是对真实环境的近似概率模型，控制器在优化过程中可能会发现并利用这些不完美的漏洞，产生``对抗性策略''（例如以一种特定的移动方式让生成的火球凭空熄灭）。适当提高预测模型的温度参数来增加虚拟环境的不确定性和随机性，可以有效防止控制器利用这些模型缺陷。这使得智能体学会了更稳健的策略，从而在真实环境中的表现更好。
+
+\hypertarget{ux4e09ux4e16ux754cux6a21ux578bux4e0eux5177ux8eabux667aux80fdux7684ux5173ux7cfb}{%
+\subsection{三、世界模型与具身智能的关系}\label{ux4e09ux4e16ux754cux6a21ux578bux4e0eux5177ux8eabux667aux80fdux7684ux5173ux7cfb}}
+
+\hypertarget{ux4e00ux4e16ux754cux6a21ux578bux9700ux8981ux5177ux8eabux4ea4ux4e92}{%
+\subsubsection{（一）世界模型需要具身交互}\label{ux4e00ux4e16ux754cux6a21ux578bux9700ux8981ux5177ux8eabux4ea4ux4e92}}
+
+想要让模型真正理解物理世界的规律，只看视频是不够的。视频数据存在一些显著的问题。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  缺乏动作条件：视频数据只有状态的变化，却没有动作条件。真正的物理理解常来自干预：``如果我推一下，会不会倒？''``如果我加热，会不会变色？''这些往往依赖于动作条件数据。如果没有动作条件，那么就只是在训练视频生成模型。
+\item
+  缺乏触觉和力学数据：目前的世界模型训练仍以视觉数据为主。但如果希望世界模型真正理解物理规律，那么模型不仅要``看懂''世界，还能懂得摩擦、硬度等物理性质，这需要触觉和力学数据，以免让模型生成``视觉上合理、物理上错误''的预测，如物体没有支撑力、碰撞没有动量传递等。
+\end{enumerate}
+
+\hypertarget{ux4e8cux4e16ux754cux6a21ux578bux5bf9ux5177ux8eabux667aux80fdux53d1ux5c55ux81f3ux5173ux91cdux8981}{%
+\subsubsection{（二）世界模型对具身智能发展至关重要}\label{ux4e8cux4e16ux754cux6a21ux578bux5bf9ux5177ux8eabux667aux80fdux53d1ux5c55ux81f3ux5173ux91cdux8981}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  世界模型是World-Action Model的重要组成部分，与策略模型结合构成具身基础模型。
+\item
+  世界模型可以用作训练和评测环境。真实世界中的试错不仅效率极低，而且容易造成昂贵的硬件损耗。具备世界模型的具身智能体可以在内部生成的空间中运行，从而将世界模型作为训练和评测环境。实操时，需要注意几个点：
+\end{enumerate}
+
+（1）由于世界状态预测（视频生成）需要耗费的算力显著大于动作预测需要的算力，因此我们不必逐帧预测，而是采用块级预测。
+
+（2）机器人往往有多个摄像头，这些摄像头所获得的图像信息必须满足三维一致性，即共同构成一个一致的三维世界。一种方法是可以每次先生成其中一个视角，再把该视角的图像放入上下文，以此作为条件生成下一个视角，以此类推。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{2}
 \tightlist
 \item
-  Prediction
+  世界模型可以作为合成数据引擎。世界模型可以生成大量带有物理反馈交互逻辑的合成轨迹，以极低的边际成本反哺动作策略的训练。
 \end{enumerate}
 
-这也就是狭义的``世界模型''定义，即建立对当前状态下环境的内部表征，结合当前状态和动作，预测未来的状态，创造遵守物理定律、空间一致的世界，以支持规划和决策。
-
-值得注意的是，世界模型的``预测''并不完全等同于图像、视频生成（虽然后者也是其中的一种技术路线）。基于像素的世界模型并不一定能够真正捕捉世界的因果结构，反而可能在生成一些不重要的细节上浪费算力。人类在处理视觉信息时往往并不是完整解析所有像素，而是以自上而下、任务驱动的方式进行处理，并依赖于对象层级的抽象表示，一些技术路线也在探索生成对世界的抽象，而非直接生成视觉世界的路径，类似于编程时不直接生成机器状态而是生成代码（但世界模型目前并没有像代码这样统一的、能由人类直接表达和修改的符号系统）。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{3}
-\tightlist
-\item
-  Interaction
-\end{enumerate}
-
-人类无法仅靠视觉学习世界，物理世界的AI系统也是如此，我们需要知道施加干预at会带来怎样的状态转移。
-
-虽然互联网上存在海量视频数据，但``行动at本身会带来怎样的结果''的数据却非常稀缺，而且世界模型需要回答``如果换个动作会怎样''，但视频数据通常只记录``当时发生了什么''，不记录``没发生的那些可能性''，所以模型容易会``回放未来''，不一定会``推演备选未来''。
-
-因而，物理世界的AI系统需要有embodied feedback，让模型不仅``看懂''世界，还能懂得摩擦、硬度、浓度等理化性质。真正的物理理解常来自intervention：``如果我推一下，会不会倒？''``如果我加热，会不会变色？''没有动作和干预，模型更像在学观测统计，而不是因果结构，容易生成``视觉上合理、物理上错误''的预测，如物体没有支撑力、碰撞没有动量传递等。
-
-另一方面，如果只用offline的数据训练物理世界的AI系统，它总会在部署中遇到长尾情形，进而在OOD区域发生误判（如以为可以用钻石做木凳等，因为训练数据没有就可能瞎猜）。只有智能体能与物理世界交互，并以此修正自身维护的世界模型，才能训练真正强大的物理AI系统。
-
-而进一步来说，世界模型最终也要和具身智能构成闭环。未来物理世界的AI系统必须将环境与机器人自身的感知、运动一体化建模。这些机器人的训练数据也高度依赖于世界模型。
-
-\hypertarget{ux56dbux4efbux52a1ux8bbeux8ba1}{%
-\subsection{四、任务设计}\label{ux56dbux4efbux52a1ux8bbeux8ba1}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  世界重建类
-\end{enumerate}
-
-世界重建强调从局部、不完整的观测片段中，理解并重建底层真实世界的完整结构，如：
-
-\begin{itemize}
-\item
-  \textbf{方块三视图投影（Cube 3-view Projection）}：提供一个相连方块堆的等距视角（斜视图）和两个正交视图（如正视图、右视图），要求模型预测并描述从另一个完全未见过的视角（如后视图）看到的方块数量。解决该任务需要模型先在大脑中重建出方块的完整 3D 结构，然后再进行心理旋转或投影，这与人类的视觉心智表征过程高度一致。
-\item
-  \textbf{真实世界空间推理（Real-world Spatial Reasoning）}：给定一个真实房间或场景的多个不同视角图像，询问摄像机、物体或区域之间的相对位置关系（例如``拍第二张照片时黑门在我的哪个方向''）。成功回答需要模型从这几个有限的 2D 视角中，拼凑并构建出一个连贯的 3D 空间心智模型。
-\end{itemize}
-
-当然，也有部分路线认为完整重建并非世界模型的目标。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{1}
-\tightlist
-\item
-  世界预测类
-\end{enumerate}
-
-世界预测强调模拟世界动态随时间或动作演变的能力，即预测事物下一步会变成什么样：
-
-\begin{itemize}
-\item
-  \textbf{折纸（Paper Folding）}：给定一系列纸张折叠和打孔的步骤，要求预测纸张完全展开后的孔洞分布情况。这要求模型能够在内部模拟纸张逐步展开的物理过程，高度依赖基于视觉经验的几何对称性和空间变换先验知识。
-\item
-  \textbf{多步操作（Multi-hop Manipulation）}：给出一个包含不同形状、颜色物体的初始场景，并提供一系列指令（如添加、移除、交换颜色等）。最终询问经过这些操作后的空间布局属性（例如某物体的左边是什么）。这极大地考验了模型对物体状态的持续跟踪以及动态空间理解能力。
-\item
-  \textbf{小球追踪（Ball Tracking）}：要求模型推断一个匀速运动的小球在碰到实心墙壁发生理想镜面反射后的轨迹，并预测它最先进入顶部哪个编号的洞中。这直接评估了模型对基础物理动态过程的模拟预测能力。
-\item
-  \textbf{迷宫（Maze）与推箱子（Sokoban）}：这两项是经典的网格世界任务，要求模型理解当前状态并模拟出从起点到终点（或将箱子推到目标点）的连续动作序列。
-\end{itemize}
-
-\hypertarget{ux53c2ux8003ux6587ux732e-164}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
+\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
 
 \begin{itemize}
 \tightlist
 \item
   Ha, D., \& Schmidhuber, J. (2018). \href{https://arxiv.org/abs/1803.10122}{World Models}. arXiv:1803.10122.
 \item
-  LeCun, Y. (2022). \href{https://openreview.net/forum?id=BZ5a1r-kVsf}{A Path Towards Autonomous Machine Intelligence}. OpenReview.
-\item
-  Hafner, D., Lillicrap, T., Ba, J., \& Norouzi, M. (2020). \href{https://arxiv.org/abs/1912.01603}{Dream to Control: Learning Behaviors by Latent Imagination}. ICLR.
+  Sutton, R. S. (1991). \href{https://dl.acm.org/doi/10.1145/122344.122377}{Dyna, an Integrated Architecture for Learning, Planning, and Reacting}. ACM SIGART Bulletin.
 \end{itemize}
 
 \clearpage
 
-\hypertarget{ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}{%
-\section{世界模型的主要技术路线}\label{ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}}
+\hypertarget{ux4e16ux754cux6a21ux578bux7684ux6280ux672fux8defux7ebf}{%
+\section{世界模型的技术路线}\label{ux4e16ux754cux6a21ux578bux7684ux6280ux672fux8defux7ebf}}
 
-\hypertarget{ux4e00ux751fux6210ux5f0fux4e16ux754cux6a21ux578bux591aux6a21ux6001ux751fux6210}{%
-\subsection{一、生成式世界模型（多模态生成）}\label{ux4e00ux751fux6210ux5f0fux4e16ux754cux6a21ux578bux591aux6a21ux6001ux751fux6210}}
+\hypertarget{ux4e00ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}{%
+\subsection{一、世界模型的主要技术路线}\label{ux4e00ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}}
 
-生成式世界模型即通过生成视频画面等方式，让模型自行从视频等数据中学习。需要注意的是，由于视频像素维度很高，但根据流形假设，有效的数据实际上分布在较低的维度上，故一般会先将输入压缩成低维向量处理，输出时再还原为高维。
+\hypertarget{ux4e00ux57faux4e8eux9690ux53d8ux91cfux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（一）基于隐变量的世界模型}\label{ux4e00ux57faux4e8eux9690ux53d8ux91cfux7684ux4e16ux754cux6a21ux578b}}
 
-这看起来和基于隐变量的世界模型相似，但二者有根本的不同，体现在训练目标，即损失函数上：生成式世界模型预训练时以生成画面等为目标，损失函数以最终生成的高维视频计算；基于隐变量的世界模型预训练时获得准确的隐变量为目标，损失函数以隐变量计算。
+基于隐变量的世界模型是世界模型最早的形式之一，如RSSM及其衍生的相关模型，即将t时刻的世界状态压缩为隐变量z\_t，结合动作a\_t等，预测下一时刻的隐变量z\_t+1。一般运用或结合下游任务的损失训练。
+
+该路线在业界单独出现不多，但它没有消失，而是融入了生成式世界模型之中。这是因为视频像素维度很高，但根据流形假设，有效的数据实际上分布在较低的维度上。故一般会先将输入压缩成隐空间中的低维隐变量处理，输出时再还原为高维。
+
+\hypertarget{ux4e8cux751fux6210ux5f0fux4e16ux754cux6a21ux578b}{%
+\subsubsection{（二）生成式世界模型}\label{ux4e8cux751fux6210ux5f0fux4e16ux754cux6a21ux578b}}
+
+生成式世界模型则是当前世界模型的主流形式，即通过生成下一时刻的视频画面等方式，让模型自行从视频等数据中学习，其训练方法大体上可参考多模态生成模型的训练。当下的生成式世界模型基本都和基于隐变量的路线相结合。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  损失函数的计算：可以直接用生成的最终高维画面计算损失函数；也可以先训练好VAE或其他自编码器并冻结，后续对隐空间内的生成模型进行预训练，损失函数直接用隐变量对应的流匹配等损失计算；还可以用其他下游任务的损失函数进行训练。
+\item
+  生成范式
+\end{enumerate}
+
+（1）自回归：继承LLM中Next token prediction的思路，预测下一个状态token。缺点是生成高维视觉时通常较慢，误差容易逐步累积。
+
+（2）扩散：从噪声开始，逐步去噪出未来视频或未来状态。这个过程中，输出不断由模糊变清晰，信息量逐步变大，也符合人对事物的认识或想象从大致轮廓到具体细节的过程。缺点是在高维情况下显存占用大，计算代价昂贵，故一般只用于生成低维空间的隐变量。
+
+\hypertarget{ux4e09ux5efaux6a21ux89c6ux89d2ux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（三）建模视角的世界模型}\label{ux4e09ux5efaux6a21ux89c6ux89d2ux7684ux4e16ux754cux6a21ux578b}}
+
+这一路线把每一帧二维图像都看成对同一个三维世界的不同观察，根据用户输入的图像及其视角，隐式地维护一个多视角的三维世界模型，通过用户的视角输出对应的二维表示。代表成果如RTFM、IC-World等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：建模三维空间和人或动物的双/多眼视角、机器人多传感器一致性等相符，可能是空间理解的关键和具身智能的重要技术基础。
+\item
+  缺点：需要处理视角，正确判断用户的视角变换关系，但训练的视频数据并不自带视角，导致模型难以在测试时建立对多视角三维同一性的认知；如果用硬编码算法给训练数据加视角估计信息，会存在误差，随着场景变复杂可能难以维持性能，难以从数据中Scaling。
+\end{enumerate}
+
+\hypertarget{ux56dbux5efaux6a21ux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（四）建模对象的世界模型}\label{ux56dbux5efaux6a21ux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}}
+
+这一路线拆分提取并显式建模空间中的各个对象（及其属性）、它们之间的关系，不是把世界看成一整张图，而是看成杯子、桌子、机械臂，它们的位置、质量、接触关系、摩擦等，模型内设有一定数量的``槽''，对象的信息竞争性地进入这些槽，以在后续生成时处理重要的的对象的信息。代表成果如C-SWM、SlotFormer、Marble等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：适合空间关系、接触、遮挡、组合泛化，可解释性强，干预简单（如添加、移动物体等），更接近真正的物理推理。
+\item
+  缺点：需要处理复杂的视觉信息，把世界拆成正确结构，这需要通过结构化数据来训练，但这样的数据极为稀缺；此外，拆分本身容易出错，且这步如果出错就会导致后续预测出错。
+\end{enumerate}
+
+\hypertarget{ux4e94ux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（五）在抽象表示空间中预测的世界模型}\label{ux4e94ux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}}
+
+无论是在日常生活中还是自然科学中，在每一个像素预测是不必要的。例如，在物体运动预测中，只需要抽象成质点、刚体等，没有必要在像素或者原子层面分析。基于这种思想，我们和生成式世界模型路线一样，将观测映射为隐状态，但不再用像素生成或重建等直接或间接的像素目标驱动，而是让模型直接通过自监督预测自主学习隐状态的表征，仅用正则化损失避免表征坍缩。目前的一种方法是提取观测中的所有隐状态后随机在时空上进行掩码，训练模型通过预测来补全掩码处的隐状态，最小化预测和实际隐状态在隐空间内的差距，让模型学会时空和物理表征。代表成果如V-JEPA系列、LeWorldModel等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：可自然地把视觉、触觉、传感器数据等一起编码，最符合科学推理的思考方式；不需要预测像素，节省算力，速度快。
+\item
+  缺点：抽象表示空间对人类不可见，难以直接发现是否存在问题；本质是Encoder，下游接任务需要微调。
+\end{enumerate}
+
+\hypertarget{ux4e8cux52a8ux4f5cux6761ux4ef6ux5982ux4f55ux6ce8ux5165ux89c6ux9891ux4e16ux754cux6a21ux578b}{%
+\subsection{二、动作条件如何注入视频世界模型？}\label{ux4e8cux52a8ux4f5cux6761ux4ef6ux5982ux4f55ux6ce8ux5165ux89c6ux9891ux4e16ux754cux6a21ux578b}}
+
+许多世界模型由视频生成模型微调得到。由于视频世界模型不是单纯的根据已有帧预测下一帧，而是根据已有帧和动作干预预测下一帧，故动作干预如何注入视频生成主干非常关键。一般会设计动作注入头，注入方法一般有：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  在DiT主干中，运用交叉注意力注入。
+\item
+  用动作注入值控制AdaLN的参数。
+\end{enumerate}
+
+注入后进行微调，一般刚开始冻结视频生成主干、只调动作注入头的参数，后期部分模型会进行全量微调。
+
+\hypertarget{ux4e09ux52a8ux4f5cux7a7aux95f4ux7684ux5b66ux4e60latent-action-models}{%
+\subsection{三、动作空间的学习：Latent Action Models}\label{ux4e09ux52a8ux4f5cux7a7aux95f4ux7684ux5b66ux4e60latent-action-models}}
+
+世界模型的核心表达式是s\_t+1=f(s\_t,a\_t)。对于海量的视频数据，s\_t和s\_t+1都是容易获取的，但我们却没有显式的动作数据a\_t，这让模型对特定干预造成何种后果的学习可能会造成影响，尤其是运用于交互式或具身等场景时。如果将动作看作一种模态，那么我们可能就需要一个对应的``词表''，即Action Space。Latent Action Models是一种从视频中自监督地学习到Action Space的方法。
+
+\hypertarget{ux4e00ux6838ux5fc3ux7ec4ux4ef6}{%
+\subsubsection{（一）核心组件}\label{ux4e00ux6838ux5fc3ux7ec4ux4ef6}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  反向动力学模型（Inverse Dynamics Model）：从前后状态s\_t和s\_t+1中推断动作a\_t的潜在表示，并通过信息瓶颈促使a\_t编码最关键的运动信息。
+\item
+  前向动力学模型（Forward Dynamics Model）：使用当前状态s\_t和动作a\_t预测下一状态s\_t+1。
+\end{enumerate}
+
+\hypertarget{ux4e8cux62bdux8c61ux8981ux6c42}{%
+\subsubsection{（二）抽象要求}\label{ux4e8cux62bdux8c61ux8981ux6c42}}
+
+如果允许动作a\_t保留太多信息以提升生成质量，又容易混入颜色、纹理、背景等内容信息，导致动作不够抽象、难以迁移。为了保证动作表示具有可迁移性和抽象性，模型通常会施加强预测瓶颈，例如向量量化或变分瓶颈。
+
+但不可否认的是，如果被压缩得足够抽象，它更容易迁移，却可能偏离动作空间内在的流形结构，丢失预测下一个状态的准确性，以及生成所需的细节。
+
+\hypertarget{ux53c2ux8003ux6587ux732e-154}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-154}}
+
+\begin{itemize}
+\tightlist
+\item
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.
+\item
+  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2022). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR.
+\item
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
+\item
+  Garrido, Q., Nagarajan, T., Terver, B., Ballas, N., LeCun, Y., \& Rabbat, M. (2026). \href{https://arxiv.org/abs/2601.05230}{Learning Latent Action World Models In The Wild}. arXiv:2601.05230.
+\end{itemize}
+
+\clearpage
+
+\hypertarget{ux72b6ux6001ux7a7aux95f4ux6a21ux578b}{%
+\section{状态空间模型}\label{ux72b6ux6001ux7a7aux95f4ux6a21ux578b}}
+
+\hypertarget{ux4e00rssmux5faaux73afux72b6ux6001ux7a7aux95f4ux6a21ux578b}{%
+\subsection{一、RSSM（循环状态空间模型）}\label{ux4e00rssmux5faaux73afux72b6ux6001ux7a7aux95f4ux6a21ux578b}}
+
+\hypertarget{ux4e00ux6a21ux578bux67b6ux6784}{%
+\subsubsection{（一）模型架构}\label{ux4e00ux6a21ux578bux67b6ux6784}}
+
+在构建环境动力学模型时，通常有两种极端：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{纯确定性模型（如标准 RNN）}：状态转移是完全确定的。这种模型容易出现的一个致命缺陷是，它无法捕捉环境动力学中固有的不确定性和多种可能的未来（Multiple futures）。如果用于规划，规划器（Planner）会很容易利用这种确定性模型的不准确性（即过拟合到单一的错误未来）。
+\item
+  \textbf{纯随机性模型（如传统 SSM）}：每一次状态转移都包含从概率分布中采样。虽然这能建模不确定性，但纯粹的随机转换使得模型极难在跨越多个时间步的情况下可靠地记忆信息。
+\end{enumerate}
+
+而且，如果环境存在随机性，确定性网络往往会输出所有可能未来的``模糊平均值''。
+
+RSSM采用了类似LSTM的方法，将隐状态（历史记忆）和反映当前状态的潜变量分开，从而结合了二者的优点。在POMDP（部分可观测马尔可夫决策过程）中：
+
+历史记忆 \(h_t\) 作为隐状态，其转移用确定性规则：由 \(t-2\) 时刻及以前的记忆 \(h_{t-1}\)、\(t-1\) 时刻的状态潜变量 \(s_{t-1}\) 和 \(t-1\) 时刻的动作 \(a_{t-1}\) 经过函数得到。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  自回归模型
+  \textbf{确定性状态模型（Deterministic state model）}
 \end{enumerate}
 
-自回归模型继承LLM中Next token prediction的思路，把世界表示成一串token，然后像LLM预测下一个词一样，预测下一个视觉token/动作token/状态token。
+\[
+h_t = f(h_{t-1}, s_{t-1}, a_{t-1})
+\]
 
-具体例子：模型把视频压成token序列，然后一步一步预测：``下一小块画面/下一时刻会怎样；手爪靠近后，杯子边缘token会怎么变。''
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：用于汇总历史信息并维持跨越多个时间步的确定性记忆。
+\item
+  \textbf{拟合方式}：通常由一个循环神经网络（RNN，如 GRU）拟合。
+\end{itemize}
 
-优点：与LLM/Transformer兼容，可以把文本、动作、视频统一到一个框架，具有Scaling Law潜力。
-
-缺点：生成视频往往聚焦于视觉，不代表完全理解背后的物理属性和规律；生成高维视觉时通常较慢，误差容易逐步累积。
+利用包含 \(t-1\) 时刻及以前状态和动作的历史记忆 \(h_t\) 预测世界状态潜变量 \(s_t\)，则随机采样：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{1}
 \tightlist
 \item
-  扩散模型
+  \textbf{随机状态模型 / 先验分布（Stochastic state model / Prior）}
 \end{enumerate}
 
-扩散模型不是一步步续写token，而是从噪声开始，逐步``去噪''出未来视频或未来状态。这个过程中，输出不断由模糊变清晰，信息量逐步变大，也符合人对事物的认识或想象从大致轮廓到具体细节的过程。
+\[
+s_t \sim p(s_t \mid h_t)
+\]
 
-具体例子：给定当前画面和动作``伸手抓杯子''，它从一团噪声开始，慢慢生成几秒后的未来视频：手接近、杯子被抓起、阴影变化、背景跟着变。
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：在不观察当前真实图像的情况下，仅凭过去的记忆预测当前可能的状态分布。它为模型引入了不确定性，以刻画多种可能的未来。
+\item
+  \textbf{拟合方式}：由一个多层感知机（MLP）拟合，输出对角高斯分布的均值和方差。
+\end{itemize}
 
-优点：也可以用Transformer把文本、动作、视频统一到一个框架，以进行Scaling Law。
-
-缺点：在高维情况下计算代价昂贵，且不一定满足因果遵循；和自回归生成一样，往往聚焦于视觉，不代表完全理解背后的物理属性和规律。
+而实际上世界状态的潜变量 \(s_t\)（也就是获得当前真实观测 \(o_t\) 后的``预测正确答案''）：（注：理论上可用贝叶斯计算，但涉及不可求的积分，故直接用神经网络拟合）
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{2}
 \tightlist
 \item
-  代表成果（含自回归、扩散）
+  \textbf{近似后验模型 / 变分编码器（Approximate posterior / Variational Encoder）}
 \end{enumerate}
 
-Sora系列（OpenAI）、Genie系列（Google DeepMind）、Seedance系列（Bytedance Seed）、Veo系列（Google DeepMind）、DIAMOND（Microsoft Research）、Lingbot-World（蚂蚁灵波）、Lingbot-VA（蚂蚁灵波）、Cosmos（NVIDIA）、UnifoLM-WMA（宇树科技）、Gemini Omni（Google DeepMind）。
+\[
+q(s_t \mid h_t, o_t)
+\]
 
-\hypertarget{ux4e8cux5efaux6a21ux89c6ux89d2ux4e0eux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}{%
-\subsection{二、建模视角与对象的世界模型}\label{ux4e8cux5efaux6a21ux89c6ux89d2ux4e0eux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}}
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：结合过去的确定性记忆 \(h_t\) 和当前的真实高维像素观测 \(o_t\)，推断出当前最准确的潜在状态分布。
+\item
+  \textbf{拟合方式}：由卷积神经网络（CNN）提取图像特征后，接多层感知机（MLP）输出对角高斯分布的均值和方差。
+\end{itemize}
+
+当我们预测出 \(s_t\) 后，可基于 \(h_t\) 和 \(s_t\) 生成像素图像 \(o_t\)：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  \textbf{观测重构模型（Observation model / Decoder）}
+\end{enumerate}
+
+\[
+o_t \sim p(o_t \mid h_t, s_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：验证潜在状态是否包含了足够的环境信息，通过潜在状态还原出高维的像素图像。
+\item
+  \textbf{拟合方式}：由反卷积神经网络（Deconvolutional Neural Network）拟合。
+\end{itemize}
+
+以及预测奖励：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  \textbf{奖励预测模型（Reward model）}
+\end{enumerate}
+
+\[
+r_t \sim p(r_t \mid h_t, s_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：预测在当前潜在状态下能获得的标量奖励，这是规划器（Planner）在潜在空间中评估动作好坏的唯一依据。
+\item
+  \textbf{拟合方式}：由多层感知机（MLP）拟合。
+\end{itemize}
+
+\hypertarget{ux4e8cux5de5ux4f5cux6d41-5}{%
+\subsubsection{（二）工作流}\label{ux4e8cux5de5ux4f5cux6d41-5}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 1：数据采样}
+\end{itemize}
+
+从经验回放池 \(\mathcal{D}\) 中均匀随机抽取批量大小为 \(B\)、长度为 \(L\) 的序列片段 \(\{(o_t, a_t, r_t)_{t=k}^{L+k}\}_{i=1}^{B}\)。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 2：状态展开与分布计算（Forward Pass）}
+\end{itemize}
+
+对于序列中的每一个时间步 \(t = 1 \ldots L\)：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  建模视角的世界模型
+  执行确定性状态转移：将上一步的 \(h_{t-1}\)、\(s_{t-1}\)（通过重参数化采样得到）和动作 \(a_{t-1}\) 输入 RNN \(f\)，得到当前的确定性状态 \(h_t\)。
+\item
+  计算先验分布 \(p\)：将 \(h_t\) 输入 MLP，输出当前先验高斯的均值和方差 \(\mu_{\mathrm{prior}}\)、\(\sigma_{\mathrm{prior}}\)。
+\item
+  计算后验分布 \(q\)：将当前的图像 \(o_t\) 通过 CNN 提取特征，结合 \(h_t\) 输入到另一个 MLP，输出后验高斯的均值和方差 \(\mu_{\mathrm{post}}\)、\(\sigma_{\mathrm{post}}\)。
+\item
+  重参数化采样：从后验分布 \(\mathcal{N}(\mu_{\mathrm{post}}, \sigma_{\mathrm{post}}^2)\) 中采样出潜在向量 \(s_t\)。
 \end{enumerate}
 
-这一路线把每一帧二维图像都看成对同一个三维世界的不同观察，根据用户输入的图像及其视角，隐式地维护一个多视角的三维世界模型。通过用户的视角输出对应的二维表示。
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 3：计算重构与预测}
+\end{itemize}
 
-具体例子：模型根据用户输入的杯子正面、上面的图片，从而建构起杯子的世界模型，后续输出的预测中正面、上面也始终能保证三维同一性，用户转到侧面时，模型也能根据侧面和正面、上面的关系，整合出杯子的侧面图。
+将 \(h_t\) 和采样得到的 \(s_t\) 输入反卷积解码器预测重构图像 \(\hat{o}_t\)，并输入奖励模型预测标量奖励 \(\hat{r}_t\)。
 
-代表成果：RTFM（World Labs）、IC-World。
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 4：损失计算（Loss Computation）}
+\end{itemize}
 
-优点：建模三维空间和人或动物的双/多眼视角、机器人多传感器一致性等相符，可能是空间理解的关键和具身智能的重要技术基础。
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  计算重构图像 \(\hat{o}_t\) 与真实图像 \(o_t\) 的 MSE（重构损失）。
+\item
+  计算预测奖励 \(\hat{r}_t\) 与真实奖励 \(r_t\) 的 MSE。
+\item
+  计算先验分布 \(p\) 与后验分布 \(q\) 之间的 KL 散度（如果使用 Latent Overshooting，还需要并行计算并累加跨越多步的先验与当前后验的 KL 散度）。
+\end{enumerate}
 
-缺点：需要处理视角，正确判断用户的视角变换关系，但训练的视频数据并不自带视角，导致模型难以在测试时建立对多视角三维同一性的认知；如果用硬编码算法给训练数据加视角估计信息，会存在误差，随着场景变复杂可能难以维持性能，难以从数据中Scaling。
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 5：参数更新（Backpropagation）}
+\end{itemize}
+
+将所有时间步的损失累加求平均得到总损失 \(\mathcal{L}(\theta)\)，使用优化器（如 Adam）计算梯度，更新构成这 5 个函数的所有神经网络参数 \(\theta \leftarrow \theta - \alpha \nabla_{\theta}\mathcal{L}(\theta)\)。
+
+\hypertarget{ux4e09ux635fux5931ux51fdux6570}{%
+\subsubsection{（三）损失函数}\label{ux4e09ux635fux5931ux51fdux6570}}
+
+损失分为三部分：仅有过去记忆时对现在潜变量的预测p和包含过去记忆与现在观测时的真实现在潜变量q之间的KL散度，体现的是预测下一时刻的潜变量和真实下一时刻的潜变量的差距，反映预测下一时刻状态的能力；图像重构损失反映由潜变量重构像素的能力；奖励损失反映由潜变量预测奖励的能力。表达式如下：
+
+\[
+\begin{aligned}
+\mathcal{L}
+&=
+\sum_{t=1}^{T}
+\Biggl(
+-\mathbb{E}_{q(s_t \mid o_{\le t}, a_{<t})}
+\left[\ln p(o_t \mid s_t) + \ln p(r_t \mid s_t)\right]
+\\
+&\quad+
+\mathbb{E}
+\left[
+D_{\mathrm{KL}}\left(
+q(s_t \mid o_{\le t}, a_{<t})
+\parallel
+p(s_t \mid s_{t-1}, a_{t-1})
+\right)
+\right]
+\Biggr)
+\end{aligned}
+\]
+
+这里 \(o_t\) 和 \(r_t\) 均满足高斯分布，故这两项等价于 MSE Loss。
+
+由于标准目标只通过一步 KL 散度训练随机路径，模型在多步预测时容易发散。Latent Overshooting 将约束扩展到距离为 \(d\) 的所有未来时间步：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{overshooting}}(\theta)
+&=
+\sum_{t=1}^{T}
+\Biggl(
+-\mathbb{E}_{q}\left[\ln p(o_t \mid s_t)\right]
+\\
+&\quad+
+\frac{1}{D}
+\sum_{d=1}^{D}
+\beta_d
+\mathbb{E}
+\left[
+D_{\mathrm{KL}}\left(
+q(s_t \mid o_{\le t})
+\parallel
+p(s_t \mid s_{t-d})
+\right)
+\right]
+\Biggr)
+\end{aligned}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：它不仅要求``由 \(t - 1\) 步预测的 \(t\) 步先验''要与后验对齐，还要求``由 \(t - 2\) 步、\(t - d\) 步连续多步推演得出的 \(t\) 步先验''也要与当前后验对齐。这种潜在空间中的一致性正则化，增强了模型在不依赖真实观测时的长期演化能力。
+\end{itemize}
+
+\hypertarget{ux4e8cux57faux4e8erssmux7684ux5e94ux7528}{%
+\subsection{二、基于RSSM的应用}\label{ux4e8cux57faux4e8erssmux7684ux5e94ux7528}}
+
+\hypertarget{ux4e00planetux57faux4e8eux4e16ux754cux6a21ux578bux7684ux641cux7d22ux89c4ux5212}{%
+\subsubsection{（一）PlaNet：基于世界模型的搜索规划}\label{ux4e00planetux57faux4e8eux4e16ux754cux6a21ux578bux7684ux641cux7d22ux89c4ux5212}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{外层循环：模型训练与数据收集（Algorithm 1）}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{初始化}：使用随机动作收集少量初始种子回合（Seed episodes），存入经验回放池 \(\mathcal{D}\)。
+\item
+  \textbf{模型拟合}：从 \(\mathcal{D}\) 中随机抽取数据块，利用上述变分下界公式计算损失，并通过梯度上升更新 RSSM 的参数 \(\theta\)。
+\item
+  \textbf{环境交互}：使用更新后的模型，通过规划算法（见下文 CEM）选择动作 \(a_t\)，在动作上加入高斯探索噪声，与环境交互并将新经验存入 \(\mathcal{D}\)。
+\end{itemize}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{1}
 \tightlist
 \item
-  建模对象的世界模型
+  \textbf{内层循环：基于 CEM 的动作规划（Algorithm 2）}
 \end{enumerate}
 
-这一路线拆分提取并显式建模空间中的各个对象（及其属性）、它们之间的关系，不是把世界看成一整张图，而是看成：杯子、桌子、机械臂，它们的位置、质量、接触关系、摩擦等。模型内设有一定数量的``槽''，对象的信息竞争性地进入这些槽，以在后续生成时处理重要的的对象的信息。
-
-具体例子：模型内部的状态：``杯子中心坐标是~(x, y, z)，桌面是平面，夹爪与杯壁接触，摩擦系数足够，所以能稳定提起。''
-
-代表成果：C-SWM、SlotFormer、Marble（World Labs）。
-
-优点：适合空间关系、接触、遮挡、组合泛化，可解释性强，干预简单（如添加、移动物体等），更接近真正的物理推理。
-
-缺点：需要处理复杂的视觉信息，把世界拆成正确结构，这本身容易出错，且这步如果出错就会导致后续预测出错。
-
-\hypertarget{ux4e09ux57faux4e8eux9690ux53d8ux91cfux652fux6301ux4e0bux6e38ux4efbux52a1ux7684ux4e16ux754cux6a21ux578b}{%
-\subsection{三、基于隐变量支持下游任务的世界模型}\label{ux4e09ux57faux4e8eux9690ux53d8ux91cfux652fux6301ux4e0bux6e38ux4efbux52a1ux7684ux4e16ux754cux6a21ux578b}}
-
-这一路线的核心思想是：物理世界充满高维冗余的像素噪声，必须先将观测降维压缩到紧凑的隐变量。
-
-步骤 1（表征）：编码器将观测映射为隐状态：
-
-\[
-z_t=E(o_t)
-\]
-
-步骤 2（转移）：动力学模型在隐空间预测下一步：
-
-\[
-z_{t+1}\sim p(z_{t+1}\mid z_t,a_t)
-\]
-
-再将下一时刻观测o\_t+1压缩到下一时刻实际隐状态，根据预测和实际隐状态在隐空间内的差距训练，学习p(z\_t+1\textbar z\_t, a\_t)以``想象''未来，最后通过解码器重建观测或直接用于训练策略/价值函数，借助下游任务的梯度训练隐变量。
-
-具体例子：先把摄像头画面抽象成隐藏状态，比如``杯子大概在哪、手爪大概在哪、当前是否稳定''。然后学：做了动作a之后，隐藏状态会怎么变。机器人不会一帧帧``画出未来视频''，而是在脑子里快速模拟：``如果手往前5厘米，隐藏状态会变成什么；再向下2厘米，会不会碰到杯子；夹紧后奖励会不会变高。''这就像一个``只在脑内运行的小游戏引擎''，但这个引擎运行在latent里，不渲染画面，不关心画面是否逼真。
-
-代表成果：Dreamer系列（Google DeepMind）、VideoWorld系列（Bytedance Seed）等按时序每次生成下一时刻的隐变量，它们后期的版本也和生成式世界模型路线相结合。
-
-优点：由于在低维隐空间进行想象，更关注真正可预测、对行动有用的部分，样本效率高，省算力，对理解和规划常常更合适。
-
-缺点：不直接输出仿真或可视化界面，在面对开放世界时、高保真视觉生成中，隐空间的容量可能会成为瓶颈。
-
-\hypertarget{ux56dbux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}{%
-\subsection{四、在抽象表示空间中预测的世界模型}\label{ux56dbux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}}
-
-无论是在日常生活中还是自然科学中，在每一个像素预测是不必要的。例如，在物体运动预测中，只需要抽象成质点、刚体等，没有必要在像素或者原子层面分析。基于这种思想，我们和上一条路线一样，将观测映射为隐状态，但不再用下游任务驱动，而是让模型直接通过自监督预测自主学习隐状态的表征，仅用正则化损失避免表征坍缩。目前的一种方法是提取观测中的所有隐状态后随机在时空上进行掩码，训练模型通过预测来补全掩码处的隐状态，最小化预测和实际隐状态在隐空间内的差距，让模型学会时空和物理表征。
-
-具体例子：不关心杯子反光的每个像素，而关心``杯子的位置、手爪的姿态''等。给模型看前几帧和动作，它会类似于物理学中的分析一样预测``未来某块区域的状态表示会变成`手爪靠近杯口、杯子仍竖直在桌面上、可抓取概率高'''这样的表示，而不是把未来每个像素都画出来。就像人闭眼想象时，不会在脑内渲染所有反光，但知道``杯子接下来会被拿起来''。
-
-代表成果：V-JEPA系列（Meta FAIR）、LeWorldModel（AMI Labs）。
-
-优点：与自然科学各个领域中在不同尺度的抽象中推理（而非在像素中推理）天然契合，可以自然地把视觉、触觉、传感器数据等一起编码，最符合科学推理的思考方式；不需要预测像素，节省算力。
-
-缺点：抽象表示空间对人类不可见，难以直接发现是否存在问题；本质是Encoder，下游接任务需要微调。
-
-\hypertarget{ux4e94ux4ee5ux4e0aux6280ux672fux8defux7ebfux5bf9ux89c6ux89c9ux4ee5ux5916ux7684ux6a21ux6001ux7684ux652fux6301ux60c5ux51b5}{%
-\subsection{五、以上技术路线对视觉以外的模态的支持情况}\label{ux4e94ux4ee5ux4e0aux6280ux672fux8defux7ebfux5bf9ux89c6ux89c9ux4ee5ux5916ux7684ux6a21ux6001ux7684ux652fux6301ux60c5ux51b5}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  生成式世界模型：可以把视频token、动作token、传感器token串起来，不过实时控制和连续物理量处理未必最自然，高速传感器流很长，token化成本可能高。
-\item
-  建模三维的世界模型：把其他模态信息一并注入上下文进行预测。
-\item
-  建模对象的世界模型：可以把非视觉信息接成物理变量，如机器人的对象位置+接触关系+摩擦估计+触觉，自动实验室的分子/材料状态+温度压力流量+反应阶段+仪器读数，不只是把多模态拼起来，而是试图把它们放进同一个结构化状态里。
-\item
-  基于隐变量支持下游任务的世界模型：把视觉、触觉、关节状态、力传感器等一起编码到隐变量里，让模型预测``未来高层状态''，而不是未来原始信号。
-\item
-  在抽象表示空间中预测的世界模型：同上将各种模态一起编码到隐变量里，即可在抽象表示空间中进行预测。
-\end{enumerate}
-
-\hypertarget{ux516dux4ee5ux4e0aux65b9ux6848ux7684ux5171ux540cux96beux70b9}{%
-\subsection{六、以上方案的共同难点}\label{ux516dux4ee5ux4e0aux65b9ux6848ux7684ux5171ux540cux96beux70b9}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  干预动作标签：世界模型的定义是p(s\_t+1\textbar s\_t,a\_t)，但现实世界中几乎没有任何数据显式地带有干预动作标签a\_t。例如，利用视频数据学习时，我们建模的更像是p(s\_t+1\textbar s\_1,\ldots,s\_t)（如果把s\_t定义为整个上下文，则是p(s\_t+1\textbar s\_t)），而不是p(s\_t+1\textbar s\_t,a\_t)，模型无法直接学习干预动作a\_t带来的影响。人类（以及经典RL中的智能体）是通过直接与环境互动学习p(s\_t+1\textbar s\_t,a\_t)的，但这样的数据极其昂贵且依赖具身智能的发展。
-\item
-  其他模态的数据缺乏：视觉模态的数据是互联网上的大量视频，但触觉、传感器、科学等的数据则往往在企业或实验室的私有数据库中，无法直接访问，这也是多模态通用世界模型训练中的一大困难和当前许多世界模型局限于视觉的原因。
-\end{enumerate}
-
-\hypertarget{ux53c2ux8003ux6587ux732e-165}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-165}}
+在每一个时间步，智能体不使用策略网络（Policy Network）输出动作，而是通过交叉熵方法（Cross Entropy Method, CEM）和模型预测控制（MPC）实时搜索最优动作序列：
 
 \begin{itemize}
 \tightlist
 \item
-  Brooks, T., Peebles, B., Holmes, C., et al.~(2024). \href{https://openai.com/index/video-generation-models-as-world-simulators/}{Video generation models as world simulators}. OpenAI.
+  \textbf{初始化信念}：构建一个随时间变化的正态分布信念 \(q(a_{t:t+H}) \sim Normal(\mu, \sigma^2 I)\)，用于表示规划视界 \(H\) 内的最佳动作序列。
 \item
-  OpenAI. (2025). \href{https://openai.com/index/sora-2-system-card/}{Sora 2 System Card}. OpenAI.
+  \textbf{迭代优化}：
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    从当前信念中采样 \(J\) 个候选动作序列。
+  \item
+    将这些序列输入到学习好的 RSSM 模型中，仅在潜在空间中推演未来状态，并计算预期奖励总和 \(R^{(j)}\)。
+  \item
+    挑选出奖励最高的 \(K\) 个动作序列。
+  \item
+    使用这 \(K\) 个优秀序列的均值和方差重新拟合动作信念分布。
+  \end{enumerate}
 \item
-  Bruce, J., Dennis, M., Edwards, A., et al.~(2024). \href{https://arxiv.org/abs/2402.15391}{Genie: Generative Interactive Environments}. ICML.
+  \textbf{执行与重规划}：经过 \(I\) 次迭代后，提取最终信念均值的第一个动作去执行。由于采用 MPC 机制，接收到新观测后，动作序列的信念会重置为零均值和单位方差，以避免陷入局部最优。
+\end{itemize}
+
+\hypertarget{ux4e8cdreamer-3ux5229ux7528ux4e16ux754cux6a21ux578bux8fdbux884crlux8badux7ec3}{%
+\subsubsection{（二）Dreamer 3：利用世界模型进行RL训练}\label{ux4e8cdreamer-3ux5229ux7528ux4e16ux754cux6a21ux578bux8fdbux884crlux8badux7ec3}}
+
+\textbf{1. 世界模型}
+
+\begin{itemize}
+\tightlist
 \item
-  Parker-Holder, J., Ball, P., Bruce, J., et al.~(2024). \href{https://deepmind.google/blog/genie-2-a-large-scale-foundation-world-model/}{Genie 2: A large-scale foundation world model}. Google DeepMind.
+  世界模型通过自动编码技术，将复杂的感知输入（如图像）压缩成紧凑的潜在表示。
 \item
-  Parker-Holder, J., \& Fruchter, S. (2025). \href{https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/}{Genie 3: A new frontier for world models}. Google DeepMind.
+  它被实现为一个循环状态空间模型（RSSM）。
 \item
-  Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
+  首先，编码器将感知输入 \(x_t\) 映射为随机表示 \(z_t \sim q_{\phi}(z_t \mid h_t, x_t)\)。
 \item
-  Team Seedance, Chen, D., Chen, L., et al.~(2026). \href{https://arxiv.org/abs/2604.14148}{Seedance 2.0: Advancing Video Generation for World Complexity}. arXiv:2604.14148.
+  然后，动力学预测器根据之前的状态 \(h_t\) 预测未来的表示 \(\hat{z}_t \approx p_{\phi}(\hat{z}_t \mid h_t)\)。
 \item
-  Google DeepMind. (2025). \href{https://deepmind.google/models/veo/}{Veo 3.1}. Google DeepMind model page.
+  通过这种方式，世界模型学会了理解环境的内在结构，并能在隐空间中``想象''未来的状态演变。
+\end{itemize}
+
+在数学上，RSSM 是一种结合了确定性循环神经网络（RNN）和随机状态变量的生成式模型。在时间步 \(t\)，它定义动作 \(a_t\)、观测输入 \(x_t\)、奖励 \(r_t\) 以及回合继续标志 \(c_t \in \{0, 1\}\)。
+
+\textbf{2. Critic}
+
+\textbf{Step 2：评论家学习（Critic Learning）}
+
+\begin{itemize}
+\tightlist
 \item
-  Alonso, E., Jelley, A., Micheli, V., et al.~(2024). \href{https://arxiv.org/abs/2405.12399}{Diffusion for World Modeling: Visual Details Matter in Atari}. NeurIPS.
+  评论家和演员完全在世界模型``想象''出的抽象轨迹中进行学习，而无需直接与真实环境交互。
 \item
-  Robbyant Team: Gao, Z., Wang, Q., Zeng, Y., et al.~(2026). \href{https://arxiv.org/abs/2601.20540}{Advancing Open-source World Models}. arXiv:2601.20540.
+  评论家接收模型状态 \(s_t = [h_t, z_t]\)，并学习评估该状态的价值。
 \item
-  Li, L., Zhang, Q., Luo, Y., et al.~(2026). \href{https://arxiv.org/abs/2601.21998}{Causal World Modeling for Robot Control}. arXiv:2601.21998.
+  为了考虑长期收益，评论家预测的是回报分布的期望值，并使用自举（bootstrapped）的 \(\lambda\)-回报来整合预测的奖励和价值。
+\end{itemize}
+
+\textbf{3. Actor}
+
+\textbf{Step 3：演员学习（Actor Learning）}
+
+\begin{itemize}
+\tightlist
 \item
-  NVIDIA: Agarwal, N., Ali, A., Bala, M., et al.~(2025). \href{https://arxiv.org/abs/2501.03575}{Cosmos World Foundation Model Platform for Physical AI}. arXiv:2501.03575.
+  演员的目标是选择能够最大化回报的动作，同时通过熵正则化（entropy regularizer）来鼓励探索。
 \item
-  Unitree Robotics. (2025). \href{https://github.com/unitreerobotics/unifolm-world-model-action}{UnifoLM-WMA-0: World-Model-Action Architecture for General Robots}. GitHub repository.
+  它通过策略梯度方法（Reinforce estimator）在想象的轨迹上进行优化。
+\end{itemize}
+
+\textbf{4. 损失函数}
+
+（1）预测损失
+
+\[
+\mathcal{L}_{\mathrm{pred}}(\phi)
+\doteq
+-\ln p_{\phi}(x_t \mid z_t, h_t)
+-\ln p_{\phi}(r_t \mid z_t, h_t)
+-\ln p_{\phi}(c_t \mid z_t, h_t)
+\]
+
+这部分通过负对数似然，迫使模型准确地重构观测输入、奖励和回合标志。
+
+（2）动力学损失
+
+\[
+\mathcal{L}_{\mathrm{dyn}}(\phi)
+\doteq
+\max\left(
+1,
+D_{\mathrm{KL}}\left[
+\mathrm{sg}(q_{\phi}(z_t \mid h_t, x_t))
+\parallel
+p_{\phi}(\hat{z}_t \mid h_t)
+\right]
+\right)
+\]
+
+其核心目的是让动力学预测器 \(p_{\phi}\) 逼近编码器给出的后验分布 \(q_{\phi}\)。这里使用 \(\mathrm{sg}(\cdot)\)（stop-gradient，停止梯度）操作，表示在拉近两个分布距离时，只更新动力学预测器的参数，而不影响编码器提取特征的方式。
+
+同时，公式外围包裹的 \(\max(1, \cdot)\) 引入了空闲位（Free bits）技术：当 KL 散度下降到 1 nat \(\approx 1.44\) bits 以下时，模型会停止在这项损失上的惩罚，避免学到过于退化的平凡动力学，从而将学习重点转移回预测损失上。
+
+（3）表示损失
+
+\[
+\mathcal{L}_{\mathrm{rep}}(\phi)
+\doteq
+\max\left(
+1,
+D_{\mathrm{KL}}\left[
+q_{\phi}(z_t \mid h_t, x_t)
+\parallel
+\mathrm{sg}(p_{\phi}(\hat{z}_t \mid h_t))
+\right]
+\right)
+\]
+
+与上一个损失相反，表示损失的梯度方向被限制在编码器 \(q_{\phi}\) 上。它的目的是反向规范编码器的行为，促使它提取出来的隐状态更加``有规律''、更容易被动力学模型预测。
+
+通过巧妙运用停止梯度操作和不同的损失缩放（在论文中设定为 \(\beta_{\mathrm{pred}} = 1\)、\(\beta_{\mathrm{dyn}} = 1\)、\(\beta_{\mathrm{rep}} = 0.1\)），RSSM 解决了以往``强正则化在简单图像有效，但在复杂 3D 环境会抹杀关键细节''的进退两难问题，实现了跨领域的鲁棒性。
+
+\hypertarget{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}{%
+\subsection{三、Dreamer 4：重建、动力学预测与奖励预测的损失解耦}\label{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}}
+
+损失分步解耦方法是Google DeepMind在世界模型Dreamer 4中的改进。
+
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-7}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-7}}
+
+在 Dreamer 3 中，图像编码器（Encoder）、动力学模型（RSSM）、图像解码器（Decoder）和奖励预测器（Reward Predictor）是作为一个巨大的整体同时训练的。
+
+潜在特征 \(z_t\) 在每一次反向传播时，会同时受到三股力量的拉扯：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
 \item
-  Google DeepMind. (2026). \href{https://deepmind.google/models/gemini-omni/}{Gemini Omni}. Google DeepMind model page.
+  \textbf{重建梯度（\(\nabla \mathcal{L}_{recp}\)）}：逼着 \(z_t\) 记住画面里的每一片云彩和每一棵树，因为解码器需要重构整个画面。
 \item
-  World Labs team. (2025). \href{https://www.worldlabs.ai/blog/rtfm}{RTFM: A Real-Time Frame Model}. World Labs Research Preview.
+  \textbf{动力学梯度（\(\nabla \mathcal{L}_{dyn}\)）}：逼着 \(z_t\) 关注物体的运动规律。
 \item
-  Wu, F., Wei, J., Li, R., Xu, Y., Li, J., Ye, D., \& Lin, G. (2025). \href{https://arxiv.org/abs/2512.02793}{IC-World: In-Context Generation for Shared World Modeling}. arXiv:2512.02793.
+  \textbf{奖励预测梯度（\(\nabla \mathcal{L}_{pred}\)）}：逼着 \(z_t\) 把所有注意力都集中在那些能得分的微小物体上，例如远处的怪物或手里的钻石，而忽略暂时没有分数、但对理解物理世界至关重要的背景。
+\end{enumerate}
+
+这带来的致命问题是``表征容量的争夺''。当环境非常复杂（如 Minecraft）时，这三股梯度会互相打架。如果奖励信号很强，编码器就会为了迎合奖励预测，而在 \(z_t\) 中丢弃那些``暂时没有奖励，但对理解物理世界至关重要''的背景细节，例如地形起伏。这导致 Dreamer 3 的世界模型在复杂 3D 环境中极易发生表征坍塌。
+
+\hypertarget{ux4e8cux89e3ux8026ux635fux5931ux51fdux6570ux7684ux7ec4ux6210ux90e8ux5206}{%
+\subsubsection{（二）解耦损失函数的组成部分}\label{ux4e8cux89e3ux8026ux635fux5931ux51fdux6570ux7684ux7ec4ux6210ux90e8ux5206}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
 \item
-  Kipf, T., van der Pol, E., \& Welling, M. (2020). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. ICLR.
+  \textbf{Tokenizer 压缩损失}
+\end{enumerate}
+
+Dreamer 4 不再像前代那样在潜空间动态推演的同时去重建图像。它首先训练一个 Causal Tokenizer，利用掩码自编码器（MAE, Masked Autoencoder）的逻辑，以 \(p \sim U(0, 0.9)\) 的概率随机遮盖视频块（Patches），只专注于时空特征的极致压缩。
+
+其损失函数抛弃了 Symlog，转而采用纯视觉领域的标准重建与感知损失的组合：
+
+\[
+\mathcal{L}_{\mathrm{tokenizer}}
+=
+\mathrm{MSE}(x, \hat{x})
++
+\mathrm{LPIPS}(x, \hat{x})
+\]
+
+\begin{itemize}
+\tightlist
 \item
-  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2023). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR.
+  MSE 保证像素级别的准确性。
 \item
-  World Labs team. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. World Labs.
+  LPIPS（Learned Perceptual Image Patch Similarity）保证人类视觉感知上的结构完整性，避免生成的特征模糊。
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{动力学预测损失}
+\end{enumerate}
+
+这一项即Transformer对下一时刻预测的准确程度。Dreamer 4废弃了Dreamer 3的KL散度，避免在处理长序列时发生模式崩溃，而改用流匹配和Shortcut Forcing方法。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{任务与奖励预测损失}
+\end{enumerate}
+
+Dreamer 4在世界模型中训练Actor和Critic，世界模型需要输出奖励和动作预测：
+
+在通过海量无标签视频训练好 Tokenizer 和 Dynamics 之后，Dreamer 4 会摄入带标签的数据，例如带有鼠标键盘操作记录的 Minecraft 录像，专门训练一个极其轻量的任务头（Task Head）。这部分损失类似于 Dreamer 3 的 \(\mathcal{L}_{pred}\)，但加入了对具体动作的克隆预测：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{task}}
+&=
+-
+\sum_{n=0}^{L}
+\ln p_{\theta}(r_{t+n} \mid h_t)
+\\
+&\quad -
+\sum_{n=0}^{L}
+\ln p_{\theta}(a_{t+n} \mid h_t)
+\end{aligned}
+\]
+
+模型利用 Transformer 聚合出的历史时空上下文 \(h_t\)，同时去最大化未来奖励序列 \(r_{t+n}\) 和真实动作序列 \(a_{t+n}\) 的对数似然。
+
+\hypertarget{ux4e09ux635fux5931ux89e3ux8026ux7684ux597dux5904}{%
+\subsubsection{（三）损失解耦的好处}\label{ux4e09ux635fux5931ux89e3ux8026ux7684ux597dux5904}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{避免梯度冲突}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{第一步（视觉独立）}：先只用重建损失（类似 MAE 的自编码器逻辑）把 Tokenizer 训练到极致。此时的 \(z_t\) 是完美的\textbf{纯视觉客观表征}，完全没有被奖励信号污染。训练完后，直接冻结 Tokenizer。
+\item
+  \textbf{第二步（物理独立）}：在冻结的 Tokenizer 提取的 \(z_t\) 之上，单独训练 Block-Causal Transformer（动力学模型）。此时模型只关心上一帧怎么变成下一帧（Shortcut Forcing），完全不知道``奖励''是什么。训练完后，世界模型的物理推演能力也被冻结（或被低学习率训练）。
+\item
+  \textbf{第三步（任务对齐）}：最后，只在这个懂视觉、懂物理的冻结大模型之上，加一个极小的网络去拟合具体的奖励 \(r_t\) 和动作 \(a_t\)。
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{数据可 Scaling}
+\end{enumerate}
+
+Dreamer 3这样的端到端强化学习要求每一帧数据都必须包含精确的（状态，动作，奖励，下一状态）四元组，否则就会因为缺了奖励预测分支的梯度而学偏。但在现实世界中，获取海量带动作标签和奖励的数据极其昂贵且困难。通过解耦，Dreamer 4的前两个最庞大的阶段（Tokenizer和Flow Matching Transformer）完全不需要奖励和动作标签，可以直接用海量无标签视频学习。
+
+\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
+
+\begin{itemize}
+\tightlist
+\item
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.
 \item
   Hafner, D., Pasukonis, J., Ba, J., \& Lillicrap, T. (2023). \href{https://arxiv.org/abs/2301.04104}{Mastering Diverse Domains through World Models}. arXiv:2301.04104.
 \item
-  Ren, Z., Wei, Y., Guo, X., Zhao, Y., Kang, B., Feng, J., \& Jin, X. (2025). \href{https://arxiv.org/abs/2501.09781}{VideoWorld: Exploring Knowledge Learning from Unlabeled Videos}. arXiv:2501.09781.
+  Hafner, D., Yan, W., \& Lillicrap, T. (2025). \href{https://arxiv.org/abs/2509.24527}{Training Agents Inside of Scalable World Models}. arXiv:2509.24527.
+\end{itemize}
+
+\clearpage
+
+\hypertarget{jepa}{%
+\section{JEPA}\label{jepa}}
+
+Joint Embedding Predictive Architecture（联合嵌入预测架构，JEPA）是一种在抽象表示空间中预测的世界模型架构，包括V-JEPA系列、LeWorldModel等。
+
+\hypertarget{ux4e00v-jepaux7cfbux5217}{%
+\subsection{一、V-JEPA系列}\label{ux4e00v-jepaux7cfbux5217}}
+
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-18}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-18}}
+
+在 V-JEPA 之前，主流的视频无监督学习通常依赖于像素级重建（Pixel Reconstruction），例如掩码自编码器 VideoMAE。然而，在像素空间进行预测存在明显劣势：模型必须分配大量计算能力和模型容量来捕捉视觉输入中那些低层次、甚至是无关紧要的细节。
+
+V-JEPA 的核心思想是特征空间预测（Feature Prediction）：
+
+\begin{itemize}
+\tightlist
 \item
-  Ren, Z., Wei, Y., Yu, X., Luo, G., Zhao, Y., Kang, B., Feng, J., \& Jin, X. (2026). \href{https://arxiv.org/abs/2602.10102}{VideoWorld 2: Learning Transferable Knowledge from Real-world Videos}. arXiv:2602.10102.
+  该模型完全摒弃了像素重建，不再预测原始像素，而是预测被遮挡区域在语义特征空间中的表示。
 \item
-  Assran, M., Duval, Q., Misra, I., et al.~(2023). \href{https://arxiv.org/abs/2301.08243}{Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture}. CVPR.
+  通过在隐性表示空间（Latent Space）中进行预测，模型能够灵活地消除视频中不可预测或与语义无关的像素级细节，从而学习到高度通用的视觉特征。
+\end{itemize}
+
+其他基于隐变量的方法更像Decoder，按时序生成下一时刻的隐变量；V-JEPA更像Encoder，在时空上进行掩码预测，且没有重建损失（即由隐变量生成画面或间接参与生成画面）。
+
+\hypertarget{ux4e8cux6838ux5fc3ux67b6ux6784ux4e0eux635fux5931ux51fdux6570}{%
+\subsubsection{（二）核心架构与损失函数}\label{ux4e8cux6838ux5fc3ux67b6ux6784ux4e0eux635fux5931ux51fdux6570}}
+
+V-JEPA 的核心架构由三个部分组成：编码器 \(E_\theta(\cdot)\)、预测器 \(P_\theta(\cdot)\) 以及目标编码器 \(E_{\theta'}(\cdot)\)。目标是让从视频某一部分 \(x\) 计算出的表示，能够预测视频另一部分 \(y\) 的表示。
+
+为了防止模型输出常数向量从而陷入``表示坍塌''（Representation Collapse），V-JEPA 借鉴了非对比学习策略，采用了带有停止梯度（Stop-gradient）的指数移动平均（EMA）架构。
+
+模型的优化目标是最小化预测特征与目标特征之间的 \(L_1\) 距离：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{VJEPA}}
+&=
+\left\|
+P_\theta(E_\theta(x),\Delta_y)
+\, - \, \mathrm{sg}(E_{\theta'}(y))
+\right\|_1
+\end{aligned}
+\]
+
+其中，\(\mathrm{sg}(\cdot)\) 表示停止梯度操作，\(E_{\theta'}(\cdot)\) 是 \(E_\theta(\cdot)\) 权重的指数移动平均网络，\(\Delta_y\) 是提供给预测器的位置条件变量。
+
+解释：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  用 \(L_1\) 范数是因为受极端值影响小，实验发现更稳定。其仅在 \(0\) 处不可导（类似 ReLU）。
+\item
+  由于没有重建损失，为了防止``模式崩塌''，\(y\) 的 encoder 更新方法类似于强化学习的``目标网络''，即从 \(x\) 的 encoder 网络软更新：
+\end{enumerate}
+
+EMA 更新（\(y\)-encoder）：\(y\)-encoder 的权重 \(\theta'_t\) 不使用优化器更新，而是使用指数移动平均公式缓慢更新：
+
+\[
+\theta'_t=\tau\theta'_{t-1}+(1-\tau)\theta_t
+\]
+
+其中 \(\tau\) 是动量参数，在 V-JEPA 中从 \(0.998\) 逐渐增加到 \(1.0\)。也就是说，\(y\)-encoder 始终是 \(x\)-encoder 历史状态的一个平滑、滞后的影子。
+
+为什么这样能防止模式崩塌：
+
+假设我们固定住编码器，只训练预测器 \(P_\theta\)。模型的损失函数是 \(L_1\) 范数（绝对误差）。在统计学中，使得绝对误差期望最小的预测值，正是目标分布的中位数。
+
+当预测器已经训练得非常完美（即 \(P=P^{*}\)）时，我们将它代回损失函数，这时候整个损失函数就变成了计算目标 \(Y\) 的条件中位绝对偏差（Median Absolute Deviation，简称 MAD）：
+
+\[
+\begin{aligned}
+\mathrm{MAD}(Y\mid E_\theta(x))
+&=
+\mathbb{E}
+\left[
+\left|
+Y-\mathrm{median}(Y\mid E_\theta(x))
+\right|
+\right]
+\end{aligned}
+\]
+
+此时，编码器 \(E_\theta\) 的优化方向（梯度）就是去最小化这个 MAD。
+
+直观解释：
+
+\begin{itemize}
+\tightlist
+\item
+  如果 \(E_\theta(x)\) 抽取了``什么都没学到、输出常数''，那么它就无法提供关于目标 \(Y\) 的任何线索。此时 \(Y\) 在给定 \(E_\theta(x)\) 条件下的分布会非常分散，其 MAD 值会非常大。
+\item
+  为了最小化 MAD，编码器 \(E_\theta(x)\) 必须从输入视频中抽取有效信息，使得它能够高度确定地推出 \(Y\) 的状态。当 \(E_\theta(x)\) 包含的信息越丰富，目标 \(Y\) 的不确定性就越小，分布越集中，MAD 也越小。
+\item
+  虽然最小化 MAD 能促使编码器学习，但如果目标 \(Y\)（由 \(y\)-encoder 生成）和预测器更新得一样快，它们可能会``合谋''一起变成常数来让 MAD 变为 \(0\)。
+\item
+  这就是 EMA 的原因：\(y\)-encoder 的权重不是通过梯度下降更新的，而是 \(x\)-encoder 权重的历史平均版本。这使得 \(y\)-encoder 的变化非常缓慢。
+\end{itemize}
+
+工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  预测器学得很快，迅速逼近最优解 \(P^{*}\)。
+\item
+  因为目标 \(Y\) 变化很慢，它不会配合 \(x\)-encoder 一起坍塌。
+\item
+  迫于快速进化的预测器和稳定缓慢的目标，\(x\)-encoder 只能老老实实地去学习如何提取丰富的信息来降低 MAD，从而从根本上切断了坍塌的可能。
+\end{enumerate}
+
+这意味着通过软更新的方式把在线网络的参数复制给目标网络，可以让目标网络的变化总是落后于 \(E_\theta(x)\)，且目标网络只能被动随着在线网络变化而变化，就像在线网络在追一个``移动的靶子''，避免了双方共同奔向常数的捷径。
+
+\hypertarget{ux4e09ux8badux7ec3ux65b9ux6cd5-1}{%
+\subsubsection{（三）训练方法}\label{ux4e09ux8badux7ec3ux65b9ux6cd5-1}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{掩码 Token 预测}
+\end{enumerate}
+
+\begin{itemize}
+\item
+  模型首先从视频中抽取一个包含 \(16\) 帧的短视频片段（时间步幅为 \(4\)），并将其空间分辨率调整为 \(224\times224\)，张量形状为 \(16\times224\times224\times3\)。
+\item
+  使用 3D 卷积层（过滤器大小 \(2\times16\times16\)）对视频进行切块，将其展平为一维的词元（Token）序列，序列长度为 \(1568\)。
+\item
+  将绝对 3D 正弦-余弦位置嵌入（Position Embeddings）添加到该特征图中。
+\item
+  采用多块采样策略：提取短程掩码（覆盖 \(15\%\) 面积的 \(8\) 个随机块）和长程掩码（覆盖 \(70\%\) 面积的 \(2\) 个随机块）。平均掩码比例高达约 \(90\%\)。
+\item
+  构建一组可学习的``掩码 Token''，这些 Token 包含了缺失区域的三维时空位置信息。
+\item
+  预测器网络（一个较窄的 Transformer）接收上下文表示和掩码 Token，并在隐空间中直接输出对缺失区域特征的预测值 \(\hat{s}_y\)。
+\item
+  在预测特征 \(\hat{s}_y\) 和真实特征 \(s_y\) 之间计算 \(L_1\) 距离损失。
+  为什么不严格按时序因果：
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{物理世界的非严格因果性}：在视觉世界中，我们不仅可以通过``过去''预测``未来''，也可以通过``未来''和``周围环境''推断``过去''或``被遮挡的部分''。V-JEPA 的多块掩码策略（Multi-Block Masking）会在时空中随机挖掉一大块（高达 \(90\%\)），模型必须学会利用空间上下文和时间前后的线索来填补隐空间中的空白。
+\item
+  \textbf{因果掩码的消融实验结果}：论文做过对比实验。他们尝试了一种``因果掩码''（Causal Multi-block）策略：只给模型看视频前几帧，让它预测后面几帧。结果发现，这种严格遵循因果律的训练方式，其下游任务表现反而下降了。
+\item
+  \textbf{结论}：V-JEPA 的目标是提取通用的视觉表示（Motion and Appearance），而不是像视频生成模型那样生成符合因果约束的下一帧图像。随机的时空掩码会强迫模型学习到比纯因果预测更稳健的物理规律，例如物体的空间一致性、运动的连续性。
+\item
+  \textbf{非掩码 Token 的损失函数}
+\end{enumerate}
+
+在V-JEPA 2.1中，为了更充分地利用数据以及让模型更好地理解连续性，对非掩码token也引入了损失，要求预测这些未被遮挡的特征：
+
+但这里存在一个致命的逻辑漏洞：对于可见的上下文块，模型其实已经``看到了''它的输入特征。如果直接要求模型去预测这些可见块，网络很容易找到一个``捷径''（Trivial Solution）：直接把输入特征原封不动地复制（Copy）到输出端。一旦模型开始``抄作业''，它就不会再去费力学习真正有用的空间结构和特征了。
+
+为了解决这个问题，论文设计了动态加权公式：
+
+\[
+\lambda_i = \frac{\lambda}{\sqrt{d_{\min}(i, M)}}
+\]
+
+\begin{itemize}
+\item
+  \(d_{\min}(i, M)\)：表示当前可见的上下文块（Token）\(i\) 距离最近的一个被遮挡块（Masked Token）的时空距离（以块为单位）。
+\item
+  \(\sqrt{d_{\min}(i, M)}\)：对这个距离开平方根，作为分母。
+\item
+  \textbf{整体逻辑}：距离掩码区域越近的可见块，其计算损失时的权重 \(\lambda_i\) 越大；距离掩码区域越远的可见块，权重越小。
+  这样设计的好处：
+\item
+  \textbf{强制学习局部连续性（Local Continuity）}：通过给靠近遮挡边缘的可见块赋予更高权重，模型被强迫去关注可见区域与被遮挡区域是如何在空间和时间上平滑过渡的。它不能再简单地``复制''自己的特征，而是必须结合邻居的状态来推断。
+\item
+  \textbf{平衡``全局理解''与``局部细节''}：如果所有可见块权重一样大（哪怕是一个固定的很小的值），都会导致模型在动作识别（如 SSv2 数据集）等全局语义任务上性能大幅下降。这种动态距离衰减机制，既让模型学会了精细的边界分割（Segmentation），又保住了动作识别等全局任务的能力，实现了一个绝佳的平衡（Trade-off）。
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{深度自监督}
+\end{enumerate}
+
+在传统的视觉 Transformer（ViT）中，越靠近底层的网络层提取的是边缘、纹理等``局部细节''，越靠近顶层的网络层提取的是物体类别、动作意图等``全局概念''。这通常会导致顶层特征在经历层层传递后，丢失大量细粒度的空间信息。
+
+V-JEPA 2.1 的深度自监督彻底改变了这一点。
+1. \textbf{具体是怎么操作的？}
+- \textbf{特征提取与融合}：x-编码器处理可见块时，不仅仅输出最后一层的特征，还会把其中 \(3\) 个中间层的特征提取出来，与最后一层的特征在通道维度上拼接在一起。
+- \textbf{降维与输入}：拼接后的庞大特征会通过一个轻量级的多层感知机（MLP）进行降维融合，然后与代表遮挡位置的掩码标记（Mask Tokens）拼接，一起送入预测器（Predictor）。
+- \textbf{分层预测与计算损失}：预测器不再只输出一个最终结果，而是同时输出 \(4\) 个层级的预测结果（对应刚才提取的 \(4\) 个编码器层级）。模型会分别把这 \(4\) 个预测结果，与目标网络（y-编码器）对应 \(4\) 个层级的输出进行对比，在每一个层级上都计算一遍预测损失和上下文损失。
+2. \textbf{这样做有什么好处？}
+- \textbf{通过顶层保留底层细节}：因为预测器在最终输出时不仅要预测高级语义，还要``倒推''并准确预测出网络中间层那些包含丰富空间几何信息的局部特征。这种监督信号会一直反向传播，强制局部细节信息从底层一直流向最终层。
+- \textbf{下游任务使用极其方便（无需多层拼接）}：以前在做语义分割或深度估计时，为了获取足够的细节，研究人员通常需要手动把模型不同深度的层特征``拼接''起来使用。V-JEPA 2.1 经过深度自监督训练后，只用它的最后一层特征（Last-Layer），就能达到极高的密集预测性能，几乎去除了对多层融合的依赖，大大简化了下游任务的部署。
+- \textbf{强势回血全局性能}：论文发现，单纯引入上下文损失会损害全局分类任务的准确率，但一旦加上深度自监督，不仅密集任务（如分割、深度）性能进一步飙升，原本流失的全局理解能力（如动作分类）也被成功挽救回来。
+
+\hypertarget{ux56dbux4e0ellmux7684ux7ed3ux5408}{%
+\subsubsection{（四）与LLM的结合}\label{ux56dbux4e0ellmux7684ux7ed3ux5408}}
+
+预训练完成后，我们得到了一个不懂人类语言，但对物理世界、物体外观和运动规律有着极深理解的模型。在V-JEPA 2和LLM之间加入一个投影器（Projector，通常是多层感知机MLP），把V-JEPA 2提取出的纯视觉特征（视觉Token），``翻译''并映射到大语言模型能够理解的输入空间（文本嵌入空间）中。然后用大规模的``图像/视频-文本''问答对齐数据来训练这个整体系统，就可以让其逐步学会了如何理解由V-JEPA 2传递过来的视觉信息，并能通过LLM的处理用自然语言回答关于视频内容的问题，实现初步的空间推理。
+
+\hypertarget{ux4e8cleworldmodel}{%
+\subsection{二、LeWorldModel}\label{ux4e8cleworldmodel}}
+
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-8}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-8}}
+
+世界模型（World Models）旨在通过学习环境的动态演变规律，使智能体能够在``想象''中预测未来并进行规划。联合嵌入预测架构（JEPA）是近年来非常受关注的一种世界模型框架，它不直接像素空间重建图像，而是将观测数据压缩到一个紧凑的、低维的潜在空间（Latent Space）中，并在该空间内预测未来的表征。
+
+然而，现有的端到端 JEPA 方法面临一个致命痛点：\textbf{表征坍塌（Representation Collapse）}。为了最小化预测误差，编码器可能会走捷径，将所有不同的输入图像都映射为同一个恒定的常数向量，导致学到的表征失去任何有用的环境信息。为防止坍塌，以往的方法通常采用极其复杂的七项损失函数（例如 PLDM），或者直接冻结一个在大规模数据上预训练好的编码器（例如 DINO-WM），这要么使得训练变得极度不稳定，要么极大地限制了模型在特定任务上的表达能力。
+Yann LeCun等提出了LeWorldModel，通过极为简洁的方法有效解决了表征坍塌问题，并在小参数模型上获得了较好的效果。
+
+\hypertarget{ux4e8cux6a21ux578bux67b6ux6784-2}{%
+\subsubsection{（二）模型架构}\label{ux4e8cux6a21ux578bux67b6ux6784-2}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{编码器（Encoder）}：采用 Vision Transformer（ViT）架构。它负责将当前时刻的原始像素观测 \(o_t\) 映射为紧凑的低维潜在表征 \(z_t\)。
+\item
+  \textbf{预测器（Predictor）}：采用标准的 Transformer 架构。它通过自回归的方式，结合当前的潜在状态 \(z_t\) 和智能体采取的动作 \(a_t\)，预测下一时刻的潜在表征 \(\hat{z}_{t+1}\)。为了使动作信号生效，动作向量会通过自适应层归一化（AdaLN）注入到预测器的每一层中。
+\end{itemize}
+
+注：\(a_t\)是代表动作的向量，同一个模型\(a_t\)的含义需要统一。预测器的上下文实际上为最近\(N\)个潜在状态和\(N\)个动作，\(N\)默认为3。本论文为每个环境都分别训练了独立的模型。
+
+\hypertarget{ux4e09ux635fux5931ux51fdux6570-1}{%
+\subsubsection{（三）损失函数}\label{ux4e09ux635fux5931ux51fdux6570-1}}
+
+\[
+\mathcal{L}_{LeWM} \triangleq \mathcal{L}_{pred} + \lambda\,SIGReg(Z)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{预测损失（Prediction Loss）}：采用均方误差（MSE），计算预测器输出的下一时刻表征 \(\hat{z}_{t+1}\) 与编码器实际生成的下一时刻真实表征 \(z_{t+1}\) 之间的差异：
+\end{itemize}
+
+\[
+\mathcal{L}_{pred} \triangleq \left\|\hat{z}_{t+1}-z_{t+1}\right\|_2^2
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{SIGReg 正则化（Sketched-Isotropic-Gaussian Regularizer）}：这是 LeWM 避免表征坍塌的核心创新。SIGReg 强制整个批次（Batch）的潜在表征矩阵 \(Z\) 服从各向同性的高斯分布，从而保证特征在空间中的多样性。由于直接在高维空间测试正态分布极其困难，SIGReg 巧妙地利用了 Cramér-Wold 定理。它随机生成 \(M\) 个单位方向向量 \(u^{(m)}\)，将高维特征投影到一维空间 \(h^{(m)} = Zu^{(m)}\)，然后在每个一维投影上独立应用 Epps-Pulley 正态性检验 \(T(\cdot)\)。
+\end{itemize}
+
+\[
+SIGReg(Z) \triangleq \frac{1}{M}\sum_{m=1}^{M} T(h^{(m)})
+\]
+
+通过这种方式，只有超参数 \(\lambda\)（正则化权重）需要人工调节。相比之前的方法（例如 PLDM 需要调节 \(6\) 个超参数），这大幅降低了调参复杂度，使得模型可以进行非常高效的对数时间超参数搜索。
+SIGReg正则化的原理：
+
+SIGReg 巧妙地绕过了高维计算，其核心理论依据是统计学中的 \textbf{Cramér-Wold 定理}。该定理指出：如果一个高维随机向量在所有可能的一维方向上的投影分布，都与目标高斯分布在对应方向上的投影分布相匹配，那么这两个高维分布就是完全等价的。
+
+虽然目标是多维各向同性高斯分布，它在任何一维方向上的投影都应该是一个标准的一维高斯分布 \(\mathcal{N}(0,1)\)。因此，SIGReg 将复杂的``高维分布匹配''转化为了大量简单的``一维分布匹配''。
+假设在一个 Batch 中，我们收集到的潜在表征张量为 \(Z \in \mathbb{R}^{N\times B\times d}\)（其中 \(N\) 是历史长度，\(B\) 是批次大小，\(d\) 是嵌入维度）。SIGReg 的工作流如下：
+
+\textbf{Step 1：随机方向投影（Sketching）}
+
+在 \(d\) 维超球面上，均匀采样 \(M\) 个随机的单位方向向量 \(u^{(m)} \in \mathbb{S}^{d-1}\)。将高维表征 \(Z\) 投影到这些一维方向上，得到 \(M\) 组一维标量集合。
+
+\[
+h^{(m)} \triangleq Zu^{(m)}
+\]
+
+这里，每个 \(h^{(m)}\) 包含了当前批次所有样本在方向 \(u^{(m)}\) 上的投影值。
+
+\textbf{Step 2：一维正态性检验（Epps-Pulley Test）}
+
+对于这 \(M\) 个一维投影，逐一使用 Epps-Pulley 检验来衡量其与标准高斯分布 \(\mathcal{N}(0,1)\) 的差异。Epps-Pulley 检验是一种基于经验特征函数（Empirical Characteristic Function, ECF）的高效统计检验方法。
+
+对于第 \(m\) 个投影方向，其测试统计量 \(T^{(m)}\) 定义为经验特征函数 \(\phi_N\) 与标准高斯特征函数 \(\phi_0\) 之间平方差的加权积分。
+
+\[
+T^{(m)} = \int_{-\infty}^{\infty} \omega(t)\left|\phi_N(t;h^{(m)}) - \phi_0(t)\right|^2 dt
+\]
+
+其中：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\phi_N(t;h)=\frac{1}{N}\sum_{n=1}^{N} e^{ith_n}\) 是投影数据的一维经验特征函数。
+\item
+  \(\phi_0(t)\) 是目标分布（标准高斯分布）的特征函数。
+\item
+  \(\omega(t)\) 是一个权重函数。
+\end{itemize}
+
+\textbf{Step 3：聚合统计量（Aggregation）}
+
+将所有 \(M\) 个方向上的 Epps-Pulley 统计量求均值，作为最终的 SIGReg 损失值。
+
+\[
+SIGReg(Z) \triangleq \frac{1}{M}\sum_{m=1}^{M}T(h^{(m)})
+\]
+
+当 \(SIGReg(Z)\to 0\) 时，意味着特征在所有随机方向上都服从一维标准正态分布。根据 Cramér-Wold 定理，此时高维特征矩阵 \(Z\) 就完美服从了各向同性高斯分布。
+SIGReg不会成为计算瓶颈的原因：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{极简的矩阵运算}：Step 1 中的高维到一维投影，在代码实现中仅仅是一个简单的矩阵乘法（\(Z\times U\)）。GPU 处理这类密集的线性代数运算速度极快。
+\item
+  \textbf{数值积分成本极低}：在 Step 2 中计算积分时，算法并没有求解析解，而是采用了一种求积方案（如梯形法则），仅仅在 \([0.2,4]\) 区间内均匀选取 \(T\) 个离散节点（Integration Knots）进行求和。论文的消融实验（Ablation Studies）显示，即使将积分节点数降到非常小（例如 \(17\)），也完全不影响最终控制任务的性能。
+\item
+  \textbf{对投影数量 \(M\) 不敏感}：虽然理论上 \(M\to\infty\) 才能完美等价，但实验表明，该方法对投影方向的数量具有极强的鲁棒性。即使大幅减少 \(M\)（论文默认使用 \(M=1024\)），模型性能依然保持稳定。
+\item
+  \textbf{无冗余超参数调整}：相比于 PLDM 那种包含 \(6\) 项以上损失、调参复杂度为 \(O(n^6)\) 的模型，SIGReg 的内部参数（如节点数、方向数）几乎不需要调优，唯一需要调整的超参数只有控制正则化项总体占比的权重 \(\lambda\)（且可通过对数时间的二分查找快速确定）。
+  \#\#\#\# （四）训练阶段工作流
+\end{enumerate}
+
+LeWM 的端到端训练完全不需要停止梯度（Stop-gradient）等额外的稳定化启发式技巧：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  输入一段含有 \(T\) 个时间步的原始像素序列和对应的动作序列。
+\item
+  编码器将像素序列逐帧编码，生成真实的潜在表征序列。
+\item
+  预测器接收表征和动作序列，结合时间因果掩码（避免看到未来的信息），自回归地生成未来的预测表征序列。
+\item
+  计算预测表征与真实下一时刻表征之间的 MSE 预测损失。
+\item
+  对真实表征序列的转置应用 SIGReg 正则化，计算分布匹配损失。
+\item
+  将两项损失按权重加和，一次性反向传播，联合优化编码器和预测器的所有参数。
+  \#\#\#\# （五）推理阶段工作流
+\end{enumerate}
+
+在推理阶段，LeWM 结合交叉熵方法（CEM，Cross-Entropy Method）在潜在空间中进行模型预测控制（MPC）：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  编码器分别提取初始观测状态的表征 \(z_1\) 和目标观测状态的表征 \(z_g\)。
+\item
+  初始化采样分布参数，从中采样 \(N\) 组候选动作序列。
+\item
+  在预测器中输入这些动作序列，一步步预测未来的潜在状态，直到规划视野的最后一步生成 \(\hat{z}_H\)。
+\item
+  计算最终预测状态 \(\hat{z}_H\) 与目标状态 \(z_g\) 之间的欧氏距离，作为该动作序列的成本（Cost）。
+\item
+  选出成本最低的 \(K\) 个``精英''动作序列，用它们的均值和方差来更新下一次的采样分布。
+\item
+  重复以上预测和优化循环，直至收敛，最终输出最佳动作计划。为了避免长时间序列的预测误差累积，通常只执行前几个计划动作，然后获取新观测并重新规划。
+  \#\#\#\# （六）优点
+\item
+  \textbf{极简且稳定的损失函数（抛弃传统``hacks''）}：以往的 JEPA 模型为了避免特征表示坍塌（Representation Collapse），高度依赖复杂的工程技巧，如指数移动平均（EMA）、停止梯度（Stop-Gradient）、预测冻结编码器或七八项复杂的正则化损失。LeWM 彻底抛弃了这些，整个训练仅使用两项损失，将需要调节的损失超参数从现有方案的 \(6\) 个锐减到仅剩 \(1\) 个。
+\item
+  \textbf{彻底解决``表示坍塌''问题}：引入了独创的 SIGReg 正则化。它利用随机投影和一维正态性检验，强制潜在嵌入服从高斯分布。这种机制从理论根源上保证了特征的多样性，防止模型``走捷径''将所有图像映射为同一个向量。
+\item
+  \textbf{极致的轻量化与极低的算力门槛}：整个模型极其小巧，参数量仅约 \(15M\)（编码器 \(5M\)，预测器 \(10M\)），研究者完全可以在单张 GPU 上在数小时内完成训练，极大降低了基于像素的世界模型研究门槛。
+\item
+  \textbf{高达 48 倍的规划加速}：与基于大语言模型（Foundation-model-based）的世界模型相比，LeWM 所有的动态预测完全在一个高度压缩的潜在空间中进行，无需对图像级别像素预测。这种高速浓缩的表示使其在执行下游控制任务的规划时，速度提升了 \(48\) 倍。
+\item
+  \textbf{涌现的直观物理规律（Intuitive Physics）}：尽管在训练时模型只是盲目地预测下一帧的隐变量，没有施加任何物理规律或三维空间的监督信号，但探测结果表明，其潜在空间自然编码了有意义的物理结构。通过``期望值违反检验''（Surprise Evaluation）证明，该模型能可靠地检测出违背物理常识的事件（例如物体穿墙或突然消失）。
+  此外，在不引入隐空间直道化损失的情况下，直道化程度较以前的V-JEPA显著提升。
+\end{enumerate}
+
+值得注意的是，论文在消融实验中发现，引入重建损失反而引起了性能的下降。
+
+\hypertarget{ux4e03ux4ecdux5b58ux5728ux7684ux5c40ux9650ux6027}{%
+\subsubsection{（七）仍存在的局限性}\label{ux4e03ux4ecdux5b58ux5728ux7684ux5c40ux9650ux6027}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  依赖动作数据
+\end{enumerate}
+
+和之前的V-JEPA不同，LeWM的预测器不是只看视频帧，而是显式建模：
+
+\[
+\hat{z}_{t+1} = f_\theta(z_t, a_t)
+\]
+
+所以它不是一个纯粹从无动作视频中学习的模型。这不仅要求数据存在动作标签，还意味着动作标签的含义在同一个模型中必须``对齐''，考虑到这里动作以向量直接表示，故在一定程度上限制了泛化性。论文最后的局限性也明确提到：当前end-to-end latent world models依赖动作标签来预测未来状态，未来可以用逆动力学模型学习未来动作表征，减少对显式动作标注的依赖。但要注意，动作不一定需要人工标注。机器人或仿真控制任务里，动作通常来自控制器日志，比如关节速度、末端执行器控制量、环境action command，这比人工标注便宜得多。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  难以捕捉细粒度旋转与姿态信息
+\end{enumerate}
+
+LeWM的紧凑latent能捕捉主要动力学和位置结构，但对3D场景中的细粒度旋转、姿态、末端执行器朝向等变量编码不足；这在OGBench-Cube的rollout和probing中体现明显。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  规划视野受限
+\end{enumerate}
+
+随着自回归预测步数增加，预测误差逐渐累积，长程规划质量下降。论文也因此采用MPC：不是一次性规划很长时间，而是只执行前几个动作，然后根据新观测重新规划。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  高度依赖数据覆盖率
+\end{enumerate}
+
+LeWM是offline、reward-free的方法，训练依赖固定数据集中的 observation-action trajectories。论文提到，这些轨迹不要求是最优策略产生的，但需要充分覆盖环境动力学。局限性部分也说，它仍依赖具有sufficient interaction coverage的离线数据，而这种数据在实际应用中可能昂贵或难收集。
+
+这点尤其重要：LeWM 的 planning 成功并不意味着它可以在训练分布外任意泛化。如果离线数据没有覆盖某些状态、接触模式、物体姿态、动作后果，世界模型就很难可靠预测，规划也容易失败。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  SIGReg在极简环境中的正则化匹配挑战
+\end{enumerate}
+
+LeWM在Push-T和Reacher上表现很好，但在简单的Two-Room环境中不如PLDM和DINO-WM。论文给出的可能解释是：Two-Room数据多样性低、内在维度低，而SIGReg会鼓励embedding匹配高维各向同性高斯分布，这可能让表示结构变差，进而影响规划。
+
+不过，论文附录又补充了一个nuance。简单环境Two-Room中，LeWM虽然下游规划差一些，但probing指标上并不一定差，这说明简单环境的planning gap不一定完全来自``潜在表征信息不足''，也可能与动力学建模或规划过程有关。
+
+\hypertarget{ux4e09ux9690ux53d8ux91cfux7684ux7a7aux95f4ux76f4ux9053ux5316}{%
+\subsection{三、隐变量的空间直道化}\label{ux4e09ux9690ux53d8ux91cfux7684ux7a7aux95f4ux76f4ux9053ux5316}}
+
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-9}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-9}}
+
+传统预训练视觉编码器（如基于重构或对比学习的模型）虽然能提取丰富的语义特征，但它们并非为``规划''量身定制。这些模型生成的潜在空间轨迹（Latent Trajectories）通常是高度弯曲的。在高度弯曲的空间中进行规划时，两点之间的欧几里得距离（Euclidean distance）无法真实反映它们之间的到达难度（Geodesic distance，即实际的物理转移和动作成本）。这会导致基于梯度的规划器极易陷入局部最优，从而大幅降低决策和控制的效率。
+
+\textbf{感知直道化假说（Perceptual Straightening Hypothesis）}：该研究的灵感来源于人类视觉神经科学中的``感知直道化''假说。研究表明，人类视觉系统在处理自然界中复杂的动态视频流时，为了更好地预测物体的运动，倾向于在内部将其转化为更平直的表征轨迹。受此启发，作者提出在人工智能的世界模型中引入``时间直道化''（Temporal Straightening），强制要求编码器学习到的潜在状态转移轨迹在局部尽可能保持直线。
+\#\#\#\# （二）核心算法
+
+直道化的核心是要求潜空间中的运动轨迹尽可能接近匀速直线运动。公式上，这体现为相邻两个时间步的``位移向量''应该尽可能一致：
+
+\[
+\Delta z_t = z_t - z_{t-1}
+\]
+
+\[
+\Delta z_{t+1} = z_{t+1} - z_t
+\]
+
+故可以在预测下一状态的隐变量z\_t+1时，除了预测损失外，还额外引入一个基于曲率的损失函数作为正则化项。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  基于MSE Loss
+\end{enumerate}
+
+\[
+\mathcal{L}_{curv} = \mathbb{E}_t\left[\left\| (z_{t+1}-z_t) - (z_t-z_{t-1}) \right\|^2\right]
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  基于余弦相似度的损失
+\end{enumerate}
+
+\[
+\mathrm{Curvature}(z_{t-1}, z_t, z_{t+1}) = 1 - \frac{\Delta z_t \cdot \Delta z_{t+1}}{\|\Delta z_t\|\,\|\Delta z_{t+1}\|}
+\]
+
+\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
+
+\begin{itemize}
+\tightlist
 \item
   Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
 \item
@@ -365,229 +1293,10 @@ z_{t+1}\sim p(z_{t+1}\mid z_t,a_t)
   Mur-Labadia, L., Muckley, M., Bar, A., et al.~(2026). \href{https://arxiv.org/abs/2603.14482}{V-JEPA 2.1: Unlocking Dense Features in Video Self-Supervised Learning}. arXiv:2603.14482.
 \item
   Maes, H., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux4e16ux754cux6a21ux578bux7684ux8badux7ec3ux6570ux636eux4e0eux6cdbux5316ux6027}{%
-\section{世界模型的训练数据与泛化性}\label{ux4e16ux754cux6a21ux578bux7684ux8badux7ec3ux6570ux636eux4e0eux6cdbux5316ux6027}}
-
-\hypertarget{ux4e00ux4e16ux754cux6a21ux578bux7684ux5173ux952eux96beux70b9}{%
-\subsection{一、世界模型的关键难点}\label{ux4e00ux4e16ux754cux6a21ux578bux7684ux5173ux952eux96beux70b9}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
 \item
-  数据：互联网上的视频存在限制于视觉以及缺乏干预的问题；其他高质量数据稀缺。
+  Wang, Y., Bounou, O., Zhou, G., Balestriero, R., Rudner, T. G. J., LeCun, Y., \& Ren, M. (2026). \href{https://arxiv.org/abs/2603.12231}{Temporal Straightening for Latent Planning}. arXiv:2603.12231.
 \item
-  训练方式：需要能不断扩展的训练方式及其目标函数，使模型能在世界数据中通过自监督学习理解世界的规律，以及通过强化学习找到现实世界任务中的最优策略。
-\end{enumerate}
-
-\hypertarget{ux4e8cux8badux7ec3ux6570ux636e}{%
-\subsection{二、训练数据}\label{ux4e8cux8badux7ec3ux6570ux636e}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  互联网视频数据：规模大、可扩展，但限制在视觉，且没有显式的干预动作a\_t，尽管可以从视频中推断动作，但这本质上是一种标签，在边缘案例上会严重挣扎。而且，即使推断得好的动作也只是某人实际所做的近似，有些东西在视频中根本看不到，比如从驾驶舱着陆时移动方向舵，如果不做就会坠机。
-\item
-  游戏数据：有状态和动作的完整数据，有观察-预测-行动的循环，是因果结构系统一般如何工作的一种抽象。理论上一旦世界模型通过多样的游戏集看到了N个世界的变体只需要少量微调就能理解第N+1个对应真实世界的变体的动态。但这样训练和现实世界客观上存在gap，且还是没有解决只有视觉的问题。
-\item
-  具身数据：有现实世界中状态和动作的完整数据，但极其昂贵。有视觉之外的传感器数据，但这些数据未必能跨本体泛化。
-\item
-  工业、科学等领域数据：对世界模型在这些领域的运用非常重要，但互联网上公开数据稀缺。
-\end{enumerate}
-
-\hypertarget{ux4e09ux8fc1ux79fbux4e0eux6cdbux5316ux6027}{%
-\subsection{三、迁移与泛化性}\label{ux4e09ux8fc1ux79fbux4e0eux6cdbux5316ux6027}}
-
-\hypertarget{ux4e00ux4e09ux79cdux5173ux952eux7684ux8fc1ux79fb}{%
-\subsubsection{（一）三种关键的迁移}\label{ux4e00ux4e09ux79cdux5173ux952eux7684ux8fc1ux79fb}}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  输入模态迁移：策略在物理系统的自由度之间泛化得如何？对于一个具有20到60个自由度的人形机器人来说，手指运动不独立于手臂，从游戏手柄训练，能否期望它干净地迁移到20自由度的人形手？
-\item
-  传感器迁移：如果工作负载需要专门的物理传感器（触觉反馈、本体感受、深度），需要多少传感器特定数据才能让模型可靠地推理？
-\item
-  环境迁移：当环境变得更复杂、更随机时，表现如何衰退？在一个有千人的体育场中预测正确动作，比在空旷场地上困难得多，复杂度不是线性扩展的。
-\end{enumerate}
-
-\hypertarget{ux4e8cux6cdbux5316ux6027ux7684ux5c55ux671b}{%
-\subsubsection{（二）泛化性的展望}\label{ux4e8cux6cdbux5316ux6027ux7684ux5c55ux671b}}
-
-世界模型学习建模现实的因果关系，即特定动作导致下的状态转移规律。如果这种因果关系在足够基本的层面被理解，世界模型就应该能泛化到新场景。
-
-如果我们的世界模型能建模三维性、物理特征和时间及其交互，那么就可能解锁超人类的宏观和微观尺度上操纵这些领域的能力。今天没有人能够模拟一个生物细胞，更不用说由大量细胞组成的人体。但我们不需要映射现实的所有细节。我们只需要观察经过特定抽象后，那些细节如何体现在动作中，并用那些动作来预测接下来会发生什么。
-
-\hypertarget{ux53c2ux8003ux6587ux732e-166}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-166}}
-
-\begin{itemize}
-\tightlist
-\item
-  O'Neill, A., Rehman, A., Gupta, A., et al.~(2024). \href{https://arxiv.org/abs/2310.08864}{Open X-Embodiment: Robotic Learning Datasets and RT-X Models}. ICRA.
-\item
-  Grauman, K., Westbury, A., Byrne, E., et al.~(2022). \href{https://arxiv.org/abs/2110.07058}{Ego4D: Around the World in 3,000 Hours of Egocentric Video}. CVPR.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux7ed3ux5408ux4e16ux754cux6a21ux578bux7684ux81eaux4e3bux5b66ux4e60ux667aux80fdux7cfbux7edfux5c55ux671bux8bbaux6587}{%
-\section{结合世界模型的自主学习智能系统展望（论文）}\label{ux7ed3ux5408ux4e16ux754cux6a21ux578bux7684ux81eaux4e3bux5b66ux4e60ux667aux80fdux7cfbux7edfux5c55ux671bux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-Yann LeCun等提出了一套受人类和动物认知启发的学习架构，整合了基于观察的学习（System A）和基于主动行为的学习（System B），并能够根据内部生成的元控制信号在这些学习模式之间灵活切换。
-
-\hypertarget{ux4e00a-b-mux81eaux4e3bux5b66ux4e60ux67b6ux6784}{%
-\subsection{一、A-B-M自主学习架构}\label{ux4e00a-b-mux81eaux4e3bux5b66ux4e60ux67b6ux6784}}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics{images/image-0050.png}
-\caption{A-B-M 自主学习架构示意图}
-\end{figure}
-
-\textbf{System A：基于观察的学习（Learning from Observation）}
-
-System A 代表了一种被动接收并处理感觉输入的统计或预测机制。在 AI 中，这类算法的典型代表是自监督学习（SSL）或语言建模。\textbf{核心功能}是通过被动观察世界，提取数据的统计分布，抽象出从低级感官特征到高级概念的潜在表征，并构建能够预测未来的``世界模型''。
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{工作流与数学原理}：
-
-  \begin{enumerate}
-  \def\labelenumi{\arabic{enumi}.}
-  \tightlist
-  \item
-    环境数据从分布 \(D\) 中采样，即 \(x\sim D\)。
-  \item
-    任务生成器 \(G\) 会从原始样本 \(x\) 中生成用于训练的输入与预测目标的配对：
-  \end{enumerate}
-\end{itemize}
-
-\[
-(x_{\mathrm{in}},x_{\mathrm{tar}})=G(x)
-\]
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{2}
-\tightlist
-\item
-  系统通过前向计算和反向传播，学习一个带有参数 \(\theta\) 的表征网络 \(z=f_\theta(x)\)，以此来最小化特定的损失函数 \(\mathcal{L}\)。优化目标严格表述为：
-\end{enumerate}
-
-\[
-\theta^* = \arg\min_\theta \mathbb{E}_{x\sim D}\mathcal{L}\left(f_\theta(x_{\mathrm{in}}),x_{\mathrm{tar}}\right)
-\]
-
-\textbf{System B：基于行动的学习（Learning from Action）}
-
-System B 则是与世界进行物理互动的代理系统。在 AI 领域，主要对应强化学习（RL）、自适应控制和规划机制。\textbf{核心功能}是通过在未知动态世界中执行连续动作试错，观察环境反馈的延迟或稀疏结果，从而优化长期策略以达成特定目标。
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{工作流与数学原理}：
-
-  \begin{enumerate}
-  \def\labelenumi{\arabic{enumi}.}
-  \tightlist
-  \item
-    系统观察世界状态 \(s_t\)。
-  \item
-    利用代理策略 \(\pi\) 在世界动态模型 \(M(s_{t+1}\mid s_t,a_t)\) 下干预现实并生成动作序列 \(a_t\)。
-  \item
-    系统获取奖励函数 \(r(s,a)\) 和新的状态反馈。
-  \item
-    系统不断更新其策略引擎以最大化预期累计回报 \(J(\pi)\)。优化过程受折扣因子 \(\gamma\in[0,1)\) 控制。
-  \end{enumerate}
-\end{itemize}
-
-\textbf{System A 与 B 的相互增强（Symbiotic Interaction）}
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{A 辅助 B}：现实世界的动作空间（如机器人的几百个自由度）会导致无模型强化学习产生维度爆炸。System A 可以通过提供低维度的动作/状态压缩表征、用于前向搜索的预测性世界模型，以及基于``预测误差''的内部好奇心奖励，极大降低 System B 的探索空间。
-\item
-  \textbf{B 辅助 A}：System A 如果仅靠静态数据容易被噪音淹没。System B 可以通过主动移动视角（主动感知）去刻意干预世界，为 System A 揭示隐藏的因果关系，并收集目标导向的高信噪比训练数据。
-\end{itemize}
-
-\textbf{System M：元控制中心（Meta-Control Plane）}
-
-为了让机器像自然生物那样在这两种模式间流畅切换，论文引入了最核心的模块：System M。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  \textbf{监控遥测数据}：System M 本身不处理高清图像或底层电机指令等高带宽数据，它仅监控低带宽的``元状态（Meta-states）''。这包括：认识论信号（预测误差、学习增益、不确定性）、物种特异性信号（对目光直视、潜在危险的硬接线反应），以及躯体信号（电量或能量水平）。
-\item
-  \textbf{动态数据路由}：基于固定的、通过进化硬编码而来的元策略 \(\pi(a^m\mid s^m)\)，System M 执行元动作。它能够实时切断或连接数据通路，决定系统当前是进入``探索学习模式''还是``利用推理模式''，并将特定的数据动态路由到情景记忆库（Episodic Memory）进行批量处理。
-\end{enumerate}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics{images/image-0051.png}
-\caption{System A 与 System B 交互示意图}
-\end{figure}
-
-\hypertarget{ux4e8cux53ccux5c42ux4f18ux5316}{%
-\subsection{二、双层优化}\label{ux4e8cux53ccux5c42ux4f18ux5316}}
-
-\begin{itemize}
-\item
-  \textbf{内循环（发育尺度 Developmental Scale）}：这是单个智能体在其``一生''中的学习过程。利用给定的初始架构参数，系统 A 和系统 B 在固定的 System M 指挥下，与模拟环境实时交互、不断更新参数。
-\item
-  \textbf{外循环（演化尺度 Evolutionary Scale）}：在成千上万个模拟生命周期结束后，根据智能体是否完成了手工设计的生存适应度函数 \(\mathcal{L}\)，通过元学习算法去更新整个种群的``基因参数'' \(\phi\)。
-\item
-  \textbf{数学形式化}：
-\end{itemize}
-
-演化尺度求解的元参数为：
-
-\[
-\phi_{t+1}=\arg\min_\phi \mathcal{L}(A_0:A_K,B_0:B_K)
-\]
-
-这一优化必须受制于发育尺度的初始化和交互法则：
-
-\[
-A_0,B_0,M=Init(\phi_t)
-\]
-
-\[
-A_{i+1},B_{i+1}=Update(M,A_i,B_i,Env)
-\]
-
-\hypertarget{ux4e09ux9ad8ux7ea7ux5b66ux4e60ux5f62ux6001ux5c55ux671b}{%
-\subsection{三、高级学习形态展望}\label{ux4e09ux9ad8ux7ea7ux5b66ux4e60ux5f62ux6001ux5c55ux671b}}
-
-在完善的元控制系统下，AI 有望展现出类似于大型哺乳动物和人类独有的高级学习形态：
-
-\begin{itemize}
-\item
-  \textbf{通过沟通/社会化学习（Learning from Communication）}：System M 能够敏锐捕捉社会提示（如目光注视或教学语气），优先处理来自可靠来源（例如人类教师）的高优先级数据流，并快速同步给系统 A 建立新的世界规则。
-\item
-  \textbf{通过想象学习（Learning from Imagination）}：在休息甚至``睡眠''状态下，System M 能切断外部感官和运动输出，从情景记忆中提取经验进行高速回放，利用系统 A 在潜空间中推演长程计划，并在无需真实物理试错成本的情况下更新系统 B 的策略。
-\end{itemize}
-
-总结：这篇论文指出，想实现真正的通用人工智能并越过目前的数据墙，不应只依赖极度``语言中心化''且僵化的范式。AI 需要向认知科学取经，通过一个具有高度自决能力的元控制中心（System M），在``世界建模（观察）''和``具身控制（行动）''之间流畅切换，从而实现可以在部署后持续成长的自主生命体。
-
-\hypertarget{ux53c2ux8003ux6587ux732e-167}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-167}}
-
-\begin{itemize}
-\tightlist
-\item
-  Dupoux, E., LeCun, Y., \& Malik, J. (2026). \href{https://arxiv.org/abs/2603.15381}{Why AI systems do not learn and what to do about it: Lessons on autonomous learning from cognitive science}. arXiv:2603.15381.
+  Assran, M., Duval, Q., Misra, I., et al.~(2023). \href{https://arxiv.org/abs/2301.08243}{Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture}. CVPR.
 \end{itemize}
 
 \clearpage

@@ -1,691 +1,528 @@
-\hypertarget{ux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}{%
-\chapter{扩散模型与流匹配模型的强化学习}\label{ux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}}
+\hypertarget{vlaux6a21ux578b}{%
+\chapter{VLA模型}\label{vlaux6a21ux578b}}
 
-\hypertarget{ux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux6a21ux578bux4e2dux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}{%
-\section{扩散模型与流匹配模型中强化学习的难点}\label{ux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux6a21ux578bux4e2dux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}}
+\hypertarget{vlaux6a21ux578bux7684ux67b6ux6784ux4e0eux8badux7ec3ux65b9ux6cd5}{%
+\section{VLA模型的架构与训练方法}\label{vlaux6a21ux578bux7684ux67b6ux6784ux4e0eux8badux7ec3ux65b9ux6cd5}}
 
-\hypertarget{ux4e00ux9a6cux5c14ux53efux592bux8fc7ux7a0bux7684ux53d8ux5316}{%
-\subsection{一、马尔可夫过程的变化}\label{ux4e00ux9a6cux5c14ux53efux592bux8fc7ux7a0bux7684ux53d8ux5316}}
+VLA（Vision-Language-Action，视觉-语言-动作）模型基于预训练的视觉-语言模型（VLM）微调而来，是大模型时代具身智能领域的重要范式。它打破了传统机器人``感知-规划-控制''的模块化割裂设计，将语义直接映射为物理世界的动作。
 
-在扩散模型和流匹配模型下，马尔可夫过程的形式和纯自回归的LLM有所不同。以流匹配为例：
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-13}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-13}}
+
+VLA模型的核心思想是``端到端''（End-to-End）的多模态深度融合。它将预训练的视觉-语言模型（VLM）作为``大脑''，把机器人的动作输出转化为一种特殊的``语言''，从而让大模型能够直接指挥物理硬件。
+
+\hypertarget{ux4e00ux8f93ux5165ux8f93ux51faux6a21ux6001}{%
+\subsubsection{（一）输入输出模态}\label{ux4e00ux8f93ux5165ux8f93ux51faux6a21ux6001}}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
-\tightlist
 \item
-  \textbf{状态 \(x_t\)}：当前时间步的连续图像或潜变量。
+  视觉（Vision）：通过视觉编码器（如ViT、SigLIP）将输入图像（如RGB摄像机画面流）切分为Patch，并转化为视觉Token，赋予机器人理解空间关系、物理属性的能力。
 \item
-  \textbf{动作 \(v_t\)}：模型输出的连续向量场（一个方向）。
+  语言（Language）：接收人类的自然语言指令，结合预训练大模型积累的庞大互联网知识，提供逻辑推理与``常识''。
 \item
-  \textbf{环境转移}：确定性的数值积分，例如欧拉法 \(x_{t+\Delta t} = x_t + v_t \Delta t\)。
-\item
-  \textbf{奖励}：只有积分到 \(t = 1\) 得到最终图像 \(x_1\) 后，才能获得美学评分或对齐评分 \(R(x_1)\)。
-  从x\_0到x\_1的过程，实质上是v\_t关于t从0到1积分，这里v\_t是一个连续函数，事实上一般是采样几十步，每次沿该时间步的速度走一小步。
+  动作（Action）：VLA将动作词表化，将连续的机器人物理控制参数（如机械臂的关节扭矩、末端执行器的坐标）离散化，作为一种特殊的Token融入大语言模型的词表中。
 \end{enumerate}
 
-\hypertarget{ux4e8cux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux4e2drlux7684ux5171ux540cux56f0ux5883}{%
-\subsection{二、扩散模型与流匹配中RL的共同困境}\label{ux4e8cux6269ux6563ux6a21ux578bux4e0eux6d41ux5339ux914dux4e2drlux7684ux5171ux540cux56f0ux5883}}
+\hypertarget{ux4e8cux57faux672cux67b6ux6784}{%
+\subsubsection{（二）基本架构}\label{ux4e8cux57faux672cux67b6ux6784}}
 
-无论是通过随机微分方程（SDE）去噪的扩散模型，还是通过常微分方程（ODE）积分的流匹配，它们在微调时都面临生成过程长、动作空间维度极高的宏观挑战。
-
-\textbf{1. 稀疏奖励下的长轨迹信度分配难题（Credit Assignment over Long Trajectories）}
-
-\begin{itemize}
-\tightlist
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
 \item
-  \textbf{原理一致性}：DM 和 FM 生成一张最终图像 \(x_0\) 均需要数十步的逐步迭代。无论是预测噪声 \(\epsilon_\theta\)，还是向量场 \(v_\theta\)，这都是一个序列决策过程。
+  VLM：一般取预训练模型进行微调，负责根据视觉和语言输入进行推理和高层决策。
 \item
-  \textbf{困境所在}：RL 的奖励信号（如美学评分、人类偏好对齐评分 \(R(x_0)\)）极其稀疏，只能在生成过程结束、得到最终完整图像后才能获取。由于中间没有任何即时奖励（Dense Reward），一旦最终图像评分很低，RL 算法很难精确清楚到底是哪一步（比如是 \(t = 0.9\) 的大轮廓生成阶段，还是 \(t = 0.1\) 的细节纹理阶段）的神经网络输出出现了失误。
-\item
-  \textbf{后果}：传统的优势函数估计（如 GAE）在这种长链条的 ODE/SDE 求解器中难以向回精准传播奖励梯度，导致优化极其低效，甚至出现错误的信用归因。
-  尤其是价值网络训练极易崩溃，这也就是基于GRPO的算法更常用的原因。
-\end{itemize}
+  动作输出头（Action Head）：一般也采用Transformer架构，与VLM组合后共同训练，使得系统由单个VLM转变为能输出机器人动作的VLA。VLM的输出作为上下文输入动作头。
+\end{enumerate}
 
-\textbf{2. 超高维连续动作空间的探索危机（Exploration in High-Dimensional Continuous Space）}
+\hypertarget{ux4e8cux52a8ux4f5cux5934ux7528ux81eaux56deux5f52ux7684vlaux8303ux5f0f}{%
+\subsection{二、动作头用自回归的VLA范式}\label{ux4e8cux52a8ux4f5cux5934ux7528ux81eaux56deux5f52ux7684vlaux8303ux5f0f}}
 
-\begin{itemize}
-\tightlist
-\item
-  \textbf{原理一致性}：在大语言模型（LLM）的 RLHF 中，动作空间是离散词表（通过调整 logits 的概率即可轻松探索）。而在 DM 和 FM 中，模型的``动作''是输出与图像分辨率同等大小的连续张量，例如 \(1024 \times 1024 \times 3\) 的潜变量。
-\item
-  \textbf{困境所在}：要在如此庞大的连续高维空间中进行有效的随机探索（Exploration），无异于大海捞针。如果在每一步预测的向量场或噪声上盲目叠加高斯探索噪声，极易导致整个微分方程的积分轨迹出现级联误差（Cascading Errors），使最终生成的图像彻底崩溃成无意义的噪点。
-\item
-  \textbf{后果}：为了保证生成轨迹不崩溃，研究者只能将探索噪声的方差设置得极小，但这又会导致模型缺乏探索能力，迅速陷入局部最优。这也是 DM+RL 极易引发模式崩溃（Mode Collapse）、丧失生成多样性的底层原因。
-\end{itemize}
+\hypertarget{ux4e00ux57faux672cux539fux7406-2}{%
+\subsubsection{（一）基本原理}\label{ux4e00ux57faux672cux539fux7406-2}}
 
-\hypertarget{ux4e09ux6d41ux5339ux914dux4e2drlux7684ux7279ux6b8aux96beux70b9}{%
-\subsection{三、流匹配中RL的特殊难点}\label{ux4e09ux6d41ux5339ux914dux4e2drlux7684ux7279ux6b8aux96beux70b9}}
+假设在时间步 \(t\)，智能体接收到视觉观测序列 \(o_{\le t}\in\mathcal{O}\) 以及自然语言指令 \(l\in\mathcal{L}\)，模型的目标是输出最优动作 \(a_t\in\mathcal{A}\)。
 
-虽然 FM 在很多方面比 DM 更简洁高效，但在与 RL 结合上，它受限于自身的底层数学假设，面临着比扩散模型更棘手的独有理论困局。
+在以 RT-2（Robotic Transformer 2）和 OpenVLA 为代表的自回归（Autoregressive）VLA 范式中，连续动作 \(a_t\) 会被离散化为一系列动作 Token \((z_1,z_2,\ldots,z_K)\)。例如，一个 7 自由度（7-DoF）的机械臂动作可以表示为空间位移、旋转和夹爪开合度。
 
-\textbf{1. 破坏最优传输的``直线特性''与流形脱离（Breaking Optimal Transport Straight Lines）}
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{困境所在}：流匹配（尤其是目前主流的 OT-FM）在预训练时的最大卖点，是通过最优传输（Optimal Transport）强制对齐纯噪声 \(x_1\) 和真实图像 \(x_0\)，构造了一条极其简单的零曲率直线轨迹：
-\end{itemize}
+模型的训练目标是最大化以观测和指令为条件的动作 Token 的对数似然（Log-Likelihood）：
 
 \[
-x_t = tx_1 + (1 - t)x_0
+\begin{aligned}
+\mathcal{J}(\theta)
+&=
+\mathbb{E}_{(o,l,a)\sim\mathcal{D}}
+\left[
+\sum_{k=1}^{K}
+\log P_{\theta}(z_k\mid z_{<k}, o_{\le t}, l)
+\right]
+\end{aligned}
 \]
 
+其中，\(\theta\) 为神经网络的参数，\(\mathcal{D}\) 为包含人类专家示范和互联网图文的混合数据集。通过这种方式，动作预测被完全等价转化为了类似于 ChatGPT 生成文本的 Next-token Prediction 任务。
+
+\hypertarget{ux4e8cux5de5ux4f5cux6d41-4}{%
+\subsubsection{（二）工作流}\label{ux4e8cux5de5ux4f5cux6d41-4}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  多模态输入处理（Multimodal Input Processing）：步骤 1.1，获取当前相机的 RGB 图像 \(o_t\)，通过视觉编码器（Vision Encoder）提取特征，并经过 Projector（投影层）对齐到语言模型的特征空间，生成视觉 Token 序列；步骤 1.2，接收用户指令 \(l\)，通过文本分词器生成语言 Token 序列。
+\item
+  特征拼接与跨模态注意力计算（Context Concatenation \& Cross-modal Attention）：步骤 2.1，将系统提示词、视觉 Token 和语言 Token 按序列拼接为 \texttt{{[}System\ Prompt,\ Image\ Tokens,\ Language\ Tokens{]}}；步骤 2.2，送入 Transformer Decoder 骨干网络，通过自注意力机制（Self-Attention）让指令语义与图像中的物理特征产生深度绑定（Grounding）。
+\item
+  自回归动作生成（Autoregressive Action Generation）：步骤 3.1，Transformer 结合上下文，逐个预测当前步骤的动作 Token。例如先预测代表 \(A_x\) 的 Token，再将 \(A_x\) 作为已知条件预测 \(A_y\)，依次类推，直到输出夹爪动作 Token。
+\item
+  反词表化与物理控制（Detokenization and Execution）：步骤 4.1，将生成的动作 Token 序列 \((z_1,\ldots,z_K)\) 映射回连续的物理数值，生成实际控制指令；步骤 4.2，将指令发送给机器人底层控制器（如 PID 控制器）驱动电机执行。
+\end{enumerate}
+
+\hypertarget{ux4e09ux4f18ux7f3aux70b9}{%
+\subsubsection{（三）优缺点}\label{ux4e09ux4f18ux7f3aux70b9}}
+
+自回归VLA直接复用LLM的架构，天然继承了互联网级数据的逻辑链条（Chain-of-Thought）和常识推理能力。泛化能力极强，但受限于自回归的生成速度，高频连续控制能力略显不足。
+
+\hypertarget{ux4e09ux52a8ux4f5cux5934ux7528ux6269ux6563ux6d41ux5339ux914dux7684vlaux8303ux5f0f}{%
+\subsection{三、动作头用扩散/流匹配的VLA范式}\label{ux4e09ux52a8ux4f5cux5934ux7528ux6269ux6563ux6d41ux5339ux914dux7684vlaux8303ux5f0f}}
+
+这一范式的核心动机是消除``动作词表化''带来的离散化误差。它不再将动作强行转化为语言词表中的 Token，而是使用生成式连续时间模型（Diffusion Models 或 Flow Matching）直接在连续空间中生成高维、高频的动作轨迹（Action Chunks）。代表性模型包括 Physical Intelligence 的 \(\pi_0\)（Pi-Zero）、ForceVLA 等。
+
+扩散/流匹配 VLA 通常采用 \textbf{``VLM + 动作专家（Action Expert）''} 的解耦与重组架构：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  多模态条件编码器：继承预训练的视觉语言模型（如 PaliGemma、SigLIP 结合 LLM 骨干），负责将图像序列 \(o\) 和语言指令 \(l\) 处理为深度的上下文条件嵌入（Condition Embeddings）。
+\item
+  连续动作生成器（Action Expert）：通常是 Diffusion Transformer（DiT）或 U-Net，接收上述条件嵌入，并通过交叉注意力机制（Cross-Attention）或拼接自注意力机制，对纯噪声信号进行迭代去噪，最终输出连续的物理动作块 \(A_t=(a_t,a_{t+1},\ldots,a_{t+H-1})\)。
+\end{enumerate}
+
+以目前先进的最优传输流匹配（Optimal Transport Flow Matching，类似于 \(\pi_0\) 中的设计）为例。假设基础噪声分布为 \(x_0\sim p_0=\mathcal{N}(0,I)\)，真实动作轨迹分布为 \(x_1\sim p_1\)，多模态条件为 \(c=\mathrm{Encoder}(o,l)\)。模型构建一条连接噪声与真实动作的直线概率路径：
+
+\[
+x_t=(1-t)x_0+t x_1
+\]
+
+动作生成器 \(v_\theta\) 的目标是拟合真实的速度场（Velocity Field），其目标函数定义为：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{FM}}(\theta)
+&=
+\mathbb{E}_{\substack{t\sim \mathcal{U}(0,1)\\ x_0\sim p_0,\ x_1\sim p_1}}
+\left[
+\left\|v_\theta(x_t,t,c)-(x_1-x_0)\right\|^2
+\right]
+\end{aligned}
+\]
+
+这里 \((x_1-x_0)\) 是真实路径的恒定梯度。相较于传统的 DDPM 扩散模型，流匹配的 ODE 轨迹更加平滑且笔直，能够在极少的推理步数（甚至几步内）生成高保真的连续动作信号。
+工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  特征提取：VLM 接收当前相机观测和语言 \(l\)，前向传播生成多模态条件向量 \(c\)。
+\item
+  噪声初始化：从标准正态分布中采样一段长度为 \(H\) 的纯噪声轨迹 \(x_0\sim\mathcal{N}(0,I)\)。
+\item
+  常微分方程求解（ODE Solving）：在时间步 \(t\in[0,1]\) 之间，动作生成器 \(v_\theta(x_t,t,c)\) 结合上下文 \(c\) 计算当前状态的梯度，并通过数值积分器（如 Euler 法或 Heun 法）逐步更新。
+\item
+  动作执行：将 ODE 终点作为预测的动作块。系统采用模型预测控制（MPC/Receding Horizon Control）策略，仅执行前几个动作，随后重新获取新的视觉观测，进入下一轮闭环推理。
+  优缺点：动作输出不再是离散 Token，而是通过 Diffusion Model（扩散模型）或 Flow Matching 直接生成连续的动作轨迹，在处理需要极高精度和灵巧度（如折叠衣服、灵巧手操作）的任务时表现出显著优势，但在长程任务的因果关系保持上可能不如自回归。
+\end{enumerate}
+
+\hypertarget{ux56dbux7edfux4e00ux8868ux5f81ux4e0eux6f5cux5728ux52a8ux4f5cux8303ux5f0f}{%
+\subsection{四、统一表征与潜在动作范式}\label{ux56dbux7edfux4e00ux8868ux5f81ux4e0eux6f5cux5728ux52a8ux4f5cux8303ux5f0f}}
+
+不同机器人的硬件形态之间（乃至与人类第一视角之间）存在差异。为了让VLA模型不被限制于特定的硬件中，而是可以利用海量无动作标签的视频进行扩展（Scaling），我们引入``抓取右上方的物体''等与具体硬件无关的统一潜在动作，而不是``右臂第一个关节上抬30厘米''这样的具体机械操作。
+
+在具身智能架构分类中，它介于分层和端到端之间，因为模型间传递的信息是可微的，梯度可以（在某些设计下）从底层直接传导回高层，或者在同一个世界模型的潜空间内完成对齐。
+
+\hypertarget{ux4e00ux6838ux5fc3ux67b6ux6784}{%
+\subsubsection{（一）核心架构}\label{ux4e00ux6838ux5fc3ux67b6ux6784}}
+
+该路线的核心架构仍可拆成两部分：多模态条件编码器继承预训练的 VLM，将图像序列 \(o\) 与语言指令 \(l\) 编码为上下文条件嵌入；连续动作生成器接收这些条件嵌入，生成统一潜在动作块 \(A_t=(a_t,a_{t+1},\ldots,a_{t+H-1})\)。区别在于，高层输出的并不一定是某个机器人专属的底层控制量，而是可跨形态共享的潜在动作表示。
+
+\hypertarget{ux4e8cux8badux7ec3ux9636ux6bb5ux4e00ux6f5cux5728ux52a8ux4f5cux7a7aux95f4ux7684ux65e0ux76d1ux7763ux5b66ux4e60}{%
+\subsubsection{（二）训练阶段一：潜在动作空间的无监督学习}\label{ux4e8cux8badux7ec3ux9636ux6bb5ux4e00ux6f5cux5728ux52a8ux4f5cux7a7aux95f4ux7684ux65e0ux76d1ux7763ux5b66ux4e60}}
+
+这一阶段不需要任何底层物理控制信号（如关节扭矩），模型仅通过观看海量视频序列来学习。模型通常引入一个基于 VQ-VAE（向量量化变分自编码器）的逆动力学模型（Inverse Dynamics Model）：输入连续两帧视频图像 \((o_t,o_{t+1})\)，编码器提取两帧之间的视觉和物理状态变化，生成连续隐特征；向量量化模块将连续隐特征映射到离散密码本（Codebook）中，提取以任务为中心的潜在动作 \(z_t\)；前向动力学模型接收当前帧 \(o_t\) 和潜在动作 \(z_t\)，尝试重建下一帧图像 \(\hat{o}_{t+1}\)。
+
+损失函数由重建损失和密码本正则化损失组成：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{VQ}}
+&= \|o_{t+1}-\hat{o}_{t+1}\|^2
++\|\mathrm{sg}[\mathrm{Encoder}(o_t,o_{t+1})]-e_{z_t}\|^2
+\\
+&\quad+
+\beta\|\mathrm{Encoder}(o_t,o_{t+1})-\mathrm{sg}[e_{z_t}]\|^2
+\end{aligned}
+\]
+
+其中，\(e_{z_t}\) 为密码本中的嵌入向量，\(\mathrm{sg}[\cdot]\) 为停止梯度操作。
+
+\hypertarget{ux4e09ux8badux7ec3ux9636ux6bb5ux4e8cux8054ux5408ux7b56ux7565ux4f18ux5316ux4e0eux5177ux8eabux5bf9ux9f50}{%
+\subsubsection{（三）训练阶段二：联合策略优化与具身对齐}\label{ux4e09ux8badux7ec3ux9636ux6bb5ux4e8cux8054ux5408ux7b56ux7565ux4f18ux5316ux4e0eux5177ux8eabux5bf9ux9f50}}
+
+在获得跨形态潜在动作空间后，开始正式训练 VLA 大模型，将语义与物理硬件绑定。首先利用阶段一训练好的 VQ-VAE 编码器，把带有语言指令的机器人视频数据转化为``指令-图像-潜在动作 \(z_t\)''的离散序列数据；然后用标准的 Next-token Prediction 目标训练 VLM 主干网络，使其在给定图像和文本上下文时输出正确的潜在动作分布 \(P_\theta(z_t\mid o_{\le t},l)\)；最后引入轻量级形态感知解码器（Embodiment-aware Decoder）或联合扩散模块，将 VLM 输出的潜在动作 \(z_t\) 与当前机器人的专属形态标识拼接，并使用少量包含真实底层动作标签的数据训练该解码器：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{Action}}
+&=
+\mathbb{E}\left[
+-\log P_\phi(a_t\mid z_t,o_t,\mathrm{embodiment\_id})
+\right]
+\end{aligned}
+\]
+
+其中，目前业界部分实践在高层运用自回归以适配成熟生态，底层运用扩散以降低延迟。
+
+\hypertarget{ux4e94vlaux7684ux7f3aux9677}{%
+\subsection{五、VLA的缺陷}\label{ux4e94vlaux7684ux7f3aux9677}}
+
+由于VLA模型本质上由语言模型微调而来，因此它仍然以自然语言空间作为``大脑''的核心表征层，动作则作为一种附属的输出模态。这种设计使得VLA在语义理解和任务泛化方面具有明显优势，但也意味着物理世界的连续状态、动力学约束和动作后果并没有被模型直接建模。
+
+此外，VLA通常依赖当前观测和语言指令直接预测动作，在长时序任务中容易累积误差；当机器人进入训练数据覆盖较少的状态时，模型也缺乏显式的未来预测和自我纠错机制。因此，如何引入世界模型、强化学习或更统一的物理表征，是进一步提升VLA可靠性与长期规划能力的重要方向。
+
+\hypertarget{ux53c2ux8003ux6587ux732e-151}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-151}}
+
 \begin{itemize}
 \tightlist
 \item
-  \textbf{直线破裂}：预训练的 FM 是一个完美遵循这条直线的拟合器。当引入 RL 时，RL 策略梯度的唯一目标是``最大化最终图像的奖励''。为了迎合奖励，RL 会强行修改中间时间步的 \(v_t\)，这就不可避免地将 ODE 轨迹``拽离''原本的最优传输直线。
+  Brohan, A., Brown, N., Carbajal, J., et al.~(2023). \href{https://arxiv.org/abs/2307.15818}{RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control}. arXiv:2307.15818.
 \item
-  \textbf{后果}：扩散模型原本的轨迹就是弯曲的高曲率布朗运动，所以稍微拽偏一点尚能承受。但对于 FM 而言，一旦轨迹脱离直线，不仅会产生图中所说的``偏离流形、产生无意义图像''的现象，更致命的是，轨迹曲率的激增会导致 ODE 求解器的截断误差（Truncation Error）爆炸。原本 FM 只需要 \(4\) 步积分就能出图，被 RL 扭曲后，必须增加到几十甚至上百步才能维持图像质量，直接粉碎了 FM 最大的``少步数采样优势''。
-\end{itemize}
-
-\textbf{2. 确定性 ODE 带来的``似然度计算死锁''（Likelihood Degeneration）}
-当然需要注意的是，流匹配模型在给定输入的情况下输出是固定的，不代表其输出不存在概率分布：
-
-在流匹配中，我们常说的``去噪过程是固定的''，指的是给定一个具体的初始噪声 \(z\) 后，它演化到目标数据 \(x_1\) 的路径（Trajectory）是唯一且确定的（因为我们求解的是常微分方程 ODE，而非随机微分方程 SDE）。
-
-但是，模型具有分布，是因为我们的输入源头是一个分布。这在数学上被称为前推测度（Push-forward Measure）。想象你手里有一把沙子（标准高斯分布的噪声 \(z \sim \mathcal{N}(0, I)\)），你将沙子撒在一个特定风向（向量场 \(v_t(x)\)）的传送带上。虽然每一粒沙子被风吹动的轨迹是完全确定的，但因为一开始沙子落在各个位置的概率不同（高斯分布的密度不同），当它们最终被吹到终点时，就会自然聚拢成一个新的形状，即模型生成的数据分布 \(p_1(x)\)。
-
-\hypertarget{ux53c2ux8003ux6587ux732e-160}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-160}}
-
-\begin{itemize}
-\tightlist
+  Kim, M. J., Pertsch, K., Karamcheti, S., et al.~(2024). \href{https://arxiv.org/abs/2406.09246}{OpenVLA: An Open-Source Vision-Language-Action Model}. arXiv:2406.09246.
 \item
-  Black, K., Janner, M., Du, Y., Kostrikov, I., \& Levine, S. (2023). \href{https://arxiv.org/abs/2305.13301}{Training Diffusion Models with Reinforcement Learning}. arXiv:2305.13301.
-\item
-  Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
-\item
-  Wallace, B., Gokul, A., Ermon, S., \& Naik, N. (2024). \href{https://arxiv.org/abs/2311.12908}{Diffusion Model Alignment Using Direct Preference Optimization}. CVPR.
+  Black, K., Brown, N., Driess, D., et al.~(2024). \href{https://arxiv.org/abs/2410.24164}{π0: A Vision-Language-Action Flow Model for General Robot Control}. arXiv:2410.24164.
 \end{itemize}
 
 \clearpage
 
-\hypertarget{offline-rlux8f6cux5316ux4e3aux52a0ux6743ux76d1ux7763ux5b66ux4e60ux8bbaux6587}{%
-\section{Offline RL转化为加权监督学习（论文）}\label{offline-rlux8f6cux5316ux4e3aux52a0ux6743ux76d1ux7763ux5b66ux4e60ux8bbaux6587}}
+\hypertarget{vlaux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}{%
+\section{VLA模型的强化学习}\label{vlaux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}}
 
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
+\hypertarget{ux4e00vlaux6a21ux578bux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}{%
+\subsection{一、VLA模型强化学习的难点}\label{ux4e00vlaux6a21ux578bux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}}
 
-\hypertarget{ux4e00rlvrux8f6cux5316ux4e3aux903cux8fd1ux6700ux4f18ux7b56ux7565ux7684ux52a0ux6743ux76d1ux7763ux5b66ux4e60}{%
-\subsection{一、RLVR转化为逼近最优策略的加权监督学习}\label{ux4e00rlvrux8f6cux5316ux4e3aux903cux8fd1ux6700ux4f18ux7b56ux7565ux7684ux52a0ux6743ux76d1ux7763ux5b66ux4e60}}
-
-\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-18}{%
-\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-18}}
-
-该方法的核心思想是 \textbf{``避开在线探索的难题，将 RL 转化为加权的监督学习''}。
-
-\begin{itemize}
-\tightlist
-\item
-  它首先定义了一个代理散度 \(D_{\mathrm{FM}}\)，试图让当前模型 \(\pi_\theta\) 在流匹配损失空间内逼近理论最优策略 \(\pi^{*}\)。
-\item
-  由于无法直接从 \(\pi^{*}\) 采样，它利用重要性采样（Importance Sampling），引入静态离线数据集 \(D\)，并赋予权重 \(w(o, a) \propto \exp(A / \beta)\)，即优势 \(A\) 越大的动作，权重越高。
-\item
-  点睛之笔在于最后的``极端设定''：通过让折扣因子 \(\gamma \to 1\) 并给予极端负奖励，优势函数被极化，权重 \(w(o, a)\) 变成了二值 \(\{0, 1\}\)。这在数学上等价于直接丢弃所有``失败''的轨迹，只保留``成功''的轨迹进行监督学习。
-\end{itemize}
-
-\hypertarget{ux4e8cux6570ux5b66ux8868ux8fbe-3}{%
-\subsubsection{（二）数学表达}\label{ux4e8cux6570ux5b66ux8868ux8fbe-3}}
-
-在标准的正则化强化学习框架下，我们的目标是在最大化奖励的同时，约束新策略 \(\pi_\theta\) 不要偏离参考策略 \(\pi_{\mathrm{ref}}\) 太远。其目标函数定义为：
+普通连续控制策略一般写作：
 
 \[
-\begin{aligned}
-J(\theta)
-&= \mathbb{E}_{\tau \sim p_\theta}
-\left[
-R(\tau)
-- \beta \mathbb{E}_{o \sim p_\theta}
-\left[D(\pi_\theta(\cdot \mid o) \Vert \pi_{\mathrm{ref}}(\cdot \mid o))\right]
-\right]
-\end{aligned}
+a_t\sim\pi_\theta(a_t\mid s_t)
 \]
 
-根据数学推导，这个目标函数存在一个理论上的最优策略闭式解 \(\pi^{*}\)：
+以高斯策略为例：
 
 \[
-\begin{aligned}
-\pi^{*}(a \mid o)
-&\propto
-\pi_{\mathrm{ref}}(a \mid o)
-\exp\left(\frac{A^{\pi_{\mathrm{ref}}}(o, a)}{\beta}\right)
-\end{aligned}
+\pi_\theta(a\mid s)
+=
+\mathcal{N}\bigl(\mu_\theta(s),\sigma_\theta(s)\bigr)
 \]
 
-这意味着，最优策略倾向于在参考策略的基础上，给予那些具有高优势函数（Advantage Function，\(A > 0\)）的动作更高的概率。
-
-因为这个理论最优策略 \(\pi^{*}\) 通常极其复杂，无法直接用一个有限参数的神经网络表示，所以我们需要进行策略投影（Policy Projection）：即找一个参数化的策略 \(\pi_\theta\)，让它尽可能地去拟合 \(\pi^{*}\)。
-
-在传统的优势加权回归（AWR）算法中，拟合的手段是最小化 \(\pi^{*}\) 和 \(\pi_\theta\) 之间的 KL 散度：
+于是SAC、PPO等算法可以直接计算 \(\log\pi_\theta(a_t\mid s_t)\)，并据此得到策略梯度项：
 
 \[
-\begin{aligned}
-\theta^{*}
-&= \arg\min_\theta
-\mathbb{E}_{o \sim D}
-\left[
-D_{\mathrm{KL}}(\pi^{*}(\cdot \mid o) \Vert \pi_\theta(\cdot \mid o))
-\right]
-\end{aligned}
+\nabla_\theta\log\pi_\theta(a_t\mid s_t)A_t
 \]
 
-展开 KL 散度后，这等价于最大化加权对数似然（Weighted Log-likelihood）：
+对于自回归VLA，策略是每一步概率的积，对数策略是每一步对数概率的和；但扩散/流匹配VLA就难以计算对数策略了。而且如果让RL梯度穿过完整的10-50步diffusion/flow trajectory，不仅显存和计算量大，还很容易不稳定。
+
+所以VLA RL一个很重要的研究问题其实就是：到底应该在哪里做RL？是整个VLA？action head？action token？flow denoising trajectory？还是latent noise？
+
+\hypertarget{ux4e8cvla-rlux76f4ux63a5ux5bf9vlaux6574ux4f53ux7528ppoux4f18ux5316}{%
+\subsection{二、VLA-RL：直接对VLA整体用PPO优化}\label{ux4e8cvla-rlux76f4ux63a5ux5bf9vlaux6574ux4f53ux7528ppoux4f18ux5316}}
+
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-14}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-14}}
+
+它的想法跟LLM的RLHF/PPO非常接近。OpenVLA原本做的是：
 
 \[
-\mathbb{E}\left[w(o, a)\log \pi_\theta(a \mid o)\right]
+(\text{image},\text{instruction})
+\longrightarrow
+[v_1,v_2,\ldots,v_7]
+\longrightarrow
+a_t
 \]
 
-\textbf{问题就在这里}：我们的 VLA 模型是用流匹配目标 \(\mathcal{L}_{\mathrm{FM}}\) 训练的，它根本算不出确切的 \(\log \pi_\theta(a \mid o)\)。这条传统路线走不通。
-替代散度法：
+其中7个Token对应7个机器人动作维度。因为它采用自回归方式：
 
 \[
-\begin{aligned}
-D_{\mathrm{FM}}(\pi^{*}(\cdot \mid o), \pi_\theta(\cdot \mid o))
-&\triangleq
-\mathbb{E}_{a \sim \pi^{*}(\cdot \mid o)}
-\left[\mathcal{L}_{\mathrm{FM}}(\theta; o, a)\right]
-\end{aligned}
+\pi_\theta(a_t\mid o_t,l)
+=
+\prod_{i=1}^{7}
+p_\theta(v_i\mid v_{<i},o_t,l)
 \]
 
-通俗解释：这个公式的物理意义是，``假设我现在能从理论最优策略 \(\pi^{*}\) 中抽取出完美的动作样本 \(a\)，那么我就用模型自带的流匹配损失函数 \(\mathcal{L}_{\mathrm{FM}}\)，强迫我的神经网络 \(\pi_\theta\) 去学习、生成这些完美的动作。''
-
-这就巧妙地避开了计算概率分布的要求，直接在流匹配的损失空间里衡量两个策略的``距离''。
-
-有了新的散度 \(D_{\mathrm{FM}}\)，策略投影步骤就变成了：
+所以动作的对数概率可以直接得到：
 
 \[
-\begin{aligned}
-\theta^{*}
-&= \arg\min_\theta
-\mathbb{E}_{o \sim D}
-\mathbb{E}_{a \sim \pi^{*}(\cdot \mid o)}
-\left[
-\mathcal{L}_{\mathrm{FM}}(\theta; o, a)
-\right]
-\end{aligned}
+\log\pi_\theta(a_t\mid o_t,l)
+=
+\sum_{i=1}^{7}
+\log p_\theta(v_i\mid v_{<i},o_t,l)
 \]
 
-但我们在现实中显然无法真的从未知的理论最优策略 \(\pi^{*}\) 中采样。因此，论文采用了离线强化学习中标准的``重要性采样（Importance Sampling）''技巧：我们用手头收集到的固定数据集 \(D\) 中的样本来代替 \(\pi^{*}\) 中的样本，并给这些样本乘以一个权重 \(w(o, a)\)，权重正比于指数化的优势函数 \(\exp(A / \beta)\)。
+对于OpenVLA这类自回归动作分词器，动作概率很容易计算。论文只需把单步机器人的多模态观测与动作看成类似LLM的多轮对话，然后直接使用PPO与GAE更新VLA。
 
-推导到这一步，目标函数变为了：
+运用标准PPO算法，对整个VLA模型进行训练即可。
 
-\[
-\begin{aligned}
-\theta^{*}
-&\approx \arg\min_\theta
-\mathbb{E}_{(o,a) \sim D}
-\left[
-w(o, a)\,\mathcal{L}_{\mathrm{FM}}(\theta; o, a)
-\right]
-\end{aligned}
-\]
+\hypertarget{ux4e8cux7a00ux758fux53cdux9988ux95eeux9898ux53caux5176ux89e3ux51b3}{%
+\subsubsection{（二）稀疏反馈问题及其解决}\label{ux4e8cux7a00ux758fux53cdux9988ux95eeux9898ux53caux5176ux89e3ux51b3}}
 
-最后，为了极致地简化和易于扩展，论文做了一个极端设定：将折扣因子 \(\gamma\) 设为接近 \(1\)，并给失败的轨迹分配极大的负奖励。这导致权重 \(w(o, a)\) 退化成了二值权重（成功的动作权重为 \(1\)，失败的为 \(0\)）。这就是论文中方程（4）最终用于策略微调的监督学习目标函数的由来。
+机器人任务反馈稀疏，比如任务：把杯子放进柜子。可能执行100步后，环境才反馈结果，那么前面第20步``机械臂已经正确抓住杯子''到底好不好，单靠terminal reward很难判断。VLA-RL运用Process Reward Model，根据夹爪开闭的显著变化划分milestone/subtask，并结合末端执行器速度接近零等信息找关键进展状态，从而给中间动作提供过程奖励。
 
-\hypertarget{ux4e8cdpo-for-diffusion}{%
-\subsection{二、DPO for Diffusion}\label{ux4e8cdpo-for-diffusion}}
+\hypertarget{ux4e09ux3c0rlux8ba9ux6d41ux5339ux914dvlaux6a21ux578bux4e5fux53efux6574ux4f53ux7528rlux8badux7ec3}{%
+\subsection{三、πRL：让流匹配VLA模型也可整体用RL训练}\label{ux4e09ux3c0rlux8ba9ux6d41ux5339ux914dvlaux6a21ux578bux4e5fux53efux6574ux4f53ux7528rlux8badux7ec3}}
 
-\hypertarget{ux4e00ux6570ux5b66ux8868ux8fbe}{%
-\subsubsection{（一）数学表达}\label{ux4e00ux6570ux5b66ux8868ux8fbe}}
+πRL 中提出的Flow-Noise等方法在原有流匹配VLA模型的基础上引入可学习的噪声网络，将去噪过程重塑为离散时间的MDP，从而可用传统RL算法，既解决了流匹配缺失随机性、无法计算动作概率似然的问题，又通过可学习、有方向的探索解决了高维空间盲目探索往往失败的问题。
 
-第一步：RLHF 目标的重参数化
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-15}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-15}}
 
-在标准的带 KL 惩罚的 RL 框架下，我们希望微调一个策略（扩散模型）\(p_\theta(x\mid c)\)，使其在给定条件 prompt \(c\) 时，生成的图像 \(x\) 能最大化隐含的奖励 \(r(x,c)\)，同时不能偏离预训练的参考模型 \(p_{\mathrm{ref}}(x\mid c)\) 太远：
-
-\[
-\begin{aligned}
-\max_\theta\ \mathbb{E}_{x\sim p_\theta}\left[r(x,c)\right]
-&\quad-\beta D_{\mathrm{KL}}\left(p_\theta(x\mid c)\Vert p_{\mathrm{ref}}(x\mid c)\right)
-\end{aligned}
-\]
-
-其中 \(\beta\) 是控制偏离程度的超参数。这个优化问题存在一个理论上的闭式最优解（Optimal Policy）：
-
-\[
-p^{*}(x\mid c)=\frac{1}{Z}p_{\mathrm{ref}}(x\mid c)\exp\left(\frac{1}{\beta}r(x,c)\right)
-\]
-
-其中 \(Z\) 是配分函数。DPO 的核心做法在于对上式进行移项，反解出奖励函数 \(r(x,c)\)：
-
-\[
-r(x,c)=\beta\log\frac{p^{*}(x\mid c)}{p_{\mathrm{ref}}(x\mid c)}+\beta\log Z
-\]
-
-第二步：代入 Bradley-Terry 偏好模型
-
-在偏好学习中，我们通常假设人类偏好服从 Bradley-Terry（BT）模型。即对于给定的 prompt \(c\)，人类认为图像 \(x_w\)（winner，获胜者）比 \(x_l\)（loser，失败者）更好的概率为：
-
-\[
-p(x_w\succ x_l\mid c)=\sigma\left(r(x_w,c)-r(x_l,c)\right)
-\]
-
-其中 \(\sigma\) 是 Sigmoid 函数。将第一步反解出的 \(r(x,c)\) 代入 BT 模型中，由于是计算差值，常数项 \(\beta\log Z\) 被消去：
-
-\[
-\begin{aligned}
-p(x_w\succ x_l\mid c)
-&=\sigma\left(
-\beta\log\frac{p_\theta(x_w\mid c)}{p_{\mathrm{ref}}(x_w\mid c)}
--\beta\log\frac{p_\theta(x_l\mid c)}{p_{\mathrm{ref}}(x_l\mid c)}
-\right)
-\end{aligned}
-\]
-
-这就是大语言模型中标准 DPO 的目标函数。但扩散模型会遇到一个关键问题：扩散模型的精确对数似然 \(\log p_\theta(x\mid c)\) 在数学上很难计算。
-
-第三步：扩散模型的 ELBO 替换
-
-Diffusion-DPO 的最大贡献，就是用证据下界（ELBO，Evidence Lower Bound）来近似这个难以计算的对数似然。在扩散模型中，极大化对数似然等价于极小化去噪预测误差（MSE 损失）。令 \(\mathcal{L}_\theta(x,c,t)\) 为模型在时间步 \(t\) 的去噪损失（以预测噪声 \(\epsilon\) 为例）：
-
-\[
-\begin{aligned}
-\mathcal{L}_\theta(x,c,t)
-&=\left\lVert \epsilon_\theta(x_t,c,t)-\epsilon\right\rVert_2^2
-\end{aligned}
-\]
-
-因为似然与去噪损失成负相关，我们可以做如下近似：
-
-\[
-\begin{aligned}
-\log p_\theta(x\mid c)
-&\approx -\mathbb{E}_{t,\epsilon}\left[\mathcal{L}_\theta(x,c,t)\right]+C
-\end{aligned}
-\]
-
-因此，对数似然的比值可以替换为去噪损失的差值：
-
-\[
-\begin{aligned}
-\log\frac{p_\theta(x\mid c)}{p_{\mathrm{ref}}(x\mid c)}
-&\approx
-\mathbb{E}_{t,\epsilon}
-\left[
-\mathcal{L}_{\mathrm{ref}}(x,c,t)-\mathcal{L}_\theta(x,c,t)
-\right]
-\end{aligned}
-\]
-
-这个公式的物理直觉非常清晰：如果参考模型和当前模型在``好图'' \(x_w\) 上的损失差，大于它们在``坏图'' \(x_l\) 上的损失差，我们就施加奖励；反之则施加惩罚。
-
-在流匹配中同理：
-
-在流匹配中，对数似然依然难以精确计算，但我们可以用向量场拟合的 MSE 损失来替代扩散模型中的噪声预测损失。只需将公式中的 \(\mathcal{L}_\theta\) 替换为我们在 DMD 中讨论过的流匹配目标：
-
-\[
-\begin{aligned}
-\mathcal{L}^{\mathrm{FM}}_\theta(x,c,t)
-&=\left\lVert v_\theta(x_t,c,t)-(x_1-x_0)\right\rVert_2^2
-\end{aligned}
-\]
-
-只要将这个向量场误差代入 Diffusion-DPO 的框架中（近期文献中称为 Flow-DPO），就可以利用离线偏好对来直接微调流匹配模型，而不需要涉及在线 RL 求解 ODE 的复杂过程。
-
-\hypertarget{ux4e8cux5de5ux4f5cux6d41-5}{%
-\subsubsection{（二）工作流}\label{ux4e8cux5de5ux4f5cux6d41-5}}
-
-阶段 1：数据准备
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  构建或收集一个静态离线偏好数据集 \(\mathcal{D}\)。数据集中包含大量的元组 \((c,x_w,x_l)\)，即``文本提示词''、``人类或 AI 偏好的好图''、``人类或 AI 淘汰的坏图''。
-\item
-  准备预训练好的基础扩散模型作为参考模型 \(\theta_{\mathrm{ref}}\)，并将其权重冻结。
-\item
-  初始化一个架构完全相同的策略模型 \(\theta\)，即要训练的模型，通常从 \(\theta_{\mathrm{ref}}\) 初始化。
-\end{enumerate}
-
-阶段 2：训练循环（Batch 级别）
-
-对于每一个训练 step，执行以下操作：
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  采样与加噪：从数据集中采样一个 batch 的 \((c,x_w,x_l)\)。随机采样时间步 \(t\sim\mathcal{U}(0,T)\)，并采样高斯噪声 \(\epsilon\sim\mathcal{N}(0,I)\)。
-\item
-  构建中间状态：利用前向扩散过程的公式，分别给好图和坏图加噪到时间步 \(t\)：
-\end{enumerate}
-
-\[
-\begin{aligned}
-x_{w,t} &= \sqrt{\bar{\alpha}_t}x_w+\sqrt{1-\bar{\alpha}_t}\epsilon,\\
-x_{l,t} &= \sqrt{\bar{\alpha}_t}x_l+\sqrt{1-\bar{\alpha}_t}\epsilon.
-\end{aligned}
-\]
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{2}
-\tightlist
-\item
-  计算参考模型的误差（No Gradient）：将加噪后的好图、坏图连同 \(t\) 和 \(c\) 输入冻结的参考模型 \(\theta_{\mathrm{ref}}\)，计算它们预测噪声与真实噪声 \(\epsilon\) 的均方误差：\(\mathcal{L}_{\mathrm{ref}}(x_w)\) 和 \(\mathcal{L}_{\mathrm{ref}}(x_l)\)。
-\item
-  计算策略模型的误差（With Gradient）：将同样的数据输入正在训练的策略模型 \(\theta\)，计算其预测误差：\(\mathcal{L}_\theta(x_w)\) 和 \(\mathcal{L}_\theta(x_l)\)。
-\item
-  反向传播更新：将上述四个误差标量代入 \(\mathcal{L}_{\mathrm{DPO}\text{-}\mathrm{Diff}}(\theta)\) 公式中。通过深度学习框架（如 PyTorch）的自动求导机制计算关于 \(\theta\) 的梯度，并使用优化器（如 AdamW）更新模型权重。
-\end{enumerate}
-
-\hypertarget{ux53c2ux8003ux6587ux732e-161}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-161}}
-
-\begin{itemize}
-\tightlist
-\item
-  Peters, J., \& Schaal, S. (2007). \href{https://dl.acm.org/doi/10.1145/1273496.1273590}{Reinforcement Learning by Reward-Weighted Regression for Operational Space Control}. ICML.
-\item
-  Peng, X. B., Kumar, A., Zhang, G., \& Levine, S. (2019). \href{https://arxiv.org/abs/1910.00177}{Advantage-Weighted Regression: Simple and Scalable Off-Policy Reinforcement Learning}. arXiv:1910.00177.
-\item
-  Nair, A., Dalal, M., Gupta, A., \& Levine, S. (2020). \href{https://arxiv.org/abs/2006.09359}{Accelerating Online Reinforcement Learning with Offline Datasets}. arXiv:2006.09359.
-\item
-  Wallace, B., Gokul, A., Ermon, S., \& Naik, N. (2024). \href{https://arxiv.org/abs/2311.12908}{Diffusion Model Alignment Using Direct Preference Optimization}. CVPR.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux6bcfux6b65ux5f15ux5165ux53efux5b66ux4e60ux566aux58f0ux7684online-rlux8bbaux6587}{%
-\section{每步引入可学习噪声的Online RL（论文）}\label{ux6bcfux6b65ux5f15ux5165ux53efux5b66ux4e60ux566aux58f0ux7684online-rlux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-Flow-Noise等方法在原有流匹配模型的基础上引入可学习的噪声网络，将去噪过程重塑为离散时间的MDP，从而可用传统RL算法，既解决了流匹配缺失随机性、无法计算动作概率似然的问题，又通过可学习、有方向的探索解决了高维空间盲目探索往往失败的问题。
-
-\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-19}{%
-\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-19}}
-
-传统的流匹配是在连续时间内求解常微分方程（ODE），缺乏随机性，难以像 PPO 那样进行对数似然（log-likelihood）的计算和在线试错探索。Flow-Noise 的创新在于，它在原本确定性的去噪路径中，主动注入了一个可学习的噪声网络，将去噪过程强行重塑为一个离散时间的马尔可夫决策过程（Discrete-time MDP）。这使得模型在每一步生成时既有探索能力，又能获得精确的动作对数似然估算，从而适配传统的 Actor-Critic 在线 RL 算法。
+传统流匹配是在连续时间内求解常微分方程（ODE），缺乏随机性，难以像PPO那样计算对数似然。Flow-Noise的创新在于，它在原本确定性的去噪路径中主动注入一个可学习的噪声网络，将去噪过程重塑为离散时间的马尔可夫决策过程（Discrete-time MDP）。这样，模型在每一步生成时既有探索能力，又能获得精确的动作对数似然，从而完整适配传统Actor-Critic在线强化学习算法。
 
 \hypertarget{ux4e8cux7b97ux6cd5ux539fux7406}{%
-\subsection{二、算法原理}\label{ux4e8cux7b97ux6cd5ux539fux7406}}
+\subsubsection{（二）算法原理}\label{ux4e8cux7b97ux6cd5ux539fux7406}}
 
-它放弃了纯确定性的 ODE 采样，而是引入了一个可学习的噪声网络（Learnable Noise Network），将原本连续的去噪轨迹离散化为若干步（步长为 \(\delta\)），并在每一步中注入受控的随机性。
+Flow-Noise放弃了纯确定性的ODE采样，引入可学习的噪声网络（Learnable Noise Network），将原本连续的去噪轨迹离散化为若干步，并在每一步注入受控随机性。
 
-在该内部去噪 MDP 中：
+在该内部去噪MDP中：
 
 \begin{itemize}
 \tightlist
 \item
-  状态空间（State）：在去噪时间步 \(\tau\)，内部状态定义为当前环境观测与当前隐变量的组合：
+  状态空间：在去噪时间步 \(\tau\)，内部状态定义为当前环境观测与当前噪声动作块的组合：
 \end{itemize}
 
 \[
-\bar{s}_t^\tau=(\mathbf{o}_t,\mathbf{A}_t^\tau)
+\tilde{s}_t^\tau=(o_t,A_t^\tau).
 \]
 
 \begin{itemize}
 \tightlist
 \item
-  动作空间（Action）：内部的``动作''即为流模型生成的下一个离散时间步的隐状态（当 \(\tau<1\) 时）或最终在环境中执行的物理动作（当 \(\tau=1\) 时）：
+  动作空间：内部``动作''是为流模型生成下一离散时间步隐状态。当 \(\tau<1\) 时，策略输出：
 \end{itemize}
 
 \[
-\bar{a}_t^\tau=
-\begin{cases}
-\mathbf{A}_t^{\tau+\delta}, & \tau<1,\\
-\mathbf{A}_t^1, & \tau=1.
-\end{cases}
+\tilde{a}_t^\tau
+=
+A_t^{\tau+\delta}.
 \]
+
+当 \(\tau=1\) 时，输出最终动作 \(A_t^1\)。
 
 \begin{itemize}
 \tightlist
 \item
-  随机转移与可学习噪声：从 \(\mathbf{A}_t^\tau\) 到 \(\mathbf{A}_t^{\tau+\delta}\) 的转移被建模为高斯分布：
+  随机转移与可学习噪声：从 \(A_t^\tau\) 到 \(A_t^{\tau+\delta}\) 的转移被建模为高斯分布：
 \end{itemize}
 
 \[
-\mathbf{A}_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\delta\cdot\epsilon
+A_t^{\tau+\delta}
+=
+\mu_\tau+\sigma_\tau\varepsilon,
+\qquad
+\varepsilon\sim\mathcal{N}(0,I).
 \]
 
-其中，\(\epsilon\sim\mathcal{N}(0,I)\) 是注入的标准高斯噪声，\(\mu_\tau\) 由流匹配网络 \(v_\theta\) 预测出的均值方向决定，\(\sigma_\tau\) 则是由可学习的噪声网络输出的标准差。
+其中 \(\mu_\tau\) 由流匹配网络 \(v_\theta\) 预测的均值方向决定，\(\sigma_\tau\) 则是可学习噪声网络输出的标准差。
 
-可学习噪声网络的关键作用包括：
+该设计带来两点效果：
 
 \begin{itemize}
 \tightlist
 \item
-  自适应探索：在生成轨迹的安全区域（例如刚开始去噪、只有大轮廓时），网络会输出较大的方差以鼓励广泛探索；当进入对噪声极其敏感的高频细节生成区域时，会自动收敛输出极小的方差，甚至趋近于 0。
+  自适应探索：在生成轨迹的安全区域，网络会输出较大的方差以鼓励广泛探索；当进入对噪声敏感的高频细节生成区域时，\(\sigma_\theta\) 会自动收敛，输出较小方差，甚至趋近于0。
 \item
-  维度解耦：网络可以学习到在不重要的背景特征维度上加大探索，而在关键的语义维度上保持克制，从而避开高维空间中的级联崩溃。
+  维度解耦：网络可以学习在不重要的背景特征维度上加大探索，而在关键的语义维度上保持克制，从而实现高维空间中的精细探索。
 \end{itemize}
 
-由于每一步 \(\tau\rightarrow\tau+\delta\) 都服从已知的高斯分布，整个去噪轨迹的联合概率密度就可以被精确分解并计算。给定一条从 \(\tau=0\) 到 \(\tau=1\) 的离散去噪轨迹，其总动作对数似然为每一步转移概率对数的累加：
+由于每一步 \(\tau\to\tau+\delta\) 都服从已知的高斯分布，整条去噪轨迹的联合概率密度可以按链式法则分解：
 
 \[
-\begin{aligned}
-\log \pi_\theta(\mathbf{a}_t \mid \mathbf{o}_t)
-&=
+\log\pi_\theta(a_t\mid o_t)
+=
 \sum_{\tau=0}^{1-\delta}
-\log p_\theta(\mathbf{A}_t^{\tau+\delta}\mid \mathbf{A}_t^\tau,\mathbf{o}_t)
-\end{aligned}
+\log p_\theta
+\bigl(
+A_t^{\tau+\delta}
+\mid
+A_t^\tau,o_t
+\bigr).
 \]
 
-因为 \(p_\theta\) 是由参数化的高斯分布构成，上式变得完全可计算，从而可以直接用于 PPO 等基于策略梯度的 RL 算法的目标函数中。
+因为 \(p_\theta\) 是由参数化高斯分布构成的，上式可以直接计算，从而可用于PPO等基于策略梯度的强化学习目标。
 
-\hypertarget{ux4e09ux5de5ux4f5cux6d41-1}{%
-\subsection{三、工作流}\label{ux4e09ux5de5ux4f5cux6d41-1}}
+\hypertarget{ux4e09ux5de5ux4f5cux6d41}{%
+\subsubsection{（三）工作流}\label{ux4e09ux5de5ux4f5cux6d41}}
 
-步骤 1：环境交互与初始化（外部循环起点）
+\textbf{步骤1：环境交互与初始化（外部循环起点）}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  智能体从仿真环境或现实世界获取当前时间步的观测状态，如摄像头图像、本体感受数据等。
+  智能体从仿真环境或现实世界获取当前时间步 \(t\) 的观测状态 \(o_t\)，如摄像头图像、本体感受数据。
 \item
-  在模型内部，初始化流匹配的起点，采样纯高斯噪声 \(\mathbf{A}_t^0\sim\mathcal{N}(0,I)\)。
+  在模型内部，初始化流匹配的起点，从标准高斯噪声采样 \(A_t^0\sim\mathcal{N}(0,I)\)。
 \end{enumerate}
 
-步骤 2：离散化去噪过程（内部 MDP 循环）
+\textbf{步骤2：离散化去噪过程（内部MDP循环）}
 
-开启一个从 \(\tau=0\) 到 \(\tau=1\)（步长为 \(\delta\)）的离散去噪循环。对于每一步 \(\tau\)：
+开启一个从 \(\tau=0\) 到 \(\tau=1\)、步长为 \(\delta\) 的离散去噪循环。对于每一步：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  构建内部状态：组合观测与隐变量得到 \(\bar{s}_t^\tau\)。
+  构建内部状态，将环境观测与当前变量组合为 \(\tilde{s}_t^\tau=(o_t,A_t^\tau)\)。
 \item
-  网络推理：将 \(\bar{s}_t^\tau\) 输入 VLA 骨干网络（如 Transformer），预测出当前的速度场，进而计算出期望去噪方向。
+  网络推理：将 \(A_t^\tau\) 输入VLA骨干网络（如Transformer），预测当前速度场 \(v_\theta\)，进而计算期望去噪方向 \(\mu_{\tau+\delta}\)。
 \item
   噪声评估：辅助的可学习噪声网络根据当前状态输出标准差 \(\sigma_\tau\)。
 \item
-  采样与记录：采样随机噪声 \(\epsilon\)，计算下一步隐变量 \(\mathbf{A}_t^{\tau+\delta}\)。同时，将该步的对数似然记录到缓存中：
+  采样与记录：采样随机噪声 \(\varepsilon\)，计算下一步隐变量 \(A_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\varepsilon\)；同时，将该步的对数似然 \(\log p_\theta(A_t^{\tau+\delta}\mid A_t^\tau,o_t)\) 记录到缓存中。
 \end{enumerate}
 
-\[
-\log p_\theta\left(\mathbf{A}_t^{\tau+\delta}\mid \mathbf{A}_t^\tau,\mathbf{o}_t\right)
-\]
-
-步骤 3：动作执行与奖励获取（外部循环终点）
+\textbf{步骤3：动作执行与奖励获取（外部循环终点）}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  当内部去噪循环到达 \(\tau=1\) 时，得到无噪声的确定性物理动作 \(\mathbf{a}_t=\mathbf{A}_t^1\)。
+  当内部去噪循环到达 \(\tau=1\) 时，得到无噪声的确定性物理动作 \(a_t=A_t^1\)。
 \item
   将动作 \(a_t\) 下发给环境执行。
 \item
-  观测状态更新，并返回单步奖励，例如在抓取任务成功时返回稀疏的 \(+1\) 奖励。
+  观测状态更新，并返回单步奖励 \(r_t\)，例如抓取任务成功时返回稀疏的 \(+1\) 奖励。
 \end{enumerate}
 
-步骤 4：强化学习策略更新（RL 反向传播）
+\textbf{步骤4：强化学习策略更新（RL反向传播）}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  收集到一个或多个 Episode 的完整轨迹后，计算累计优势函数（Advantage）。
+  收集到一个或多个Episode的完整轨迹后，计算累计优势函数。
 \item
-  提取出步骤 2 中精确计算的联合对数似然总和 \(\sum_{\tau}\log p_\theta\)。
+  提取步骤2中精确计算的联合对数似然总和 \(\sum\log p_\theta\)。
 \item
-  应用 PPO 算法的截断代理目标函数（Surrogate Objective）计算策略梯度。
+  应用PPO算法的截断代理目标函数计算策略梯度。
 \item
-  更新 VLA 模型网络参数 \(\theta\) 以及噪声网络参数，使得在相似观测下，能获取高环境奖励的去噪轨迹生成概率最大化。
+  更新VLA模型网络参数及噪声网络参数，使得在相似观测下，能获得高环境奖励的去噪轨迹生成概率最大化。
 \end{enumerate}
 
-\hypertarget{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914drlux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}{%
-\subsection{四、该方法如何解决流匹配RL``脱离最优传输后步数激增''的问题}\label{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914drlux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}}
+\hypertarget{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914dux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}{%
+\subsubsection{（四）该方法如何解决流匹配``脱离最优传输后步数激增''的问题}\label{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914dux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}}
 
-在传统的流匹配中，轨迹变弯曲会导致 ODE 求解器（如欧拉法、RK4）在积分时产生巨大的截断误差，从而必须将步长 \(\Delta t\) 切得极小（即 NFE 激增）。Flow-Noise 从根本上绕开了 ODE 求解器。它将整个生成过程重构成了一个离散时间的 MDP。环境的转移函数被强行定义为：
+在传统流匹配中，轨迹弯曲会导致ODE求解器在积分时产生巨大的截断误差，从而必须将步长 \(\Delta t\) 切得很小，即增加函数评估次数（NFE）。Flow-Noise从根本上绕开了ODE求解器：它将整个生成过程重构为一个离散时间MDP，环境转移函数被强行定义为
 
 \[
-\mathbf{A}_t^{\tau+\delta}=\bar{a}_t^\tau
+x_{t-\Delta t}=a_t.
 \]
 
-这意味着，模型不是在预测一个连续的``切线方向''，而是直接跳跃到下一个离散状态。RL 算法（如 PPO）优化的是这一个个离散跳跃点的累积奖励。既然根本不用连续微分方程来积分，自然也就无所谓``曲率导致截断误差''的问题，模型依然可以在较少的步数内（例如 10 步 MDP）稳定生成高奖励结果。
+这意味着模型不再预测一条连续的``切线方向''，而是直接跳跃到下一个离散状态。强化学习算法优化的是这一离散跳跃点的累积奖励，既不再需要用连续微分方程求积分，也能绕开弯曲轨迹导致截断误差的问题，模型因而可以在较少步数内得到高奖励结果。
 
 这让Flow-Noise看起来很像扩散模型，但同时又具备了流匹配模型自身去噪轨迹接近直线、速度快的优点。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-162}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-162}}
+\hypertarget{ux56dbpolicy-agnostic-rlux8ba9rlux68afux5ea6ux4f18ux5316ux8f93ux51faactionux800cux975evlaux6a21ux578b}{%
+\subsection{四、Policy Agnostic RL：让RL梯度优化输出Action而非VLA模型}\label{ux56dbpolicy-agnostic-rlux8ba9rlux68afux5ea6ux4f18ux5316ux8f93ux51faactionux800cux975evlaux6a21ux578b}}
+
+既然直接优化policy很困难，那可以先直接优化action。
+
+当前策略为
+
+\[
+a_i\sim\pi_\theta(a_i\mid s).
+\]
+
+先生成一组候选动作 \(a_1,a_2,\ldots,a_K\)，然后由Critic \(Q_\phi(s,a_i)\) 给每个动作评分。
+
+对每个候选动作执行梯度上升：
+
+\[
+a_i^{j+1}
+=
+a_i^j
++
+\alpha\nabla_a Q_\phi(s,a_i^j).
+\]
+
+注意这里直接对Action做梯度上升，计算的是对Action而不是对VLA模型参数的梯度。
+
+经过迭代后，可以得到最优动作 \(a^*\)，或者得到一组优化后的动作 \(a_1^*,a_2^*,\ldots\)。
+
+这时只需用监督学习将其蒸馏给VLA：
+
+例如，对OpenVLA可采用负对数似然蒸馏：
+
+\[
+\mathcal{L}
+=
+-\log\pi_\theta(a^*\mid s).
+\]
+
+对Diffusion Policy可采用去噪目标蒸馏：
+
+\[
+\mathcal{L}
+=
+\left\|
+\varepsilon
+-\varepsilon_\theta(a_t,s,t)
+\right\|^2.
+\]
+
+RL gradient不直接进入VLA。
+
+\hypertarget{ux4e94dsrlvlaux6839ux672cux4e0dux8badux7ec3ux53eaux8badux7ec3ux9009ux4ec0ux4e48ux566aux58f0}{%
+\subsection{五、DSRL：VLA根本不训练，只训练``选什么噪声''}\label{ux4e94dsrlvlaux6839ux672cux4e0dux8badux7ec3ux53eaux8badux7ec3ux9009ux4ec0ux4e48ux566aux58f0}}
+
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-16}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-16}}
+
+一般情况下，扩散模型在推理时会随机选取噪声。论文《Steering Your Diffusion Policy with Latent Space Reinforcement Learning》提出，可以让RL梯度不训练模型，而是训练选择噪声的策略，在冻结模型的前提下，通过输出不同方向的初始噪声将模型的输出指引向不同的动作模式（如w1代表向左、w2代表抓得更深等）。
+
+对比：
+
+一般方法：随机噪声 → 经RL训练后的模型 → 输出动作
+
+DSRL：经RL优化的噪声 → 冻结的预训练模型 → 输出动作
+
+\hypertarget{ux4e8ccriticux8badux7ec3ux4e2dux7684noise-aliasing}{%
+\subsubsection{（二）Critic训练中的noise aliasing}\label{ux4e8ccriticux8badux7ec3ux4e2dux7684noise-aliasing}}
+
+DSRL中，Critic模型Q(s,a)需要输入状态s和策略模型给出的机器人动作a。而冻结的策略模型a=F(s,w)，这里F是冻结的，w是输入的噪声，即a是w的函数，即使某个w从来没在真实机器人上执行过，只要知道它映射到什么action，就可以估计它的价值。故Q(s,a)=Q(s,F(s,w))=Q\_w(s,w)。
+
+DSRL-NA先用机器人数据(s,a,s',r)训练出Q(s,a)，进而就可以训练得到Q\_w(s,w)，方法为：对于每一个w，通过函数a=F(s,w)得到a，让Q\_w(s,w)蒸馏Q(s,a)的输出。
+
+\hypertarget{ux516drldgrlux53eaux8d1fux8d23ux751fux4ea7ux76d1ux7763ux5b66ux4e60ux6837ux672c}{%
+\subsection{六、RLDG：RL只负责生产监督学习样本}\label{ux516drldgrlux53eaux8d1fux8d23ux751fux4ea7ux76d1ux7763ux5b66ux4e60ux6837ux672c}}
+
+论文《RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning》提出，可用RL分别训练不同任务的较小``专家模型''，然后让它们各自rollout expert trajectories，用这些数据作为大模型监督学习的样本，不用RL直接微调大模型。
+
+由于RL的策略比没有人类策略中存在的少量犹豫、停顿、晃动等，且rollout轨迹里常存在从错误状态恢复的数据，故该方法得到的样本用于训练的效果在一些情况下可能反超人类数据。
+
+\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
 
 \begin{itemize}
 \tightlist
 \item
-  Chen, K., Liu, Z., Zhang, T., Guo, Z., Xu, S., Lin, H., Zang, H., Li, X., Zhang, Q., Yu, Z., Fan, G., Huang, T., Wang, Y., \& Yu, C. (2025). \href{https://arxiv.org/abs/2510.25889}{π\_RL: Online RL Fine-tuning for Flow-based Vision-Language-Action Models}. arXiv:2510.25889.
+  Lu, G., Guo, W., Zhang, C., et al.~(2025). \href{https://arxiv.org/abs/2505.18719}{VLA-RL: Towards Masterful and General Robotic Manipulation with Scalable Reinforcement Learning}. arXiv:2505.18719.
 \item
-  Schulman, J., Wolski, F., Dhariwal, P., Radford, A., \& Klimov, O. (2017). \href{https://arxiv.org/abs/1707.06347}{Proximal Policy Optimization Algorithms}. arXiv:1707.06347.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{flowgrpoux5316odeux4e3asdeux8bbaux6587}{%
-\section{FlowGRPO：化ODE为SDE（论文）}\label{flowgrpoux5316odeux4e3asdeux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-\hypertarget{ux4e00ux4eceodeux5230sdeux7684ux53d8ux6362}{%
-\subsection{一、从ODE到SDE的变换}\label{ux4e00ux4eceodeux5230sdeux7684ux53d8ux6362}}
-
-\begin{itemize}
-\tightlist
+  Chen, K., Liu, Z., Zhang, T., et al.~(2025). \href{https://arxiv.org/abs/2510.25889}{\(\pi_{\mathrm{RL}}\): Online RL Fine-tuning for Flow-based Vision-Language-Action Models}. arXiv:2510.25889.
 \item
-  背景原理：在标准的流匹配（Flow Matching）或扩散模型中，图像生成被建模为一个确定性的 ODE。这意味着，只要给定一个初始纯噪声，模型去噪生成图像的轨迹就是唯一确定、不可改变的。
+  Mark, M. S., Gao, T., Sampaio, G. G., et al.~(2024). \href{https://arxiv.org/abs/2412.06685}{Policy Agnostic RL: Offline RL and Online RL Fine-Tuning of Any Class and Backbone}. arXiv:2412.06685.
 \item
-  RL的困境与解法：强化学习（RL）的本质是探索与利用（Exploration and Exploitation）。如果轨迹是确定的，模型就无法尝试新的生成路径，自然也就无从得知哪种路径能获得更高的奖励。因此，FlowGRPO 将这个确定的 ODE 转化为了 SDE。通过在每一步去噪过程中引入由 \(g(t)\) 控制的随机噪声扰动，算法赋予了模型偏离既定路线去``试错''的能力。有了这种随机探索性，RL 才能发挥作用。
-\end{itemize}
-
-具体来说，FlowGRPO将流匹配中的常微分方程（ODE）：
-
-\[
-dx_t=v_\theta(x_t,t)dt
-\]
-
-转化为了随机微分方程：
-
-\[
-dx_t=\left[v_\theta(x_t,t)+g(t)\nabla\log p_t(x_t)\right]dt+\sqrt{2g(t)}\,dw_t
-\]
-
-仔细观察，可以发现加入的项来自扩散随机加噪的随机梯度朗之万动力学表达式：
-
-\[
-dx_t=\nabla\log p(x_t)dt+\sqrt{2}\,dw_t
-\]
-
-其中第二项为探索噪声，第一项为保证 \(x\) 关于 \(t\) 的边缘分布不变的修正项，避免模型遇到OOD情形。
-
-乘的系数 \(g(t)\) 表示布朗运动的剧烈程度，是一个预定义好的函数。
-
-\hypertarget{ux4e8cux6bd4ux4f8bux5f52ux4e00ux5316ux4e0eux622aux65adux673aux5236ux7684ux4feeux590d}{%
-\subsection{二、比例归一化与截断机制的修复}\label{ux4e8cux6bd4ux4f8bux5f52ux4e00ux5316ux4e0eux622aux65adux673aux5236ux7684ux4feeux590d}}
-
-\begin{itemize}
-\tightlist
+  Wagenmaker, A., Nakamoto, M., Zhang, Y., et al.~(2025). \href{https://arxiv.org/abs/2506.15799}{Steering Your Diffusion Policy with Latent Space Reinforcement Learning}. arXiv:2506.15799.
 \item
-  背景原理：在 PPO 或 GRPO 等强化学习算法中，为了保证训练的稳定性，必须使用``截断机制''（Clipping）。它通过计算新旧策略的``重要性比值''（Importance Ratio），强制限制模型每次参数更新的幅度，防止模型因为某次偶然的高奖励而彻底破坏原本的生成能力。
-\end{itemize}
-
-在流匹配的 SDE 采样中，每一步的去噪转移概率是一个高斯分布。设定当前步的时间间隔为 \(\Delta t\)，噪声方差为 \(\sigma_{t_k}^2\Delta t\)。新策略（当前正在优化的模型）和旧策略（收集数据时的参考模型）的概率密度函数都可以写成高斯形式。重要性比值定义为新旧策略概率之比 \(r_{t_k}(\theta)\)，取自然对数后为：
-
-\[
-\begin{aligned}
-\log r_{t_k}(\theta)
-&=
--\frac{1}{2\sigma_{t_k}^2\Delta t}
-\left\|x_{t_k-\Delta t}-\mu_\theta\right\|^2
-\\
-&\quad+
-\frac{1}{2\sigma_{t_k}^2\Delta t}
-\left\|x_{t_k-\Delta t}-\mu_{\theta_{old}}\right\|^2
-\end{aligned}
-\]
-
-关键点来了：在强化学习中，训练数据的轨迹 \(x_{t_k-\Delta t}\) 是由旧策略 \(p_{\theta_{old}}\) 采样生成的。因此它必然满足：
-
-\[
-\begin{aligned}
-x_{t_k-\Delta t}
-&=
-\mu_{\theta_{old}}+\sqrt{\sigma_{t_k}^2\Delta t}\cdot\epsilon
-\end{aligned}
-\]
-
-这里 \(\epsilon\sim\mathcal{N}(0,I)\) 是标准高斯噪声。将这个 \(x_{t_k-\Delta t}\) 代入对数公式，并定义新旧策略的均值差为 \(\Delta\mu=\mu_{\theta_{old}}-\mu_\theta\)，公式展开并化简后得到：
-
-\[
-\begin{aligned}
-\log r_{t_k}(\theta)
-&=
--\frac{\|\Delta\mu\|^2}{2\sigma_{t_k}^2\Delta t}
-\\
-&\quad-
-\frac{\epsilon^T\Delta\mu}{\sigma_{t_k}\sqrt{\Delta t}}
-\end{aligned}
-\]
-
-对上述公式求高斯噪声 \(\epsilon\) 的数学期望，由于 \(\mathbb{E}[\epsilon]=0\)，第二项被消去：
-
-\[
-\begin{aligned}
-\mathbb{E}_{\epsilon}\left[\log r_{t_k}(\theta)\right]
-&=
--\frac{\|\Delta\mu\|^2}{2\sigma_{t_k}^2\Delta t}
-\end{aligned}
-\]
-
-因为 \(\|\Delta\mu\|^2>0\)（只要策略更新了，均值就会有差异），所以对数重要性比值的期望严格小于 0。
-
-\begin{itemize}
-\item
-  截断失效的危机：在流匹配模型中，由于概率密度的特性，这个重要性比值的分布会系统性地向左偏移（平均值小于 1），并且在不同的时间步长上表现出极不一致的方差。这导致预设的截断边界（比如 \([1-\epsilon,1+\epsilon]\)）形同虚设，无法有效约束模型那些过于自信的错误更新，进而引发严重的``奖励黑客''（Reward Hacking）现象，即模型钻空子获得高分但生成一堆无意义的乱象。
-\item
-  RatioNorm 的解法：为了修复这个问题，论文引入了 RatioNorm 技术。该技术对数重要性比值进行标准化处理，强行将其分布重新居中到零附近。这样一来，截断边界就能再次精准地``卡''住过大的策略更新，确保了最终导出的图像目标函数 \(\mathcal{J}_{Flow}(\theta)\) 能够平稳收敛。
-\end{itemize}
-
-\[
-\begin{aligned}
-\log \tilde{r}_{t_k}(\theta)
-&=
-\sigma_{t_k}\sqrt{\Delta t}
-\left(
-\log r_{t_k}(\theta)
-\right.
-\\
-&\quad\left.
-+\frac{\|\Delta\mu_\theta(x_{t_k},t_k)\|^2}{2\sigma_{t_k}^2\Delta t}
-\right)
-\end{aligned}
-\]
-
-\hypertarget{ux53c2ux8003ux6587ux732e-163}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-163}}
-
-\begin{itemize}
-\tightlist
-\item
-  Liu, J., Liu, G., Liang, J., et al.~(2025). \href{https://arxiv.org/abs/2505.05470}{Flow-GRPO: Training Flow Matching Models via Online RL}. arXiv:2505.05470.
-\item
-  Shao, Z., Wang, P., Zhu, Q., et al.~(2024). \href{https://arxiv.org/abs/2402.03300}{DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models}. arXiv:2402.03300.
+  Xu, C., Li, Q., Luo, J., \& Levine, S. (2024). \href{https://arxiv.org/abs/2412.09858}{RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning}. arXiv:2412.09858.
 \end{itemize}
 
 \clearpage
