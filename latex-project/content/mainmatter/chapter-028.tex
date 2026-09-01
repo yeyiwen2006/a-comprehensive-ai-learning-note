@@ -171,8 +171,8 @@ W_i = W_{i-1} - \eta \nabla_W l_i(W_{i-1})
   每次运用不能``开箱即用''，而是需要从元参数出发进行若干步微调。由于当前工业界的模型部署高度依赖所有并发请求共享同一套静态的模型权重，这种方式不仅大大增加了首字延迟，还会导致推理阶段需要保存计算图和存储优化器状态，整体计算开销骤增。此外，由于用户的Prompt是不可控的，如果输入包含噪声、对抗性特征或极度模糊的指令，基于伪标签的梯度下降极易将模型推向乱码等输出。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
+\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
 
 \begin{itemize}
 \tightlist
@@ -387,8 +387,8 @@ J(\eta)
   \textbf{跨底层架构的零样本泛化}：因为元网络仅通过智能体的输出接口（\(\pi, y, z\) 等）生成标量目标，它不仅能在完全未见过的连续控制或离散空间（如 ProcGen、NetHack）中实现 SOTA 级别的 Zero-shot 迁移，甚至能直接作用于比发现阶段大数倍的全新神经网络架构上。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-144}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-144}}
+\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
 
 \begin{itemize}
 \tightlist
@@ -405,8 +405,8 @@ J(\eta)
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 \end{quote}
 
-\hypertarget{ux4e00ux63d0ux51faux80ccux666f-5}{%
-\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-5}}
+\hypertarget{ux4e00ux63d0ux51faux80ccux666f-4}{%
+\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-4}}
 
 传统的Test-Time Scaling（测试时扩展）方法通常是在冻结的LLM上进行搜索（例如AlphaEvolve使用进化策略提示模型）。冻结的模型无法内化在解决当前难题时的经验和教训，就像一个学生只做题但不消化知识。TTT-Discover在测试阶段对LLM进行RL训练。模型在尝试解决特定问题的过程中，利用产生的数据实时更新权重，从而不仅优化当前的搜索路径，还提升了模型本身解决该问题的能力。
 
@@ -714,8 +714,8 @@ TTT-Discover 选择 PUCT 的原因是：
   利用长尾分布：论文发现高奖励的解往往很少（长尾）。PUCT 通过 \(P(s)\)（基于排名的先验）能够迅速锁定那些``虽然探索次数少，但排名很高''的潜力股，从而在有限计算预算内找到极值解。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-145}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-145}}
+\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
 
 \begin{itemize}
 \tightlist
@@ -857,8 +857,8 @@ y^* = \arg\max_y \mathbb{E}_{x \sim \mathcal{D}}\left[\mathbb{E}_{y \sim \pi_\th
   Mass-covering 行为：Forward KL 具有 ``Mass-covering'' 的特性，它鼓励策略分布 \(\pi_\theta\) 覆盖参考分布 \(\pi_{\mathrm{ref}}\) 中的高概率区域，而不是仅仅集中在某一个峰值上。这使得模型能生成更多样化的解（Unique Solutions），从而更有利于后续的进化迭代。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-146}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-146}}
+\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
 
 \begin{itemize}
 \tightlist

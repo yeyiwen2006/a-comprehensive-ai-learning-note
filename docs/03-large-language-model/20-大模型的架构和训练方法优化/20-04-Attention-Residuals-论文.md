@@ -1,13 +1,13 @@
 ---
-title: "20.4 Attention Residuals（论文）"
-source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.4 Attention Residuals（论文）.docx"
+title: "20.4 Attention Residuals"
+source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.4 Attention Residuals.docx"
 status: "auto-converted"
 ocr: "no pending image placeholders in public Markdown"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 20.4 Attention Residuals（论文）
+# 20.4 Attention Residuals
 
 
 > 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。

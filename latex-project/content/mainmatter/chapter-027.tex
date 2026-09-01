@@ -1,13 +1,13 @@
 \hypertarget{ux57faux4e8eux4e0aux4e0bux6587ux7684ux6301ux7eedux5b66ux4e60}{%
 \chapter{基于上下文的持续学习}\label{ux57faux4e8eux4e0aux4e0bux6587ux7684ux6301ux7eedux5b66ux4e60}}
 
-\hypertarget{ux6ce8ux610fux529bux673aux5236ux4e0eux68afux5ea6ux4e0bux964dux7684ux7b49ux4ef7ux6027}{%
-\section{注意力机制与梯度下降的等价性}\label{ux6ce8ux610fux529bux673aux5236ux4e0eux68afux5ea6ux4e0bux964dux7684ux7b49ux4ef7ux6027}}
+\hypertarget{ux6ce8ux610fux529bux673aux5236ux4e0eux68afux5ea6ux4e0bux964dux7684ux7b49ux4ef7ux6027-1}{%
+\section{注意力机制与梯度下降的等价性}\label{ux6ce8ux610fux529bux673aux5236ux4e0eux68afux5ea6ux4e0bux964dux7684ux7b49ux4ef7ux6027-1}}
 
 注意力模块Transformer的Attention层（包含残差流在内）整体上可以被看作是一种回归问题的梯度下降优化。
 
-\hypertarget{ux4e00ux7ebfux6027ux6ce8ux610fux529bux7684ux8868ux8fbeux5f0f}{%
-\subsection{一、线性注意力的表达式}\label{ux4e00ux7ebfux6027ux6ce8ux610fux529bux7684ux8868ux8fbeux5f0f}}
+\hypertarget{ux4e00ux7ebfux6027ux6ce8ux610fux529bux7684ux8868ux8fbeux5f0f-1}{%
+\subsection{一、线性注意力的表达式}\label{ux4e00ux7ebfux6027ux6ce8ux610fux529bux7684ux8868ux8fbeux5f0f-1}}
 
 对于一组token（模型输入序列）\(\{e_1,\ldots,e_n\}\) 和 query（test）token \(e_{\mathrm{test}}\)，经过去除Softmax的注意力层（即线性注意力层，后面会探讨加上Softmax的情形）后，注意力的表达式为：
 
@@ -35,8 +35,8 @@ S_t=S_{t-1}+v_t k_t^\top
 
 上式意味着，我们利用隐状态矩阵 \(S\) 构建了一个从 \(K\) 到 \(V\) 的映射，并获取在输入 \(q_t\) 时的输出，作为残差相加。忽略投影 \(P\)，这里的 \(V\) 实质上拟合的是``输出与输入之间的残差''。
 
-\hypertarget{ux4e8cux6784ux9020ux7ebfux6027ux6a21ux578bux5e76ux8bc1ux660eux7b49ux4ef7ux6027}{%
-\subsection{二、构造线性模型，并证明等价性}\label{ux4e8cux6784ux9020ux7ebfux6027ux6a21ux578bux5e76ux8bc1ux660eux7b49ux4ef7ux6027}}
+\hypertarget{ux4e8cux6784ux9020ux7ebfux6027ux6a21ux578bux5e76ux8bc1ux660eux7b49ux4ef7ux6027-1}{%
+\subsection{二、构造线性模型，并证明等价性}\label{ux4e8cux6784ux9020ux7ebfux6027ux6a21ux578bux5e76ux8bc1ux660eux7b49ux4ef7ux6027-1}}
 
 假设我们正在进行 In-Context Learning（上下文学习），输入是一系列示例（演示数据）：\((x_1,y_1),(x_2,y_2),\ldots,(x_N,y_N)\)，以及一个新的查询输入 \(x_{\mathrm{test}}\)。
 
@@ -120,8 +120,8 @@ PVK^\top q_j=\begin{pmatrix}0\\-\Delta W x_j\end{pmatrix}
 
 这条式子的下面部分取相反数后，也就得到参数变换后（按 \(W_0+\Delta W\)）应该输出的值，即注意力模块的输出。
 
-\hypertarget{ux4e09ux4e3aux4ec0ux4e484ux5f0fux6709ux8d1fux53f7ux660eux660e-y_mathrmtestwx_mathrmtestdelta-wx_mathrmtestux4e3aux4ec0ux4e48ux8fd9ux91ccux662fux51cfux53bb-delta-wx_mathrmtest}{%
-\subsection{\texorpdfstring{三、为什么（4）式有负号，明明 \(y_{\mathrm{test}}=Wx_{\mathrm{test}}+\Delta Wx_{\mathrm{test}}\)，为什么这里是减去 \(\Delta Wx_{\mathrm{test}}\)？}{三、为什么（4）式有负号，明明 y\_\{\textbackslash mathrm\{test\}\}=Wx\_\{\textbackslash mathrm\{test\}\}+\textbackslash Delta Wx\_\{\textbackslash mathrm\{test\}\}，为什么这里是减去 \textbackslash Delta Wx\_\{\textbackslash mathrm\{test\}\}？}}\label{ux4e09ux4e3aux4ec0ux4e484ux5f0fux6709ux8d1fux53f7ux660eux660e-y_mathrmtestwx_mathrmtestdelta-wx_mathrmtestux4e3aux4ec0ux4e48ux8fd9ux91ccux662fux51cfux53bb-delta-wx_mathrmtest}}
+\hypertarget{ux4e09ux4e3aux4ec0ux4e484ux5f0fux6709ux8d1fux53f7ux660eux660e-y_mathrmtestwx_mathrmtestdelta-wx_mathrmtestux4e3aux4ec0ux4e48ux8fd9ux91ccux662fux51cfux53bb-delta-wx_mathrmtest-1}{%
+\subsection{\texorpdfstring{三、为什么（4）式有负号，明明 \(y_{\mathrm{test}}=Wx_{\mathrm{test}}+\Delta Wx_{\mathrm{test}}\)，为什么这里是减去 \(\Delta Wx_{\mathrm{test}}\)？}{三、为什么（4）式有负号，明明 y\_\{\textbackslash mathrm\{test\}\}=Wx\_\{\textbackslash mathrm\{test\}\}+\textbackslash Delta Wx\_\{\textbackslash mathrm\{test\}\}，为什么这里是减去 \textbackslash Delta Wx\_\{\textbackslash mathrm\{test\}\}？}}\label{ux4e09ux4e3aux4ec0ux4e484ux5f0fux6709ux8d1fux53f7ux660eux660e-y_mathrmtestwx_mathrmtestdelta-wx_mathrmtestux4e3aux4ec0ux4e48ux8fd9ux91ccux662fux51cfux53bb-delta-wx_mathrmtest-1}}
 
 这需要从多轮优化的角度分析。大模型中往往是多个注意力层串行处理数据，每一轮都把输入 \(x_{\mathrm{test}}\) 转变为输出 \(y_{\mathrm{test}}\)，它又作为新的 \(x_{\mathrm{test}}\) 输入下一个注意力层。这等价于对一个线性层进行多轮权重更新：刚开始输入 \(x_{\mathrm{test}}\) 时（权重 \(W_0\)）执行一次梯度下降（权重变为 \(W_0+\Delta W\)）并输出 \(y_{\mathrm{test}}\)，它又作为新的 \(x_{\mathrm{test}}\) 输入（其他 \(x_i\) 和 \(y_i\) 仍然取原来的值）此时权重已经变为 \(W_0+\Delta W\) 的模型，再结合上下文进行梯度下降、推理，以此类推。
 
@@ -135,8 +135,8 @@ y_i^{new}=y_i-\Delta W x_i
 
 但是这时候会出现一个问题：自注意力层不会区分上下文token和test token，我们为了保证残差不变，把 \(y_i\) 减去 \(\Delta Wx_i\)，但是 \(y_{\mathrm{test}}=W_0x_{\mathrm{test}}+\Delta Wx_{\mathrm{test}}\)，符号反了。于是我们把 \(y_{\mathrm{init}}\) 取为 \(-W_0x_{\mathrm{test}}\)，减去 \(\Delta Wx_{\mathrm{test}}\) 后恰好为 \(-W_0x_{\mathrm{test}}-\Delta Wx_{\mathrm{test}}\)，乘以一个对角线全 \(-1\) 的输出投影矩阵即可。
 
-\includegraphics{images/image-0044.png}
-\includegraphics{images/image-0045.png}
+\includegraphics{images/image-0046.png}
+\includegraphics{images/image-0047.png}
 - 穿过第 1 层注意力层（执行第 1 步梯度下降）：第 1 层根据当前的上下文计算出梯度增量 \(\Delta W_1\)。残差连接将其加上：
 
 \[
@@ -177,25 +177,25 @@ W_V=\begin{pmatrix}0&0\\W_0&-I_y\end{pmatrix}
 
 总结：标准Transformer 无法在内部凭空变出一个真正的权重矩阵W存起来，只能靠修改数据流（残差）来``模拟''梯度下降，为了在多层Transformer中保证优化状态一致性，才采用了这种``别扭''的方式。
 
-\hypertarget{ux56dbux5927ux6a21ux578bux4e2dux7684ux5b9eux9645ux60c5ux51b5}{%
-\subsection{四、大模型中的实际情况}\label{ux56dbux5927ux6a21ux578bux4e2dux7684ux5b9eux9645ux60c5ux51b5}}
+\hypertarget{ux56dbux5927ux6a21ux578bux4e2dux7684ux5b9eux9645ux60c5ux51b5-1}{%
+\subsection{四、大模型中的实际情况}\label{ux56dbux5927ux6a21ux578bux4e2dux7684ux5b9eux9645ux60c5ux51b5-1}}
 
-\hypertarget{ux4e00ux642cux8fd0ux673aux5236ux548cux5f52ux7eb3ux5934}{%
-\subsubsection{（一）``搬运''机制和归纳头}\label{ux4e00ux642cux8fd0ux673aux5236ux548cux5f52ux7eb3ux5934}}
+\hypertarget{ux4e00ux642cux8fd0ux673aux5236ux548cux5f52ux7eb3ux5934-1}{%
+\subsubsection{（一）``搬运''机制和归纳头}\label{ux4e00ux642cux8fd0ux673aux5236ux548cux5f52ux7eb3ux5934-1}}
 
 前面，我们只是在理论上证明了``自注意力有能力做梯度下降''。我们假设每个上下文token都由输入特征和标签拼接而成，但显然现实世界中的文本往往不符合这一点，输入特征和标签一般会分布在不同token中以随机位置出现。当面对这种真实随机的序列时，Transformer的第一层（包括了Softmax）并没有直接去算梯度，而是学习到了一种数据预处理功能：对于每一个含有y的token，通过q和K的匹配分数，找到它对应的x所在的token（不一定在x旁边，也不一定只有一个token），把x``搬运''到y所在的token里，再经过后面的线性层``整理''把向量变成类似于前述命题所需的(xi,yi)拼接状态。
 
 这个搬运机制，恰好与Anthropic 团队之前发现的、被认为对上下文学习至关重要的``归纳头''（Induction Heads）现象吻合。第一层做的是Induction Head的拷贝工作，为后面开始执行真正的梯度下降（也就是前面推导的逻辑）、学习上下文铺平道路。在这里，Softmax起到了至关重要的作用：``搬运''意味着当前位置的Token必须能够百分之百地把注意力集中在目标Token（有需要的对应x值）上，同时绝对无视序列中的其他所有Token，这只有``赢家通吃''的Softmax能做到，如果纯粹用线性，往往会把序列里所有Token的特征都搅拌在一起（糊成一团），无法通过排除其他token的干扰来提取出极其干净的、单一的x。
 
-\hypertarget{ux4e8cy_mathrminit-ux53d6ux4e3a--w_0x_mathrmtest-ux7684ux5408ux7406ux6027}{%
-\subsubsection{\texorpdfstring{（二）\(y_{\mathrm{init}}\) 取为 \(-W_0x_{\mathrm{test}}\) 的合理性}{（二）y\_\{\textbackslash mathrm\{init\}\} 取为 -W\_0x\_\{\textbackslash mathrm\{test\}\} 的合理性}}\label{ux4e8cy_mathrminit-ux53d6ux4e3a--w_0x_mathrmtest-ux7684ux5408ux7406ux6027}}
+\hypertarget{ux4e8cy_mathrminit-ux53d6ux4e3a--w_0x_mathrmtest-ux7684ux5408ux7406ux6027-1}{%
+\subsubsection{\texorpdfstring{（二）\(y_{\mathrm{init}}\) 取为 \(-W_0x_{\mathrm{test}}\) 的合理性}{（二）y\_\{\textbackslash mathrm\{init\}\} 取为 -W\_0x\_\{\textbackslash mathrm\{test\}\} 的合理性}}\label{ux4e8cy_mathrminit-ux53d6ux4e3a--w_0x_mathrmtest-ux7684ux5408ux7406ux6027-1}}
 
 而那个把 \(y_{\mathrm{init}}\) 取为 \(-W_0x_{\mathrm{test}}\) 的构造操作，在实际训练Transformer的时候，实际上只要我们将注意力权重初始化为一个非常小的值，就可以近似认为 \(W_V=0\)，进而由前面的分析 \(W_0=0\)，\(-W_0x_{\mathrm{test}}=0\)，而真实模型的第一层（归纳头）也会学习到主动把 \(y_{\mathrm{init}}\) 变换为接近0的值，在遇到test token时初始预测值就是0，随后通过层层残差连接去累加算出的梯度。
 
 另外值得注意的是，这种模式往往只在部分层、（多头注意力的）部分头出现，后面也会阐述原因。
 
-\hypertarget{ux4e09ux5173ux4e8e-y_mathrminit-ux4e0dux53c2ux4e0e-delta-w-ux7684ux8ba1ux7b97}{%
-\subsubsection{\texorpdfstring{（三）关于 \(y_{\mathrm{init}}\) 不参与 \(\Delta W\) 的计算}{（三）关于 y\_\{\textbackslash mathrm\{init\}\} 不参与 \textbackslash Delta W 的计算}}\label{ux4e09ux5173ux4e8e-y_mathrminit-ux4e0dux53c2ux4e0e-delta-w-ux7684ux8ba1ux7b97}}
+\hypertarget{ux4e09ux5173ux4e8e-y_mathrminit-ux4e0dux53c2ux4e0e-delta-w-ux7684ux8ba1ux7b97-1}{%
+\subsubsection{\texorpdfstring{（三）关于 \(y_{\mathrm{init}}\) 不参与 \(\Delta W\) 的计算}{（三）关于 y\_\{\textbackslash mathrm\{init\}\} 不参与 \textbackslash Delta W 的计算}}\label{ux4e09ux5173ux4e8e-y_mathrminit-ux4e0dux53c2ux4e0e-delta-w-ux7684ux8ba1ux7b97-1}}
 
 在上下文学习中，输入序列的形式为：
 
@@ -246,8 +246,8 @@ Transformer 每一层的公式是：输出 = 输入 + 注意力计算结果。
 
 于是，整个注意力分支的计算结果变成了 0。输出 = 输入 + 0。模型成功地在满足 Softmax 苛刻要求的同时，完美地什么也没做，保持了特征的纯洁。
 
-\hypertarget{ux56dbux771fux5b9eux8fd0ux884cux4e2dux54eaux4e9btokenux7684vux4f1aux88abux7f6eux4e3aux96f6}{%
-\subsubsection{（四）真实运行中，哪些token的V会被置为零？}\label{ux56dbux771fux5b9eux8fd0ux884cux4e2dux54eaux4e9btokenux7684vux4f1aux88abux7f6eux4e3aux96f6}}
+\hypertarget{ux56dbux771fux5b9eux8fd0ux884cux4e2dux54eaux4e9btokenux7684vux4f1aux88abux7f6eux4e3aux96f6-1}{%
+\subsubsection{（四）真实运行中，哪些token的V会被置为零？}\label{ux56dbux771fux5b9eux8fd0ux884cux4e2dux54eaux4e9btokenux7684vux4f1aux88abux7f6eux4e3aux96f6-1}}
 
 在真实的自回归序列中，输入不是拼好的 \((x,y)\)，而是每个 \(x\) 和 \(y\) 都分布在不同 token 中，如一个交替序列：\(x_1,y_1,x_2,y_2,\ldots,x_{19},y_{19},x_{20}\)。
 
@@ -303,16 +303,16 @@ V_{20} = W_0x_{19} - y_{19} \ne 0
 
 对于 \(x_{19}\)，它的 \(V_{19}=0\)，乘法结果为 \(0\)，直接被无视；对于 \(y_{19}\)，它的 \(V_{y_{19}}=W_0x_{19}-y_{19}\ne 0\)，提供了第 19 个样本的梯度信息。
 
-\hypertarget{ux4e94transformerux5185ux90e8ux53eaux662fux6734ux7d20ux7684ux68afux5ea6ux4e0bux964dux5417}{%
-\subsubsection{（五）Transformer内部只是朴素的梯度下降吗？}\label{ux4e94transformerux5185ux90e8ux53eaux662fux6734ux7d20ux7684ux68afux5ea6ux4e0bux964dux5417}}
+\hypertarget{ux4e94transformerux5185ux90e8ux53eaux662fux6734ux7d20ux7684ux68afux5ea6ux4e0bux964dux5417-1}{%
+\subsubsection{（五）Transformer内部只是朴素的梯度下降吗？}\label{ux4e94transformerux5185ux90e8ux53eaux662fux6734ux7d20ux7684ux68afux5ea6ux4e0bux964dux5417-1}}
 
 部分后续研究指出，给Transformer喂了条件数极差的数据（特征矩阵极度不平衡）的情况下，其性能远优于普通的梯度下降。根据对中间层输出的分析，Transformer可能在内部自动收敛成了一个类似于迭代牛顿法的收敛轨迹，从而能在极短的Few-shot样本下瞬间学会新任务。
 
-\hypertarget{ux4e94ux542bsoftmaxux7684ux60c5ux5f62}{%
-\subsection{五、含Softmax的情形}\label{ux4e94ux542bsoftmaxux7684ux60c5ux5f62}}
+\hypertarget{ux4e94ux542bsoftmaxux7684ux60c5ux5f62-1}{%
+\subsection{五、含Softmax的情形}\label{ux4e94ux542bsoftmaxux7684ux60c5ux5f62-1}}
 
-\hypertarget{ux4e00ux5355ux5934softmaxux7684ux56f0ux5883ux5f15ux5165ux7ebfux6027ux504fux79fb}{%
-\subsubsection{（一）单头Softmax的困境：引入线性偏移}\label{ux4e00ux5355ux5934softmaxux7684ux56f0ux5883ux5f15ux5165ux7ebfux6027ux504fux79fb}}
+\hypertarget{ux4e00ux5355ux5934softmaxux7684ux56f0ux5883ux5f15ux5165ux7ebfux6027ux504fux79fb-1}{%
+\subsubsection{（一）单头Softmax的困境：引入线性偏移}\label{ux4e00ux5355ux5934softmaxux7684ux56f0ux5883ux5f15ux5165ux7ebfux6027ux504fux79fb-1}}
 
 单层、单头的Softmax自注意力层无法完全匹配普通梯度下降的性能。其根本原因在于，Softmax的指数运算和归一化分母会在矩阵乘法中产生一个附加的误差项。这可以通过一阶泰勒展开近似说明。
 
@@ -390,8 +390,8 @@ x_N^T W_{KQ}x_j
 物理含义：这个 \(\epsilon\) 是一个常数偏移量（Linear Offset）。它意味着，即使某些 Token 和当前 Query 毫无关系（内积 \(x_i^TW_{KQ}x_j=0\)），Softmax 依然会强制分配给它们一个基础的权重（即 \(\frac{1}{S}\)）。这种``强制均分''的特性，污染了原本纯净的梯度方向，导致单头 Softmax 注意力无法完美执行梯度下降。
 即便对于内积为负数的token（对应可能是数学推导中的错误方向），权重也会变成正值。这显然不合理。
 
-\hypertarget{ux4e8cux591aux5934softmaxux5982ux4f55ux89e3ux51b3ux8fd9ux4e00ux95eeux9898}{%
-\subsubsection{（二）多头Softmax如何解决这一问题}\label{ux4e8cux591aux5934softmaxux5982ux4f55ux89e3ux51b3ux8fd9ux4e00ux95eeux9898}}
+\hypertarget{ux4e8cux591aux5934softmaxux5982ux4f55ux89e3ux51b3ux8fd9ux4e00ux95eeux9898-1}{%
+\subsubsection{（二）多头Softmax如何解决这一问题}\label{ux4e8cux591aux5934softmaxux5982ux4f55ux89e3ux51b3ux8fd9ux4e00ux95eeux9898-1}}
 
 前面提过，由于Softmax对于归纳头起着不可或缺的作用，我们无法通过直接去掉Softmax的方法来增强上下文学习能力。但既然偏移量1（即epsilon）为常数，那么多头Softmax可以通过不同头之间相减抵消来实现：
 
@@ -431,28 +431,28 @@ x_N^T W_{KQ}x_j
 
 看，常数项 1（即那个讨厌的 \(\epsilon\) 偏移量）在减法中完美归零了。
 
-\hypertarget{ux516dux4e3aux4ec0ux4e48transformerux4f5cux4e3aux4e00ux79cdux4e8bux5b9eux4e0aux7684ux5143ux5b66ux4e60ux7b97ux6cd5ux4ecdux4e0dux80fdux5f88ux597dux5730ux5e94ux5bf9oodux95eeux9898}{%
-\subsection{六、为什么Transformer作为一种事实上的元学习算法，仍不能很好地应对OOD问题？}\label{ux516dux4e3aux4ec0ux4e48transformerux4f5cux4e3aux4e00ux79cdux4e8bux5b9eux4e0aux7684ux5143ux5b66ux4e60ux7b97ux6cd5ux4ecdux4e0dux80fdux5f88ux597dux5730ux5e94ux5bf9oodux95eeux9898}}
+\hypertarget{ux516dux4e3aux4ec0ux4e48transformerux4f5cux4e3aux4e00ux79cdux4e8bux5b9eux4e0aux7684ux5143ux5b66ux4e60ux7b97ux6cd5ux4ecdux4e0dux80fdux5f88ux597dux5730ux5e94ux5bf9oodux95eeux9898-1}{%
+\subsection{六、为什么Transformer作为一种事实上的元学习算法，仍不能很好地应对OOD问题？}\label{ux516dux4e3aux4ec0ux4e48transformerux4f5cux4e3aux4e00ux79cdux4e8bux5b9eux4e0aux7684ux5143ux5b66ux4e60ux7b97ux6cd5ux4ecdux4e0dux80fdux5f88ux597dux5730ux5e94ux5bf9oodux95eeux9898-1}}
 
-\hypertarget{ux4e00ux7279ux5f81ux63d0ux53d6ux7684ux56f0ux96be}{%
-\subsubsection{（一）特征提取的困难}\label{ux4e00ux7279ux5f81ux63d0ux53d6ux7684ux56f0ux96be}}
+\hypertarget{ux4e00ux7279ux5f81ux63d0ux53d6ux7684ux56f0ux96be-1}{%
+\subsubsection{（一）特征提取的困难}\label{ux4e00ux7279ux5f81ux63d0ux53d6ux7684ux56f0ux96be-1}}
 
 我们在前面推导中的前提是，执行梯度下降的特征向量 \(x\)，是经过大模型的Embedding和MLP层投影后的深层表示。注意力层可以看成实时梯度下降，即视为元学习；但Embedding和MLP层并不是如此。如果遇到OOD问题（比如人类从未见过的数据模态），预训练阶段的MLP根本没有为这种数据建立特征坐标系。OOD数据在输入网络后，被MLP映射成了一堆毫无意义的噪声向量，无法顺利提取数据的特征，进而后续的注意力层在执行 \(y_{new}=y_{old}-\Delta Wx\) 时，算出的梯度也就是一团乱码。
 
-\hypertarget{ux4e8cux68afux5ea6ux4e0bux964dux7684ux5c40ux9650ux6027}{%
-\subsubsection{（二）梯度下降的局限性}\label{ux4e8cux68afux5ea6ux4e0bux964dux7684ux5c40ux9650ux6027}}
+\hypertarget{ux4e8cux68afux5ea6ux4e0bux964dux7684ux5c40ux9650ux6027-1}{%
+\subsubsection{（二）梯度下降的局限性}\label{ux4e8cux68afux5ea6ux4e0bux964dux7684ux5c40ux9650ux6027-1}}
 
 梯度下降算法本身的特点决定了，面对OOD任务时，大模型所谓的``学习''，并不是真正在寻找全局最优解，而是在它预训练时见过的``任务池''里，寻找一个和当前OOD任务最相似的替代品。它只能在已有的先验知识流形（Manifold）上插值，无法外推到一个全新的物理空间。
 
-\hypertarget{ux4e09ux8ba1ux7b97ux6df1ux5ea6ux4e0dux8db3}{%
-\subsubsection{（三）计算深度不足}\label{ux4e09ux8ba1ux7b97ux6df1ux5ea6ux4e0dux8db3}}
+\hypertarget{ux4e09ux8ba1ux7b97ux6df1ux5ea6ux4e0dux8db3-1}{%
+\subsubsection{（三）计算深度不足}\label{ux4e09ux8ba1ux7b97ux6df1ux5ea6ux4e0dux8db3-1}}
 
 我们证明了：1层Transformer = 1步梯度下降。一个100层的模型，最多也只能执行几十步、上百步的有效梯度下降。而真正的OOD任务（比如从头训练一个视觉模型）往往需要几万、几十万步的梯度迭代才能收敛。大模型那极其有限的层数，根本无法提供足够的计算深度来完成OOD的参数拟合。
 
 当然，随着RLVR带来的模型推理能力的提升，模型在完成一个任务（即上下文不清空）的情况下的KV Cache更新次数和有效计算深度大大增加。``组合型OOD''往往能被解决：如给一道全新的数学竞赛题，整体来看它是OOD的，但它可以把这个问题拆解，原子步骤（加减乘除、代数变换）都在它的先验特征空间内，RL训练出的思维链能通过千万步的内部梯度下降，把这些已知特征重新组合，最终攻克难题。但对于``绝对型OOD''，即输入的底层特征在模型的MLP中根本不存在映射的情况，该方法仍然无效。
 
-\hypertarget{ux4e03ux4f18ux5316ux95eeux9898ux7684ux7b49ux4ef7ux6027}{%
-\subsection{七、优化问题的等价性}\label{ux4e03ux4f18ux5316ux95eeux9898ux7684ux7b49ux4ef7ux6027}}
+\hypertarget{ux4e03ux4f18ux5316ux95eeux9898ux7684ux7b49ux4ef7ux6027-1}{%
+\subsection{七、优化问题的等价性}\label{ux4e03ux4f18ux5316ux95eeux9898ux7684ux7b49ux4ef7ux6027-1}}
 
 在神经心理学中，记忆是由输入引起的神经更新，而学习是获取有效和有用记忆的过程。我们遵循 Behrouz 等人的定义：
 
@@ -765,8 +765,8 @@ M_{t+1}=\arg\min_M\left\langle M(k_{t+1}),u_{t+1}\right\rangle+\lVert M-M_t\rVer
   结论：Transformer 中的线性 Attention 模块，本质上是一个正在通过梯度下降进行在线训练的优化器。它的目标是在给定 Key 和 Value 之间映射关系。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-136}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-136}}
+\hypertarget{ux53c2ux8003ux6587ux732e-134}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-134}}
 
 \begin{itemize}
 \tightlist
@@ -776,279 +776,6 @@ M_{t+1}=\arg\min_M\left\langle M(k_{t+1}),u_{t+1}\right\rangle+\lVert M-M_t\rVer
   Katharopoulos, A., Vyas, A., Pappas, N., \& Fleuret, F. (2020). \href{https://arxiv.org/abs/2006.16236}{Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention}. ICML 2020.
 \item
   Olsson, C., Elhage, N., Nanda, N., et al.~(2022). \href{https://arxiv.org/abs/2209.11895}{In-context Learning and Induction Heads}. arXiv:2209.11895.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{delta-attention}{%
-\section{Delta Attention}\label{delta-attention}}
-
-\hypertarget{ux4e00ux63d0ux51faux80ccux666f-4}{%
-\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-4}}
-
-在前面我们提到，当我们把Transformer视为动态梯度下降时，Softmax在Transformer中最核心的作用就是``归纳头''：对于长上下文，也能保证注意力集中于与y相匹配的x，而不是``注意力涣散''。而对于根据实际值和预测值的差距，进行梯度下降更新``权重W''这样的功能，其实线性注意力已经足够了。考虑到Linear Attention更小的显存消耗，Kimi Delta Attention（KDA）提出了混合式架构：以3:1的比例混合线性注意力层与全Softmax注意力层，让大部分线性注意力层高效处理局部的语义信息聚合、状态传递和持续的特征更新（记忆写入），少数Softmax层（存储了完整的KV Cache）进行全局的高精度信息检索、跨越极长距离的路由和复杂的模式匹配。
-
-\hypertarget{ux4e8cux4ecelinear-attentionux5230deltanet}{%
-\subsection{二、从Linear Attention到DeltaNet}\label{ux4e8cux4ecelinear-attentionux5230deltanet}}
-
-传统的Linear Attention的表达式为：
-
-\[
-S_t=S_{t-1}+k_tv_t^\top
-\]
-
-这个显式的矩阵（隐状态）\(S\) 是在残差分支上的，它的目标是拟合 \(K\) 与 \(V\) 的关系，输入 \(Q\)、输出上下文聚合后的 \(V\)（作为残差与原来输入相加，而不是像 \(W\) 那样已经在内部包含残差、直接输出总结果 \(y\)）。对于第 \(l\) 层，输入 \(x_t^{(l)}\) 和输出 \(x_t^{(l+1)}\)（第 \(l+1\) 层输入）关系如下：
-
-\[
-\mathrm{Output}_t^{(l)}=\left(S_t^{(l)}\right)^\top q_t^{(l)}
-\]
-
-\[
-x_t^{(l+1)}=x_t^{(l)}+\mathrm{Output}_t^{(l)}
-\]
-
-前面我们提到Transformer（包括残差流）整体相当于隐式地维护权重矩阵 \(W\)，满足 \(y=Wx\)。残差分支上的 \(S_t^\top q_t\) 实际上在上下文学习中扮演的作用相当于 \(\Delta W x_t\)，根据已有数据中的 \(K_i\)（\(x_i\)）和 \(V_i\)（\(Wx_i-y_i\)）的关系，得出真实的 \(y_t\) 和 \(Wx_t\) 的差距。
-
-但这个模型在训练中会存在严重的问题。\(S\) 的更新公式等价于运用相关性Loss学习从 \(k_t\) 到 \(v_t\) 的映射：
-
-\[
-\mathcal{L}_{\mathrm{Linear}}=-\left\langle S^\top k_t,v_t\right\rangle
-\]
-
-此时的梯度就是前述 \(S\) 的更新公式。我们注意到这种更新是无界的：即便 \(S\) 已经学到了从 \(k_t\) 到 \(v_t\) 的映射，对每个（第 \(t\) 个）token，只要 \(k_t\) 和 \(v_t\) 输入进来，它就会计算出一个非零的梯度 \(-k_tv_t^\top\)，并且无脑地叠加到 \(S\) 上。这可能导致矩阵内部的元素值无限膨胀，在处理长上下文时发生严重的信息干扰（因为维度有限，叠加不可能总是正交）。
-
-在含Softmax时，由于注意力分数和为1，输出向量被约束在已有各token的Value向量构成的凸包内。但这里没有这个限制，故我们修改损失函数，对每个t时刻：
-
-\[
-\mathcal{L}_{\mathrm{Delta}}=\frac{1}{2}\left\lVert S^\top k_t-v_t\right\rVert^2
-\]
-
-运行一步自适应学习率 \(\beta_t\) 的梯度下降：
-
-\[
-S_t=S_{t-1}+\beta_tk_t\left(v_t-k_t^\top S_{t-1}\right)
-\]
-
-注意和前面说的矩阵 \(W\) 在每个 \(t\) 时刻用 \((x_1,y_1),\ldots,(x_t,y_t)\) 执行梯度下降（还希望 \(y_t\) 不产生梯度）不一样，这里只用 \((k_t,v_t)\) 执行梯度下降。这里不同的根本原因在于优化目标不同：
-
-在理论论文（标准 Attention）中，模型面对的是一个外部的 Few-shot 任务（In-Context Learning）。
-
-\begin{itemize}
-\tightlist
-\item
-  你给模型的 Prompt 就像是一张考卷：已知条件是 \((x_1,y_1),(x_2,y_2),\ldots,(x_n,y_n)\)，求 \(x_{\mathrm{test}}\) 对应的 \(y_{\mathrm{test}}\)。
-\end{itemize}
-
-在 KDA（线性 RNN）中，模型面对的是自身的内部记忆压缩任务（Autoregressive State Tracking）。
-
-\begin{itemize}
-\tightlist
-\item
-  KDA 根本不知道你在做什么 Few-shot 考题。它的唯一使命是：作为 KV Cache 的替代品，把源源不断进来的历史文本压缩进一个固定大小的矩阵 \(S\) 里。
-\item
-  在自回归生成中，时间是单向前的。当模型阅读到第 \(t\) 个 token 时，这个 token 产生的特征 \(k_t\) 和 \(v_t\) 就是``已知事实''。
-\item
-  KDA 必须立刻用这个已知事实去更新 \(S_{t-1}\to S_t\)，以便当第 \(t+1\) 个 token 甚至第 \(t+100\) 个 token 进来查询时，记忆库里有关于第 \(t\) 个 token 的记录。
-\end{itemize}
-
-KDA 论文（以及 DeltaNet）明确指出，这是一种在线梯度下降（Online Gradient Descent）。
-
-\begin{itemize}
-\tightlist
-\item
-  批量梯度下降（Batch GD）也是我们平时训练大模型时用的方法。它需要把整批数据（所有 token）的 loss 全部算出来，求个平均，然后再更新一次权重。它的目标是寻找一个全局最优点。
-\item
-  在线梯度下降（Online GD）是 KDA 内部的 \(S\) 矩阵采用的、灵活根据特征的策略。因为在自回归生成时，token 是一个一个流进来的；模型不可能为了算第 \(t\) 步的更新，就把前面所有 token 的历史全部翻出来重新算一遍误差。
-\item
-  因此，它每次只看眼前的第 \(t\) 个 token，算出一个瞬间的梯度 \(\nabla_S\mathcal{L}_t(S_{t-1})\)，然后立刻走一小步（步长为 \(\beta_t\)），更新记忆。
-\end{itemize}
-
-同时，KDA也尽可能避免``灾难性遗忘''：
-
-\begin{itemize}
-\tightlist
-\item
-  当第 \(t\) 个 token 到来时，它面对的记忆矩阵 \(S_{t-1}\) 并不是一张白纸。这个 \(S_{t-1}\) 是经历了前面 \(t-1\) 次在线梯度下降后，千锤百炼累积下来的结果。
-\item
-  当 KDA 计算误差并减去 \(\beta_t k_t k_t^\top S_{t-1}\) 时，它并不是把 \(S_{t-1}\) 彻底推翻。因为 \(\beta_t\) 通常是一个介于 \(0\) 到 \(1\) 之间的小于 \(1\) 的标量（由模型动态预测），它只是在庞大的历史记忆 \(S_{t-1}\) 上，针对第 \(t\) 个 token 的特定特征方向（\(k_t\)）进行了微调和打磨。
-\end{itemize}
-
-\hypertarget{ux4e09kimi-delta-attention}{%
-\subsection{三、Kimi Delta Attention}\label{ux4e09kimi-delta-attention}}
-
-当t时刻新数据流入时，隐状态S的更新公式如下：
-
-\[
-S_t=\left(I-\beta_t k_t k_t^\top\right)\mathrm{Diag}(\alpha_t)S_{t-1}+\beta_t k_t v_t^\top
-\]
-
-这里 \(\mathrm{Diag}(\alpha_t)\) 是一个对角阵，左乘 \(S_{t-1}\)，给每行的参数设置一个类似遗忘门的门控机制。这和Adam中的逐参数自适应学习率有一定相似之处。
-
-Kimi对有关矩阵的定义：
-
-\[
-\begin{aligned}
-q_t^{(l)},k_t^{(l)}
-&=\mathrm{L2Norm}\left(\mathrm{Swish}\left(\mathrm{ShortConv}\left(W_q^{(l)}x_t^{(l)}\right)\right)\right)\in\mathbb{R}^{d_k},\\
-v_t^{(l)}
-&=\mathrm{Swish}\left(\mathrm{ShortConv}\left(W_v^{(l)}x_t^{(l)}\right)\right)\in\mathbb{R}^{d_v},\\
-\alpha_t^{(l)}
-&=f\left(W_\alpha^{(l)}x_t^{(l)}\right)\in[0,1]^{d_k},\\
-\beta_t^{(l)}
-&=\mathrm{Sigmoid}\left(W_\beta^{(l)}x_t^{(l)}\right)\in[0,1].
-\end{aligned}
-\]
-
-当然，在工程上也可以尝试如 \(\alpha_t\) 或 \(\beta_t\) 由 \(x_t\) 和 \(\alpha_{t-1}\) 或 \(\beta_{t-1}\) 共同决定的方式（可能更有利于准确给出token在长序列中的价值判断）。
-
-整体架构：
-
-\begin{figure}[htbp]
-\centering
-\includegraphics{images/image-0046.png}
-\caption{Kimi Delta Attention 混合架构示意图}
-\end{figure}
-
-\hypertarget{ux56dbkdaux4e0ernn}{%
-\subsection{四、KDA与RNN}\label{ux56dbkdaux4e0ernn}}
-
-从原理上看，KDA本质上是一种RNN。那么，为什么KDA比传统RNN架构（如LSTM）效果更好呢？
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  隐状态容量：LSTM的隐状态为d维向量，KDA的隐状态为d*d维矩阵。
-\item
-  能否利用GPU大规模并行训练
-\end{enumerate}
-
-在模型训练阶段，处理一个包含成千上万 token 的长文本时：
-
-\begin{itemize}
-\tightlist
-\item
-  LSTM 是被串行锁死的。LSTM 的状态更新公式是 \(h_t=\tanh(Wx_t+Uh_{t-1})\)，注意那个非线性激活函数 \(\tanh\)。它导致你必须等第 \(t-1\) 步的计算彻底完成，拿出确切的 \(h_{t-1}\) 后，才能开始算第 \(t\) 步。在拥有成千上万个流处理器的 GPU 面前，LSTM 只能排队一个一个算，GPU 算力被大量闲置。
-\item
-  KDA 是线性可并行的（Linear Recurrence）。忽略具体系数，KDA 的骨架公式可以写成：
-\end{itemize}
-
-\[
-S_t=A_tS_{t-1}+V_t
-\]
-
-这个公式关于隐藏状态 \(S\) 是完全线性的（没有 \(\tanh\) 或 Sigmoid 阻挡）。根据矩阵乘法的结合律（Associativity），我们可以把时间序列展开：
-
-\[
-S_3=A_3(A_2S_1+V_2)+V_3=(A_3A_2)S_1+A_3V_2+V_3
-\]
-
-具体而言，对于推理的两个阶段：
-
-A. 反馈集成阶段（Prefill 模式）：支持 token 间并行
-
-当环境返回一段新的文本（例如搜索结果或环境状态变化）时，KDA 不需要像 RNN 那样一个 token 一个 token 地串行更新状态。
-
-\begin{itemize}
-\tightlist
-\item
-  Chunkwise-Parallel Algorithm：KDA 利用了线性注意力的结合律（Associativity）。通过数学变换，它可以将递推公式转化为块并行（Chunkwise）形式。
-\item
-  实现方式：如果环境反馈了 \(L\) 个 token，KDA 可以将这 \(L\) 个 token 作为一个``块''，在 GPU 上利用 Tensor Core 进行高并发的矩阵运算。一次运行即可处理完这 \(L\) 个 token，并直接得到最终的状态 \(S_{t+L}\)。
-\item
-  对比：传统模型处理新反馈时，KV Cache 的计算复杂度随总长度二次增长；而 KDA 处理新反馈的复杂度与总长度成线性关系。
-\end{itemize}
-
-B. 文本生成阶段（Decoding 模式）：单次运行生成，不可 token 间并行
-
-当模型基于反馈开始生成新的回复（Action）时：
-
-\begin{itemize}
-\tightlist
-\item
-  单次运行：每生成一个新 token，确实只需要进行一次 \(O(1)\) 复杂度的前向传播。因为它只需读取上一步的状态 \(S_{t-1}\) 并计算 \(S_t\)，不需要重新扫描之前的全部上下文。
-\item
-  并行性限制：由于是自回归（Autoregressive）生成，token \(N+1\) 必须依赖 token \(N\) 生成后的状态。因此，在生成阶段无法实现 token 间并行（除非配合投机采样等技术）。
-\end{itemize}
-
-当然，这里如果环境反馈的序列较长，为了适配GPU，我们往往会进行分块处理，以一定量token作为一个块。
-
-但总之，KDA可以运用FlashAttention这样的算子进行加速。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{2}
-\tightlist
-\item
-  数学本质：LSTM的更新是``启发式（Heuristic）''的：LSTM内部的遗忘门、输入门，是前人凭借直觉和实验凑出来的公式。网络只是隐式地学到一个``门限值''来决定保留什么、丢弃什么，它的本质是一个特征过滤器。
-\end{enumerate}
-
-KDA的更新是``第一性原理（First Principles）''的：如我们上一轮的推导，KDA的更新公式严格等价于在线梯度下降，即在线训练一个内部的线性回归模型。
-
-面对新数据，KDA会算出预测误差，然后精准地沿着梯度的反方向修改记忆矩阵 \(S_t\)。这种严格的数学底座，使得KDA在处理复杂的逻辑推理和上下文学习（In-context Learning）时，拥有了碾压传统RNN的上限。
-
-\hypertarget{ux4e94kdaux4e0eux5143ux5b66ux4e60}{%
-\subsection{五、KDA与元学习}\label{ux4e94kdaux4e0eux5143ux5b66ux4e60}}
-
-我们可以认为KDA是一种元学习（Meta-Learning）架构。在标准Transformer中，这种元学习是隐式的。而KDA将其变成了显式。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  外层循环：学习``如何在上下文中学习''
-\end{enumerate}
-
-在预训练阶段，我们在成千上万个 GPU 上使用标准的优化器（比如 AdamW），通过海量语料去更新 KDA 的物理参数，即用来生成 \(q,k,v\) 的投影权重 \(W_Q,W_K,W_V\)，以及遗忘门控 \(\alpha,\beta\)。
-
-这些物理参数就是``元参数（Meta-parameters）''。AdamW 并没有教模型具体的知识，它是在教模型：
-
-\begin{itemize}
-\tightlist
-\item
-  遇到什么样的数据应该分配多大的学习率 \(\beta\)。
-\item
-  遇到什么特征应该开启遗忘门 \(\alpha\)。
-\item
-  如何从文本中提取最适合计算残差的 \(k\) 和 \(v\)。
-\end{itemize}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{1}
-\tightlist
-\item
-  内层循环：在线梯度下降
-\end{enumerate}
-
-当模型部署后，你给它输入了一段长长的 Prompt。此时，物理参数（元参数）被冻结了，AdamW 优化器也下线了。
-
-但是，KDA 内部的记忆矩阵 \(S_t\) 被激活了。随着你输入的数据一步步流入，KDA 严格按照外层循环教它的那套 Delta Rule，即在线梯度下降公式：
-
-\[
-S_t=S_{t-1}+\beta_tk_t\left(v_t-k_t^\top S_{t-1}\right)
-\]
-
-在 \(t\) 时刻的token输入KDA层时，隐状态根据 \(k_t\) 和 \(v_t\) 进行梯度下降更新，从 \(S_{t-1}\) 变为 \(S_t\)，带上了 \(t\) 时刻新的信息，但同时也已经在前 \(t-1\) 次梯度下降中保留了前 \(t-1\) 个token的信息（以先验形式存储在 \(S_{t-1}\) 中）。\(q_t\) 通过富含上下文 \(t\) 个token信息的 \(S_t\)，就实现了通过上下文学习来完成新的任务。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{2}
-\tightlist
-\item
-  其他参数（如embedding层、输入投影）：学习先验知识
-\end{enumerate}
-
-模型内部的embedding层、输入投影（MLP层）在预训练中记住了``秦始皇是哪一年称帝的''等人类世界的各种先验知识。这些先验知识被压入模型的这些参数，构成了模型极其庞大的高维特征子空间，确保模型输入被映射到符合其实际意义的向量，输入注意力层，如输入``苹果''时，MLP 瞬间把它映射到一个包含了``水果、红色、科技公司、牛顿''等无穷语义的特征坐标系中。
-
-此外，对于输入的token，模型会根据先验参数判断是否需要启动上下文学习机制。如果问一个单纯的常识问题（比如``法国的首都是？''），模型根本不需要启动复杂的在下文梯度下降，它的MLP（先验知识）直接就能把``巴黎''的特征输出出来，此时 \(W_0\ne 0\) 而后续注意力层的 \(\Delta W\to 0\)。而对于模型在训练时没有见过的分布，会让 \(W_0\to 0\)（几乎没有先验，避免干扰上下文学习），而交给后续的 \(\Delta W\) 自主分析。
-
-\hypertarget{ux53c2ux8003ux6587ux732e-137}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-137}}
-
-\begin{itemize}
-\tightlist
-\item
-  Moonshot AI. (2025). \href{https://arxiv.org/abs/2510.26692}{Kimi Linear: An Expressive, Efficient Attention Architecture}. arXiv:2510.26692.
 \end{itemize}
 
 \clearpage
@@ -1485,8 +1212,8 @@ LAMER 在测试（部署）阶段不进行任何网络参数的梯度更新。�
   依靠这种纯文本的演绎，Agent 的策略在下一个回合中发生了一次无需算力开销的 RL\(^2\) 飞跃。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
+\hypertarget{ux53c2ux8003ux6587ux732e-135}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-135}}
 
 \begin{itemize}
 \tightlist
@@ -1612,7 +1339,7 @@ Light3：长时记忆（Long-Term Memory, LTM）+睡眠更新（Sleep-time Updat
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0047.png}
+\includegraphics{images/image-0048.png}
 \caption{LightMem 轻量级分层记忆系统示意图}
 \end{figure}
 
@@ -1793,8 +1520,8 @@ a_t^n \in \{\mathrm{Think}, \mathrm{Act}, \mathrm{Refine}\}
 
 此外，记忆确实能显著提升性能，但在稳定性和程序性经验重用方面依然很脆弱。在真实的非结构化业务场景中，基于提示词驱动的复杂Agent循环极其容易崩溃。如在在ReMem框架中，模型可能会错误地剪枝掉关键记忆，或在Think和Refine步骤中陷入无尽的自我怀疑和死循环，导致迟迟无法执行最终的Act。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
+\hypertarget{ux53c2ux8003ux6587ux732e-136}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-136}}
 
 \begin{itemize}
 \tightlist
@@ -2101,8 +1828,8 @@ R^{reflect} := R^{ext}\cdot \mathbb{I}(c=I^{ext})
   但是，通过策略梯度下降，只要最终答案 \(c\) 对了，模型就会认为``我刚才写的那一长串推导步骤 \(\phi(x,\tau)\) 也是极其合理的''，从而在参数更新时，把生成那段高质量 \(\phi(x,\tau)\) 的概率也一并放大了。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
+\hypertarget{ux53c2ux8003ux6587ux732e-137}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-137}}
 
 \begin{itemize}
 \tightlist
@@ -2146,8 +1873,8 @@ Hymba在所有输入的开头固定插入128个可学习的Embedding。这解决
   KV Cache的碎片化：按层堆叠（比如3层线性接1层全注意力）在工程实现上极其干净，全注意力层集中管理巨大的KV Cache，线性层几乎不需要Cache。而如果在同一层内做门控或旁路，系统需要为每一层都维护复杂的动态Cache路由。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
+\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
 
 \begin{itemize}
 \tightlist
@@ -2284,8 +2011,8 @@ S_{ij}=\max_{\text{token }t}\left(\mathrm{mean}_{\text{head }h}\big(\cos(Q_{q,h}
   \textbf{CPU 卸载内容 KV}：将庞大的内容 \((\bar{K},\bar{V})\) 存放在主机的 CPU 内存中。当 GPU 算出 Top-k 索引后，异步将命中的部分内容拉取到 GPU 参与生成计算。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
+\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
 
 \begin{itemize}
 \tightlist

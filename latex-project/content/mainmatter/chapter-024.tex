@@ -89,8 +89,8 @@
 
 本质上，这是把强化学习的过程用语言提示的方式进行了实现。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-123}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-123}}
+\hypertarget{ux53c2ux8003ux6587ux732e-121}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-121}}
 
 \begin{itemize}
 \tightlist
@@ -440,8 +440,8 @@ Q(s,a)+c_{\mathrm{puct}}\mathbf{p}(a\mid s)
 
 让模型在推理时回忆相关问题或者对解决问题有用的子问题的思路，就类似于做新题时回想已经做过的类似题或碰到过的二级结论。这和目标导向的强化学习有一点类似，虽然模型不知道怎么去A，但它可能已经学习过怎么去B、C，从中可以类比并合理外推得出去A的方法。这也体现了检索在推理中的重要性。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-124}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-124}}
+\hypertarget{ux53c2ux8003ux6587ux732e-122}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-122}}
 
 \begin{itemize}
 \tightlist
@@ -588,8 +588,8 @@ AlphaEvolve明确提到，优化多个指标（即使只关心其中一个）有
 
 AlphaEvolve 不只是随机抽取旧代码，其核心在于In-Context Learning（上下文学习）与进化策略的结合：父本决定了进化的起点；灵感决定了进化的方向指引。通过精心挑选``灵感''，系统实际上是在构建一个动态的Prompt，利用LLM强大的上下文理解能力，将数据库中蕴含的隐性知识（比如某种特定的编程模式在当前任务中很有效）显式地传递给LLM，从而提高生成高质量Diff的概率。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-125}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-125}}
+\hypertarget{ux53c2ux8003ux6587ux732e-123}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-123}}
 
 \begin{itemize}
 \tightlist
@@ -641,7 +641,7 @@ AlphaEvolve 不只是随机抽取旧代码，其核心在于In-Context Learning�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0035.png}
+\includegraphics{images/image-0037.png}
 \caption{PaCoRe 并行协同推理工作流}
 \end{figure}
 
@@ -661,8 +661,8 @@ AlphaEvolve 不只是随机抽取旧代码，其核心在于In-Context Learning�
 
 动态调整深度：系统会根据问题的复杂度，自动调整 thinking\_level（思考深度）。简单的问候直接回答，复杂的数学题则自动分配更多计算资源进行并行推演。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-126}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-126}}
+\hypertarget{ux53c2ux8003ux6587ux732e-124}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-124}}
 
 \begin{itemize}
 \tightlist
@@ -707,8 +707,8 @@ Google的相关研究指出，当前顶尖推理模型的强大推理能力，�
   训练方法启示：如果预先用``多智能体对话''数据对模型进行微调（SFT），再进行强化学习，模型的学习速度和最终性能都显著优于用``独白式思维链''微调的模型。这表明对话结构本身就是一种高效的推理脚手架。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-127}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-127}}
+\hypertarget{ux53c2ux8003ux6587ux732e-125}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-125}}
 
 \begin{itemize}
 \tightlist

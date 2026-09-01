@@ -155,8 +155,8 @@ Q_s^T=Z_sW_Q^T,\quad K_s^T=Z_sW_K^T,\quad V_s^T=Z_sW_V^T
 
 复杂度分析：单位置的时间注意力复杂度为 \(O(T^2)\)。由于有 \(S\) 个空间位置，总复杂度为 \(S\times O(T^2)=O(ST^2)\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-176}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-176}}
+\hypertarget{ux53c2ux8003ux6587ux732e-173}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-173}}
 
 \begin{itemize}
 \tightlist
@@ -421,8 +421,8 @@ SOAR不是要替代RL，而是为RL提供一个更稳定的起点。当前RL的�
   长尾分布重平衡：统计视频在动作、风格、分辨率等维度的概率分布。对头部冗余类别进行降采样，对尾部类别进行概率加权，确保联合分布均衡。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-177}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-177}}
+\hypertarget{ux53c2ux8003ux6587ux732e-174}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-174}}
 
 \begin{itemize}
 \tightlist
@@ -972,8 +972,8 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
   \(\lambda\) 是一个随训练进行从 1 线性衰减到 0 的课程学习权重。这迫使共享参数块学会把复杂的变换压缩到更早的循环步骤中。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-178}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-178}}
+\hypertarget{ux53c2ux8003ux6587ux732e-175}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-175}}
 
 \begin{itemize}
 \tightlist
@@ -1003,8 +1003,8 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
 \hypertarget{ux4e00ux6d41ux5339ux914dux6a21ux578bux7684ux6b65ux957fux62fcux63a5}{%
 \subsection{一、流匹配模型的步长拼接}\label{ux4e00ux6d41ux5339ux914dux6a21ux578bux7684ux6b65ux957fux62fcux63a5}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-5}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-5}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-4}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-4}}
 
 在视频生成或动力学建模中，传统扩散模型（Diffusion Models）或流匹配（Flow Matching）为了生成高质量的下一帧状态 \(x_{t+1}\)，通常需要数十步去噪迭代，例如 \(K=64\) 步。这在需要极快推理速度的强化学习交互中是不可接受的。
 
@@ -1075,8 +1075,8 @@ w(\tau)=0.9\tau+0.1
 \hypertarget{ux4e8cux81eaux9002ux5e94ux76eeux6807ux7684ux6269ux6563ux6a21ux578b}{%
 \subsection{二、自适应目标的扩散模型}\label{ux4e8cux81eaux9002ux5e94ux76eeux6807ux7684ux6269ux6563ux6a21ux578b}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-6}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-6}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-5}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-5}}
 
 在标准 DDPM 中，神经网络被训练用来预测添加到干净图像上的噪声 \(\epsilon\)。在生成过程的起点，也就是时间步 \(T\)、噪声极大时，输入给网络的几乎是纯高斯噪声，此时信号被完全淹没。如果仍强迫网络预测输入中的噪声成分，网络会找到一个让损失很低的捷径：直接输出输入本身。数学上，这相当于网络退化成恒等映射。
 
@@ -1292,8 +1292,8 @@ Noise at Frame & 在特定的某一帧（Frame），对所有去噪步注入强�
   引导生成：利用平均后的稳定潜变量继续后续生成。实验证明，这一简单的集成策略使模型在 VBVR-Bench 推理基准测试上的绝对得分直接提升了 7.2\%。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-179}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-179}}
+\hypertarget{ux53c2ux8003ux6587ux732e-176}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-176}}
 
 \begin{itemize}
 \tightlist
@@ -1321,8 +1321,8 @@ Noise at Frame & 在特定的某一帧（Frame），对所有去噪步注入强�
 \hypertarget{ux4e00diffusion-forcing}{%
 \subsection{一、Diffusion Forcing}\label{ux4e00diffusion-forcing}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-7}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-7}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-6}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-6}}
 
 传统序列建模主要有两种极端形式。
 
@@ -1562,8 +1562,8 @@ D_{\mathrm{KL}}\left(q(x_t^{j-1}\mid x_t^j,x_t^0)\middle\|p_\theta(x_t^{j-1}\mid
 \hypertarget{ux4e8cux4e0aux4e0bux6587ux5206ux6b65ux53bbux566a}{%
 \subsection{二、上下文分步去噪}\label{ux4e8cux4e0aux4e0bux6587ux5206ux6b65ux53bbux566a}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-8}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-8}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-7}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-7}}
 
 近年来，自回归（AR）生成因其支持流式输出、无限扩展和实时交互，成为长视频生成和世界模型的核心技术路线。然而，AR 流程面临一个严峻挑战：分布偏移（Distribution Drift），表现为随着视频长度增加，画面会出现过度饱和、运动重复和语义漂移。
 
@@ -1762,8 +1762,8 @@ v_\theta(x_t^{\mathrm{ref}},t) -
   因为网络参数 \(\theta\) 是共享的，微积分中的链式法则决定了：注入参数 \(\theta\) 的总梯度，等于分支 A 传回梯度加上分支 B 传回梯度。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-180}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-180}}
+\hypertarget{ux53c2ux8003ux6587ux732e-177}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-177}}
 
 \begin{itemize}
 \tightlist
@@ -1783,8 +1783,8 @@ v_\theta(x_t^{\mathrm{ref}},t) -
 \hypertarget{ux4e00ux4e0aux4e0bux6587ux7684ux65f6ux7a7aux538bux7f29}{%
 \subsection{一、上下文的时空压缩}\label{ux4e00ux4e0aux4e0bux6587ux7684ux65f6ux7a7aux538bux7f29}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-9}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-9}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-8}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-8}}
 
 \textbf{要解决的问题}：在自回归生成长视频时，随着历史帧 \(z_c\) 数量的不断增加，Transformer（DiT）的 Context Length 会呈线性甚至平方级增长，导致显存爆炸和推理速度断崖式下降。传统的滑动窗口（Sliding Window）会丢失长程历史信息，而直接丢弃历史帧则会导致场景不一致。
 
@@ -1911,8 +1911,8 @@ Matrix-Game 3.0通过设计长程记忆模块，提升了在自回归的长程�
 \hat{\theta}_h = \theta_{base}(1 + \sigma_{\theta}\epsilon_h)
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-181}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-181}}
+\hypertarget{ux53c2ux8003ux6587ux732e-178}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-178}}
 
 \begin{itemize}
 \tightlist
@@ -2428,8 +2428,8 @@ INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其�
   计算损失并优化：通过优化重建损失函数，例如 MSE，来端到端训练网络模型。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-182}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-182}}
+\hypertarget{ux53c2ux8003ux6587ux732e-179}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-179}}
 
 \begin{itemize}
 \tightlist

@@ -23,7 +23,7 @@
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0023.png}
+\includegraphics{images/image-0025.png}
 \caption{Blockwise Parallel Decoding 模型架构图}
 \end{figure}
 
@@ -39,7 +39,7 @@
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0024.png}
+\includegraphics{images/image-0026.png}
 \caption{Blockwise Parallel Decoding 的 Predict-Verify 生成与验证流程图}
 \end{figure}
 
@@ -49,7 +49,7 @@ MTP的生成过程是一个``Predict-Verify''的循环过程。先一次性预�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0025.png}
+\includegraphics{images/image-0027.png}
 \caption{Verify 与下一轮 Predict 重叠执行流程图}
 \end{figure}
 
@@ -62,7 +62,7 @@ MTP的生成过程是一个``Predict-Verify''的循环过程。先一次性预�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0026.png}
+\includegraphics{images/image-0028.png}
 \caption{Meta 的 Multi-token Prediction 架构图}
 \end{figure}
 
@@ -71,7 +71,7 @@ MTP的生成过程是一个``Predict-Verify''的循环过程。先一次性预�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0027.png}
+\includegraphics{images/image-0029.png}
 \caption{DeepSeek MTP 训练样本构造图}
 \end{figure}
 
@@ -79,7 +79,7 @@ MTP的生成过程是一个``Predict-Verify''的循环过程。先一次性预�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0028.png}
+\includegraphics{images/image-0030.png}
 \caption{DeepSeek MTP 模块架构图}
 \end{figure}
 
@@ -95,12 +95,12 @@ DeepSeek原论文中插图如下：
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0029.png}
+\includegraphics{images/image-0031.png}
 \caption{DeepSeek 原论文中的 MTP 模块结构图}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-99}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-99}}
+\hypertarget{ux53c2ux8003ux6587ux732e-100}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-100}}
 
 \begin{itemize}
 \tightlist
@@ -116,8 +116,8 @@ DeepSeek原论文中插图如下：
 
 \clearpage
 
-\hypertarget{engramux6a21ux5757ux8bbaux6587}{%
-\section{Engram模块（论文）}\label{engramux6a21ux5757ux8bbaux6587}}
+\hypertarget{engramux6a21ux5757}{%
+\section{Engram模块}\label{engramux6a21ux5757}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
@@ -138,7 +138,7 @@ N取2和3是因为，N=2和N=3覆盖了绝大多数的固定搭配、短语、�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0030.png}
+\includegraphics{images/image-0032.png}
 \caption{Engram 模块架构图}
 \end{figure}
 
@@ -167,8 +167,8 @@ N取2和3是因为，N=2和N=3覆盖了绝大多数的固定搭配、短语、�
   分层设计：自然语言中的N-gram 遵循Zipfian分布，即少量高频模式贡献了绝大多数的记忆访问，故可以构建一种多级缓存层次结构（Multi-Level Cache Hierarchy）：将高频访问的嵌入缓存于更快的存储介质中（如GPU HBM或主机DRAM），而将大量低频的长尾模式存放在容量更大但速度较慢的存储介质中（如NVMe SSD）。这种分层设计使Engram能够扩展到极大规模的记忆容量，同时对有效访问延迟的影响保持在最低水平。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-100}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-100}}
+\hypertarget{ux53c2ux8003ux6587ux732e-101}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-101}}
 
 \begin{itemize}
 \tightlist
@@ -200,7 +200,7 @@ Yoshua Bengio团队在论文《Representation Learning: A Review and New Perspec
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0031.png}
+\includegraphics{images/image-0033.png}
 \caption{残差连接与超连接结构对比图}
 \end{figure}
 
@@ -255,7 +255,7 @@ mHC将变换Hl\_res，Hl\_pre和Hl\_post均限制在了特定的流形上。
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0032.png}
+\includegraphics{images/image-0034.png}
 \caption{残差连接、超连接与流形约束超连接结构对比图}
 \end{figure}
 
@@ -271,8 +271,8 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 
 注意：这里不用Softmax，因为Softmax要求每行权重之和为1。Hl\_pre如果为10000*1000维，则Softmax会导致输入总信号减小10倍（单个维度信号大小数量级不变，维度除以10）。作为一个门控机制的实现模块，这是不可接受的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-101}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-101}}
+\hypertarget{ux53c2ux8003ux6587ux732e-102}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-102}}
 
 \begin{itemize}
 \tightlist
@@ -284,15 +284,15 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 
 \clearpage
 
-\hypertarget{attention-residualsux8bbaux6587}{%
-\section{Attention Residuals（论文）}\label{attention-residualsux8bbaux6587}}
+\hypertarget{attention-residuals}{%
+\section{Attention Residuals}\label{attention-residuals}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 \end{quote}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-1}{%
-\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-1}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f}{%
+\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f}}
 
 主流大模型内部的残差连接在每一层处理完信息之后，把处理结果和原来的输入加在一起，传给下一层。每一层做完累加之后，信息就被压进了一个混合状态里。越往后，这个混合状态就越臃肿。随着网络越来越深，混合状态的数值越来越大，发生PreNorm稀释：越深的层，贡献越被稀释。实验证明，一个很深的模型里，删掉相当多的层，效果几乎不变。我们实际上浪费了大量算力。
 
@@ -312,8 +312,8 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 
 Kimi的解法是，不用存每一层，改为存每一组。把所有层分成若干个块（block），每个块内部还是用传统方式累加，但把整个块压缩成一个向量存起来。跨块之间，再用注意力机制选择。这样存储量从正比于层数，变成正比于块数。实验发现，分成大约8块就能恢复Full Attention Residuals绝大部分的效果，而内存和通信开销只是原来的一小部分。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-102}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-102}}
+\hypertarget{ux53c2ux8003ux6587ux732e-103}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-103}}
 
 \begin{itemize}
 \tightlist
@@ -439,8 +439,8 @@ RL的训练中，我们通常只会给出一个稀疏的标量结果（如``通�
 
 这种在PyTorch中仅需调用一次 .forward() 就能算出整条序列密集梯度的设计，不仅避开了off-policy带来的偏移，在显存利用率和计算效率上也远超让两个模型各自生成不同长度序列的传统方法。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-103}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-103}}
+\hypertarget{ux53c2ux8003ux6587ux732e-104}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-104}}
 
 \begin{itemize}
 \tightlist
@@ -469,8 +469,8 @@ DeepSeek-V4采用了多专家On-policy Distillation的方法，先基于预训�
 
 运用On-Policy蒸馏方法，把所有专家的知识融合到统一的学生模型里。相比于Off-policy方法而言，On-policy更能避免灾难性遗忘。具体而言，即让学生在自己生成的轨迹上学习多个专家模型的输出概率分布。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-104}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-104}}
+\hypertarget{ux53c2ux8003ux6587ux732e-105}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-105}}
 
 \begin{itemize}
 \tightlist
@@ -547,8 +547,8 @@ D_{\mathrm{KL}}\left(P(y_t\mid y_{<t})\Vert Q(y_t\mid y_{<t})\right)
 
 这意味着，两个序列分布的KL散度，等于每一步条件概率分布之间KL散度的期望之和（期望是基于分布 \(P\) 生成的历史轨迹计算的）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-105}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-105}}
+\hypertarget{ux53c2ux8003ux6587ux732e-106}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-106}}
 
 \begin{itemize}
 \tightlist
@@ -727,8 +727,8 @@ L=\frac{1}{N}\sum_{t=1}^{N}-\log P(w_t\mid w_{<t})
 
 这可以解释为：虽然真实的词表可能有成千上万个词，但这个模型的能力非常强，它在预测每个词时，其不确定性平均只相当于在一个仅有64个候选词的小集合里做选择。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-106}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-106}}
+\hypertarget{ux53c2ux8003ux6587ux732e-107}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-107}}
 
 \begin{itemize}
 \tightlist

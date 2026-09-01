@@ -452,8 +452,8 @@ P(x_N^{(T)} \mid x_1^{(T+1)},x_2^{(T+1)},\ldots)
   \textbf{Step 6: 计算损失并更新梯度。} 计算真实噪声 \(\epsilon\) 和预测噪声 \(\epsilon_\theta\) 之间的均方误差（MSE），进行反向传播更新网络权重。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
+\hypertarget{ux53c2ux8003ux6587ux732e-150}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-150}}
 
 \begin{itemize}
 \tightlist
@@ -677,8 +677,8 @@ dx=\left[f(x,t)-g(t)^2\nabla_x\log p_t(x)\right]dt+g(t)d\bar{w}
 
 这里的 \(d\bar{w}\) 是时间反转下的布朗运动。观察这个反向 SDE 的核心项：\(-g(t)^2\nabla_x\log p_t(x)\)。它精确地对应了朗之万动力学中的梯度引导项。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-154}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-154}}
+\hypertarget{ux53c2ux8003ux6587ux732e-151}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-151}}
 
 \begin{itemize}
 \tightlist
@@ -730,8 +730,8 @@ U-Net采用卷积神经网络，前半部分类似Encoder，通过池化或步�
 
 但U-Net的可扩展性一般，且与当前基于Transformer的大模型架构不兼容。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
+\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
 
 \begin{itemize}
 \tightlist
@@ -1019,8 +1019,8 @@ L=L_{\mathrm{simple}}+\lambda L_{\mathrm{vlb}}
 
 在 DiT 中，通常设置 \(\lambda=0.001\)，以确保方差学习不会干扰主体的噪声预测。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
+\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
 
 \begin{itemize}
 \tightlist
@@ -1120,8 +1120,8 @@ Loss=\mathbb{E}_{x\sim p(x)}\left[\lVert f_\theta(s)-x\rVert^2\right]
   \textbf{如果把连续空间强制离散化再用 AR}：就像 VQ-VAE 将图像变成离散 Token 然后用 Transformer 自回归生成（比如早期的 VideoPoet 或 Parti）。这种方法可以避免折中，但随之而来的是极其恐怖的计算量和上面提到过的\textbf{曝光偏差（Exposure Bias）}，导致长序列生成的误差成倍放大。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-157}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-157}}
+\hypertarget{ux53c2ux8003ux6587ux732e-154}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-154}}
 
 \begin{itemize}
 \tightlist
@@ -1285,8 +1285,8 @@ v=x_1-x_0
 
 它既规避了早期预测 \(x_0\) 的方差爆炸，又规避了晚期预测 \(\epsilon\) 的信噪比问题，而且由于轨迹是直接的（ODE），它大幅减少了推理步数，这才是世界模型（生成高帧率视频）真正渴求的特性。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-158}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-158}}
+\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
 
 \begin{itemize}
 \tightlist
@@ -1441,8 +1441,8 @@ x_t=(1-t)x_0+tx_1
   用于科学计算与模拟，如模拟物理系统（如流体动力学）、分子构象生成（蛋白质 3D 结构预测）等，因为这些问题本质上就是对连续变量变化（高维空间中点的移动速度随时空的变化）的建模。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-159}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-159}}
+\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
 
 \begin{itemize}
 \tightlist
@@ -1461,8 +1461,8 @@ x_t=(1-t)x_0+tx_1
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 \end{quote}
 
-\hypertarget{ux4e00ux63d0ux51faux80ccux666f-6}{%
-\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-6}}
+\hypertarget{ux4e00ux63d0ux51faux80ccux666f-5}{%
+\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-5}}
 
 目前的生成模型（如Stable Diffusion）在连续空间（像素值是连续的实数）非常成功。但文本是离散的（token ID是整数，如105, 2099），离散空间没有``微小变化''的概念（105变成105.1没有意义），因此直接应用连续扩散模型很困难。
 
@@ -1650,8 +1650,8 @@ u_t^i(x^i,z)=\frac{\dot{\kappa}_t}{1-\kappa_t}[p_{1\mid t}(x^i\mid z)-\delta_z(x
 
 当然，这与BERT的掩码语言模型（MLM）训练有一个关键区别：掩码率是动态的。在t=0时几乎全被掩盖，在t=1时几乎全是真实数据。模型的输入不只有加噪数据X\_t，而是为(X\_t,t)，意味着它需要通过学习来具备在不同噪声水平（与时间t对应）下恢复原始数据X\_1的能力。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-160}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-160}}
+\hypertarget{ux53c2ux8003ux6587ux732e-157}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-157}}
 
 \begin{itemize}
 \tightlist
@@ -1670,8 +1670,8 @@ u_t^i(x^i,z)=\frac{\dot{\kappa}_t}{1-\kappa_t}[p_{1\mid t}(x^i\mid z)-\delta_z(x
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 \end{quote}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-4}{%
-\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-4}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-3}{%
+\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-3}}
 
 在机器人控制领域，基于扩散模型的策略在处理多模态和高精度任务上取得了巨大成功。然而，这些模型通常遵循``从零开始去噪（denoise-from-scratch）''的范式，即从随机的高斯噪声开始迭代采样以生成动作。生成单个动作往往需要几十个去噪步骤，导致推理延迟极高，成为实时机器人控制的重大瓶颈。
 
@@ -1771,8 +1771,8 @@ A2A 框架将历史动作的分布直接转换为未来动作的分布，这一�
 \mathcal{L}_{IC}=\mathbb{E}_{\hat{z}_1}\left\|\hat{z}_1-E_a(a_{>t})\right\|_1+\lambda_0\left\|D_a(\hat{z}_1)-a_{>t}\right\|_1
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-161}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-161}}
+\hypertarget{ux53c2ux8003ux6587ux732e-158}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-158}}
 
 \begin{itemize}
 \tightlist
@@ -1913,8 +1913,8 @@ a_t^{\mathrm{blend}} = (1 - \lambda)a_t + \lambda a'_t
 
 用户可以通过滑动 \(\lambda \in [0, 1]\)，平滑地控制生成结果是倾向于``丰富的多样性''还是``极致的视觉质量''。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-162}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-162}}
+\hypertarget{ux53c2ux8003ux6587ux732e-159}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-159}}
 
 \begin{itemize}
 \tightlist

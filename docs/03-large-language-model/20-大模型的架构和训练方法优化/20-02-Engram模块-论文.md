@@ -1,13 +1,13 @@
 ---
-title: "20.2 Engram模块（论文）"
-source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.2 Engram模块（论文）.docx"
+title: "20.2 Engram模块"
+source_docx: "第3部分 大语言模型/20.大模型的架构和训练方法优化/20.2 Engram模块.docx"
 status: "image-reconstructed"
 ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 20.2 Engram模块（论文）
+# 20.2 Engram模块
 
 
 > 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。

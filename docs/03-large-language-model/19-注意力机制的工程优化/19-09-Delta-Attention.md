@@ -1,13 +1,13 @@
 ---
-title: "27.2 Delta Attention"
-source_docx: "第4部分 大模型智能体与持续学习/27.基于上下文的持续学习/27.2 Delta Attention.docx"
+title: "19.9 Delta Attention"
+source_docx: "第3部分 大语言模型/19.注意力机制的工程优化/19.9 Delta Attention.docx"
 status: "auto-converted"
 ocr: "no pending image placeholders in public Markdown"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 27.2 Delta Attention
+# 19.9 Delta Attention
 
 
 ## 一、提出背景

@@ -295,8 +295,8 @@ q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
 
 应用：对于 Transformer/LLM（参数巨大，计算相对稀疏），动态量化通常能带来1.5x到2x的推理加速。因为``加载权重的收益''远大于``动态计算量化参数的开销''；对于 CNN（如 ResNet，计算密集型），动态量化效果往往不如静态量化，甚至可能比纯FP32慢，因为 CNN 的权重复用率高，计算量大，频繁的动态转换开销占比过高。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
+\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
 
 \begin{itemize}
 \tightlist
@@ -547,8 +547,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 这样可以使模型分布稳定在教师``圈定''的合理范围内，保证输出质量。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
+\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
 
 \begin{itemize}
 \tightlist
@@ -579,8 +579,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 流程通常包括：训练一个大模型 -\textgreater{} 评估参数重要性（如根据绝对值大小或梯度） -\textgreater{} 移除不重要的参数 -\textgreater{} 对剪枝后的模型进行微调。现代方法常采用迭代剪枝。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
+\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
 
 \begin{itemize}
 \tightlist
@@ -590,166 +590,6 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
   Li, H., Kadav, A., Durdanovic, I., Samet, H., \& Graf, H. P. (2017). \href{https://openreview.net/forum?id=rJqFGTslg}{Pruning Filters for Efficient ConvNets}. ICLR 2017.
 \item
   Frankle, J., \& Carbin, M. (2019). \href{https://openreview.net/forum?id=rJl-b3RcF7}{The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks}. ICLR 2019.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux9ad8ux7ef4ux5411ux91cfux7684ux91cfux5316ux8bbaux6587}{%
-\section{高维向量的量化（论文）}\label{ux9ad8ux7ef4ux5411ux91cfux7684ux91cfux5316ux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f}{%
-\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f}}
-
-在人工智能和深度学习领域，高效处理高维向量至关重要。例如：
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{大语言模型（LLM）的 KV Cache}：自回归模型在生成长文本时，需要存储大量历史 Token 的键值对（Key-Value Cache）。随着上下文变长，内存消耗和访存延迟会显著增加。通过量化压缩这些向量，可以大幅降低推理成本。
-\item
-  \textbf{向量数据库与近似最近邻搜索（ANNS）}：在检索增强生成（RAG）和信息检索中，需要快速计算查询向量与数据库向量的内积或余弦相似度。
-\end{itemize}
-
-\textbf{现有方法的局限性}：目前的量化算法往往面临两难选择。要么计算速度慢、缺乏硬件加速器（如 GPU）的兼容性，无法满足在线（Online）实时量化的需求；要么在给定位宽（Bit-width）下无法达到最优的失真下界。此外，许多现有方法依赖于离线数据（Data-dependent），需要耗时的预处理和微调。
-
-下面给出了一些学界就高维向量量化算法的研究。
-
-\hypertarget{ux4e8cux9488ux5bf9ux5747ux65b9ux8befux5deeux4f18ux5316ux7684ux7b97ux6cd5}{%
-\subsection{二、针对均方误差优化的算法}\label{ux4e8cux9488ux5bf9ux5747ux65b9ux8befux5deeux4f18ux5316ux7684ux7b97ux6cd5}}
-
-\hypertarget{ux9488ux5bf9ux5747ux65b9ux8befux5deeux4f18ux5316ux7684-mathrmturboquant_mathrmmse}{%
-\subsubsection{\texorpdfstring{1. 针对均方误差优化的 \(\mathrm{TurboQuant}_{\mathrm{mse}}\)}{1. 针对均方误差优化的 \textbackslash mathrm\{TurboQuant\}\_\{\textbackslash mathrm\{mse\}\}}}\label{ux9488ux5bf9ux5747ux65b9ux8befux5deeux4f18ux5316ux7684-mathrmturboquant_mathrmmse}}
-
-该算法旨在最小化量化前后的均方误差（MSE）。其核心理论依据是：将输入向量进行随机旋转后，其各个坐标在数学上会服从 Beta 分布（在高维下渐近于高斯分布），且不同坐标之间几乎相互独立。因此，可以对每个坐标独立应用最优的标量量化（Lloyd-Max 算法）。
-
-\(\mathrm{TurboQuant}_{\mathrm{mse}}\) 的工作流：
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  \textbf{初始化（预计算）}：生成一个全局的随机旋转矩阵 \(\Pi \in \mathbb{R}^{d \times d}\)。针对 Beta 分布求解一维连续 K-Means 问题，预先计算并存储最优的聚类中心（Centroids）代码本 \(c_1,c_2,\ldots,c_{2^b}\)。
-\item
-  \textbf{量化过程（QUANT）}：
-
-  \begin{itemize}
-  \tightlist
-  \item
-    接收输入向量 \(x \in \mathbb{R}^d\)。
-  \item
-    应用随机旋转矩阵将其转换为 \(y = \Pi \cdot x\)。
-  \item
-    对于旋转后向量的每一个坐标 \(y_j\)，在代码本中找到距离最近的聚类中心 \(c_k\)，并记录其索引。
-  \item
-    输出这些由 \(b\) 个比特表示的索引向量。
-  \end{itemize}
-\item
-  \textbf{反量化过程（DEQUANT）}：
-
-  \begin{itemize}
-  \tightlist
-  \item
-    接收索引向量，从代码本中查找对应的聚类中心，重建向量 \(\tilde{y}\)。
-  \item
-    应用逆旋转矩阵进行恢复：
-  \end{itemize}
-\end{enumerate}
-
-\[
-\tilde{x} = \Pi^\top \cdot \tilde{y}.
-\]
-
-\hypertarget{ux4e09ux9488ux5bf9ux5185ux79efux65e0ux504fux4f30ux8ba1ux7684ux7b97ux6cd5}{%
-\subsection{三、针对内积无偏估计的算法}\label{ux4e09ux9488ux5bf9ux5185ux79efux65e0ux504fux4f30ux8ba1ux7684ux7b97ux6cd5}}
-
-MSE 最优的量化器在估计内积时会引入偏差，这在低位宽时尤其明显。故需要针对内积无偏估计的算法。
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\tightlist
-\item
-  \textbf{初始化}：实例化一个位宽为 \(b-1\) 的 \(\mathrm{QUANT}_{\mathrm{mse}}\) 量化器，并生成一个元素服从标准正态分布的随机投影矩阵 \(S \in \mathbb{R}^{d \times d}\)。
-\item
-  \textbf{量化过程（QUANT）}：
-
-  \begin{itemize}
-  \tightlist
-  \item
-    使用 \(b-1\) 位的 \(\mathrm{QUANT}_{\mathrm{mse}}\) 对输入向量 \(x\) 进行量化，得到索引 \(\mathrm{idx}\)。
-  \item
-    通过反量化计算残差向量：
-  \end{itemize}
-\end{enumerate}
-
-\[
-r = x - \mathrm{DEQUANT}_{\mathrm{mse}}(\mathrm{idx}).
-\]
-
-\begin{itemize}
-\tightlist
-\item
-  对残差向量应用 1-bit QJL 变换：
-\end{itemize}
-
-\[
-\mathrm{qjl} = \mathrm{sign}(S \cdot r).
-\]
-
-\begin{itemize}
-\tightlist
-\item
-  输出元组 \((\mathrm{idx}, \mathrm{qjl}, \lVert r \rVert_2)\)，包含 MSE 索引、残差的 1-bit 符号向量和残差的 L2 范数。
-\end{itemize}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\setcounter{enumi}{2}
-\tightlist
-\item
-  \textbf{反量化过程（DEQUANT）}：
-
-  \begin{itemize}
-  \tightlist
-  \item
-    首先通过 \(\mathrm{DEQUANT}_{\mathrm{mse}}(\mathrm{idx})\) 恢复出基础向量 \(\tilde{x}_{\mathrm{mse}}\)。
-  \item
-    通过 QJL 的逆映射恢复残差向量：
-  \end{itemize}
-\end{enumerate}
-
-\[
-\tilde{x}_{\mathrm{qjl}} = \frac{\sqrt{\pi/2}}{d} \cdot \lVert r \rVert_2 \cdot S^\top \cdot \mathrm{qjl}.
-\]
-
-\begin{itemize}
-\tightlist
-\item
-  将两者相加得到最终重建向量：
-\end{itemize}
-
-\[
-\tilde{x} = \tilde{x}_{\mathrm{mse}} + \tilde{x}_{\mathrm{qjl}}.
-\]
-
-\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
-
-\begin{itemize}
-\tightlist
-\item
-  Zandieh, A., Daliri, M., \& Han, I. (2024). \href{https://arxiv.org/abs/2406.03482}{QJL: 1-Bit Quantized JL Transform for KV Cache Quantization with Zero Overhead}. arXiv:2406.03482.
-\item
-  Vargaftik, S., Ben Basat, R., Portnoy, A., Mendelson, G., \& Mitzenmacher, M. (2021). DRIVE: One-bit Distributed Mean Estimation. NeurIPS 2021.
-\item
-  Vargaftik, S., et al.~(2022). EDEN: Communication-Efficient and Robust Distributed Mean Estimation for Federated Learning. ICML 2022.
-\item
-  Wu, X., et al.~(2024). RaBitQ: Quantizing High-Dimensional Vectors with a Theoretical Error Bound for Approximate Nearest Neighbor Search. SIGMOD 2024.
-\item
-  Zandieh, A., Daliri, M., Hadian, M., \& Mirrokni, V. (2025). \href{https://arxiv.org/abs/2504.19874}{TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate}. arXiv:2504.19874.
 \end{itemize}
 
 \clearpage

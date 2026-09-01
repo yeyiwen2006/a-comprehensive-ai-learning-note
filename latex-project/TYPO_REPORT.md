@@ -2,13 +2,13 @@
 
 本报告只检查 Markdown 结构和配对类问题，不改动源文档。条目为正则与轻量解析的疑似结果，建议人工确认后再修改源 Markdown。
 
-- 扫描 Markdown 文件：215
-- 疑似语法问题：358
+- 扫描 Markdown 文件：212
+- 疑似语法问题：360
 
 ## 规则统计
 
-- 列表标记后缺少空格：2
-- 有序列表标记后缺少空格：353
+- 列表标记后缺少空格：3
+- 有序列表标记后缺少空格：354
 - 标题缺少空格：3
 
 ## 明细
@@ -153,6 +153,8 @@
 | docs/03-large-language-model/15-注意力机制与Transformer/15-05-BERT.md | 41 | 有序列表标记后缺少空格 | `2.` | 【2.】下一句预测（Next Sentence Prediction, NSP） |
 | docs/03-large-language-model/15-注意力机制与Transformer/15-05-BERT.md | 71 | 有序列表标记后缺少空格 | `1.` | 【1.】序列输出 |
 | docs/03-large-language-model/15-注意力机制与Transformer/15-05-BERT.md | 77 | 有序列表标记后缺少空格 | `2.` | 【2.】池化输出 |
+| docs/03-large-language-model/15-注意力机制与Transformer/15-06-注意力机制与梯度下降的等价性.md | 235 | 有序列表标记后缺少空格 | `0.` | 【0.】99 \\times 0 = 0 |
+| docs/03-large-language-model/15-注意力机制与Transformer/15-06-注意力机制与梯度下降的等价性.md | 598 | 列表标记后缺少空格 | `-` | 【-】g_{t+1}+2\\eta_{t+1}(m-m_t)=0 |
 | docs/03-large-language-model/16-大语言模型的基本原理/16-04-后训练.md | 19 | 有序列表标记后缺少空格 | `1.` | 【1.】数据稀缺问题：在许多现实世界的应用中（如医疗影像、特定物种识别），获取大量高质量的“... |
 | docs/03-large-language-model/16-大语言模型的基本原理/16-04-后训练.md | 21 | 有序列表标记后缺少空格 | `2.` | 【2.】训练成本问题：从零开始（from scratch）训练一个大型深度学习模型（如图像领... |
 | docs/03-large-language-model/16-大语言模型的基本原理/16-04-后训练.md | 27 | 有序列表标记后缺少空格 | `1.` | 【1.】固定编码器学习（Fix-encoder learning）：将预训练模型的主体部分（... |

@@ -1,8 +1,8 @@
 \hypertarget{ux5f3aux5316ux5faeux8c03ux7684ux524dux6cbfux63a2ux7d22}{%
 \chapter{强化微调的前沿探索}\label{ux5f3aux5316ux5faeux8c03ux7684ux524dux6cbfux63a2ux7d22}}
 
-\hypertarget{dapoux7b97ux6cd5ux8bbaux6587}{%
-\section{DAPO算法（论文）}\label{dapoux7b97ux6cd5ux8bbaux6587}}
+\hypertarget{dapoux7b97ux6cd5}{%
+\section{DAPO算法}\label{dapoux7b97ux6cd5}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
@@ -263,8 +263,8 @@ DAPO 的工作流：
 
 总结与应用：GRPO更能保证模型对每一个样本训练充分，DAPO则避免二值奖励中长链推理样本的关键逻辑步骤梯度过小，更适合提高复杂推理的收敛效率和逻辑密度。可以根据不同需要，选择合适的训练方法。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-107}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-107}}
+\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
 
 \begin{itemize}
 \tightlist
@@ -274,8 +274,8 @@ DAPO 的工作流：
 
 \clearpage
 
-\hypertarget{vapoux7b97ux6cd5ux8bbaux6587}{%
-\section{VAPO算法（论文）}\label{vapoux7b97ux6cd5ux8bbaux6587}}
+\hypertarget{vapoux7b97ux6cd5}{%
+\section{VAPO算法}\label{vapoux7b97ux6cd5}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
@@ -601,8 +601,8 @@ A_t
   \end{itemize}
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
+\hypertarget{ux53c2ux8003ux6587ux732e-109}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-109}}
 
 \begin{itemize}
 \tightlist
@@ -612,8 +612,8 @@ A_t
 
 \clearpage
 
-\hypertarget{gspoux7b97ux6cd5ux8bbaux6587}{%
-\section{GSPO算法（论文）}\label{gspoux7b97ux6cd5ux8bbaux6587}}
+\hypertarget{gspoux7b97ux6cd5}{%
+\section{GSPO算法}\label{gspoux7b97ux6cd5}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
@@ -776,8 +776,8 @@ GRPO 的梯度是局部视角：
 
 因此，如果整句话的奖励很高，GSPO会统一增强这句话中所有token的权重；反之则统一抑制。这增强了奖励和惩罚的整体性，能更准确地对不同推理链条做出全局性的判断，避免被某些局部细节过度干扰。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-109}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-109}}
+\hypertarget{ux53c2ux8003ux6587ux732e-110}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-110}}
 
 \begin{itemize}
 \tightlist
@@ -787,15 +787,15 @@ GRPO 的梯度是局部视角：
 
 \clearpage
 
-\hypertarget{gfpoux7b97ux6cd5ux8bbaux6587}{%
-\section{GFPO算法（论文）}\label{gfpoux7b97ux6cd5ux8bbaux6587}}
+\hypertarget{gfpoux7b97ux6cd5}{%
+\section{GFPO算法}\label{gfpoux7b97ux6cd5}}
 
 \begin{quote}
 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
 \end{quote}
 
-\hypertarget{ux4e00ux63d0ux51faux80ccux666f-1}{%
-\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-1}}
+\hypertarget{ux4e00ux63d0ux51faux80ccux666f-2}{%
+\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-2}}
 
 GFPO（Generative Filtered Preference Optimization）的核心目标是解决GRPO在处理多属性优化（如同时优化准确性和简洁性）时的局限性，特别是解决大模型为了追求高准确率而倾向于生成冗长回复的问题。
 
@@ -879,8 +879,8 @@ GRPO对一个问题生成一组回复，使用所有回复的奖励计算组内�
   \textbf{策略更新（Optimization）}：使用 PPO 目标函数更新模型参数 \(\theta\)。由于被拒绝样本的优势为 \(0\)，模型实际只学习了``既满足约束（如简短）又获得高分（如正确）''的样本分布。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-110}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-110}}
+\hypertarget{ux53c2ux8003ux6587ux732e-111}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-111}}
 
 \begin{itemize}
 \tightlist
@@ -890,17 +890,16 @@ GRPO对一个问题生成一组回复，使用所有回复的奖励计算组内�
 
 \clearpage
 
-\hypertarget{ux6700ux5927ux4f3cux7136ux5f3aux5316ux5b66ux4e60ux8bbaux6587}{%
-\section{最大似然强化学习（论文）}\label{ux6700ux5927ux4f3cux7136ux5f3aux5316ux5b66ux4e60ux8bbaux6587}}
+\hypertarget{ux5f3aux5316ux5faeux8c03ux524dux6cbfux7814ux7a76}{%
+\section{强化微调前沿研究}\label{ux5f3aux5316ux5faeux8c03ux524dux6cbfux7814ux7a76}}
 
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
+\hypertarget{ux4e00ux6700ux5927ux4f3cux7136ux5f3aux5316ux5b66ux4e60maxrl}{%
+\subsection{一、最大似然强化学习（MaxRL）}\label{ux4e00ux6700ux5927ux4f3cux7136ux5f3aux5316ux5b66ux4e60maxrl}}
 
 \hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-9}{%
-\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-9}}
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-9}}
 
-在RLVR中，对于数学、代码等二值奖励任务，只有对（1）和错（0）两种奖励，但我们的优化目标却是平均奖励（即答对概率）最大，显得并不匹配。借鉴LLM中的交叉熵损失函数，我们想到RLVR也可以视为分类任务，为了让输出分布更接近实际分布，我们引入交叉熵损失函数。对于一个样本，预测出正确答案的概率为 \(p\)，则交叉熵损失为 \(-\log p\)。这带来两个优点：
+在RLVR中，对于数学、代码等二值奖励任务，只有对（1）和错（0）两种奖励，但我们的优化目标却是平均奖励（即答对概率）最大，显得并不匹配。借鉴LLM中的交叉熵损失函数，我们想到RLVR也可以视为分类任务，为了让输出分布更接近实际分布，我们引入交叉熵损失函数。对于一个样本，预测出正确答案的概率为 \(`p`\)，则交叉熵损失为 \(`-\log p`\)。这带来两个优点：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -909,7 +908,7 @@ GRPO对一个问题生成一组回复，使用所有回复的奖励计算组内�
   对于还不会的任务给予更大的梯度
 \end{enumerate}
 
-\(p\) 接近0时 \(\log(p)\) 的导数值更大，正确答案概率小的那些样本得到更大的``纠正''梯度，把训练重心放在模型还不会的任务上。
+\(`p`\) 接近0时 \(`\log(p)`\) 的导数值更大，正确答案概率小的那些样本得到更大的``纠正''梯度，把训练重心放在模型还不会的任务上。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -919,14 +918,14 @@ GRPO对一个问题生成一组回复，使用所有回复的奖励计算组内�
   避免``模式崩塌''
 \end{enumerate}
 
-传统RL优化的目标是 \(p\) 本身。如果模型探索到了两条近似正确的路径 \(z_1\) 和 \(z_2\)，RL只要让最后采样出的 \(p\) 变大就行，容易收缩到 \(z_1\) 或 \(z_2\) 中的一条路径，改进该路径并将其概率提得很高，而几乎放弃改进且不采样另一条路径，这样也会让 \(p\) 很大，但鲁棒性和泛化性弱，甚至可能发生``模式崩塌''。
+传统RL优化的目标是 \(`p`\) 本身。如果模型探索到了两条近似正确的路径 \(`z_1`\) 和 \(`z_2`\)，RL只要让最后采样出的 \(`p`\) 变大就行，容易收缩到 \(`z_1`\) 或 \(`z_2`\) 中的一条路径，改进该路径并将其概率提得很高，而几乎放弃改进且不采样另一条路径，这样也会让 \(`p`\) 很大，但鲁棒性和泛化性弱，甚至可能发生``模式崩塌''。
 
-MaxRL优化的目标是 \(\log(p)\)。如果一个近似正确的路径给出正确答案的概率 \(p\) 很小，\(\log(p)\) 会给出很大的梯度，迫使模型主动改进而不放弃这条路径，最终就会产生多种不同正确的路径通向正确答案。这样就可以尽可能避免``模式崩塌''。
+MaxRL优化的目标是 \(`\log(p)`\)。如果一个近似正确的路径给出正确答案的概率 \(`p`\) 很小，\(`\log(p)`\) 会给出很大的梯度，迫使模型主动改进而不放弃这条路径，最终就会产生多种不同正确的路径通向正确答案。这样就可以尽可能避免``模式崩塌''。
 
-\hypertarget{ux4e09ux76eeux6807ux51fdux6570-1}{%
-\subsection{三、目标函数}\label{ux4e09ux76eeux6807ux51fdux6570-1}}
+\hypertarget{ux4e8cux76eeux6807ux51fdux6570-1}{%
+\subsubsection{（二）目标函数}\label{ux4e8cux76eeux6807ux51fdux6570-1}}
 
-\textbf{定义目标函数}：假设对于输入 \(x\)，模型生成正确答案的概率为 \(p_\theta(x)\)。我们的目标是最大化所有输入 \(x\) 下正确结果的对数似然：
+\textbf{定义目标函数}：假设对于输入 \(`x`\)，模型生成正确答案的概率为 \(`p_\theta(x)`\)。我们的目标是最大化所有输入 \(`x`\) 下正确结果的对数似然：
 
 \[
 J_{ML}(\theta)=\mathbb{E}_{x\sim D}[\log p_\theta(x)]
@@ -938,7 +937,7 @@ J_{ML}(\theta)=\mathbb{E}_{x\sim D}[\log p_\theta(x)]
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{利用期望的线性性质}：我们将梯度算子 \(\nabla_\theta\) 放入期望符号内部：
+  \textbf{利用期望的线性性质}：我们将梯度算子 \(`\nabla_\theta`\) 放入期望符号内部：
 \end{enumerate}
 
 \[
@@ -949,7 +948,7 @@ J_{ML}(\theta)=\mathbb{E}_{x\sim D}[\log p_\theta(x)]
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{1}
 \item
-  \textbf{应用微积分中的对数导数法则（Log-derivative Trick）}：根据链式法则，对于任何正函数 \(f(\theta)\)，有 \(\nabla_\theta \log f(\theta)=\frac{\nabla_\theta f(\theta)}{f(\theta)}\)。在这里，\(f(\theta)=p_\theta(x)\)，即模型在输入 \(x\) 下得到正确结果的概率。
+  \textbf{应用微积分中的对数导数法则（Log-derivative Trick）}：根据链式法则，对于任何正函数 \(`f(\theta)`\)，有 \(`\nabla_\theta \log f(\theta)=\frac{\nabla_\theta f(\theta)}{f(\theta)}`\)。在这里，\(`f(\theta)=p_\theta(x)`\)，即模型在输入 \(`x`\) 下得到正确结果的概率。
 \item
   \textbf{代入公式}：
 \end{enumerate}
@@ -970,20 +969,20 @@ J_{ML}(\theta)=\mathbb{E}_{x\sim D}[\log p_\theta(x)]
 \nabla_\theta J_{ML}=\mathbb{E}_x\left[\frac{1}{p_\theta(x)}\nabla_\theta p_\theta(x)\right]
 \]
 
-这个公式的物理意义：为了增加正确概率的对数，我们应该沿着增加正确概率 \(p_\theta(x)\) 的方向更新参数，但更新的步长要乘以 \(1/p_\theta(x)\)。概率越小的样本，步长（权重）越大。
+这个公式的物理意义：为了增加正确概率的对数，我们应该沿着增加正确概率 \(`p_\theta(x)`\) 的方向更新参数，但更新的步长要乘以 \(`1/p_\theta(x)`\)。概率越小的样本，步长（权重）越大。
 
-\hypertarget{ux56dbux4f18ux52bfux51fdux6570ux4e0eux5de5ux4f5cux6d41}{%
-\subsection{四、优势函数与工作流}\label{ux56dbux4f18ux52bfux51fdux6570ux4e0eux5de5ux4f5cux6d41}}
+\hypertarget{ux4e09ux4f18ux52bfux51fdux6570ux4e0eux5de5ux4f5cux6d41}{%
+\subsubsection{（三）优势函数与工作流}\label{ux4e09ux4f18ux52bfux51fdux6570ux4e0eux5de5ux4f5cux6d41}}
 
 GRPO中，对于组中的每个样本，均计算其优势函数。下面推导maxRL方法的优势函数：
 
-\textbf{第一步：计算梯度} 对 \(\theta\) 求导：
+\textbf{第一步：计算梯度} 对 \(`\theta`\) 求导：
 
 \[
 \nabla_\theta J_{ML}=\mathbb{E}_x\left[\frac{1}{p_\theta(x)}\nabla_\theta p_\theta(x)\right]
 \]
 
-\textbf{第二步：展开 \(\nabla_\theta p_\theta(x)\)} 在二元反馈任务中，\(p_\theta(x)\) 其实就是模型生成正确答案的概率，即期望回报 \(\mathbb{E}_{z\sim\pi_\theta}[R(z)]\)。利用强化学习中经典的对数导数技巧（Log-derivative Trick）：
+\textbf{第二步：展开 \(`\nabla_\theta p_\theta(x)`\)} 在二元反馈任务中，\(`p_\theta(x)`\) 其实就是模型生成正确答案的概率，即期望回报 \(`\mathbb{E}_{z\sim\pi_\theta}[R(z)]`\)。利用强化学习中经典的对数导数技巧（Log-derivative Trick）：
 
 \[
 \nabla_\theta p_\theta(x)=\nabla_\theta\int \pi_\theta(z|x)R(z)dz
@@ -996,13 +995,13 @@ GRPO中，对于组中的每个样本，均计算其优势函数。下面推导m
 \nabla_\theta J_{ML}=\mathbb{E}_x\left[\frac{1}{p_\theta(x)}\mathbb{E}_z\left[R(z)\nabla_\theta\log \pi_\theta(z|x)\right]\right]
 \]
 
-为了减小估计误差，我们可以引入一个不依赖于具体采样 \(z\) 的基线 \(b\)。在 RL 中，最常用的基线是期望回报本身，即 \(b=p_\theta(x)\)。由于 \(\mathbb{E}_z[\nabla_\theta\log\pi_\theta]=0\)，减去基线不改变期望值：
+为了减小估计误差，我们可以引入一个不依赖于具体采样 \(`z`\) 的基线 \(`b`\)。在 RL 中，最常用的基线是期望回报本身，即 \(`b=p_\theta(x)`\)。由于 \(`\mathbb{E}_z[\nabla_\theta\log\pi_\theta]=0`\)，减去基线不改变期望值：
 
 \[
 \nabla_\theta J_{ML}=\mathbb{E}_x\left[\mathbb{E}_z\left[\frac{R(z)-p_\theta(x)}{p_\theta(x)}\nabla_\theta\log\pi_\theta(z|x)\right]\right]
 \]
 
-\textbf{第四步：样本估计} 在实际训练中，我们通过采样 \(N\) 条轨迹来估计。此时，\(p_\theta(x)\) 的最佳无偏估计就是平均回报 \(\bar{r}=\frac{1}{N}\sum_j r_j\)。于是，对于单个采样 \(j\) 的梯度贡献项，其系数（即 Advantage）为：
+\textbf{第四步：样本估计} 在实际训练中，我们通过采样 \(`N`\) 条轨迹来估计。此时，\(`p_\theta(x)`\) 的最佳无偏估计就是平均回报 \(`\bar{r}=\frac{1}{N}\sum_j r_j`\)。于是，对于单个采样 \(`j`\) 的梯度贡献项，其系数（即 Advantage）为：
 
 \[
 A_j^{MaxRL}=\frac{r_j-\bar{r}}{\bar{r}+\epsilon}
@@ -1022,143 +1021,13 @@ MaxRL：
 \mathrm{advantage}=\frac{\mathrm{reward}-\mathrm{mean\_reward}}{\mathrm{mean\_reward}+\epsilon}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-111}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-111}}
-
-\begin{itemize}
-\tightlist
-\item
-  Tajwar, F., Zeng, G., Zhou, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.02710}{Maximum Likelihood Reinforcement Learning}. arXiv:2602.02710.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{reinforcement-attention-learningux8bbaux6587}{%
-\section{Reinforcement Attention Learning（论文）}\label{reinforcement-attention-learningux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-\hypertarget{ux4e00ux63d0ux51faux80ccux666f-2}{%
-\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f-2}}
-
-当前的后训练范式主要使用强化学习（RL）来优化策略，通过奖励来偏好高实用性的词元序列。这种基于下一个词元预测的优化在纯文本推理中效果显著，但在多模态任务（如图像或视频问答）中，仅靠生成冗长的文本思考过程不仅对感知能力的提升有限，甚至可能降低模型的基础感知能力。
-
-多模态任务要求模型精准地识别并关注与任务相关的视觉信息，这一过程由Transformer的注意力机制控制。然而，标准的RL优化的是结果（生成的词元），而非内部信息分配的过程。单纯在词元级别进行优化容易导致``奖励作弊''，即模型过度拟合语言的表面形式，而不是掌握真正的底层跨模态逻辑。
-
-\hypertarget{ux4e8creinforced-attention-learningralux7684ux539fux7406ux4e0eux5de5ux4f5cux6d41}{%
-\subsection{二、Reinforced Attention Learning（RAL）的原理与工作流}\label{ux4e8creinforced-attention-learningralux7684ux539fux7406ux4e0eux5de5ux4f5cux6d41}}
-
-\hypertarget{ux4e00ux7b56ux7565ux7684ux5b9aux4e49}{%
-\subsubsection{（一）策略的定义}\label{ux4e00ux7b56ux7565ux7684ux5b9aux4e49}}
-
-\begin{itemize}
-\tightlist
-\item
-  设总序列为 \(S=(x_1,\cdots,x_T)\)，其中前 \(P\) 个为提示词，后续为生成的回复。
-\item
-  从模型最后一层 Transformer 中提取各个注意力头的权重并求平均，得到生成词元 \(t\) 对之前位置 \(i\) 的注意力权重 \(\alpha_{t,i}\)。
-\item
-  对于每个生成的词元 \(t \in [P+1,T]\)，将其注意力转化为分布策略：
-\end{itemize}
-
-\[
-p_\theta^t(i)=\frac{\alpha_{t,i}}{\sum_{\tau}\alpha_{t,\tau}}
-\]
-
-该公式捕捉了模型如何关注初始指令、视觉输入以及自身正在生成的推理过程。
-
-\hypertarget{ux4e8cux8ba1ux7b97ux4f18ux52bfux52a0ux6743ux7684ux6ce8ux610fux529bux6563ux5ea6}{%
-\subsubsection{（二）计算优势加权的注意力散度}\label{ux4e8cux8ba1ux7b97ux4f18ux52bfux52a0ux6743ux7684ux6ce8ux610fux529bux6563ux5ea6}}
-
-\begin{itemize}
-\tightlist
-\item
-  算法借鉴了 PPO/GRPO 中的重要性采样，通过比较当前策略 \(p_\theta^t\) 与旧策略 \(p_{\mathrm{old}}^t\) 之间的 Jensen-Shannon 散度（JSD）来推导每词元损失。
-\item
-  该散度通过序列级别的优势函数 \(A_t\) 进行加权，目标函数定义为：
-\end{itemize}
-
-\[
-L_{\mathrm{AttnRL}}=\mathbb{E}_t\left[A_t \cdot D\left(p_\theta^t \middle\| p_{\mathrm{old}}^t\right)\right]
-\]
-
-这部分计算的是当前注意力分布 \(p_\theta^t\) 与行为策略（旧分布）\(p_{\mathrm{old}}^t\) 之间的距离。
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{为什么使用 JSD}：论文特别指出 \(D(\cdot)\) 应该是一个对称且有界的散度度量，例如 Jensen-Shannon 散度（JSD）。与通常缺乏边界的 KL 散度相比，使用 JSD 能够极大地保证训练的稳定性。
-\item
-  \textbf{防止策略崩溃}：传统的基于词元的 RL 往往会导致模型过度拟合某些高奖励的文本表面形式（即``奖励作弊''），从而丧失多样性。通过约束内部的注意力散度，模型实际上获得了一种结构化正则（structural regularization），它只规范模型``如何收集和整合信息''，而不死板地限制最终输出哪一个特定的词元。
-\end{itemize}
-
-\hypertarget{ux4e09ux5229ux7528ux5956ux52b1ux4fe1ux53f7ux5f15ux5bfcux6ce8ux610fux529bux66f4ux65b0}{%
-\subsubsection{（三）利用奖励信号引导注意力更新}\label{ux4e09ux5229ux7528ux5956ux52b1ux4fe1ux53f7ux5f15ux5bfcux6ce8ux610fux529bux66f4ux65b0}}
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{当 \(A_t>0\) 时（获得高奖励）}：这说明当前的注意力分配模式促成了一个好的回答。此时最小化 \(L_{\mathrm{AttnRL}}\) 会产生``拉力''，将当前正在更新的注意力策略 \(p_\theta\) 拉向那个成功的旧策略 \(p_{\mathrm{old}}\)。
-\item
-  \textbf{当 \(A_t<0\) 时（获得低奖励）}：这说明当前的注意力分配导致了错误或低质量的输出。此时优化该目标会产生``推力''，迫使当前策略 \(p_\theta\) 远离这种次优的注意力分配模式，从而鼓励模型去探索上下文中其他的多模态线索。
-\end{itemize}
-
-最终的训练目标是标准词元级别策略梯度损失 \(\mathcal{L}_{\mathrm{RL}}\) 与内部注意力正则化项的结合：
-
-\[
-\mathcal{L}_{\mathrm{total}}=\mathcal{L}_{\mathrm{RL}}+\lambda_{\mathrm{attn}}L_{\mathrm{AttnRL}}
-\]
-
-\hypertarget{ux4e09ux5728ux6a21ux578bux84b8ux998fux4e2dux7684ux5e94ux7528}{%
-\subsection{三、在模型蒸馏中的应用}\label{ux4e09ux5728ux6a21ux578bux84b8ux998fux4e2dux7684ux5e94ux7528}}
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{目标}：让学生模型 \(\pi_\theta\) 继承教师模型 \(\pi_\phi\) 的注意力分布，以学习深层的结构化推理模式。
-\item
-  \textbf{损失函数}：该目标不涉及优势项 \(A_t\)，追求纯粹的结构模仿。损失定义为学生与教师注意力策略间的散度总和：
-\end{itemize}
-
-\[
-\mathcal{L}_{\mathrm{AttnDistill}}=
-\mathbb{E}_{\tau\sim\pi_\theta}
-\left[
-\sum_{t=P+1}^{T}
-JSD\left(p_\theta^t \middle\| p_\phi^t\right)
-\right]
-\]
-
-\begin{itemize}
-\tightlist
-\item
-  \textbf{整体目标}：最终的同策略蒸馏目标结合了强化学习目标、输出逻辑的广义知识蒸馏（GKD）损失以及注意力蒸馏损失。
-\end{itemize}
-
-\hypertarget{ux53c2ux8003ux6587ux732e-112}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-112}}
-
-\begin{itemize}
-\tightlist
-\item
-  Li, B., Ni, J., Qu, C., et al.~(2026). \href{https://arxiv.org/abs/2602.04884}{Reinforced Attention Learning}. arXiv:2602.04884.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux57faux4e8eux7ecfux9a8cux7684ux5f3aux5316ux5b66ux4e60ux8bbaux6587}{%
-\section{基于经验的强化学习（论文）}\label{ux57faux4e8eux7ecfux9a8cux7684ux5f3aux5316ux5b66ux4e60ux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
+\hypertarget{ux4e8cux57faux4e8eux7ecfux9a8cux7684ux5f3aux5316ux5b66ux4e60exgrpo}{%
+\subsection{二、基于经验的强化学习（ExGRPO）}\label{ux4e8cux57faux4e8eux7ecfux9a8cux7684ux5f3aux5316ux5b66ux4e60exgrpo}}
 
 RLVR天然存在经验浪费的问题，模型生成的推理轨迹只会在被用于更新一轮梯度后就被丢弃，而从来不会像人类那样过一段时间后还会回头复盘。让模型学会``温故而知新''，让模型根据``错题本''，把每一次宝贵的成功经验都内化为自己的能力对训练效率和能力提升都至关重要。下面介绍ExGRPO框架。
 
 \hypertarget{ux4e00ux7ecfux9a8cux7684ux9009ux53d6}{%
-\subsection{一、经验的选取}\label{ux4e00ux7ecfux9a8cux7684ux9009ux53d6}}
+\subsubsection{（一）经验的选取}\label{ux4e00ux7ecfux9a8cux7684ux9009ux53d6}}
 
 选取经验时，应当选取难度合适（模型正确率25-75％）的题目。这也像人类学习，反复巩固已经掌握的内容或者一开始就学太难的内容，效果都不好。
 
@@ -1166,12 +1035,12 @@ RLVR天然存在经验浪费的问题，模型生成的推理轨迹只会在被�
 
 ExGRPO会建立一个``经验回放池''，像一个巨大的``错题本''，专门收集模型在训练过程中所有成功的推理案例，利用高斯分布概率模型，有偏地优先从中等难度的分组中抽取问题。同时，随着模型能力的不断提升，模型已经完全掌握（例如连续多次全部成功解答）的问题会被移出学习队列，让模型始终聚焦于更具挑战性的任务。
 
-\hypertarget{ux4e8cux76eeux6807ux51fdux6570-1}{%
-\subsection{二、目标函数}\label{ux4e8cux76eeux6807ux51fdux6570-1}}
+\hypertarget{ux4e8cux76eeux6807ux51fdux6570-2}{%
+\subsubsection{（二）目标函数}\label{ux4e8cux76eeux6807ux51fdux6570-2}}
 
-ExGRPO 是在 GRPO 的基础上构建的。对于输入的查询 \(q\)，当前参考策略 \(\pi_{\theta_{\mathrm{old}}}\) 会生成 \(K\) 个轨迹构成的集合 \(\mathcal{G}_q=\{o_i\}_{i=1}^{K}\)。
+ExGRPO是在GRPO的基础上构建的。对于输入的查询 \(`q`\)，当前参考策略 \(`\pi_{\theta_{\mathrm{old}}}`\) 会生成 \(`K`\) 个轨迹构成的集合 \(`\mathcal{G}_q=\{o_i\}_{i=1}^{K}`\)。
 
-每个轨迹的优势值 \(\hat{A}\) 通过组内标准化计算（论文跟随 Dr.GRPO 的设置，去除了长度和标准差标准化，仅保留均值中心化）：
+每个轨迹的优势值 \(`\hat{A}`\) 通过组内标准化计算（论文跟随 Dr.GRPO 的设置，去除了长度和标准差标准化，仅保留均值中心化）：
 
 \[
 \hat{A}(o_i,\mathcal{G}_q)=r(q,o_i)-\mu_{\mathcal{G}_q}
@@ -1179,7 +1048,7 @@ ExGRPO 是在 GRPO 的基础上构建的。对于输入的查询 \(q\)，当前�
 
 ExGRPO采用了一种混合策略的优化目标，除了对重要性采样进行修正外，在每一次训练迭代中，Mini-Batch中一部分计算资源用于让模型探索全新的问题（On-policy），另一部分则用于学习从经验池中精心筛选出的经验（Off-policy），平衡了探索新知和复习旧知。
 
-在每次参数更新时，ExGRPO 会构建一个混合的 Mini-Batch \(\mathcal{B}\)，其中包含来自当前数据集 \(\mathcal{D}\) 的同策略样本 \(\mathcal{B}_{\mathrm{on}}\)，以及来自经验回放缓冲区 \(\mathcal{E}\) 的历史经验样本 \(\mathcal{B}_{\mathrm{exp}}\)。这两部分数据通过超参数 \(\rho\in[0,1)\) 进行比例混合。
+在每次参数更新时，ExGRPO会构建一个混合的Mini-Batch \(`\mathcal{B}`\)，其中包含来自当前数据集 \(`\mathcal{D}`\) 的同策略样本 \(`\mathcal{B}_{\mathrm{on}}`\)，以及来自经验回放缓冲区 \(`\mathcal{E}`\) 的历史经验样本 \(`\mathcal{B}_{\mathrm{exp}}`\)。这两部分数据通过超参数 \(`\rho\in[0,1)`\) 进行比例混合。
 
 \[
 \begin{aligned}
@@ -1189,15 +1058,15 @@ ExGRPO采用了一种混合策略的优化目标，除了对重要性采样进�
 \left[
 \frac{1}{K}\sum_{i=1}^{K}
 \mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_q)\right)
-\right] \\
+\right] \\\\
 &+\rho\cdot
-\mathbb{E}_{q^*\sim\mathcal{B}_{\mathrm{exp}}}
+\mathbb{E}_{q^{\ast}\sim\mathcal{B}_{\mathrm{exp}}}
 \left[
 \frac{1}{K}
 \left(
-\mathrm{CLIP}\left(w^*(\theta),\hat{A}(o^*,\mathcal{G}_{q^*})\right)
+\mathrm{CLIP}\left(w^{\ast}(\theta),\hat{A}(o^{\ast},\mathcal{G}_{q^{\ast}})\right)
 +\sum_{i=1}^{K-1}
-\mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_{q^*})\right)
+\mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_{q^{\ast}})\right)
 \right)
 \right]
 \end{aligned}
@@ -1208,11 +1077,11 @@ ExGRPO采用了一种混合策略的优化目标，除了对重要性采样进�
 \begin{itemize}
 \tightlist
 \item
-  \textbf{权重}：占总目标的 \(1-\rho\) 比例。
+  \textbf{权重}：占总目标的 \(`1-\rho`\) 比例。
 \item
-  \textbf{工作流}：对于从 \(\mathcal{B}_{\mathrm{on}}\) 采样的当前问题 \(q\)，模型 \(\pi_{\theta_{\mathrm{old}}}\) 实时生成 \(K\) 个轨迹并计算 GRPO 损失。
+  \textbf{工作流}：对于从 \(`\mathcal{B}_{\mathrm{on}}`\) 采样的当前问题 \(`q`\)，模型 \(`\pi_{\theta_{\mathrm{old}}}`\) 实时生成 \(`K`\) 个轨迹并计算GRPO损失。
 \item
-  \textbf{重要性采样}：\(w_i(\theta)=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,<t})}{\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,<t})}\)，用于限制新旧策略更新幅度。
+  \textbf{重要性采样}：\(`w_i(\theta)=\frac{\pi_\theta(o_{i,t}\mid q,o_{i,\lt t})}{\pi_{\theta_{\mathrm{old}}}(o_{i,t}\mid q,o_{i,\lt t})}`\)，用于限制新旧策略更新幅度。
 \end{itemize}
 
 第二项是经验异策略目标（Experiential Off-Policy Objective）：
@@ -1220,142 +1089,129 @@ ExGRPO采用了一种混合策略的优化目标，除了对重要性采样进�
 \begin{itemize}
 \tightlist
 \item
-  \textbf{权重}：占总目标的 \(\rho\) 比例。
+  \textbf{权重}：占总目标的 \(`\rho`\) 比例。
 \item
-  \textbf{混合组构建}：对于从缓冲区采样的历史问题 \(q^*\)，ExGRPO 会构建一个混合优势估计组 \(\mathcal{G}_{q^*}=\{o^*\}\cup\{o_i\}_{i=1}^{K-1}\)。其中 \(o^*\) 是过去策略 \(\pi_{\theta_{\mathrm{past}}}\) 生成的一条高质量历史轨迹，而剩余的 \(K-1\) 条轨迹 \(o_i\) 是由当前参考策略 \(\pi_{\theta_{\mathrm{old}}}\) 实时生成的。
+  \textbf{混合组构建}：对于从缓冲区采样的历史问题 \(`q^{\ast}`\)，ExGRPO会构建一个混合优势估计组 \(`\mathcal{G}_{q^{\ast}}=\{o^{\ast}\}\cup\{o_i\}_{i=1}^{K-1}`\)。其中 \(`o^{\ast}`\) 是过去策略 \(`\pi_{\theta_{\mathrm{past}}}`\) 生成的一条高质量历史轨迹，而剩余的 \(`K-1`\) 条轨迹 \(`o_i`\) 是由当前参考策略 \(`\pi_{\theta_{\mathrm{old}}}`\) 实时生成的。
 \item
-  \textbf{异策略重要性校正}：为了消除直接使用历史数据带来的分布偏移（Distribution Shift）并保证梯度无偏，对于重播的轨迹 \(o^*\)，其重要性权重被专门重新加权为当前策略与生成该轨迹的过去策略之间的比值：\(w^*(\theta)=\frac{\pi_\theta(o_t^{*}\mid q^*,o_{<t}^{*})}{\pi_{\theta_{\mathrm{past}}}(o_t^{*}\mid q^*,o_{<t}^{*})}\)。
+  \textbf{异策略重要性校正}：为了消除直接使用历史数据带来的分布偏移（Distribution Shift）并保证梯度无偏，对于重播的轨迹 \(`o^{\ast}`\)，其重要性权重被专门重新加权为当前策略与生成该轨迹的过去策略之间的比值：\(`w^{\ast}(\theta)=\frac{\pi_\theta(o_t^{\ast}\mid q^{\ast},o_{\lt t}^{\ast})}{\pi_{\theta_{\mathrm{past}}}(o_t^{\ast}\mid q^{\ast},o_{\lt t}^{\ast})}`\)。
 \end{itemize}
 
 \hypertarget{ux4e09ux7b56ux7565ux5851ux5f62}{%
-\subsection{三、策略塑形}\label{ux4e09ux7b56ux7565ux5851ux5f62}}
+\subsubsection{（三）策略塑形}\label{ux4e09ux7b56ux7565ux5851ux5f62}}
 
 为解决直接优化低熵历史轨迹可能损害强化学习探索能力的问题，上述目标函数的第二项被改为：
 
 \[
 \rho\cdot
-\mathbb{E}_{q^*\sim\mathcal{B}_{\mathrm{exp}}}
+\mathbb{E}_{q^{\ast}\sim\mathcal{B}_{\mathrm{exp}}}
 \left[
 \frac{1}{K}
 \left(
-f\left(w^*(\theta)\right)\cdot\hat{A}(o^*,\mathcal{G}_{q^*})
+f\left(w^{\ast}(\theta)\right)\cdot\hat{A}(o^{\ast},\mathcal{G}_{q^{\ast}})
 +\sum_{i=1}^{K-1}
-\mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_{q^*})\right)
+\mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_{q^{\ast}})\right)
 \right)
 \right]
 \]
 
-在公式的后半部分（即异策略经验目标中），原有的 \(\mathrm{CLIP}\left(w^*(\theta),\hat{A}(o^*,\mathcal{G}_{q^*})\right)\) 被替换为了 \(f\left(w^*(\theta)\right)\cdot\hat{A}(o^*,\mathcal{G}_{q^*})\)。
+在公式的后半部分（即异策略经验目标中），原有的 \(`\mathrm{CLIP}\left(w^{\ast}(\theta),\hat{A}(o^{\ast},\mathcal{G}_{q^{\ast}})\right)`\) 被替换为了 \(`f\left(w^{\ast}(\theta)\right)\cdot\hat{A}(o^{\ast},\mathcal{G}_{q^{\ast}})`\)。
 
-这里的 \(f(x)\) 是一个引入小常数 \(\beta\)（在实践中通常设为 0.1）的非线性转换函数：
+这里的 \(`f(x)`\) 是一个引入小常数 \(`\beta`\)（在实践中通常设为0.1）的非线性转换函数：
 
 \[
 f(x)=\frac{x}{x+\beta}
 \]
 
-之所以用 \(f(w)\) 替代标准的 PPO/GRPO \(\mathrm{CLIP}\) 机制，是基于该函数的以下几个关键数学性质及其带来的强化学习收益：
+之所以用 \(`f(w)`\) 替代标准的PPO/GRPO \(`\mathrm{CLIP}`\) 机制，是基于该函数的以下几个关键数学性质及其带来的强化学习收益：
 
 \begin{itemize}
 \tightlist
 \item
-  \textbf{抑制高概率信号（防止过度拟合）}：当重要性权重 \(w\) 很大时（即当前策略已经非常倾向于生成这个历史动作），\(f(w)\) 的极限趋近于 1。这意味着它起到了类似截断（Clipping）的作用，抑制了极端的权重，控制了异策略学习带来的方差，防止模型在这个已经很确定的轨迹上过度更新。
+  \textbf{抑制高概率信号（防止过度拟合）}：当重要性权重 \(`w`\) 很大时（即当前策略已经非常倾向于生成这个历史动作），\(`f(w)`\) 的极限趋近于1。这意味着它起到了类似截断（Clipping）的作用，抑制了极端的权重，控制了异策略学习带来的方差，防止模型在这个已经很确定的轨迹上过度更新。
 \item
-  \textbf{放大低概率信号（鼓励探索新意）}：当重要性权重 \(w\) 很小且接近 0 时（即当前策略不太可能生成这个动作，但在历史经验中它是个好动作），由于 \(\beta\)（如 0.1）的存在，\(f(w)\approx\frac{w}{\beta}\)，这实际上在局部放大了这些微弱的信号。
+  \textbf{放大低概率信号（鼓励探索新意）}：当重要性权重 \(`w`\) 很小且接近0时（即当前策略不太可能生成这个动作，但在历史经验中它是个好动作），由于 \(`\beta`\)（如0.1）的存在，\(`f(w)\approx\frac{w}{\beta}`\)，这实际上在局部放大了这些微弱的信号。
 \item
   \textbf{动态权衡}：这种设计使得模型能够从经验轨迹中那些对当前策略来说仍然``新颖''（novel）的部分中学习，而不是盲目地强化那些已经具有高概率的动作，从而在利用经验的同时保持了策略的熵（探索性）。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-113}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-113}}
+\hypertarget{ux4e09ux7ed3ux5408ux81eaux84b8ux998fux79efux7d2fux7ecfux9a8cux53cdux601dux7684ux5f3aux5316ux5b66ux4e60}{%
+\subsection{三、结合自蒸馏积累经验反思的强化学习}\label{ux4e09ux7ed3ux5408ux81eaux84b8ux998fux79efux7d2fux7ecfux9a8cux53cdux601dux7684ux5f3aux5316ux5b66ux4e60}}
 
-\begin{itemize}
-\tightlist
-\item
-  Zhan, R., Li, Y., Wang, Z., Qu, X., Liu, D., Shao, J., Wong, D. F., \& Cheng, Y. (2025). \href{https://arxiv.org/abs/2510.02245}{ExGRPO: Learning to Reason from Experience}. arXiv:2510.02245.
-\end{itemize}
-
-\clearpage
-
-\hypertarget{ux7ed3ux5408ux81eaux84b8ux998fux7684ux5f3aux5316ux5b66ux4e60ux8bbaux6587}{%
-\section{结合自蒸馏的强化学习（论文）}\label{ux7ed3ux5408ux81eaux84b8ux998fux7684ux5f3aux5316ux5b66ux4e60ux8bbaux6587}}
-
-\begin{quote}
-本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
-\end{quote}
-
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-2}{%
-\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-2}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-1}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-1}}
 
 强化学习（RL）已成为语言模型从环境奖励或反馈中学习的核心方法。然而，在处理智能体推理和决策任务时，特别是在任务早期，标准的包含可验证奖励的强化学习（RLVR）面临着显著的挑战：在实际应用中，环境反馈往往是稀疏且延迟的标量信号，信息量极低，容易导致模型陷入一种盲目且反复的试错循环中，难以形成持久的行为修正。
 
 为此，我们可以在强化学习过程中（特别是早期）嵌入一个显式的``经验-反思-巩固''循环。不再仅仅依赖最终的标量结果进行学习，而是将环境反馈转化为结构化的中间推理信号（即反思），指导模型在同一回合（episode）内进行局部行为修正，最终将这些成功的修正内化到模型的基础策略中，有效地将干瘪的标量反馈转化为了具体的行为修正策略。
 
 \hypertarget{ux4e8cux7b97ux6cd5ux5de5ux4f5cux6d41}{%
-\subsection{二、算法工作流}\label{ux4e8cux7b97ux6cd5ux5de5ux4f5cux6d41}}
+\subsubsection{（二）算法工作流}\label{ux4e8cux7b97ux6cd5ux5de5ux4f5cux6d41}}
 
 \hypertarget{ux9996ux6b21ux5c1dux8bd5first-attempt}{%
-\subsubsection{1. 首次尝试（First Attempt）}\label{ux9996ux6b21ux5c1dux8bd5first-attempt}}
+\paragraph{1. 首次尝试（First Attempt）}\label{ux9996ux6b21ux5c1dux8bd5first-attempt}}
 
-对于给定的任务输入 \(x\)，语言模型 \(\pi_\theta\) 首先生成初始尝试 \(y^{(1)}\)：
-
-\[
-y^{(1)} \sim \pi_\theta(\cdot \mid x)
-\]
-
-随后，模型会从环境中获得文本反馈 \(f^{(1)}\) 和奖励 \(r^{(1)}\)。模型会利用标准的强化学习目标对首次尝试进行优化。强化学习的损失函数定义为：
+对于给定的任务输入 \(`x`\)，语言模型 \(`\pi_\theta`\) 首先生成初始尝试 \(`y^{(1)}`\)：
 
 \[
-\mathcal{L}_{policy}(\theta) = -\mathbb{E}[A \log \pi_\theta(y \mid x, \cdot)]
+y^{(1)}\sim\pi_\theta(\cdot\mid x)
 \]
 
-其中 \(A\) 是基于奖励计算出的优势估计（Advantage estimate）。
+随后，模型会从环境中获得文本反馈 \(`f^{(1)}`\) 和奖励 \(`r^{(1)}`\)。模型会利用标准的强化学习目标对首次尝试进行优化。强化学习的损失函数定义为：
+
+\[
+\mathcal{L}_{\mathrm{policy}}(\theta)=-\mathbb{E}\left[A\log\pi_\theta(y\mid x,\cdot)\right]
+\]
+
+其中 \(`A`\) 是基于奖励计算出的优势估计（Advantage estimate）。
 
 \hypertarget{ux95e8ux63a7ux53cdux601dgated-reflection}{%
-\subsubsection{2. 门控反思（Gated Reflection）}\label{ux95e8ux63a7ux53cdux601dgated-reflection}}
+\paragraph{2. 门控反思（Gated Reflection）}\label{ux95e8ux63a7ux53cdux601dgated-reflection}}
 
-ERL 并没有对所有尝试都进行反思，而是设置了一个阈值 \(\tau\)（例如 \(\tau = 1\)）。只有当首次尝试的奖励 \(r^{(1)} < \tau\) 时（即表现不佳或失败），才会触发反思阶段。这可以避免模型对已经成功的轨迹产生``奖励作弊''（reward hacking）行为，并稳定训练。
+ERL并没有对所有尝试都进行反思，而是设置了一个阈值 \(`\tau`\)（例如 \(`\tau=1`\)）。只有当首次尝试的奖励 \(`r^{(1)}\lt\tau`\) 时（即表现不佳或失败），才会触发反思阶段。这可以避免模型对已经成功的轨迹产生``奖励作弊''（reward hacking）行为，并稳定训练。
 
-触发反思后，模型会生成一段结构化的自我反思 \(\Delta\)：
+触发反思后，模型会生成一段结构化的自我反思 \(`\Delta`\)：
 
 \[
-\Delta \sim \pi_\theta(\cdot \mid x, y^{(1)}, f^{(1)}, r^{(1)}, m)
+\Delta\sim\pi_\theta(\cdot\mid x,y^{(1)},f^{(1)},r^{(1)},m)
 \]
 
-这里引入了一个跨回合的反思记忆（reflection memory）\(m\)。\(m\) 保存了之前训练中发现的成功纠正模式，作为上下文先验，帮助稳定反思的生成。
-
-如果一次反思带来了成功的二次尝试（即奖励超过了阈值 \(\tau\)），这个反思就会被保留下来并存入记忆。未来的回合可以提取并重用这些已经验证有效的纠正策略作为上下文先验，从而在整个训练周期内稳定反思生成并实现知识的累积。
+这里引入了一个跨回合的反思记忆库 \(`m`\)。如果一次反思带来了成功的二次尝试（即奖励超过了阈值 \(`\tau`\)），这个反思就会被保留下来并存入记忆。未来的回合可以提取并重用这些已经验证有效的纠正策略作为上下文先验，从而在整个训练周期内稳定反思生成并实现知识的累积。
 
 \hypertarget{ux4e8cux6b21ux5c1dux8bd5second-attempt}{%
-\subsubsection{3. 二次尝试（Second Attempt）}\label{ux4e8cux6b21ux5c1dux8bd5second-attempt}}
+\paragraph{3. 二次尝试（Second Attempt）}\label{ux4e8cux6b21ux5c1dux8bd5second-attempt}}
 
-基于生成的反思 \(\Delta\)，模型进行更为精确的第二次尝试 \(y^{(2)}\)：
+基于生成的反思 \(`\Delta`\)，模型进行更为精确的第二次尝试 \(`y^{(2)}`\)：
 
 \[
-y^{(2)} \sim \pi_\theta(\cdot \mid x, \Delta)
+y^{(2)}\sim\pi_\theta(\cdot\mid x,\Delta)
 \]
 
-这次尝试会获得新的反馈和奖励 \((f^{(2)}, r^{(2)})\)。反思本身会被赋予奖励 \(\bar{r} = r^{(2)}\)，以此鼓励那些能带来下游性能提升的反思。如果二次尝试成功（即 \(r^{(2)} > \tau\)），该反思 \(\Delta\) 会被存入记忆 \(m\) 中，实现知识积累。同时，二次尝试和反思过程同样会使用上述的 \(\mathcal{L}_{policy}(\theta)\) 进行强化学习更新。
+这次尝试会获得新的反馈和奖励 \(`(f^{(2)},r^{(2)})`\)。反思本身会被赋予奖励 \(`\bar{r}=r^{(2)}`\)，以此鼓励那些能带来下游性能提升的反思。如果二次尝试成功（即 \(`r^{(2)}\gt\tau`\)），该反思 \(`\Delta`\) 会被存入记忆 \(`m`\) 中，实现知识积累。同时，二次尝试和反思过程同样会使用上述的 \(`\mathcal{L}_{\mathrm{policy}}(\theta)`\) 进行强化学习更新。
 
 \hypertarget{ux5185ux5316ux4e0eux5de9ux56fainternalization}{%
-\subsubsection{4. 内化与巩固（Internalization）}\label{ux5185ux5316ux4e0eux5de9ux56fainternalization}}
+\paragraph{4. 内化与巩固（Internalization）}\label{ux5185ux5316ux4e0eux5de9ux56fainternalization}}
 
-在实际部署（推理）阶段，模型是无法获得环境反馈和显式反思提示的。为了让模型``记住''训练中发现的纠正策略，ERL 引入了内化（internalization）机制。
+在实际部署（推理）阶段，模型是无法获得环境反馈和显式反思提示的。为了让模型``记住''训练中发现的纠正策略，ERL引入了内化（Internalization）机制。
 
 内化通过选择性知识蒸馏（selective distillation）实现。模型被监督着仅去模仿那些成功的二次尝试，但输入中移除了反思上下文。蒸馏损失函数定义为：
 
 \[
-\mathcal{L}_{distill}(\theta) = -\mathbb{E}[I(r^{(2)} > 0) \log \pi_\theta(y^{(2)} \mid x)]
+\mathcal{L}_{\mathrm{distill}}(\theta)=-\mathbb{E}\left[I(r^{(2)}\gt 0)\log\pi_\theta(y^{(2)}\mid x)\right]
 \]
 
-其中 \(I(\cdot)\) 是指示函数。这迫使基础策略 \(\pi_\theta\) 学习仅凭借原始输入 \(x\) 就能直接输出改进后的行为 \(y^{(2)}\)，从而确保即使在测试时没有反思，行为的改进也能持久保留。
+其中 \(`I(\cdot)`\) 是指示函数。这迫使基础策略 \(`\pi_\theta`\) 学习仅凭借原始输入 \(`x`\) 就能直接输出改进后的行为 \(`y^{(2)}`\)，从而确保即使在测试时没有反思，行为的改进也能持久保留。
 
-在整个轨迹中，首次尝试、反思内容本身以及二次尝试，都是通过强化学习目标优化的，即在单次强化学习轨迹内部嵌入了一个``经验-反思-巩固''的完整循环。模型在收到环境的失败反馈后，必须先生成一段结构化的自我反思，以此指导出精确的二次尝试。这意味着，模型不仅在学习``好的结果''，还在利用环境返回的奖励信号不断优化``如何生成有效的反思''这一能力。
+在整个轨迹中，首次尝试、反思内容本身以及二次尝试，都是通过强化学习目标优化的，即在单次强化学习轨迹内部嵌入了一个``经验-反思-巩固''的完整循环。模型在收到环境的失败反馈后，必须先生成一段结构化的自我反思，以此指导出精炼的二次尝试。这意味着，模型不仅在学习``好的结果''，还在利用环境返回的奖励信号不断优化``如何生成有效的反思''这一能力。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
+\hypertarget{ux53c2ux8003ux6587ux732e-112}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-112}}
 
 \begin{itemize}
 \tightlist
+\item
+  Tajwar, F., Zeng, G., Zhou, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.02710}{Maximum Likelihood Reinforcement Learning}. arXiv:2602.02710.
+\item
+  Zhan, R., Li, Y., Wang, Z., Qu, X., Liu, D., Shao, J., Wong, D. F., \& Cheng, Y. (2025). \href{https://arxiv.org/abs/2510.02245}{ExGRPO: Learning to Reason from Experience}. arXiv:2510.02245.
 \item
   Shi, T., Chen, S., Jiang, B., et al.~(2026). \href{https://arxiv.org/abs/2602.13949}{Experiential Reinforcement Learning}. arXiv:2602.13949.
 \end{itemize}

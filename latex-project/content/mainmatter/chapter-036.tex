@@ -64,8 +64,8 @@
 
 由于世界模型只是对真实环境的近似概率模型，控制器在优化过程中可能会发现并利用这些不完美的漏洞，产生``对抗性策略''（例如以一种特定的移动方式让生成的火球凭空熄灭）。适当提高预测模型的温度参数来增加虚拟环境的不确定性和随机性，可以有效防止控制器利用这些模型缺陷。这使得智能体学会了更稳健的策略，从而在真实环境中的表现更好。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-186}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-186}}
+\hypertarget{ux53c2ux8003ux6587ux732e-183}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-183}}
 
 \begin{itemize}
 \tightlist
@@ -665,8 +665,8 @@ M^{\mathrm{block}}_{i,j}
 
 也就是说，在生成第 \(t+1\) 帧时，它刚开始是噪声向量的组合，前 \(t\) 帧的信息在 Attention 模块中作为上下文不断与之融合。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-187}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-187}}
+\hypertarget{ux53c2ux8003ux6587ux732e-184}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-184}}
 
 \begin{itemize}
 \tightlist
@@ -694,8 +694,8 @@ M^{\mathrm{block}}_{i,j}
 
 损失分步解耦方法是Google DeepMind在世界模型Dreamer 4中的改进。
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-11}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-11}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-10}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-10}}
 
 在 Dreamer 3 中，图像编码器（Encoder）、动力学模型（RSSM）、图像解码器（Decoder）和奖励预测器（Reward Predictor）是作为一个巨大的整体同时训练的。
 
@@ -815,8 +815,8 @@ Dreamer 3这样的端到端强化学习要求每一帧数据都必须包含精�
 \hypertarget{ux4e8cvideoworld-2ux9690ux53d8ux91cfux9884ux6d4bux4e0eux6269ux6563ux751fux6210ux7684ux89e3ux8026}{%
 \subsection{二、VideoWorld 2：隐变量预测与扩散生成的解耦}\label{ux4e8cvideoworld-2ux9690ux53d8ux91cfux9884ux6d4bux4e0eux6269ux6563ux751fux6210ux7684ux89e3ux8026}}
 
-\hypertarget{ux4e00ux95eeux9898ux80ccux666f-12}{%
-\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-12}}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-11}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-11}}
 
 初代 VideoWorld 成功证明了模型可以通过自回归视频生成范式，仅从视觉信号中学习到游戏（如围棋）或模拟机器人环境中的知识。然而，当将其应用于真实世界的视频时，它面临着严重的性能下降。
 
@@ -849,8 +849,8 @@ VideoWorld 2 在 \(z_t\) 的训练中实现核心动作与视觉外观的解耦�
 
 这样做的好处在于：把视觉渲染交给扩散模型，让自回归专注抽象表征。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-188}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-188}}
+\hypertarget{ux53c2ux8003ux6587ux732e-185}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-185}}
 
 \begin{itemize}
 \tightlist
@@ -960,8 +960,8 @@ x_1,\ z_1^1,\ z_1^2,\ \ldots,\ z_1^H,\ x_2,\ z_2^1,\ z_2^2,\ \ldots,\ z_2^H,\ \l
 
 输出是站在 \(t\) 时刻下对未来的预测 \(z_t^h\)（\(h=1,2,\ldots,H\)）和下一帧 \(x_{t+1}\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-189}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-189}}
+\hypertarget{ux53c2ux8003ux6587ux732e-186}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-186}}
 
 \begin{itemize}
 \tightlist
@@ -997,7 +997,7 @@ Any-step Dynamics Model（ADM）提出，未来状态不一定非要依赖上一
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0052.png}
+\includegraphics{images/image-0053.png}
 \caption{ADM 任意步动力学模型示意图}
 \end{figure}
 
@@ -1077,7 +1077,7 @@ ADM-v2对这一结构做了更自然的重构：把状态编码和动力学预�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0053.png}
+\includegraphics{images/image-0054.png}
 \caption{ADM 与 ADM-v2 架构对比}
 \end{figure}
 
@@ -1112,7 +1112,7 @@ h_{t+1}=g_{\theta}(h_t,a_t)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0054.png}
+\includegraphics{images/image-0055.png}
 \caption{PARoll 并行任意步滚动推演初始化示意图}
 \end{figure}
 
@@ -1328,8 +1328,8 @@ ADM-v2 可以直接作为一个 surrogate environment（代理环境），通过
   \textbf{核心结论}：当最大 \(m\) 步直接预测误差满足特定条件（\(\delta_{\max}\lt\frac{\delta(1-\gamma^m)}{1-\gamma}\)）时，ADM-v2 生成的 OPE 误差上界比传统的单步动力学模型更加紧致（Tighter），理论上提供了更可靠的评估。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-190}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-190}}
+\hypertarget{ux53c2ux8003ux6587ux732e-187}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-187}}
 
 \begin{itemize}
 \tightlist
@@ -1398,14 +1398,14 @@ ADM-v2 可以直接作为一个 surrogate environment（代理环境），通过
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0055.png}
+\includegraphics{images/image-0056.png}
 \caption{DiLA 动作空间学习模型架构}
 \end{figure}
 
 为了验证结构与内容是否真正分离，论文设计了实验：从一个视频中提取结构，从另一个视频中提取内容，然后将二者重新组合生成新序列。生成序列继承了结构序列的空间动态，同时保留了内容序列的颜色、纹理和外观属性。而固定结构表征，只让内容的记忆模块随时间更新，序列保持静止。这说明内容记忆模块主要编码时间上相对稳定的内容信息，而不是运动本身。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-191}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-191}}
+\hypertarget{ux53c2ux8003ux6587ux732e-188}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-188}}
 
 \begin{itemize}
 \tightlist

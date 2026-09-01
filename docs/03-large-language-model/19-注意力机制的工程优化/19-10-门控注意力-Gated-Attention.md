@@ -1,13 +1,13 @@
 ---
-title: "19.9 门控注意力（Gated Attention）（论文）"
-source_docx: "第3部分 大语言模型/19.注意力机制的工程优化/19.9 门控注意力（Gated Attention）（论文）.docx"
+title: "19.10 门控注意力（Gated Attention）"
+source_docx: "第3部分 大语言模型/19.注意力机制的工程优化/19.10 门控注意力（Gated Attention）.docx"
 status: "image-reconstructed"
 ocr: "manual reconstruction completed from classified DOCX images"
 license: "CC BY-NC-SA 4.0"
 local_only: false
 ---
 
-# 19.9 门控注意力（Gated Attention）（论文）
+# 19.10 门控注意力（Gated Attention）
 
 
 > 本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。

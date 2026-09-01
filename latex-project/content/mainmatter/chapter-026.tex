@@ -185,8 +185,8 @@ AI Agent（智能体）的运行过程中，系统内存（System RAM / CPU Memo
 
 summary并非简单把长文本变成短文本，这会丢失大量细节。它应当保留模型对原始对话的``隐性理解''，就像把一本厚书压缩成一个``记忆卡片''，模型读了卡片就能回忆起整本书的内容。例如OpenAI Codex的策略是，对于代码项目中的对话，当上下文窗口满时，用一个小项目列表替换前文，概括前面都执行了什么。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-133}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-133}}
+\hypertarget{ux53c2ux8003ux6587ux732e-131}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-131}}
 
 \begin{itemize}
 \tightlist
@@ -224,7 +224,7 @@ summary并非简单把长文本变成短文本，这会丢失大量细节。它�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0036.png}
+\includegraphics{images/image-0038.png}
 \caption{KV Cache 缓存命中与未命中对比}
 \end{figure}
 
@@ -259,7 +259,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0037.png}
+\includegraphics{images/image-0039.png}
 \caption{掩蔽工具而不是从上下文移除工具}
 \end{figure}
 
@@ -278,7 +278,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0038.png}
+\includegraphics{images/image-0040.png}
 \caption{将文件系统作为上下文}
 \end{figure}
 
@@ -286,7 +286,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0039.png}
+\includegraphics{images/image-0041.png}
 \caption{将工具调用结果压缩为文件系统引用}
 \end{figure}
 
@@ -297,7 +297,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0040.png}
+\includegraphics{images/image-0042.png}
 \caption{通过复述目标操控注意力}
 \end{figure}
 
@@ -310,7 +310,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0041.png}
+\includegraphics{images/image-0043.png}
 \caption{避免少样本示例锁定行为模式}
 \end{figure}
 
@@ -323,7 +323,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0042.png}
+\includegraphics{images/image-0044.png}
 \caption{主 Agent 与子 Agent 通过通信隔离上下文}
 \end{figure}
 
@@ -331,14 +331,14 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0043.png}
+\includegraphics{images/image-0045.png}
 \caption{主 Agent 与子 Agent 共享上下文}
 \end{figure}
 
 在这两种情况下，规划者都定义了子代理的输出模式。子代理有工具在返回结果前填充该模式，Manus 则使用约束解码确保输出符合定义模式。\texttt{submit\ results}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-134}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-134}}
+\hypertarget{ux53c2ux8003ux6587ux732e-132}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-132}}
 
 \begin{itemize}
 \tightlist
@@ -667,8 +667,8 @@ C_v = \arg\min_{C_v}\|XC_v - Y\|_2^2
 C_v = (X^\top X)^{-1}X^\top Y
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-135}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-135}}
+\hypertarget{ux53c2ux8003ux6587ux732e-133}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-133}}
 
 \begin{itemize}
 \tightlist

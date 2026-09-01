@@ -131,8 +131,8 @@ R_{total}=R_{model}(s,a)-\beta\log\frac{\pi_\theta(a|s)}{\pi_{ref}(a|s)}
 
 但在 RLHF 中，我们通常选择把KL``通过每一步的Reward 注入''，而不是直接加在最终的Loss里。这是为了让价值函数V(s)感知到难度，如果把 KL 扣分算在Reward里，那么V(s)在预测``这个状态（生成这个token）好不好''时，就会自动把``偏离SFT模型的代价''也考虑进去。智能体会通过V(s)提前预判到``如果我这就开始乱说话，虽然可能骗到高分，但会被 KL 罚得很惨所以这并不是一个好的状态''。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-77}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-77}}
+\hypertarget{ux53c2ux8003ux6587ux732e-78}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-78}}
 
 \begin{itemize}
 \tightlist
@@ -219,8 +219,8 @@ r^*(x,y_w)-r^*(x,y_l)=\beta\log\frac{\pi^*(y_w|x)}{\pi_{ref}(y_w|x)}-\beta\log\f
 
 也就是说，这两个项的差越大，经过Sigmoid函数后算出的概率也就越大。取负对数，相当于交叉熵损失，让概率预测值尽可能接近1。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-78}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-78}}
+\hypertarget{ux53c2ux8003ux6587ux732e-79}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-79}}
 
 \begin{itemize}
 \tightlist
@@ -397,8 +397,8 @@ l_{\mathrm{value}} = (z - v)^2
 
 原因是：MCTS 的 \(Q\) 值虽然比 \(v\) 准，但它仍然是基于网络预测的 \(v\) 聚合出来的，存在偏差（Bias）。如果让网络去拟合 \(Q\)，相当于``左脚踩右脚''，可能会导致偏差累积。而真实结局 \(z\) 是无偏的（Unbiased），虽然方差大（例如一盘棋赢了不代表这步棋一定好），但只要数据量足够大，网络就能学到最准确的局势判断。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-79}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-79}}
+\hypertarget{ux53c2ux8003ux6587ux732e-80}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-80}}
 
 \begin{itemize}
 \tightlist
@@ -481,8 +481,8 @@ l_{\mathrm{value}} = (z - v)^2
 
 DeepSeek 的论文中提供了一个非常精彩的反面教材，证明了如果没有专门的可读性约束，RL 会把可读性彻底毁掉。DeepSeek-R1-Zero没有经过SFT冷启动，没有加可读性奖励，纯RL后模型确实变聪明了，做题正确率飙升，但输出变得极度难以阅读。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-80}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-80}}
+\hypertarget{ux53c2ux8003ux6587ux732e-81}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-81}}
 
 \begin{itemize}
 \tightlist
@@ -752,8 +752,8 @@ Top-k 筛选：只选择熵最高的前 \(k\) 个段落（Top-k Segments）进�
 
 然后，通过计算过程评分的提升量 \(\Delta S\)，作为这一片段的``过程级奖励''，与最终正确与否结合，作为 RL 的优势函数输入。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-81}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-81}}
+\hypertarget{ux53c2ux8003ux6587ux732e-82}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-82}}
 
 \begin{itemize}
 \tightlist
@@ -1432,8 +1432,8 @@ r(s_t,a_t)
   PPO（类似蒙特卡洛的回归）：PPO 使用 GAE（Generalized Advantage Estimation）来计算优势函数 \(\hat{A}_t\)。虽然它也使用 Critic（Value Network），但它更多地利用了整个轨迹的实际回报（Returns）。相比于 SAC 这种高度依赖 bootstrapping 的 TD-learning，PPO 在长序列生成任务（Episode Length 很大）中通常更鲁棒。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-82}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-82}}
+\hypertarget{ux53c2ux8003ux6587ux732e-83}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-83}}
 
 \begin{itemize}
 \tightlist
@@ -1557,7 +1557,7 @@ GRPO的方差控制术如下。虽然MC估计通常方差大，但GRPO通过以�
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0021.png}
+\includegraphics{images/image-0022.png}
 \caption{PPO与GRPO架构对比}
 \end{figure}
 
@@ -1644,8 +1644,8 @@ GRPO的优势函数估计看似是无偏的，实则往往对难题低估、对�
 
 对此，可将难题优势函数乘以更大系数，简单题优势函数乘以更小系数，以尽可能实现无偏估计。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-83}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-83}}
+\hypertarget{ux53c2ux8003ux6587ux732e-84}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-84}}
 
 \begin{itemize}
 \tightlist
@@ -1892,8 +1892,8 @@ KL散度项可以减在Reward或加在Loss里。在实际训练中，K1 in loss�
   因为总概率（这个``蛋糕''的大小）是固定的 1，所以所有变化的加和必须为 0。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-84}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-84}}
+\hypertarget{ux53c2ux8003ux6587ux732e-85}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-85}}
 
 \begin{itemize}
 \tightlist
@@ -1952,7 +1952,7 @@ q_t = \arg\min_{q:\mathbb{E}_q[R]=1} D_{KL}(q\Vert \pi_t)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0022.png}
+\includegraphics{images/image-0023.png}
 \caption{Policy Space / Feasible Policies / Optimal Policies 概念图}
 \end{figure}
 
@@ -2072,8 +2072,8 @@ M-Step（M-Projection）：用策略梯度更新参数 \(\pi\)，使其逼近 \(
 
 正是因为每一步 M-Projection 都是在拉近 \(\pi\) 和 \(q\)（而 \(q\) 又是 \(\pi\) 自身的重加权），所以整个轨迹被约束在一条 KL 变化最小的路径上，从而避免了 SFT 那种因拟合外部分布而导致的剧烈参数漂移和遗忘。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-85}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-85}}
+\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
 
 \begin{itemize}
 \tightlist
