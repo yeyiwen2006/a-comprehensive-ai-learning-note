@@ -84,8 +84,8 @@ Final Answer: 20美元约等于3150日元。
 
 DeepSeek设计了一套让模型能像人类一样``参考笔记''来完成复杂任务的机制。V3.2的流程是：用户问题~-\textgreater{} 模型生成~reasoning\_content\_A（写在``草稿纸''上）-\textgreater{} 执行工具 -\textgreater~工具结果 + 用户问题 +~reasoning\_content\_A（作为上下文输入）~-\textgreater{} 模型基于之前的``草稿''继续推理，生成~reasoning\_content\_B。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-121}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-121}}
+\hypertarget{ux53c2ux8003ux6587ux732e-120}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-120}}
 
 \begin{itemize}
 \tightlist
@@ -147,8 +147,8 @@ MCP Server（服务器）：轻量级的独立程序，在外部工具或数据�
   上下文回传与最终响应：Client将查询结果作为新的上下文信息补充给大模型。LLM基于这些真实取回的数据进行逻辑推理，生成自然语言回答，最终由Host展示给用户。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-122}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-122}}
+\hypertarget{ux53c2ux8003ux6587ux732e-121}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-121}}
 
 \begin{itemize}
 \tightlist
@@ -189,8 +189,8 @@ Agent的skills，可以理解为它的``专项能力包''，是一组可复用�
 
 这样，一方面有效发挥模型强大的编程能力，提高了成功率；另一方面让数据由模型通过代码间接控制，而非直接控制，从而避免大量token被不必要地注入上下文，提高了效率。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-123}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-123}}
+\hypertarget{ux53c2ux8003ux6587ux732e-122}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-122}}
 
 \begin{itemize}
 \tightlist

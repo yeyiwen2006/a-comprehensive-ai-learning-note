@@ -263,8 +263,8 @@ DAPO 的工作流：
 
 总结与应用：GRPO更能保证模型对每一个样本训练充分，DAPO则避免二值奖励中长链推理样本的关键逻辑步骤梯度过小，更适合提高复杂推理的收敛效率和逻辑密度。可以根据不同需要，选择合适的训练方法。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
+\hypertarget{ux53c2ux8003ux6587ux732e-107}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-107}}
 
 \begin{itemize}
 \tightlist
@@ -601,8 +601,8 @@ A_t
   \end{itemize}
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-109}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-109}}
+\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
 
 \begin{itemize}
 \tightlist
@@ -776,8 +776,8 @@ GRPO 的梯度是局部视角：
 
 因此，如果整句话的奖励很高，GSPO会统一增强这句话中所有token的权重；反之则统一抑制。这增强了奖励和惩罚的整体性，能更准确地对不同推理链条做出全局性的判断，避免被某些局部细节过度干扰。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-110}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-110}}
+\hypertarget{ux53c2ux8003ux6587ux732e-109}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-109}}
 
 \begin{itemize}
 \tightlist
@@ -879,8 +879,8 @@ GRPO对一个问题生成一组回复，使用所有回复的奖励计算组内�
   \textbf{策略更新（Optimization）}：使用 PPO 目标函数更新模型参数 \(\theta\)。由于被拒绝样本的优势为 \(0\)，模型实际只学习了``既满足约束（如简短）又获得高分（如正确）''的样本分布。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-111}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-111}}
+\hypertarget{ux53c2ux8003ux6587ux732e-110}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-110}}
 
 \begin{itemize}
 \tightlist
@@ -1022,8 +1022,8 @@ MaxRL：
 \mathrm{advantage}=\frac{\mathrm{reward}-\mathrm{mean\_reward}}{\mathrm{mean\_reward}+\epsilon}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-112}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-112}}
+\hypertarget{ux53c2ux8003ux6587ux732e-111}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-111}}
 
 \begin{itemize}
 \tightlist
@@ -1137,8 +1137,8 @@ JSD\left(p_\theta^t \middle\| p_\phi^t\right)
   \textbf{整体目标}：最终的同策略蒸馏目标结合了强化学习目标、输出逻辑的广义知识蒸馏（GKD）损失以及注意力蒸馏损失。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-113}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-113}}
+\hypertarget{ux53c2ux8003ux6587ux732e-112}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-112}}
 
 \begin{itemize}
 \tightlist
@@ -1265,8 +1265,8 @@ f(x)=\frac{x}{x+\beta}
   \textbf{动态权衡}：这种设计使得模型能够从经验轨迹中那些对当前策略来说仍然``新颖''（novel）的部分中学习，而不是盲目地强化那些已经具有高概率的动作，从而在利用经验的同时保持了策略的熵（探索性）。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
+\hypertarget{ux53c2ux8003ux6587ux732e-113}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-113}}
 
 \begin{itemize}
 \tightlist
@@ -1351,8 +1351,8 @@ y^{(2)} \sim \pi_\theta(\cdot \mid x, \Delta)
 
 在整个轨迹中，首次尝试、反思内容本身以及二次尝试，都是通过强化学习目标优化的，即在单次强化学习轨迹内部嵌入了一个``经验-反思-巩固''的完整循环。模型在收到环境的失败反馈后，必须先生成一段结构化的自我反思，以此指导出精确的二次尝试。这意味着，模型不仅在学习``好的结果''，还在利用环境返回的奖励信号不断优化``如何生成有效的反思''这一能力。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-115}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-115}}
+\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
 
 \begin{itemize}
 \tightlist

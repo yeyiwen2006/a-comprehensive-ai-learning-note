@@ -26,8 +26,8 @@
   理解任务的逻辑是从具体到抽象的认知过程，生成任务的逻辑是从抽象到具体的重建过程。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-196}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-196}}
+\hypertarget{ux53c2ux8003ux6587ux732e-195}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-195}}
 
 \begin{itemize}
 \tightlist
@@ -430,8 +430,8 @@ e_k^{(\mathrm{new})}
 
 在用 Binary codebook 做量化时，存在两个损失的优化冲突：Token Entropy Loss 倾向于把 Encoder 输出推向 \(\pm\infty\)，Commitment Loss 希望 Encoder 输出贴近 Codebook Entry（即 \(\pm1\)）。用 \(\mathrm{SigLu}(x)=\frac{1-e^x}{1+e^x}\) 把 Encoder 输出约束在 \((-1,1)\) 区间内。在这个约束下，两个损失在数学上等价。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-197}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-197}}
+\hypertarget{ux53c2ux8003ux6587ux732e-196}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-196}}
 
 \begin{itemize}
 \tightlist
@@ -1000,8 +1000,8 @@ LongCat-Next 将所有模态统一用离散 token 序列处理，故均可运用
 
 也就是说，结合世界模型的多模态联合预训练激发的对语言和世界状态的基础认知是关键，在此之上，具体领域数据只需要少量就可以达到饱和性能。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-198}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-198}}
+\hypertarget{ux53c2ux8003ux6587ux732e-197}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-197}}
 
 \begin{itemize}
 \tightlist
@@ -1394,8 +1394,8 @@ ROVER 等测试中，提出了另一种跨模态交互范式：模型是否能�
 
 根据目前的基准测试情况来看，模型的内部推理过程和对齐度直接决定了最终图像的质量。支持文本与图像交错生成的模型，在视觉生成表现上显著优于仅支持单轮单模态输出的模型，而单纯把语言推理模型与专门的图像生成模型级联组合，是不能复现这种能力的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-199}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-199}}
+\hypertarget{ux53c2ux8003ux6587ux732e-198}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-198}}
 
 \begin{itemize}
 \tightlist
@@ -1599,8 +1599,8 @@ r_{i,t}(\theta) =
 
 强化学习阶段，如果某条包含潜变量的思维链确实获得正优势，VLPO 会利用相同 GRPO 公式框架，通过最大化 \(r_{i,t}(\theta)\)，在欧氏空间中驱动 \(h_{i,t}^{\theta}\) 向正向样本靠近，也就是缩小两者之间的 \(L_2\) 距离。这使得 MLLM 首次能够利用最终 Reward 信号来直接微调内部连续视觉特征空间。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-200}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-200}}
+\hypertarget{ux53c2ux8003ux6587ux732e-199}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-199}}
 
 \begin{itemize}
 \tightlist
@@ -1682,8 +1682,8 @@ Encoder中的ViT也需要冻结，原因与前面所述相同。
   使用 CLIP，是因为 CLIP 擅长在高维空间对齐高级语义。最大化 CLIP 相似度只要求重建图像和原图在核心属性与空间关系上吻合，这更接近``模型是否全面理解图像''的评估目标。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-201}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-201}}
+\hypertarget{ux53c2ux8003ux6587ux732e-200}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-200}}
 
 \begin{itemize}
 \tightlist
@@ -1808,8 +1808,8 @@ R = \frac{x + 1}{2}, \quad G = \frac{y + 1}{2}, \quad B = \frac{z + 1}{2}
 
 这样 RGB 图就可以表示每个像素的表面朝向。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-202}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-202}}
+\hypertarget{ux53c2ux8003ux6587ux732e-201}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-201}}
 
 \begin{itemize}
 \tightlist
@@ -1994,8 +1994,8 @@ Uni-3DAR 通过 MNTP（掩码下个 Token 预测）配合八叉树，把``盲猜
 
 \textbf{总损失 = 所有八叉树节点的 256 分类 Loss + 所有底部原子的类型 Loss + 所有底部原子的 X、Y、Z 坐标 Loss。}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-203}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-203}}
+\hypertarget{ux53c2ux8003ux6587ux732e-202}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-202}}
 
 \begin{itemize}
 \tightlist

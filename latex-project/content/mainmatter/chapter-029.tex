@@ -138,8 +138,8 @@
 
 在包含这些标记的推理轨迹中，模型具有更宽泛的容错空间。然而，当教师模型被赋予标准答案等高信息量上下文时，其生成的推理过程变得确定且简短，导致学生模型在蒸馏过程中盲目模仿这种高度自信的输出风格，去除了这些认知不确定性信号，模型往往会过早地将高概率权重分配给可能错误的假设，导致探索能力下降，陷入逻辑死胡同且无法自我修正。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-148}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-148}}
+\hypertarget{ux53c2ux8003ux6587ux732e-147}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-147}}
 
 \begin{itemize}
 \tightlist
@@ -633,8 +633,8 @@ H_{\mathrm{out}} = H_{\mathrm{in}} + \mathrm{MLP}(H_{\mathrm{in}})
   \textbf{Update}：计算这个 token 带来的较小梯度增量 \(\Delta W\)，并将其累加到 \(W_{\mathrm{down}}\) 中。在这个过程中同样受到很小阈值 \(\tau=10^{-5}\) 的强制裁断保护，防止持续累积退化。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-149}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-149}}
+\hypertarget{ux53c2ux8003ux6587ux732e-148}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-148}}
 
 \begin{itemize}
 \tightlist
@@ -1092,8 +1092,8 @@ VK^\top(KK^\top)^{-1}
 
 换言之，Linear Attention 更像一个``纯粹的记账器''，它假设数据正交，直接把 \(v\) 贴在 \(k\) 上；HOPE/Delta Rule 更像在线回归器，它每次根据误差修正已有权重，最终效果更接近 \(VK^\dagger\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-150}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-150}}
+\hypertarget{ux53c2ux8003ux6587ux732e-149}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-149}}
 
 \begin{itemize}
 \tightlist
@@ -1312,8 +1312,8 @@ w \leftarrow \frac{w}{\max(\|w\|_2,1)}
 
 其中 \(r\) 会被计算为主干网络向下投影矩阵的平均范数和记忆宽度，确保了即使记忆模块被完全激活，其输出的物理量级也不会超过主干网络的常规激活范围，构成了防止灾难性遗忘的双重保险。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-151}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-151}}
+\hypertarget{ux53c2ux8003ux6587ux732e-150}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-150}}
 
 \begin{itemize}
 \tightlist
@@ -1520,8 +1520,8 @@ A_t
 
 其中，\(\omega_{\mathrm{binary}}\) 与 \(\omega_{\mathrm{opd}}\) 用于控制终局评分与指导性蒸馏信号的相对权重。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
+\hypertarget{ux53c2ux8003ux6587ux732e-151}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-151}}
 
 \begin{itemize}
 \tightlist
@@ -1742,8 +1742,8 @@ c[t+I\cdot r:t+I\cdot r+r\cdot O]
   利用构造的上下文-问答对数据集（如 MS MARCO MQA 等），计算预测答案 token 的交叉熵损失。这一阶段旨在赋予生成的 LoRA 理解、提炼复杂上下文并将其用于精准问答的能力。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
+\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
 
 \begin{itemize}
 \tightlist

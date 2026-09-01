@@ -64,8 +64,8 @@
 
 由于世界模型只是对真实环境的近似概率模型，控制器在优化过程中可能会发现并利用这些不完美的漏洞，产生``对抗性策略''（例如以一种特定的移动方式让生成的火球凭空熄灭）。适当提高预测模型的温度参数来增加虚拟环境的不确定性和随机性，可以有效防止控制器利用这些模型缺陷。这使得智能体学会了更稳健的策略，从而在真实环境中的表现更好。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-187}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-187}}
+\hypertarget{ux53c2ux8003ux6587ux732e-186}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-186}}
 
 \begin{itemize}
 \tightlist
@@ -665,8 +665,8 @@ M^{\mathrm{block}}_{i,j}
 
 也就是说，在生成第 \(t+1\) 帧时，它刚开始是噪声向量的组合，前 \(t\) 帧的信息在 Attention 模块中作为上下文不断与之融合。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-188}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-188}}
+\hypertarget{ux53c2ux8003ux6587ux732e-187}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-187}}
 
 \begin{itemize}
 \tightlist
@@ -849,8 +849,8 @@ VideoWorld 2 在 \(z_t\) 的训练中实现核心动作与视觉外观的解耦�
 
 这样做的好处在于：把视觉渲染交给扩散模型，让自回归专注抽象表征。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-189}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-189}}
+\hypertarget{ux53c2ux8003ux6587ux732e-188}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-188}}
 
 \begin{itemize}
 \tightlist
@@ -960,8 +960,8 @@ x_1,\ z_1^1,\ z_1^2,\ \ldots,\ z_1^H,\ x_2,\ z_2^1,\ z_2^2,\ \ldots,\ z_2^H,\ \l
 
 输出是站在 \(t\) 时刻下对未来的预测 \(z_t^h\)（\(h=1,2,\ldots,H\)）和下一帧 \(x_{t+1}\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-190}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-190}}
+\hypertarget{ux53c2ux8003ux6587ux732e-189}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-189}}
 
 \begin{itemize}
 \tightlist
@@ -1328,8 +1328,8 @@ ADM-v2 可以直接作为一个 surrogate environment（代理环境），通过
   \textbf{核心结论}：当最大 \(m\) 步直接预测误差满足特定条件（\(\delta_{\max}\lt\frac{\delta(1-\gamma^m)}{1-\gamma}\)）时，ADM-v2 生成的 OPE 误差上界比传统的单步动力学模型更加紧致（Tighter），理论上提供了更可靠的评估。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-191}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-191}}
+\hypertarget{ux53c2ux8003ux6587ux732e-190}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-190}}
 
 \begin{itemize}
 \tightlist
@@ -1404,8 +1404,8 @@ ADM-v2 可以直接作为一个 surrogate environment（代理环境），通过
 
 为了验证结构与内容是否真正分离，论文设计了实验：从一个视频中提取结构，从另一个视频中提取内容，然后将二者重新组合生成新序列。生成序列继承了结构序列的空间动态，同时保留了内容序列的颜色、纹理和外观属性。而固定结构表征，只让内容的记忆模块随时间更新，序列保持静止。这说明内容记忆模块主要编码时间上相对稳定的内容信息，而不是运动本身。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-192}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-192}}
+\hypertarget{ux53c2ux8003ux6587ux732e-191}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-191}}
 
 \begin{itemize}
 \tightlist

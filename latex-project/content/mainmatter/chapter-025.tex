@@ -71,8 +71,8 @@ LLM尽管通用能力较强，但知识范围、实时性以及回答时知识�
 
 本质上来说，该过程是进行了两轮``检索引导的显式推理''。需要一个辅助LLM，以免干扰原模型上下文。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-129}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-129}}
+\hypertarget{ux53c2ux8003ux6587ux732e-128}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-128}}
 
 \begin{itemize}
 \tightlist
@@ -131,8 +131,8 @@ BM25 的核心思想是通过三个维度衡量查询 \(Q\) 与文档 \(D\) 的�
 
 其中 \(N\) 是语料库文档总数，\(n(q_i)\) 是包含单词 \(q_i\) 的文档数。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-130}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-130}}
+\hypertarget{ux53c2ux8003ux6587ux732e-129}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-129}}
 
 \begin{itemize}
 \tightlist
@@ -309,8 +309,8 @@ P_{\mathrm{Ret}}(D_i\mid Q)=\frac{\exp(S_i)}{\sum_{j=1}^{K}\exp(S_j)}
 
 实践中，常采取稠密和稀疏索引结合的方法。如Claude-mem：查询先走Chroma向量检索（基于语义相似度的稠密检索），召回Top 100结果，再做90天时间窗口过滤，最后用SQLite（稀疏检索）按时间顺序补全/重排数据。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-131}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-131}}
+\hypertarget{ux53c2ux8003ux6587ux732e-130}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-130}}
 
 \begin{itemize}
 \tightlist
@@ -596,8 +596,8 @@ D(q,x)\approx \sum_{i=1}^{m}\mathrm{LUT}_i[\mathrm{code}_i(x)]
 
 这样我们不需要把Query和n个d维向量逐个点积，而是只需要和m*256个d/m维聚类中心向量点积，对于每个d维向量来说，它的每个子向量（只需要存聚类中心的ID）和Query的点积就是其聚类中心和Query的点积，只需要去距离查找表中查到每个子向量的点积再相加即可。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-132}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-132}}
+\hypertarget{ux53c2ux8003ux6587ux732e-131}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-131}}
 
 \begin{itemize}
 \tightlist
@@ -754,8 +754,8 @@ D(q,x)\approx \sum_{i=1}^{m}\mathrm{LUT}_i[\mathrm{code}_i(x)]
 \mathrm{Keep}(x_t)=\mathbf{1}\!\left[-\log P\!\left(x_t \mid x_{1:t-1}\right)>\tau\right]
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-133}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-133}}
+\hypertarget{ux53c2ux8003ux6587ux732e-132}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-132}}
 
 \begin{itemize}
 \tightlist

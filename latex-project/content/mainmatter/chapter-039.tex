@@ -128,8 +128,8 @@ a_t = \mathrm{Policy}(s_t, \hat{s}_{t+k}), \quad \text{where } \hat{s}_{t+k} = W
 
 总的来说，解耦模块化架构拥有极高的可解释性和组件复用性；顺序架构支持长视距的分层推理、规划和想象；统一架构则实现了紧密的预测-控制协调与联合优化。三者各有优点。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-204}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-204}}
+\hypertarget{ux53c2ux8003ux6587ux732e-203}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-203}}
 
 \begin{itemize}
 \tightlist
@@ -1151,8 +1151,8 @@ A^{(b)}
 {\mathrm{score}_{\mathrm{human}} - \mathrm{score}_{\mathrm{rand}}}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-205}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-205}}
+\hypertarget{ux53c2ux8003ux6587ux732e-204}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-204}}
 
 \begin{itemize}
 \tightlist
@@ -1323,8 +1323,8 @@ ABot-World不是一个静态模型，而是一个具备自我修正能力的认�
   自我修正：利用真实世界的误差信号反哺认知基座，实时调整模型权重或状态记忆，使得模型``越用越准''。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-206}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-206}}
+\hypertarget{ux53c2ux8003ux6587ux732e-205}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-205}}
 
 \begin{itemize}
 \tightlist
@@ -1886,8 +1886,8 @@ r_t^z(\theta)
 
 \(\mathcal{L}_{\mathrm{end}}\)则自适应地决定合适结束物理隐状态推理，执行动作，使得物理推理不只是一步预测，而成为一个可以被动态调节的推理过程。具体而言，\(\mathcal{L}_{\mathrm{end}}\)针对\texttt{\textless{}latent\_end\textgreater{}}这个离散词表内的token，用PPO风格的损失，核心逻辑是\(\hat{A}_t>0\)时奖励当前时刻的停止决策，\(\hat{A}_t<0\)时抑制当前时刻的停止决策。这里\texttt{\textless{}latent\_end\textgreater{}}的生成方式是在每若干步隐状态推理后进行一次在离散词表内的预测，一旦预测到\texttt{\textless{}latent\_end\textgreater{}}或达到隐状态推理最大步数，则停止隐状态推理，生成动作。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-207}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-207}}
+\hypertarget{ux53c2ux8003ux6587ux732e-206}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-206}}
 
 \begin{itemize}
 \tightlist
@@ -1969,8 +1969,8 @@ Fast-WAM 采用开源视频扩散 Transformer Wan2.2-5B 作为世界建模骨干
 
 严禁越界的原因是：如果训练时动作特征能看到未来视频特征，动作专家会产生依赖，根据``未来已经发生的结果''反推``现在该做什么动作''。但在真实部署时，为追求约 190 毫秒的低延迟，Fast-WAM 会直接移除未来视频生成分支。若模型训练时依赖未来视频，推理时就会因输入缺失而崩溃。因此，结构化掩码强迫动作预测只能立足当前帧和文本，从根本上解耦训练时视频辅助和推理时动作生成。
 
-\hypertarget{ux56dbux635fux5931ux51fdux6570-3}{%
-\subsubsection{（四）损失函数}\label{ux56dbux635fux5931ux51fdux6570-3}}
+\hypertarget{ux56dbux635fux5931ux51fdux6570-2}{%
+\subsubsection{（四）损失函数}\label{ux56dbux635fux5931ux51fdux6570-2}}
 
 对于目标变量 \(y\)，它既可以是动作序列 \(a_{1:h}\)，也可以是未来视频特征 \(z_{1:T}\)。算法采样高斯噪声 \(\epsilon \sim \mathcal{N}(0,I)\) 和时间步 \(t \in (0,1)\)，构建插值样本：
 
@@ -2189,8 +2189,8 @@ h_l^{\mathrm{prior}} - h_l^{\mathrm{post}}
   \textbf{动作块输出与 UAC 异步控制}：模型一次性快速生成连续未来动作块 \(a_{0:T}\)。真实部署中结合通用异步分块机制（UAC）：服务器端异步推理未来动作序列，机器人驱动端从线程安全缓冲池中持续取出历史前缀锁定动作执行，两者解耦，以约 \(3\) 到 \(4\) ms/step 的低延迟实现平滑动态控制。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-208}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-208}}
+\hypertarget{ux53c2ux8003ux6587ux732e-207}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-207}}
 
 \begin{itemize}
 \tightlist

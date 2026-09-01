@@ -387,8 +387,8 @@ class MultiHeadAttention(nn.Module):
         return output
 \end{verbatim}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-67}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-67}}
+\hypertarget{ux53c2ux8003ux6587ux732e-66}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-66}}
 
 \begin{itemize}
 \tightlist
@@ -419,8 +419,8 @@ Bahdanau 注意力的核心创新在于，它允许解码器在生成每一个�
 
 这种方法的关键优势在于，对齐操作（即确定源语言和目标语言词语间的对应关系）不再是独立预处理步骤，而是在端到端的训练过程中与翻译任务联合学习得到的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-68}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-68}}
+\hypertarget{ux53c2ux8003ux6587ux732e-67}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-67}}
 
 \begin{itemize}
 \tightlist
@@ -615,8 +615,8 @@ d_{\cos}(x,y)=\frac{x\cdot y}{\|x\|\|y\|}=\frac{\sum_{i=1}^{D}x_i y_i}{\sqrt{\su
 
 模型每次利用序列前文 \([x_1,\ldots,x_{i-1}]\) 作为输入，输出一个 token 即 \(x_i\)，再将 \([x_1,\ldots,x_i]\) 作为新的输入，以此类推。这个``输入 -\textgreater{} 解码器栈处理 -\textgreater{} 线性层 -\textgreater{} Softmax -\textgreater{} 选择词语''的循环会一直进行下去，直到选出的词是特殊的句子结束符 \texttt{\textless{}/s\textgreater{}} 为止。这个过程是串行的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-69}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-69}}
+\hypertarget{ux53c2ux8003ux6587ux732e-68}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-68}}
 
 \begin{itemize}
 \tightlist
@@ -808,8 +808,8 @@ RoPE 是目前各大主流语言模型（如 LLaMA、Qwen）标配的位置编�
 
 对于非一维的序列（如视频），既然视频是 3D 数据（时间、高度、宽度），V-JEPA 2 采用的是 1D-RoPE 的 3D 扩展版本。具体的做法是：将总的特征维度 \(d\) 平分为三个大致相等的部分：\(d_t\)（时间轴）、\(d_h\)（高度轴）和 \(d_w\)（宽度轴）。对于视频中的某一个 Patch，假设它在时间帧上的坐标为 \(t\)，空间坐标为 \((h,w)\)，则分别对这三个特征分段应用对应维度的 1D 旋转。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-70}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-70}}
+\hypertarget{ux53c2ux8003ux6587ux732e-69}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-69}}
 
 \begin{itemize}
 \tightlist
@@ -921,8 +921,8 @@ BERT使用序列第一个位置的特殊标记{[}CLS{]}的最终向量h\_CLS来�
 
 适用任务：适用于句子级别（Sentence-level）的任务，如：情感分析（判断句子是褒义还是贬义）、句子关系判断、下一句预测等。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-71}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-71}}
+\hypertarget{ux53c2ux8003ux6587ux732e-70}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-70}}
 
 \begin{itemize}
 \tightlist

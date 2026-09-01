@@ -147,8 +147,8 @@ KV Cache是为了解决推理（Inference）阶段每次生成一个token的``�
 
 KV Cache在显存中需要连续空间，导致大量的显存碎片浪费（类似于操作系统的内存碎片）。借鉴操作系统的虚拟内存页（Paging）技术。将KV Cache分块存储在不连续的物理显存中，通过页表来索引。这极大地提高了显存利用率，使得在同样的显存下可以支持更大的Batch Size，从而提升推理吞吐量。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-91}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-91}}
+\hypertarget{ux53c2ux8003ux6587ux732e-90}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-90}}
 
 \begin{itemize}
 \tightlist
@@ -259,8 +259,8 @@ O_{new} = \mathrm{diag}(l_{new})^{-1}\left(\mathrm{diag}\left(l_1 \odot e^{m_1-m
 
 通过这种方式，Flash Attention 只需要遍历一次 \(K,V\)，并在 SRAM 中不断更新 \(O\) 的值，最终写回 HBM。中间产生的 \(N \times N\) Attention 矩阵 \(S\) 和 \(P\) 从未完整地存在于 HBM 中。
 
-\hypertarget{ux7b97ux6cd5ux5de5ux4f5cux6d41-1}{%
-\subsubsection{算法工作流}\label{ux7b97ux6cd5ux5de5ux4f5cux6d41-1}}
+\hypertarget{ux7b97ux6cd5ux5de5ux4f5cux6d41}{%
+\subsubsection{算法工作流}\label{ux7b97ux6cd5ux5de5ux4f5cux6d41}}
 
 外层循环遍历 Query 分块。对于 \(i = 1\) 到 \(T_r\)：
 
@@ -544,8 +544,8 @@ Flash Attention 算法的选择是：现用现算。
 
 这就是 Flash Attention 节省显存的核心：保留线性规模的必要状态，丢弃平方规模的中间注意力矩阵，并在反向传播需要时按块重算。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-92}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-92}}
+\hypertarget{ux53c2ux8003ux6587ux732e-91}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-91}}
 
 \begin{itemize}
 \tightlist
@@ -707,8 +707,8 @@ l_{\mathrm{new}}
 
 这样，每张卡不需要保存完整的 \(K, V\)，只要在每一轮合并局部统计量和局部输出，就能得到等价于全局 softmax 的注意力结果。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-93}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-93}}
+\hypertarget{ux53c2ux8003ux6587ux732e-92}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-92}}
 
 \begin{itemize}
 \tightlist
@@ -801,8 +801,8 @@ KV Cache大小是MHA的1/2，是MQA的2倍。
 
 效果：速度接近 MQA，质量接近 MHA。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-94}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-94}}
+\hypertarget{ux53c2ux8003ux6587ux732e-93}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-93}}
 
 \begin{itemize}
 \tightlist
@@ -954,8 +954,8 @@ y_t
 
 总体而言，MLA 把``先逐 token 升维再聚合''改成``先在压缩空间聚合再延迟升维''，主要复杂度从 \(O(t \cdot d_c \cdot d_h)\) 变为 \(O(t \cdot d_c + d_c \cdot d_h)\)，当历史长度 \(t\) 较大时可近似理解为降低约 \(d_h\) 倍。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-95}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-95}}
+\hypertarget{ux53c2ux8003ux6587ux732e-94}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-94}}
 
 \begin{itemize}
 \tightlist
@@ -1002,8 +1002,8 @@ Pooling/Clustering：对 K 和 V 进行池化或聚类，减少其数量。
 
 Learned Compressors：使用一个可学习的网络（如低维投影）来压缩 K 和 V。但有损且不可逆：一旦压缩成摘要，原始的逐字逐句信息就丢了，很难做精确引用。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-96}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-96}}
+\hypertarget{ux53c2ux8003ux6587ux732e-95}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-95}}
 
 \begin{itemize}
 \tightlist
@@ -1144,8 +1144,8 @@ Lightning Indexer 被训练来预测每个 token 的 Query 与每个 token 的 K
 
 第三步：开启稀疏化（Top-K Selection），同步用各自的损失函数训练主模型和 Lightning Indexer。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-97}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-97}}
+\hypertarget{ux53c2ux8003ux6587ux732e-96}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-96}}
 
 \begin{itemize}
 \tightlist
@@ -1515,8 +1515,8 @@ o_t = \frac{\phi(q_t)S_t}{\phi(q_t)Z_t}
 
 因此，我们不需要存储整个键值的历史，只需要维护一个固定大小的状态 \(S\) 和 \(Z\)。每一步的计算成本是常数 \(O(1)\)（相对于序列长度），极大地提高了长文本生成的效率。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-98}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-98}}
+\hypertarget{ux53c2ux8003ux6587ux732e-97}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-97}}
 
 \begin{itemize}
 \tightlist
@@ -1600,8 +1600,8 @@ Gated Attention在这个输出后再引入门控矩阵 \(G\in(0,1)\)。门控对
 
 实验证明，门控矩阵往往是一个稀疏矩阵，这也解决了上面所述不合理的权重分配问题。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-99}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-99}}
+\hypertarget{ux53c2ux8003ux6587ux732e-98}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-98}}
 
 \begin{itemize}
 \tightlist

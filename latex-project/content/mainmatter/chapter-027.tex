@@ -765,8 +765,8 @@ M_{t+1}=\arg\min_M\left\langle M(k_{t+1}),u_{t+1}\right\rangle+\lVert M-M_t\rVer
   结论：Transformer 中的线性 Attention 模块，本质上是一个正在通过梯度下降进行在线训练的优化器。它的目标是在给定 Key 和 Value 之间映射关系。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-137}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-137}}
+\hypertarget{ux53c2ux8003ux6587ux732e-136}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-136}}
 
 \begin{itemize}
 \tightlist
@@ -1042,8 +1042,8 @@ S_t=S_{t-1}+\beta_tk_t\left(v_t-k_t^\top S_{t-1}\right)
 
 此外，对于输入的token，模型会根据先验参数判断是否需要启动上下文学习机制。如果问一个单纯的常识问题（比如``法国的首都是？''），模型根本不需要启动复杂的在下文梯度下降，它的MLP（先验知识）直接就能把``巴黎''的特征输出出来，此时 \(W_0\ne 0\) 而后续注意力层的 \(\Delta W\to 0\)。而对于模型在训练时没有见过的分布，会让 \(W_0\to 0\)（几乎没有先验，避免干扰上下文学习），而交给后续的 \(\Delta W\) 自主分析。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
+\hypertarget{ux53c2ux8003ux6587ux732e-137}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-137}}
 
 \begin{itemize}
 \tightlist
@@ -1485,8 +1485,8 @@ LAMER 在测试（部署）阶段不进行任何网络参数的梯度更新。�
   依靠这种纯文本的演绎，Agent 的策略在下一个回合中发生了一次无需算力开销的 RL\(^2\) 飞跃。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
+\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
 
 \begin{itemize}
 \tightlist
@@ -1793,8 +1793,8 @@ a_t^n \in \{\mathrm{Think}, \mathrm{Act}, \mathrm{Refine}\}
 
 此外，记忆确实能显著提升性能，但在稳定性和程序性经验重用方面依然很脆弱。在真实的非结构化业务场景中，基于提示词驱动的复杂Agent循环极其容易崩溃。如在在ReMem框架中，模型可能会错误地剪枝掉关键记忆，或在Think和Refine步骤中陷入无尽的自我怀疑和死循环，导致迟迟无法执行最终的Act。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
+\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
 
 \begin{itemize}
 \tightlist
@@ -2101,8 +2101,8 @@ R^{reflect} := R^{ext}\cdot \mathbb{I}(c=I^{ext})
   但是，通过策略梯度下降，只要最终答案 \(c\) 对了，模型就会认为``我刚才写的那一长串推导步骤 \(\phi(x,\tau)\) 也是极其合理的''，从而在参数更新时，把生成那段高质量 \(\phi(x,\tau)\) 的概率也一并放大了。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
+\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
 
 \begin{itemize}
 \tightlist
@@ -2146,8 +2146,8 @@ Hymba在所有输入的开头固定插入128个可学习的Embedding。这解决
   KV Cache的碎片化：按层堆叠（比如3层线性接1层全注意力）在工程实现上极其干净，全注意力层集中管理巨大的KV Cache，线性层几乎不需要Cache。而如果在同一层内做门控或旁路，系统需要为每一层都维护复杂的动态Cache路由。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
+\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
 
 \begin{itemize}
 \tightlist
@@ -2284,8 +2284,8 @@ S_{ij}=\max_{\text{token }t}\left(\mathrm{mean}_{\text{head }h}\big(\cos(Q_{q,h}
   \textbf{CPU 卸载内容 KV}：将庞大的内容 \((\bar{K},\bar{V})\) 存放在主机的 CPU 内存中。当 GPU 算出 Top-k 索引后，异步将命中的部分内容拉取到 GPU 参与生成计算。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
+\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
 
 \begin{itemize}
 \tightlist

@@ -85,8 +85,8 @@ x_t = tx_1 + (1 - t)x_0
 
 但是，模型具有分布，是因为我们的输入源头是一个分布。这在数学上被称为前推测度（Push-forward Measure）。想象你手里有一把沙子（标准高斯分布的噪声 \(z \sim \mathcal{N}(0, I)\)），你将沙子撒在一个特定风向（向量场 \(v_t(x)\)）的传送带上。虽然每一粒沙子被风吹动的轨迹是完全确定的，但因为一开始沙子落在各个位置的概率不同（高斯分布的密度不同），当它们最终被吹到终点时，就会自然聚拢成一个新的形状，即模型生成的数据分布 \(p_1(x)\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-164}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
+\hypertarget{ux53c2ux8003ux6587ux732e-163}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-163}}
 
 \begin{itemize}
 \tightlist
@@ -370,8 +370,8 @@ x_{l,t} &= \sqrt{\bar{\alpha}_t}x_l+\sqrt{1-\bar{\alpha}_t}\epsilon.
   反向传播更新：将上述四个误差标量代入 \(\mathcal{L}_{\mathrm{DPO}\text{-}\mathrm{Diff}}(\theta)\) 公式中。通过深度学习框架（如 PyTorch）的自动求导机制计算关于 \(\theta\) 的梯度，并使用优化器（如 AdamW）更新模型权重。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-165}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-165}}
+\hypertarget{ux53c2ux8003ux6587ux732e-164}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
 
 \begin{itemize}
 \tightlist
@@ -543,8 +543,8 @@ Flow-Noise等方法在原有流匹配模型的基础上引入可学习的噪声�
 
 这让Flow-Noise看起来很像扩散模型，但同时又具备了流匹配模型自身去噪轨迹接近直线、速度快的优点。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-166}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-166}}
+\hypertarget{ux53c2ux8003ux6587ux732e-165}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-165}}
 
 \begin{itemize}
 \tightlist
@@ -677,8 +677,8 @@ x_{t_k-\Delta t}
 \end{aligned}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-167}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-167}}
+\hypertarget{ux53c2ux8003ux6587ux732e-166}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-166}}
 
 \begin{itemize}
 \tightlist
