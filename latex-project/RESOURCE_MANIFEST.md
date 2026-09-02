@@ -13,8 +13,8 @@
 | `assets/images/01-deep-learning/01-02/img-7229400d63e3-0003.png` | `images/image-0002.png` |
 | `assets/images/01-deep-learning/01-02/img-7229400d63e3-0004.png` | `images/image-0003.png` |
 | `assets/images/01-deep-learning/01-02/img-7229400d63e3-0005.png` | `images/image-0004.png` |
-| `assets/images/01-deep-learning/01-03/img-6114dfb4d6a8-0002.jpeg` | `images/image-0005.jpeg` |
-| `assets/images/01-deep-learning/01-03/img-6114dfb4d6a8-0003.jpeg` | `images/image-0006.jpeg` |
+| `assets/images/01-deep-learning/01-03/gradient-direction-geometry.png` | `images/image-0005.png` |
+| `assets/images/01-deep-learning/01-03/learning-rate-effects.png` | `images/image-0006.png` |
 | `assets/images/01-deep-learning/03-04/img-fe3e92d96689-0002.png` | `images/image-0007.png` |
 | `assets/images/01-deep-learning/04-06/img-1bd57a44726d-0001.png` | `images/image-0008.png` |
 | `assets/images/01-deep-learning/04-07/img-6af827492895-0001-hmm-structure.png` | `images/image-0009.png` |

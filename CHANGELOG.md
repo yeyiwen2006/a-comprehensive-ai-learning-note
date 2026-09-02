@@ -1,11 +1,10 @@
 # 更新记录
 
-## 2026-09-03
+## 2026-09-02
 
 - 按最新 Word 原稿同步 `34.1 具身智能训练数据概述` 和 `34.2 UMI数据` 的文字修改：`34.1` 将 UMI 数据扩展为“UMI及可穿戴设备采集数据”并加入外骨骼采集概述，`34.2` 新增通过可穿戴外骨骼采集灵巧操作数据的第四节，介绍 DexUMI 与 TwinDEX。补入 DexUMI 论文和 TwinDEX 官方项目页两项可核验来源；复核 `34.1` 的1处 DrawingML 裁剪及两篇共5张图后确认图片内容未变，继续沿用既有公开资源。同步重建 LaTeX 版本，README 正文统计更新为约37.4万字。
 
-## 2026-09-02
-
+- 重绘 `1.3 梯度下降与反向传播` 中的两张手写示意图：梯度几何图统一了坐标轴、截点和垂足关系，使 $O$、$P$ 与 $\theta_1$ 轴共线、$P$、$H$、$Q$ 共线，并准确标出 $AO=2$、$OP=1$、$OQ=2$；学习率图保留已审核的新版式。同步改写正文和 LaTeX 版，将局部切平面明确为 $L=2-2\theta_1-\theta_2$，更正两个偏导数与负梯度为 $\frac{\partial L}{\partial\theta_1}=-2$、$\frac{\partial L}{\partial\theta_2}=-1$和 $-\nabla L=(2,1)$，并补充 $OH\perp PQ$ 及其与负梯度同向的几何说明。
 - 固定 LaTeX 项目的 PDF 构建产物名称：三遍 XeLaTeX 命令统一使用 `a-comprehensive-ai-learning-note（位于github同名仓库）` 作为 job name，最终生成 `latex-project/build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf`；三遍编译可使干净构建环境中的目录页码与交叉引用稳定，并将该规则写入生成器维护的构建说明，避免重新生成项目后退回 `main.pdf`。
 - 将 GitHub 到 Gitee 自动同步工作流使用的 `actions/checkout` 从 `v4` 升级到采用 Node.js 24 运行时的 `v6`，消除 Node.js 20 弃用警告，并保持完整历史与标签同步行为不变；同时将 README 中 v1.1、v2.0 的版本发布日期与“更新内容”分行展示，并同步更新 LaTeX 版本说明。
 - 由多个独立分片对全部168篇公开 Markdown 的参考文献进行逐篇人工核查，并由只读 reviewer 复核合并差异；修订94篇正文中的来源遗漏、作者顺序、正式题名、年份、出处、失效或不稳定链接及正文事实错配，参考文献条目由493条增至592条。重点补全经典算法与具名前沿方法的原始来源，统一《动手学深度学习》《动手学大模型智能体》等书目，纠正 Kimi K2.5、RoFormer、Engram、mHC、VAPO、LingBot-VA 2.0、V-JEPA、LeWorldModel、Matrix-Game 3.0 等作者或题名，并对 RMSProp、MuonClip、VQ-VAE、VIME、EWC、Ring Attention、MCP、KV Cache、Codex compaction、LATS、GRPO 等证据不足或错配的正文表述作保守校正。删除无法直达正文的 UMI 二手归档条目及未由权威元数据确认的会议归属，清理引用链接中的追踪参数；同步重建 LaTeX 版本，并按不含参考文献的统一统计口径将 README 正文字数更新为约37.3万字。

@@ -231,11 +231,23 @@ p(y \mid \mathbf{x};\theta)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(y-f(\
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0005.jpeg}
-\caption{梯度下降方向示意图}
+\includegraphics{images/image-0005.png}
+\caption{两个参数方向上的局部斜率与负梯度几何关系}
 \end{figure}
 
-比如上图中，只有两个参数，损失L是一个由两个输入决定的函数。损失L在θ1方向的``陡峭度''是-1，θ2方向的``陡峭度''是-2，负梯度向量就是(1, 2)。而``下降最快''的路径AH在参数空间（也就是图中的底面）上的投影OH（即``等高线最密集''的方向）的方向和负梯度向量(1, 2)相同。这也就说明了我们应该沿着负梯度方向下降。
+比如上图中，只有两个参数，损失 \(L\) 是 \(\theta_1\) 和 \(\theta_2\) 的函数。点 \(O\) 是参数平面中两条坐标轴的交点；点 \(A\) 表示参数为 \(O\) 时的损失值，\(AO\) 垂直于参数平面，且图中取 \(AO=2\)。损失曲面在 \(A\) 点的局部切平面与 \(\theta_1\) 轴、\(\theta_2\) 轴分别交于 \(P\)、\(Q\)，并取 \(OP=1\)、\(OQ=2\)。因此，这个局部切平面可写为
+
+\[
+L=2-2\theta_1-\theta_2,
+\qquad
+\nabla L=(-2,-1),
+\qquad
+-\nabla L=(2,1).
+\]
+
+当固定 \(\theta_2=0\) 时，\(\theta_1\) 增加 1 会使 \(L\) 减少 2，所以 \(\frac{\partial L}{\partial\theta_1}=-2\)；当固定 \(\theta_1=0\) 时，\(\theta_2\) 增加 2 会使 \(L\) 减少 2，所以 \(\frac{\partial L}{\partial\theta_2}=-1\)。由此可见，\(\theta_1\) 方向的偏导数绝对值更大，在该方向上下降得更陡。
+
+点 \(P\)、\(H\)、\(Q\) 在同一条直线上，\(H\) 是 \(O\) 到直线 \(PQ\) 的垂足，因而 \(OH\perp PQ\)。\(AH\) 在参数平面上的投影是 \(OH\)。又因为直线 \(PQ\) 的方程为 \(2\theta_1+\theta_2=2\)，它的法向量为 \((2,1)\)，所以 \(OH\) 与负梯度 \(-\nabla L=(2,1)\) 同向。这说明了参数应沿负梯度方向更新。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -251,7 +263,7 @@ p(y \mid \mathbf{x};\theta)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(y-f(\
 
 \begin{figure}[htbp]
 \centering
-\includegraphics{images/image-0006.jpeg}
+\includegraphics{images/image-0006.png}
 \caption{学习率过大或过小的影响}
 \end{figure}
 
