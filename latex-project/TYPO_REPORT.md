@@ -352,13 +352,13 @@
 | docs/06-embodied-ai-world-models/32-世界模型/32-02-世界模型的技术路线.md | 62 | 有序列表标记后缺少空格 | `2.` | 【2.】用动作注入值控制AdaLN的参数。 |
 | docs/06-embodied-ai-world-models/32-世界模型/32-02-世界模型的技术路线.md | 72 | 有序列表标记后缺少空格 | `1.` | 【1.】反向动力学模型（Inverse Dynamics Model）：从前后状态s\\_t和... |
 | docs/06-embodied-ai-world-models/32-世界模型/32-02-世界模型的技术路线.md | 74 | 有序列表标记后缺少空格 | `2.` | 【2.】前向动力学模型（Forward Dynamics Model）：使用当前状态s\\_t... |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 270 | 有序列表标记后缺少空格 | `1.` | 【1.】依赖动作数据 |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 280 | 有序列表标记后缺少空格 | `2.` | 【2.】难以捕捉细粒度旋转与姿态信息 |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 284 | 有序列表标记后缺少空格 | `3.` | 【3.】规划视野受限 |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 288 | 有序列表标记后缺少空格 | `4.` | 【4.】高度依赖数据覆盖率 |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 294 | 有序列表标记后缺少空格 | `5.` | 【5.】SIGReg在极简环境中的正则化匹配挑战 |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 321 | 有序列表标记后缺少空格 | `1.` | 【1.】基于MSE Loss |
-| docs/06-embodied-ai-world-models/32-世界模型/32-04-JEPA.md | 327 | 有序列表标记后缺少空格 | `2.` | 【2.】基于余弦相似度的损失 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 270 | 有序列表标记后缺少空格 | `1.` | 【1.】依赖动作数据 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 280 | 有序列表标记后缺少空格 | `2.` | 【2.】难以捕捉细粒度旋转与姿态信息 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 284 | 有序列表标记后缺少空格 | `3.` | 【3.】规划视野受限 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 288 | 有序列表标记后缺少空格 | `4.` | 【4.】高度依赖数据覆盖率 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 294 | 有序列表标记后缺少空格 | `5.` | 【5.】SIGReg在极简环境中的正则化匹配挑战 |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 321 | 有序列表标记后缺少空格 | `1.` | 【1.】基于MSE Loss |
+| docs/06-embodied-ai-world-models/32-世界模型/32-04-联合嵌入预测架构-JEPA.md | 327 | 有序列表标记后缺少空格 | `2.` | 【2.】基于余弦相似度的损失 |
 | docs/06-embodied-ai-world-models/33-世界-动作模型/33-01-世界-动作模型概述.md | 52 | 有序列表标记后缺少空格 | `1.` | 【1.】表征的VAE只为像素级重建优化，宝贵的潜空间大半让给了光影、背景纹理和物体表面的高光... |
 | docs/06-embodied-ai-world-models/33-世界-动作模型/33-01-世界-动作模型概述.md | 54 | 有序列表标记后缺少空格 | `2.` | 【2.】速度高维的视频token叠上多步迭代的去噪过程，延时长，而真机操作要求策略在每个动作... |
 | docs/06-embodied-ai-world-models/33-世界-动作模型/33-01-世界-动作模型概述.md | 56 | 有序列表标记后缺少空格 | `3.` | 【3.】互联网视频没有动作标签，而通用的视频预测目标并不教模型“动作如何改变世界”。 |
