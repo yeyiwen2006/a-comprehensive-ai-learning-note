@@ -769,6 +769,12 @@ def patch_body_tex() -> None:
     text = cjk_mbox_pattern.sub(r"\\mathcjk{\1}", text)
     text = wrap_cjk_inside_math(text)
     text = text.replace("\\begin{figure}\n", "\\begin{figure}[htbp]\n")
+    # Keep a reference list from visually crowding the unnumbered subsection heading.
+    text = re.sub(
+        r"(\\subsection\{参考文献\}\\label\{[^{}\n]+\}\})\n\n(?=\\begin\{itemize\})",
+        r"\1\n\n\\vspace{0.25em}\n",
+        text,
+    )
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
     write_text(BODY_TEX, text)
     split_body_tex()

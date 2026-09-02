@@ -9,7 +9,19 @@
 \hypertarget{ux4e00ux771fux673aux6570ux636e}{%
 \subsection{一、真机数据}\label{ux4e00ux771fux673aux6570ux636e}}
 
-这是精度和价值最高的一类数据，可以由人类操作员通过遥操作设备（外骨骼、主从臂或VR眼镜等）控制真实机器人完成任务产生，也可以由经过预训练的模型自主执行任务产生（失败边缘时，人类专家可介入进行修正，产生从失误中恢复的数据）。
+这是精度和价值最高的一类数据，可以由人类操作员通过遥操作设备控制真实机器人完成任务产生，也可以由经过预训练的模型自主执行任务产生（失败边缘时，人类专家可介入进行修正，产生从失误中恢复的数据）。其中，遥操作的方式较多，下面举几个例子：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  直接输入，人通过手柄、摇杆、键盘、鼠标、触摸屏等设备直接给机器人发送运动指令，但对高自由度任务实现难度大。
+\item
+  主从式，操作者控制一个``主设备''，机器人作为``从设备''同步运动，如远端机械臂跟随主机械臂的位置和姿态。
+\item
+  动捕，把人的动作重定向到机器人，与人的日常动作相对契合度高，但笨重的设备下人的动作容易变形、产出高质量数据效率也不够高，且部分动作机器人难以复现。
+\item
+  利用VR/AR设备等，操作者戴 VR 头显，在虚拟或增强现实环境中观察机器人视角，并通过手柄、手部追踪等方式控制机器人。
+\end{enumerate}
 
 优点：包含了真实世界中极其复杂的物理交互，如摩擦力、形变、复杂的接触力学以及真实的光影变化，不存在``Sim-to-Real''鸿沟。
 
@@ -23,25 +35,8 @@
   依赖封闭的空间，任务和环境的多样性受限。
 \end{enumerate}
 
-\hypertarget{ux4e8cux52a8ux6355ux6570ux636e}{%
-\subsection{二、动捕数据}\label{ux4e8cux52a8ux6355ux6570ux636e}}
-
-这类数据往往由采集员穿戴动捕设备采集，可以捕捉到人类动作的姿态、轨迹或控制量，进而迁移到具身智能模型中。
-
-优点：起到人类专家示范的作用，更贴合人类日常活动轨迹。
-
-缺点：
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  单个采集员可采集的数据量受限，成本高，难以大规模扩展。
-\item
-  穿戴笨重的采集设备的情况下，采集员的动作轨迹相较于人类的日常动作存在变形，而与机器人的形态之间又存在差异。
-\end{enumerate}
-
-\hypertarget{ux4e09ux7269ux7406ux5f15ux64ceux5408ux6210ux6570ux636e}{%
-\subsection{三、物理引擎合成数据}\label{ux4e09ux7269ux7406ux5f15ux64ceux5408ux6210ux6570ux636e}}
+\hypertarget{ux4e8cux7269ux7406ux5f15ux64ceux5408ux6210ux6570ux636e}{%
+\subsection{二、物理引擎合成数据}\label{ux4e8cux7269ux7406ux5f15ux64ceux5408ux6210ux6570ux636e}}
 
 可利用物理仿真引擎在虚拟世界中构建环境，通过强化学习或大规模并发采样获取数据。
 
@@ -57,8 +52,8 @@
 
 缺点：存在Sim-to-Real Gap，物理引擎无法完美模拟现实世界，特别是对于流体、柔性物体、复杂的滑动摩擦、触觉传感器，以及各种意外情况的模拟等。
 
-\hypertarget{ux56dbux4e92ux8054ux7f51ux89c6ux9891ux6570ux636e}{%
-\subsection{四、互联网视频数据}\label{ux56dbux4e92ux8054ux7f51ux89c6ux9891ux6570ux636e}}
+\hypertarget{ux4e09ux4e92ux8054ux7f51ux89c6ux9891ux6570ux636e}{%
+\subsection{三、互联网视频数据}\label{ux4e09ux4e92ux8054ux7f51ux89c6ux9891ux6570ux636e}}
 
 互联网中存在海量的视频数据，其中蕴含了丰富的常识、物理规律以及``如何与世界交互''的知识，可用于具身模型的预训练等，帮助模型理解物理世界的基本规律。
 
@@ -74,8 +69,8 @@
   只有像素变化，缺乏动作标签。
 \end{enumerate}
 
-\hypertarget{ux4e94umiux6570ux636e}{%
-\subsection{五、UMI数据}\label{ux4e94umiux6570ux636e}}
+\hypertarget{ux56dbumiux6570ux636e}{%
+\subsection{四、UMI数据}\label{ux56dbumiux6570ux636e}}
 
 UMI（Universal Manipulation Interface）是一类面向机器人操作的数据采集方案。采集员通常手持带有相机、位姿传感器和夹爪等组件的便携式设备，在真实环境中直接完成抓取、整理、开关门等操作，并记录第一视角视觉、末端执行器位姿、夹爪开合状态等信息，之后再将人类操作轨迹映射到机器人上。
 
@@ -91,8 +86,8 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
 
 缺点：采集设备与实际机器人仍存在一定的Embodiment Gap，主要记录末端执行器的运动轨迹，无法完整复现机器人执行过程中的一些信息。
 
-\hypertarget{ux516dux4ebaux7c7bux7b2cux4e00ux89c6ux89d2ux89c6ux9891ux6570ux636e}{%
-\subsection{六、人类第一视角视频数据}\label{ux516dux4ebaux7c7bux7b2cux4e00ux89c6ux89d2ux89c6ux9891ux6570ux636e}}
+\hypertarget{ux4e94ux4ebaux7c7bux7b2cux4e00ux89c6ux89d2ux89c6ux9891ux6570ux636e}{%
+\subsection{五、人类第一视角视频数据}\label{ux4e94ux4ebaux7c7bux7b2cux4e00ux89c6ux89d2ux89c6ux9891ux6570ux636e}}
 
 通过头戴式相机、智能眼镜或胸前相机等设备，记录人类在真实生活环境中完成做饭、整理、维修、装配等任务时的第一视角视频。
 
@@ -116,8 +111,8 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
   存在严重的手部和物体遮挡、快速相机运动以及视角抖动等，使得三维轨迹恢复和动作识别较为困难。
 \end{enumerate}
 
-\hypertarget{ux4e03ux4e16ux754cux6a21ux578bux751fux6210ux6570ux636e}{%
-\subsection{七、世界模型生成数据}\label{ux4e03ux4e16ux754cux6a21ux578bux751fux6210ux6570ux636e}}
+\hypertarget{ux516dux4e16ux754cux6a21ux578bux751fux6210ux6570ux636e}{%
+\subsection{六、世界模型生成数据}\label{ux516dux4e16ux754cux6a21ux578bux751fux6210ux6570ux636e}}
 
 世界模型通过学习真实世界或机器人交互数据中的状态转移规律，预测在给定当前状态和动作的情况下未来环境会如何变化。让智能体在世界模型中进行大量Rollout，可获取大量数据。
 
@@ -136,13 +131,13 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \item
-  误差可能会累积，不能保证符合物理世界的真实规律。
+  误差可能会累积，当前不能保证符合物理世界的真实规律。
 \item
-  对于精细接触、摩擦、形变、力觉和触觉等建模能力有限。
+  目前对于精细接触、摩擦、形变、力觉和触觉等建模能力还有限。
 \end{enumerate}
 
-\hypertarget{ux516bux6570ux636eux7ec4ux5408ux914dux65b9}{%
-\subsection{八、数据组合配方}\label{ux516bux6570ux636eux7ec4ux5408ux914dux65b9}}
+\hypertarget{ux4e03ux6570ux636eux7ec4ux5408ux914dux65b9}{%
+\subsection{七、数据组合配方}\label{ux4e03ux6570ux636eux7ec4ux5408ux914dux65b9}}
 
 在具身智能模型的训练中，往往会根据不同类型数据的特点，组合运用各类数据，优化数据配方。以GigaWorld-Policy的训练过程为例：
 
@@ -165,6 +160,7 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
 \hypertarget{ux53c2ux8003ux6587ux732e-161}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-161}}
 
+\vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
@@ -254,10 +250,13 @@ Generalist的GEN系列模型利用大规模UMI数据进行具身原生预训练�
 \hypertarget{ux53c2ux8003ux6587ux732e-162}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-162}}
 
+\vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Chi, C., Xu, Z., Pan, C., et al.~(2024). \href{https://arxiv.org/abs/2402.10329}{Universal Manipulation Interface: In-The-Wild Robot Teaching Without In-The-Wild Robots}. arXiv:2402.10329.
+\item
+  具身纪元. (2025). \href{https://www.jintiankansha.com/column/cqUI9xm0ob?page=11}{UMI是革命性具身数采新范式，但这仅仅是个开始}. 微信公众号文章.
 \item
   Rayyan, O., Abanes, J., Hafez, M., Tzes, A., \& Abu-Dakka, F. (2025). \href{https://arxiv.org/abs/2509.18757}{MV-UMI: A Scalable Multi-View Interface for Cross-Embodiment Learning}. arXiv:2509.18757.
 \item
@@ -316,6 +315,7 @@ Generalist的GEN系列模型利用大规模UMI数据进行具身原生预训练�
 \hypertarget{ux53c2ux8003ux6587ux732e-164}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
 
+\vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
