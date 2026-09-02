@@ -69,10 +69,10 @@
   只有像素变化，缺乏动作标签。
 \end{enumerate}
 
-\hypertarget{ux56dbumiux6570ux636e}{%
-\subsection{四、UMI数据}\label{ux56dbumiux6570ux636e}}
+\hypertarget{ux56dbumiux53caux53efux7a7fux6234ux8bbeux5907ux91c7ux96c6ux6570ux636e}{%
+\subsection{四、UMI及可穿戴设备采集数据}\label{ux56dbumiux53caux53efux7a7fux6234ux8bbeux5907ux91c7ux96c6ux6570ux636e}}
 
-UMI（Universal Manipulation Interface）是一类面向机器人操作的数据采集方案。采集员通常手持带有相机、位姿传感器和夹爪等组件的便携式设备，在真实环境中直接完成抓取、整理、开关门等操作，并记录第一视角视觉、末端执行器位姿、夹爪开合状态等信息，之后再将人类操作轨迹映射到机器人上。
+UMI（Universal Manipulation Interface）是一类面向机器人操作的数据采集方案。采集员通常手持带有相机、位姿传感器和夹爪等组件的便携式设备，在真实环境中直接完成抓取、整理、开关门等操作，并记录第一视角视觉、末端执行器位姿、夹爪开合状态等信息，之后再将人类操作轨迹映射到机器人上。此外，还有通过可穿戴外骨骼采集数据的方案，同样可以在真实环境中采集数据，并在后续将相关轨迹映射到机器人上。
 
 优点：
 
@@ -170,6 +170,10 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
 \item
   Chi, C., Xu, Z., Pan, C., et al.~(2024). \href{https://arxiv.org/abs/2402.10329}{Universal Manipulation Interface: In-The-Wild Robot Teaching Without In-The-Wild Robots}. arXiv:2402.10329.
 \item
+  Xu, M., Zhang, H., Hou, Y., et al.~(2025). \href{https://arxiv.org/abs/2505.21864}{DexUMI: Using Human Hand as the Universal Manipulation Interface for Dexterous Manipulation}. arXiv:2505.21864.
+\item
+  X Square Robot. (2026). \href{https://x2robot.com/en/pages/twindex}{TwinDEX --- Dexterous. Consistent. Scalable}. Project page.
+\item
   Zheng, R., Niu, D., Xie, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.16710}{EgoScale: Scaling Dexterous Manipulation with Diverse Egocentric Human Data}. arXiv:2602.16710.
 \item
   Ye, A., Wang, B., Ni, C., et al.~(2026). \href{https://arxiv.org/abs/2603.17240}{GigaWorld-Policy: An Efficient Action-Centered World-Action Model}. arXiv:2603.17240.
@@ -247,6 +251,15 @@ Generalist的GEN系列模型利用大规模UMI数据进行具身原生预训练�
 \caption{GEN-1.5 的训练损失曲线}
 \end{figure}
 
+\hypertarget{ux56dbumiux7684ux884dux751fux4f53ux901aux8fc7ux53efux7a7fux6234ux5916ux9aa8ux9abcux91c7ux96c6ux6570ux636e}{%
+\subsection{四、UMI的衍生体：通过可穿戴外骨骼采集数据}\label{ux56dbumiux7684ux884dux751fux4f53ux901aux8fc7ux53efux7a7fux6234ux5916ux9aa8ux9abcux91c7ux96c6ux6570ux636e}}
+
+随着机器人末端从平行夹爪向多指灵巧手发展，UMI的思路也开始从手持夹爪进一步延伸到可穿戴外骨骼等。其核心仍然是利用人类直接操作真实物体来采集数据，但通过外骨骼将人的手部动作约束和映射到机器人灵巧手的可执行空间，从而减少人手与机器人手之间的具身差异。
+
+以DexUMI为例，它为不同机器人灵巧手设计对应的手部外骨骼，使人可以直接完成抓取、旋拧、工具使用等复杂操作，同时记录多指动作和触觉信息。相比于先采集裸手动作再进行retargeting，外骨骼能够在数据采集阶段就缩小运动学差异。针对采集时看到``人手+外骨骼''、部署时看到机器人手所带来的视觉差异，DexUMI还通过视觉处理将采集画面转换得更接近机器人部署时的观测。
+
+后续的一些工作也采用了类似思路，但进一步强调采集端与机器人端的协同设计。如TwinDEX的三指外骨骼与机器人三指手在运动学结构上尽可能保持一致，从硬件层面减少动作映射和retargeting的复杂度。数据采集设备正从简单夹爪向多指灵巧手发展，并越来越多地通过软硬件协同设计，在数据采集阶段就主动缩小Embodiment Gap。
+
 \hypertarget{ux53c2ux8003ux6587ux732e-163}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-163}}
 
@@ -261,6 +274,8 @@ Generalist的GEN系列模型利用大规模UMI数据进行具身原生预训练�
   Liu, F., Li, C., Qin, Y., Xu, J., Abbeel, P., \& Chen, R. (2025). \href{https://arxiv.org/abs/2504.06156}{ViTaMIn: Learning Contact-Rich Tasks Through Robot-Free Visuo-Tactile Manipulation Interface}. arXiv:2504.06156.
 \item
   Xu, M., Zhang, H., Hou, Y., et al.~(2025). \href{https://arxiv.org/abs/2505.21864}{DexUMI: Using Human Hand as the Universal Manipulation Interface for Dexterous Manipulation}. arXiv:2505.21864.
+\item
+  X Square Robot. (2026). \href{https://x2robot.com/en/pages/twindex}{TwinDEX --- Dexterous. Consistent. Scalable}. Project page.
 \item
   Lin, F., Hu, Y., Sheng, P., Wen, C., You, J., \& Gao, Y. (2025). \href{https://proceedings.iclr.cc/paper_files/paper/2025/hash/88b7b2c896506daabc8d3fd587055167-Abstract-Conference.html}{Data Scaling Laws in Imitation Learning for Robotic Manipulation}. ICLR.
 \item

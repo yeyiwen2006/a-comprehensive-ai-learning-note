@@ -1,5 +1,9 @@
 # 更新记录
 
+## 2026-09-03
+
+- 按最新 Word 原稿同步 `34.1 具身智能训练数据概述` 和 `34.2 UMI数据` 的文字修改：`34.1` 将 UMI 数据扩展为“UMI及可穿戴设备采集数据”并加入外骨骼采集概述，`34.2` 新增通过可穿戴外骨骼采集灵巧操作数据的第四节，介绍 DexUMI 与 TwinDEX。补入 DexUMI 论文和 TwinDEX 官方项目页两项可核验来源；复核 `34.1` 的1处 DrawingML 裁剪及两篇共5张图后确认图片内容未变，继续沿用既有公开资源。同步重建 LaTeX 版本，README 正文统计更新为约37.4万字。
+
 ## 2026-09-02
 
 - 固定 LaTeX 项目的 PDF 构建产物名称：三遍 XeLaTeX 命令统一使用 `a-comprehensive-ai-learning-note（位于github同名仓库）` 作为 job name，最终生成 `latex-project/build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf`；三遍编译可使干净构建环境中的目录页码与交叉引用稳定，并将该规则写入生成器维护的构建说明，避免重新生成项目后退回 `main.pdf`。
