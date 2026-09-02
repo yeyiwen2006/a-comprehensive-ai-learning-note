@@ -7,7 +7,7 @@
 \hypertarget{ux4e00kv-cacheux7684ux6838ux5fc3ux539fux7406}{%
 \subsection{一、KV Cache的核心原理}\label{ux4e00kv-cacheux7684ux6838ux5fc3ux539fux7406}}
 
-在全注意力（Full Attention）中，生成每一个token的时间、空间复杂度为O(n\^{}2)（其中在推理阶段运用KV Cache能让生成单个token的时间复杂度降为O(n)、生成序列的时间复杂度为O(n\textsuperscript{2)，内存空间复杂度为O(n)），这些成为处理长序列（长上下文）的主要障碍。特别是在推理阶段（不是训练阶段），生成每一个token，计算的成本均为O(L}2)。然而在通过输入序列计算K、V矩阵时，这里很多都是重复计算。
+在全注意力（Full Attention）中，生成每一个token的时间、空间复杂度为\(O(n^2)\)（其中在推理阶段运用KV Cache能让生成单个token的时间复杂度降为\(O(n)\)、生成序列的时间复杂度为\(O(n^2)\)，内存空间复杂度为\(O(n)\)），这些成为处理长序列（长上下文）的主要障碍。特别是在推理阶段（不是训练阶段），生成每一个token，计算的成本均为\(O(L^2)\)。然而在通过输入序列计算K、V矩阵时，这里很多都是重复计算。
 
 为了解决推理时计算时间复杂度的问题，LLM普遍运用了KV Cache：
 

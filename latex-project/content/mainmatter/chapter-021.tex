@@ -403,11 +403,11 @@ w_2\cdot A_t^{\mathrm{Critic}}.
 一个固定的 \(\lambda\)（如 \(0.95\)，Horizon \(=20\)）不能适应不同长度要求。对于一个10步的回答，看20步太远了（远处样本权重偏大，而远处样本是蒙特卡洛采样获得，有随机性，方差大）；对于一个1000 步的推理，看20步简直是``鼠目寸光''（偏差大，看不见结尾的奖励）。因此，我们希望有效视野 \(H\) 和序列长度 \(L\) 成正比（\(H=\alpha L\)），得到 \(\lambda=1-\frac{1}{\alpha L}\)。下面以 \(\alpha=1\) 为例：
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.19}}
-  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.25}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.19}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.19}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.19}}@{}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.24381}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}@{}}
 \toprule
 样本类型 & 长度 \(L\) & 标准 GAE（\(\lambda=0.95\)） & 自适应 GAE（\(\lambda=1-1/L\)） & 效果分析 \\
 \midrule

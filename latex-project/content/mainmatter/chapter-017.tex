@@ -1601,14 +1601,19 @@ A_i=\frac{r_i-\mu_{\mathrm{group}}}{\sigma_{\mathrm{group}}+\epsilon}
 目标函数 \(J(\theta)\) 如下：
 
 \[
-\mathcal{J}_{\mathrm{GRPO}}(\theta)=
-\mathbb{E}_{q\sim P(Q),\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}(O\mid q)}
-\left[
+\begin{aligned}
+\mathcal{J}_{\mathrm{GRPO}}(\theta)
+&=\mathbb{E}_{q\sim P(Q),\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}(O\mid q)} \\
+&\quad \left[
 \frac{1}{G}\sum_{i=1}^{G}\frac{1}{T_i}\sum_{t=1}^{T_i}
+\right. \\
+&\qquad \left.
 \left(
-\min(\rho_{i,t}A_i,\mathrm{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_i)-\beta D_{\mathrm{KL},t}
+\min\!\bigl(\rho_{i,t}A_i,\mathrm{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_i\bigr)
+-\beta D_{\mathrm{KL},t}
 \right)
 \right]
+\end{aligned}
 \]
 
 这里Clip和KL同时存在，二者作用略有不同。Clip限制单次梯度更新的幅度，防止策略在一次迭代中变化过大导致训练崩塌；KL项保证最终策略距离初始参考策略不太远，关注累积效应，保证模型不会为了取得更高Reward而让语言能力退化。

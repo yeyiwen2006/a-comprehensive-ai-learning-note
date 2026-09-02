@@ -21,7 +21,9 @@
 
 在这个示例张量中，绝对值最大的数是 \(10.8\)。为了保持对称量化，浮点有效范围扩展为 \([-10.8, 10.8]\)，再映射到 INT8 的对称区间。
 
-\begin{longtable}[]{@{}rr@{}}
+\begin{longtable}[]{@{}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
 \toprule
 浮点值 \(x\) & 对应 INT8 值 \(q\) \\
 \midrule
@@ -61,7 +63,9 @@ q = \mathrm{round}\left(\frac{x}{S}\right)
 
 非对称量化直接使用原始浮点范围 \([-7.59, 10.8]\)，其中最大值为 \(10.8\)，最小值为 \(-7.59\)。
 
-\begin{longtable}[]{@{}rr@{}}
+\begin{longtable}[]{@{}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
 \toprule
 浮点值 \(x\) & 对应 INT8 值 \(q\) \\
 \midrule
@@ -184,7 +188,11 @@ q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
   \item
     \ldots\ldots{}
   \item
-    由此得到归一化后的张量 \(R_{norm}\)：\([0.214, -0.419, 0.733, -0.057, 0.024, 0.471, -0.157, -1.0]\)
+    由此得到归一化后的张量 \(R_{norm}\)：
+
+\[
+[0.214, -0.419, 0.733, -0.057, 0.024, 0.471, -0.157, -1.0]
+\]
   \end{itemize}
 \item
   映射到距离最近的NF4量化点，转换为对应的4位NF4索引。
@@ -226,7 +234,11 @@ q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
   \item
     \ldots{}
   \item
-    由此得到恢复的归一化张量 \(R'_{norm}\)：\([0.1906, -0.3949, 0.6717, -0.0911, 0.0062, 0.4045, -0.1848, -1.0]\)
+    由此得到恢复的归一化张量 \(R'_{norm}\)：
+
+\[
+[0.1906, -0.3949, 0.6717, -0.0911, 0.0062, 0.4045, -0.1848, -1.0]
+\]
   \end{itemize}
 \item
   乘以缩放因子恢复权重：将恢复的归一化值乘以缩放因子 \(S\)，得到最终的反量化权重 \(R'\)。

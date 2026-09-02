@@ -43,9 +43,11 @@
 \makeatletter
 \let\latexproject@origincludegraphics\includegraphics
 \renewcommand{\includegraphics}[2][]{%
+  \par\noindent
   \adjustbox{max width=\linewidth,max height=0.46\textheight,center}{%
     \latexproject@origincludegraphics[#1]{#2}%
   }%
+  \par
 }
 \makeatother
 

@@ -1752,22 +1752,31 @@ Diffusion Forcing 的优势是同时保留未来不确定性和当前可导性�
 根据定理 A.1，对于随机独立采样的噪声水平 \(k_{1:T}\)，其期望对数似然的 ELBO 可以写为：
 
 \[
-\mathbb{E}_{\mathrm{forward}}
+\begin{aligned}
+&\mathbb{E}_{\mathrm{forward}}
 \left[
 \log p_\theta\left((x_t^k)_{1\le t\le T}\right)
-\right]
-\ge
-\mathcal{C}(x_{1:T}^0) +
-\mathbb{E}_{\mathrm{forward},p_\theta,z_{1:T}}
+\right] \\
+&\quad \ge \mathcal{C}(x_{1:T}^0)
++\mathbb{E}_{\mathrm{forward},p_\theta,z_{1:T}}
 \left[
 \sum_{t=1}^T
+\right. \\
+&\qquad \left.
 \left(
-\frac{1}{K+1}\log p_\theta(x_t^0\mid z_{1:t},z_{t-1}) +
-\sum_{j=2}^K
-\frac{j}{K+1}
-D_{\mathrm{KL}}\left(q(x_t^{j-1}\mid x_t^j,x_t^0)\middle\|p_\theta(x_t^{j-1}\mid x_t^j,z_{t-1})\right)
+\frac{1}{K+1}\log p_\theta(x_t^0\mid z_{1:t},z_{t-1})
++\sum_{j=2}^K\frac{j}{K+1}
+\right.
+\right. \\
+&\qquad\qquad \left.\left.
+{}\cdot D_{\mathrm{KL}}\left(
+q(x_t^{j-1}\mid x_t^j,x_t^0)
+\middle\|
+p_\theta(x_t^{j-1}\mid x_t^j,z_{t-1})
+\right)
 \right)
 \right]
+\end{aligned}
 \]
 
 这里的核心发现是：在隐变量 \(z_{t-1}\) 完全表达力足够的情况下，由于各时间步 \(t\) 上的损失项是解耦的，权重项 \(\frac{j}{K+1}\) 可以被忽略或重新加权。最终，训练目标简化为熟悉的扩散模型最小二乘形式：

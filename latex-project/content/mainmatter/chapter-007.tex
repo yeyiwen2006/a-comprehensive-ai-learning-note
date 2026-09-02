@@ -50,11 +50,11 @@ GPU内存（GDDR6/HBM）类似于CPU内存，但为了喂饱成千上万个计�
 现代CPU采用金字塔式的缓存结构：
 
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.20}}@{}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.197}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.197}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.197}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.197}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.197}}@{}}
 \toprule
 层级 & 位置 & 大小（典型值） & 速度（延迟） & 特性 \\
 \midrule
@@ -1005,7 +1005,10 @@ DualPipe的``代价''是一个GPU需要存两倍的权重。原因：
 
 在折叠架构下，我们不再让 Rank 0 和 Rank 3 都存第 1 层，而是这样分配 Stage：
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 物理 Rank & 负责的逻辑 Stage（1x 参数，不冗余） & 物理位置属性 \\
 \midrule

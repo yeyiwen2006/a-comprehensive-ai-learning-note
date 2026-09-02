@@ -967,7 +967,10 @@ L(\theta)
 \hypertarget{ux4e8cux57faux672cux65b9ux6cd5}{%
 \subsubsection{（二）基本方法}\label{ux4e8cux57faux672cux65b9ux6cd5}}
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 范式 & 完全中心化（Fully Centralized） & 完全去中心化（Fully Decentralized） \\
 \midrule
@@ -1209,7 +1212,10 @@ a_j'=\mu_j'(o_j')
 
 传统强化学习和目标导向强化学习的差异可以概括为：
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 项目 & 传统强化学习 & 目标导向强化学习 \\
 \midrule
@@ -1228,7 +1234,10 @@ a_j'=\mu_j'(o_j')
 
 在机械臂抓取或推球任务中，稀疏奖励会造成严重的数据浪费。大多数探索轨迹都没有刚好到达指定目标，因此只得到失败奖励；只有极少数轨迹碰巧成功，才会给出正奖励。
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 轨迹结果 & 奖励信号 & 学习问题 \\
 \midrule
@@ -1375,7 +1384,10 @@ r(s,a,g)
 
 网络输入需要把目标拼接进去：
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 网络 & 输入 & 输出 \\
 \midrule
@@ -1453,7 +1465,10 @@ z_0=\mathrm{Embed}(s_t,g)
 
 然后通过深层网络输出两个头：
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 模块 & 输入 & 监督信号 \\
 \midrule
@@ -1467,7 +1482,9 @@ z_0=\mathrm{Embed}(s_t,g)
 
 训练样本可以整理为：
 
-\begin{longtable}[]{@{}ll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
 \toprule
 输入 & 目标输出 \\
 \midrule
@@ -1552,7 +1569,9 @@ W_2\,
 
 可以把不同层数理解为不同程度的推理：
 
-\begin{longtable}[]{@{}ll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
 \toprule
 层数 & 能力直觉 \\
 \midrule
@@ -1570,7 +1589,10 @@ W_2\,
 
 自监督目标导向方法的信号更密集：每条轨迹都能构造许多 \((s_t,s_{t+k})\) 对，每个样本都带有动作预测、距离预测等结构化监督。因此网络容量和训练信号更匹配。
 
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
 \toprule
 方法 & 主要监督信号 & 加深网络的风险或收益 \\
 \midrule

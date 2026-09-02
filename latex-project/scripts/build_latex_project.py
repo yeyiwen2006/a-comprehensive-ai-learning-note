@@ -574,9 +574,11 @@ def write_main_tex() -> None:
 \makeatletter
 \let\latexproject@origincludegraphics\includegraphics
 \renewcommand{\includegraphics}[2][]{%
+  \par\noindent
   \adjustbox{max width=\linewidth,max height=0.46\textheight,center}{%
     \latexproject@origincludegraphics[#1]{#2}%
   }%
+  \par
 }
 \makeatother
 
@@ -761,6 +763,198 @@ def run_pandoc() -> None:
     patch_body_tex()
 
 
+def expand_simple_longtable_columns(match: re.Match[str]) -> str:
+    """Give Pandoc's unbounded l/c/r longtable columns finite, wrapping widths."""
+    alignments = match.group(1)
+    column_count = len(alignments)
+    intercolumn_space = 2 * (column_count - 1)
+    width = rf"\dimexpr\linewidth/{column_count}-{intercolumn_space}\tabcolsep/{column_count}\relax"
+    declarations = {
+        "l": r">{\raggedright\arraybackslash}",
+        "c": r">{\centering\arraybackslash}",
+        "r": r">{\raggedleft\arraybackslash}",
+    }
+    columns = [declarations[alignment] + rf"p{{{width}}}" for alignment in alignments]
+    return "\\begin{longtable}[]{@{}\n  " + "\n  ".join(columns) + "@{}}"
+
+
+def normalize_fractional_longtable_widths(text: str) -> str:
+    """Leave a small safety margin when rounded Pandoc column fractions exceed 100%."""
+    table_pattern = re.compile(r"\\begin\{longtable\}\[\]\{@\{\}(.*?)@\{\}\}", re.S)
+    fraction_pattern = re.compile(r"\\real\{([0-9]+(?:\.[0-9]+)?)\}")
+
+    def normalize_table(match: re.Match[str]) -> str:
+        table = match.group(0)
+        fractions = [float(value) for value in fraction_pattern.findall(table)]
+        total = sum(fractions)
+        if not fractions or total <= 0.995:
+            return table
+
+        scale = 0.985 / total
+        scaled = iter(f"{value * scale:.5f}".rstrip("0").rstrip(".") for value in fractions)
+        return fraction_pattern.sub(lambda _match: rf"\real{{{next(scaled)}}}", table)
+
+    return table_pattern.sub(normalize_table, text)
+
+
+def repair_generated_math_notation(text: str) -> str:
+    """Repair a legacy plain-text complexity paragraph that Pandoc parses as superscript markup."""
+    malformed_big_o = (
+        "在全注意力（Full Attention）中，生成每一个token的时间、空间复杂度为O(n\\^{}2)"
+        "（其中在推理阶段运用KV Cache能让生成单个token的时间复杂度降为O(n)、"
+        "生成序列的时间复杂度为O(n\\textsuperscript{2)，内存空间复杂度为O(n)），"
+        "这些成为处理长序列（长上下文）的主要障碍。特别是在推理阶段（不是训练阶段），"
+        "生成每一个token，计算的成本均为O(L}2)。然而在通过输入序列计算K、V矩阵时，"
+        "这里很多都是重复计算。"
+    )
+    repaired_big_o = (
+        "在全注意力（Full Attention）中，生成每一个token的时间、空间复杂度为\\(O(n^2)\\)"
+        "（其中在推理阶段运用KV Cache能让生成单个token的时间复杂度降为\\(O(n)\\)、"
+        "生成序列的时间复杂度为\\(O(n^2)\\)，内存空间复杂度为\\(O(n)\\)），"
+        "这些成为处理长序列（长上下文）的主要障碍。特别是在推理阶段（不是训练阶段），"
+        "生成每一个token，计算的成本均为\\(O(L^2)\\)。然而在通过输入序列计算K、V矩阵时，"
+        "这里很多都是重复计算。"
+    )
+    return text.replace(malformed_big_o, repaired_big_o)
+
+
+def patch_wide_display_content(text: str) -> str:
+    """Reflow the few mathematically indivisible displays that exceed an A4 text block."""
+    inline_vectors = {
+        (
+            r"由此得到归一化后的张量 \(R_{norm}\)："
+            r"\([0.214, -0.419, 0.733, -0.057, 0.024, 0.471, -0.157, -1.0]\)"
+        ): (
+            "由此得到归一化后的张量 \\(R_{norm}\\)：\n\n"
+            "\\[\n[0.214, -0.419, 0.733, -0.057, 0.024, 0.471, -0.157, -1.0]\n\\]"
+        ),
+        (
+            r"由此得到恢复的归一化张量 \(R'_{norm}\)："
+            r"\([0.1906, -0.3949, 0.6717, -0.0911, 0.0062, 0.4045, -0.1848, -1.0]\)"
+        ): (
+            "由此得到恢复的归一化张量 \\(R'_{norm}\\)：\n\n"
+            "\\[\n[0.1906, -0.3949, 0.6717, -0.0911, 0.0062, 0.4045, -0.1848, -1.0]\n\\]"
+        ),
+    }
+    for old, new in inline_vectors.items():
+        text = text.replace(old, new)
+
+    hmm_backward_row = r"""&= \sum_{h_1,\ldots,h_{T-2}}\prod_{t=1}^{T-2}P(h_t \mid h_{t-1})P(x_t \mid h_t)\cdot \left[\sum_{h_{T-1}}P(h_{T-1} \mid h_{T-2})P(x_{T-1} \mid h_{T-1})\rho_{T-1}(h_{T-1})\right] \\"""
+    hmm_backward_row_reflowed = r"""&= \sum_{h_1,\ldots,h_{T-2}}\prod_{t=1}^{T-2}P(h_t \mid h_{t-1})P(x_t \mid h_t) \\
+&\quad {}\cdot \left[\sum_{h_{T-1}}P(h_{T-1} \mid h_{T-2})P(x_{T-1} \mid h_{T-1})\rho_{T-1}(h_{T-1})\right] \\"""
+    text = text.replace(hmm_backward_row, hmm_backward_row_reflowed)
+
+    grpo = r"""\[
+\mathcal{J}_{\mathrm{GRPO}}(\theta)=
+\mathbb{E}_{q\sim P(Q),\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}(O\mid q)}
+\left[
+\frac{1}{G}\sum_{i=1}^{G}\frac{1}{T_i}\sum_{t=1}^{T_i}
+\left(
+\min(\rho_{i,t}A_i,\mathrm{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_i)-\beta D_{\mathrm{KL},t}
+\right)
+\right]
+\]"""
+    grpo_reflowed = r"""\[
+\begin{aligned}
+\mathcal{J}_{\mathrm{GRPO}}(\theta)
+&=\mathbb{E}_{q\sim P(Q),\{o_i\}_{i=1}^{G}\sim\pi_{\theta_{\mathrm{old}}}(O\mid q)} \\
+&\quad \left[
+\frac{1}{G}\sum_{i=1}^{G}\frac{1}{T_i}\sum_{t=1}^{T_i}
+\right. \\
+&\qquad \left.
+\left(
+\min\!\bigl(\rho_{i,t}A_i,\mathrm{clip}(\rho_{i,t},1-\epsilon,1+\epsilon)A_i\bigr)
+-\beta D_{\mathrm{KL},t}
+\right)
+\right]
+\end{aligned}
+\]"""
+    text = text.replace(grpo, grpo_reflowed)
+
+    sequence_kl = r"""\[
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\mathbb{E}_{Y\sim P}
+\left[
+\sum_{t=1}^{n}
+\left(
+\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})
+\right)
+\right]
+=
+\sum_{t=1}^{n}
+\mathbb{E}_{Y\sim P}
+\left[
+\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}
+\right].
+\]"""
+    sequence_kl_reflowed = r"""\[
+\begin{aligned}
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+&=\mathbb{E}_{Y\sim P}
+\left[
+\sum_{t=1}^{n}
+\left(
+\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})
+\right)
+\right] \\
+&=\sum_{t=1}^{n}
+\mathbb{E}_{Y\sim P}
+\left[
+\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}
+\right].
+\end{aligned}
+\]"""
+    text = text.replace(sequence_kl, sequence_kl_reflowed)
+
+    diffusion_forcing_elbo = r"""\[
+\mathbb{E}_{\mathrm{forward}}
+\left[
+\log p_\theta\left((x_t^k)_{1\le t\le T}\right)
+\right]
+\ge
+\mathcal{C}(x_{1:T}^0) +
+\mathbb{E}_{\mathrm{forward},p_\theta,z_{1:T}}
+\left[
+\sum_{t=1}^T
+\left(
+\frac{1}{K+1}\log p_\theta(x_t^0\mid z_{1:t},z_{t-1}) +
+\sum_{j=2}^K
+\frac{j}{K+1}
+D_{\mathrm{KL}}\left(q(x_t^{j-1}\mid x_t^j,x_t^0)\middle\|p_\theta(x_t^{j-1}\mid x_t^j,z_{t-1})\right)
+\right)
+\right]
+\]"""
+    diffusion_forcing_elbo_reflowed = r"""\[
+\begin{aligned}
+&\mathbb{E}_{\mathrm{forward}}
+\left[
+\log p_\theta\left((x_t^k)_{1\le t\le T}\right)
+\right] \\
+&\quad \ge \mathcal{C}(x_{1:T}^0)
++\mathbb{E}_{\mathrm{forward},p_\theta,z_{1:T}}
+\left[
+\sum_{t=1}^T
+\right. \\
+&\qquad \left.
+\left(
+\frac{1}{K+1}\log p_\theta(x_t^0\mid z_{1:t},z_{t-1})
++\sum_{j=2}^K\frac{j}{K+1}
+\right.
+\right. \\
+&\qquad\qquad \left.\left.
+{}\cdot D_{\mathrm{KL}}\left(
+q(x_t^{j-1}\mid x_t^j,x_t^0)
+\middle\|
+p_\theta(x_t^{j-1}\mid x_t^j,z_{t-1})
+\right)
+\right)
+\right]
+\end{aligned}
+\]"""
+    return text.replace(diffusion_forcing_elbo, diffusion_forcing_elbo_reflowed)
+
+
 def patch_body_tex() -> None:
     text = read_text(BODY_TEX)
     cjk_text_pattern = re.compile(r"\\text\{([^{}]*[\u4e00-\u9fff][^{}]*)\}")
@@ -769,6 +963,14 @@ def patch_body_tex() -> None:
     text = cjk_mbox_pattern.sub(r"\\mathcjk{\1}", text)
     text = wrap_cjk_inside_math(text)
     text = text.replace("\\begin{figure}\n", "\\begin{figure}[htbp]\n")
+    text = re.sub(
+        r"\\begin\{longtable\}\[\]\{@\{\}([lcr]+)@\{\}\}",
+        expand_simple_longtable_columns,
+        text,
+    )
+    text = normalize_fractional_longtable_widths(text)
+    text = repair_generated_math_notation(text)
+    text = patch_wide_display_content(text)
     # Keep a reference list from visually crowding the unnumbered subsection heading.
     text = re.sub(
         r"(\\subsection\{参考文献\}\\label\{[^{}\n]+\}\})\n\n(?=\\begin\{itemize\})",

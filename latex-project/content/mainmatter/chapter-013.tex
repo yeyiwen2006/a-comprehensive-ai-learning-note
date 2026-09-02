@@ -134,7 +134,11 @@ L=\left(\underbrace{r+\gamma V(s')}_{\text{Target}}-V(s)\right)^2
 
 而DQN的更新与策略无关，只取最优价值。
 
-\begin{longtable}[]{@{}llll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}@{}}
 \toprule
 特性 & Critic（in AC） & Sarsa & DQN \\
 \midrule

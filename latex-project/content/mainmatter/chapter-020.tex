@@ -522,21 +522,21 @@ D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
 由于直接对所有可能的序列求和是不可行的（有 \(V^n\) 种可能），需利用自回归特性将其分解：
 
 \[
+\begin{aligned}
 D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
-=
-\mathbb{E}_{Y\sim P}
+&=\mathbb{E}_{Y\sim P}
 \left[
 \sum_{t=1}^{n}
 \left(
 \log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})
 \right)
-\right]
-=
-\sum_{t=1}^{n}
+\right] \\
+&=\sum_{t=1}^{n}
 \mathbb{E}_{Y\sim P}
 \left[
 \log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}
 \right].
+\end{aligned}
 \]
 
 这里的处理难点在于 \(Y\sim P\)，需要考虑整个序列的概率分布。注意到右边的条件概率的条件为 \(y_{<t}\)，对于给定已知的 \(y_{<t}\) 分布，由自回归特性，\(y_t\) 的分布也会随之确定，\(Y=\{y_1,\ldots,y_t\}\) 的分布也就已知。因此可以改写为：

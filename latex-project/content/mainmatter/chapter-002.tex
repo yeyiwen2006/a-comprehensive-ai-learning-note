@@ -1052,7 +1052,11 @@ C_{ij}=P_{\mathrm{train}}(\hat{y}=i\mid y=j)
 
 假设计算出的 \(C\) 如下（列是真实标签，行是预测标签）：
 
-\begin{longtable}[]{@{}lrrr@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}@{}}
 \toprule
 预测 ~真实 & 健康 & 感冒 & 流感 \\
 \midrule
