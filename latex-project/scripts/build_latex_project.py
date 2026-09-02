@@ -519,9 +519,12 @@ def write_project_readme() -> None:
 ## Build
 
 ```powershell
-xelatex -interaction=nonstopmode -halt-on-error -output-directory=build main.tex
-xelatex -interaction=nonstopmode -halt-on-error -output-directory=build main.tex
+xelatex -interaction=nonstopmode -halt-on-error -jobname="a-comprehensive-ai-learning-note（位于github同名仓库）" -output-directory=build main.tex
+xelatex -interaction=nonstopmode -halt-on-error -jobname="a-comprehensive-ai-learning-note（位于github同名仓库）" -output-directory=build main.tex
+xelatex -interaction=nonstopmode -halt-on-error -jobname="a-comprehensive-ai-learning-note（位于github同名仓库）" -output-directory=build main.tex
 ```
+
+生成的完整 PDF 文件名为 `build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf`。
 """,
     )
 

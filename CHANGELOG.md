@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- 固定 LaTeX 项目的 PDF 构建产物名称：三遍 XeLaTeX 命令统一使用 `a-comprehensive-ai-learning-note（位于github同名仓库）` 作为 job name，最终生成 `latex-project/build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf`；三遍编译可使干净构建环境中的目录页码与交叉引用稳定，并将该规则写入生成器维护的构建说明，避免重新生成项目后退回 `main.pdf`。
 - 将 GitHub 到 Gitee 自动同步工作流使用的 `actions/checkout` 从 `v4` 升级到采用 Node.js 24 运行时的 `v6`，消除 Node.js 20 弃用警告，并保持完整历史与标签同步行为不变；同时将 README 中 v1.1、v2.0 的版本发布日期与“更新内容”分行展示，并同步更新 LaTeX 版本说明。
 - 由多个独立分片对全部168篇公开 Markdown 的参考文献进行逐篇人工核查，并由只读 reviewer 复核合并差异；修订94篇正文中的来源遗漏、作者顺序、正式题名、年份、出处、失效或不稳定链接及正文事实错配，参考文献条目由493条增至592条。重点补全经典算法与具名前沿方法的原始来源，统一《动手学深度学习》《动手学大模型智能体》等书目，纠正 Kimi K2.5、RoFormer、Engram、mHC、VAPO、LingBot-VA 2.0、V-JEPA、LeWorldModel、Matrix-Game 3.0 等作者或题名，并对 RMSProp、MuonClip、VQ-VAE、VIME、EWC、Ring Attention、MCP、KV Cache、Codex compaction、LATS、GRPO 等证据不足或错配的正文表述作保守校正。删除无法直达正文的 UMI 二手归档条目及未由权威元数据确认的会议归属，清理引用链接中的追踪参数；同步重建 LaTeX 版本，并按不含参考文献的统一统计口径将 README 正文字数更新为约37.3万字。
 - 全量复核 168 篇公开 Markdown 的 GitHub 数学与段落格式，修复 76 篇正文中的数学或段落格式问题；其中将分布在 63 篇正文及 README 中的 409 处有序列表标记改为 CommonMark 可识别的写法，并补齐标题、列表、正文和公式块之间缺失的空行。修正 `23.2 基于搜索的方法` 中与正文粘连的块公式定界符；修正 `15.6 注意力机制与梯度下降的等价性`、`21.5 强化微调前沿研究` 中矩阵与对齐环境中过量的反斜杠，以及 `25.2 模型的记忆` 中被隐藏制表符破坏的 `\to`；同时处理会被 Markdown 误判为链接、强调、HTML 或正文的裸数学表达式、代码、伪代码与伪标签。增强上传前校验，使同行夹带正文的 `$$` 直接报错；章节数、文件数、正文字数和图片统计均未因这些格式修复而变化。
