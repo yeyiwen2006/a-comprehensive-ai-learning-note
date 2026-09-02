@@ -238,11 +238,21 @@ P(st+1\textbar st,at)
 \begin{itemize}
 \tightlist
 \item
-  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.（PlaNet；论文提出 RSSM）
+\item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/rtfm}{RTFM: A Real-Time Frame Model}. Official research article.
+\item
+  Wu, F., Wei, J., Li, R., et al.~(2025). \href{https://arxiv.org/abs/2512.02793}{IC-World: In-Context Generation for Shared World Modeling}. arXiv:2512.02793.
+\item
+  Kipf, T., van der Pol, E., \& Welling, M. (2019). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. arXiv:1911.12247.
 \item
   Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2022). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR.
 \item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. Official research article.
+\item
   Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
+\item
+  Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
 \item
   Garrido, Q., Nagarajan, T., Terver, B., Ballas, N., LeCun, Y., \& Rabbat, M. (2026). \href{https://arxiv.org/abs/2601.05230}{Learning Latent Action World Models In The Wild}. arXiv:2601.05230.
 \end{itemize}
@@ -272,7 +282,7 @@ P(st+1\textbar st,at)
 
 RSSM采用了类似LSTM的方法，将隐状态（历史记忆）和反映当前状态的潜变量分开，从而结合了二者的优点。在POMDP（部分可观测马尔可夫决策过程）中：
 
-历史记忆 \(h_t\) 作为隐状态，其转移用确定性规则：由 \(t-2\) 时刻及以前的记忆 \(h_{t-1}\)、\(t-1\) 时刻的状态潜变量 \(s_{t-1}\) 和 \(t-1\) 时刻的动作 \(a_{t-1}\) 经过函数得到。
+历史记忆 \(h_t\) 作为隐状态，其转移用确定性规则：由 \(t-2\) 时刻及以前的记忆 \(h_{t-1}\)、 \(t-1\) 时刻的状态潜变量 \(s_{t-1}\) 和 \(t-1\) 时刻的动作 \(a_{t-1}\) 经过函数得到。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -390,7 +400,7 @@ r_t \sim p(r_t \mid h_t, s_t)
   \textbf{步骤 1：数据采样}
 \end{itemize}
 
-从经验回放池 \(\mathcal{D}\) 中均匀随机抽取批量大小为 \(B\)、长度为 \(L\) 的序列片段 \(\{(o_t, a_t, r_t)_{t=k}^{L+k}\}_{i=1}^{B}\)。
+从经验回放池 \(\mathcal{D}\) 中均匀随机抽取批量大小为 \(B\)、长度为 \(L\) 的序列片段 \(\lbrace(o_t, a_t, r_t)_{t=k}^{L+k}\rbrace_{i=1}^{B}\)。
 
 \begin{itemize}
 \tightlist
@@ -404,11 +414,11 @@ r_t \sim p(r_t \mid h_t, s_t)
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  执行确定性状态转移：将上一步的 \(h_{t-1}\)、\(s_{t-1}\)（通过重参数化采样得到）和动作 \(a_{t-1}\) 输入 RNN \(f\)，得到当前的确定性状态 \(h_t\)。
+  执行确定性状态转移：将上一步的 \(h_{t-1}\)、 \(s_{t-1}\)（通过重参数化采样得到）和动作 \(a_{t-1}\) 输入 RNN \(f\)，得到当前的确定性状态 \(h_t\)。
 \item
-  计算先验分布 \(p\)：将 \(h_t\) 输入 MLP，输出当前先验高斯的均值和方差 \(\mu_{\mathrm{prior}}\)、\(\sigma_{\mathrm{prior}}\)。
+  计算先验分布 \(p\)：将 \(h_t\) 输入 MLP，输出当前先验高斯的均值和方差 \(\mu_{\mathrm{prior}}\)、 \(\sigma_{\mathrm{prior}}\)。
 \item
-  计算后验分布 \(q\)：将当前的图像 \(o_t\) 通过 CNN 提取特征，结合 \(h_t\) 输入到另一个 MLP，输出后验高斯的均值和方差 \(\mu_{\mathrm{post}}\)、\(\sigma_{\mathrm{post}}\)。
+  计算后验分布 \(q\)：将当前的图像 \(o_t\) 通过 CNN 提取特征，结合 \(h_t\) 输入到另一个 MLP，输出后验高斯的均值和方差 \(\mu_{\mathrm{post}}\)、 \(\sigma_{\mathrm{post}}\)。
 \item
   重参数化采样：从后验分布 \(\mathcal{N}(\mu_{\mathrm{post}}, \sigma_{\mathrm{post}}^2)\) 中采样出潜在向量 \(s_t\)。
 \end{enumerate}
@@ -504,7 +514,7 @@ p(s_t \mid s_{t-d})
 \begin{itemize}
 \tightlist
 \item
-  \textbf{物理意义}：它不仅要求``由 \(t - 1\) 步预测的 \(t\) 步先验''要与后验对齐，还要求``由 \(t - 2\) 步、\(t - d\) 步连续多步推演得出的 \(t\) 步先验''也要与当前后验对齐。这种潜在空间中的一致性正则化，增强了模型在不依赖真实观测时的长期演化能力。
+  \textbf{物理意义}：它不仅要求``由 \(t - 1\) 步预测的 \(t\) 步先验''要与后验对齐，还要求``由 \(t - 2\) 步、 \(t - d\) 步连续多步推演得出的 \(t\) 步先验''也要与当前后验对齐。这种潜在空间中的一致性正则化，增强了模型在不依赖真实观测时的长期演化能力。
 \end{itemize}
 
 \hypertarget{ux4e8cux57faux4e8erssmux7684ux5e94ux7528}{%
@@ -577,7 +587,15 @@ p(s_t \mid s_{t-d})
 \item
   首先，编码器将感知输入 \(x_t\) 映射为随机表示 \(z_t \sim q_{\phi}(z_t \mid h_t, x_t)\)。
 \item
-  然后，动力学预测器根据之前的状态 \(h_t\) 预测未来的表示 \(\hat{z}_t \approx p_{\phi}(\hat{z}_t \mid h_t)\)。
+  然后，动力学预测器根据之前的状态 \(h_t\) 预测未来的表示：
+\end{itemize}
+
+\[
+\hat{z}_t \sim p_{\phi}(\hat{z}_t \mid h_t).
+\]
+
+\begin{itemize}
+\tightlist
 \item
   通过这种方式，世界模型学会了理解环境的内在结构，并能在隐空间中``想象''未来的状态演变。
 \end{itemize}
@@ -660,7 +678,7 @@ q_{\phi}(z_t \mid h_t, x_t)
 
 与上一个损失相反，表示损失的梯度方向被限制在编码器 \(q_{\phi}\) 上。它的目的是反向规范编码器的行为，促使它提取出来的隐状态更加``有规律''、更容易被动力学模型预测。
 
-通过巧妙运用停止梯度操作和不同的损失缩放（在论文中设定为 \(\beta_{\mathrm{pred}} = 1\)、\(\beta_{\mathrm{dyn}} = 1\)、\(\beta_{\mathrm{rep}} = 0.1\)），RSSM 解决了以往``强正则化在简单图像有效，但在复杂 3D 环境会抹杀关键细节''的进退两难问题，实现了跨领域的鲁棒性。
+通过巧妙运用停止梯度操作和不同的损失缩放（在论文中设定为 \(\beta_{\mathrm{pred}} = 1\)、 \(\beta_{\mathrm{dyn}} = 1\)、 \(\beta_{\mathrm{rep}} = 0.1\)），RSSM 解决了以往``强正则化在简单图像有效，但在复杂 3D 环境会抹杀关键细节''的进退两难问题，实现了跨领域的鲁棒性。
 
 \hypertarget{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}{%
 \subsection{三、Dreamer 4：重建、动力学预测与奖励预测的损失解耦}\label{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}}
@@ -678,11 +696,11 @@ q_{\phi}(z_t \mid h_t, x_t)
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  \textbf{重建梯度（\(\nabla \mathcal{L}_{recp}\)）}：逼着 \(z_t\) 记住画面里的每一片云彩和每一棵树，因为解码器需要重构整个画面。
+  \textbf{重建梯度}（ \(\nabla \mathcal{L}_{recp}\) ）：逼着 \(z_t\) 记住画面里的每一片云彩和每一棵树，因为解码器需要重构整个画面。
 \item
-  \textbf{动力学梯度（\(\nabla \mathcal{L}_{dyn}\)）}：逼着 \(z_t\) 关注物体的运动规律。
+  \textbf{动力学梯度}（ \(\nabla \mathcal{L}_{dyn}\) ）：逼着 \(z_t\) 关注物体的运动规律。
 \item
-  \textbf{奖励预测梯度（\(\nabla \mathcal{L}_{pred}\)）}：逼着 \(z_t\) 把所有注意力都集中在那些能得分的微小物体上，例如远处的怪物或手里的钻石，而忽略暂时没有分数、但对理解物理世界至关重要的背景。
+  \textbf{奖励预测梯度}（ \(\nabla \mathcal{L}_{pred}\) ）：逼着 \(z_t\) 把所有注意力都集中在那些能得分的微小物体上，例如远处的怪物或手里的钻石，而忽略暂时没有分数、但对理解物理世界至关重要的背景。
 \end{enumerate}
 
 这带来的致命问题是``表征容量的争夺''。当环境非常复杂（如 Minecraft）时，这三股梯度会互相打架。如果奖励信号很强，编码器就会为了迎合奖励预测，而在 \(z_t\) 中丢弃那些``暂时没有奖励，但对理解物理世界至关重要''的背景细节，例如地形起伏。这导致 Dreamer 3 的世界模型在复杂 3D 环境中极易发生表征坍塌。
@@ -702,11 +720,7 @@ Dreamer 4 不再像前代那样在潜空间动态推演的同时去重建图像�
 其损失函数抛弃了 Symlog，转而采用纯视觉领域的标准重建与感知损失的组合：
 
 \[
-\mathcal{L}_{\mathrm{tokenizer}}
-=
-\mathrm{MSE}(x, \hat{x})
-+
-\mathrm{LPIPS}(x, \hat{x})
+\mathcal{L}_{\mathrm{tokenizer}}=\mathrm{MSE}(x, \hat{x})+\mathrm{LPIPS}(x, \hat{x})
 \]
 
 \begin{itemize}
@@ -740,17 +754,7 @@ Dreamer 4在世界模型中训练Actor和Critic，世界模型需要输出奖励
 在通过海量无标签视频训练好 Tokenizer 和 Dynamics 之后，Dreamer 4 会摄入带标签的数据，例如带有鼠标键盘操作记录的 Minecraft 录像，专门训练一个极其轻量的任务头（Task Head）。这部分损失类似于 Dreamer 3 的 \(\mathcal{L}_{pred}\)，但加入了对具体动作的克隆预测：
 
 \[
-\begin{aligned}
-\mathcal{L}_{\mathrm{task}}
-&=
--
-\sum_{n=0}^{L}
-\ln p_{\theta}(r_{t+n} \mid h_t)
-\\
-&\quad -
-\sum_{n=0}^{L}
-\ln p_{\theta}(a_{t+n} \mid h_t)
-\end{aligned}
+\mathcal{L}_{\mathrm{task}}=-\sum_{n=0}^{L}\ln p_{\theta}(r_{t+n}\mid h_t)-\sum_{n=0}^{L}\ln p_{\theta}(a_{t+n}\mid h_t)
 \]
 
 模型利用 Transformer 聚合出的历史时空上下文 \(h_t\)，同时去最大化未来奖励序列 \(r_{t+n}\) 和真实动作序列 \(a_{t+n}\) 的对数似然。
@@ -791,11 +795,11 @@ Dreamer 3这样的端到端强化学习要求每一帧数据都必须包含精�
 \begin{itemize}
 \tightlist
 \item
-  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.（PlaNet；论文提出 RSSM）
 \item
-  Hafner, D., Pasukonis, J., Ba, J., \& Lillicrap, T. (2023). \href{https://arxiv.org/abs/2301.04104}{Mastering Diverse Domains through World Models}. arXiv:2301.04104.
+  Hafner, D., Pasukonis, J., Ba, J., \& Lillicrap, T. (2023). \href{https://arxiv.org/abs/2301.04104}{Mastering Diverse Domains through World Models}. arXiv:2301.04104.（Dreamer 3）
 \item
-  Hafner, D., Yan, W., \& Lillicrap, T. (2025). \href{https://arxiv.org/abs/2509.24527}{Training Agents Inside of Scalable World Models}. arXiv:2509.24527.
+  Hafner, D., Yan, W., \& Lillicrap, T. (2025). \href{https://arxiv.org/abs/2509.24527}{Training Agents Inside of Scalable World Models}. arXiv:2509.24527.（Dreamer 4）
 \end{itemize}
 
 \clearpage

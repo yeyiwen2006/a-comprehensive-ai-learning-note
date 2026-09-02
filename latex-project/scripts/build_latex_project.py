@@ -295,6 +295,9 @@ def normalize_markdown_for_latex(text: str) -> str:
             lines.append(line)
             continue
 
+        # GitHub's backtick-delimited inline-math form avoids parser ambiguities
+        # around braces and adjacent prose. Pandoc expects ordinary $...$ math.
+        line = re.sub(r"\$`([^`\r\n]+)`\$", r"$\1$", line)
         line = re.sub(r"^(\s{0,3}[-*])(?=[A-Za-z\u4e00-\u9fff`$])", r"\1 ", line)
         line = re.sub(r"^(\s{0,3}\d+[.)])(?=[^\s\d)])", r"\1 ", line)
         lines.append(line)

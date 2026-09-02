@@ -7,6 +7,14 @@
 \begin{itemize}
 \tightlist
 \item
+  修复 \texttt{31.2\ VLA模型的强化学习} 在 GitHub 上仍存在的数学公式渲染问题：消除被误识别为 Markdown 一级标题的独立等号行，修正紧邻中文标点、星号上标及参考文献链接文字中的未渲染公式；并按 Word 可见原稿补回噪声转移的步长因子，校正 Flow-Noise 内部状态、噪声网络及 Policy Agnostic RL 的参数符号。
+\item
+  修复 \texttt{32.3\ 状态空间模型}、\texttt{33.1\ 世界-动作模型概述}、\texttt{33.2\ 世界-动作统一生成模型} 和 \texttt{33.3\ 推理时不生成视频的世界-动作模型} 的 GitHub 数学公式渲染问题：消除独立等号造成的 Setext 标题误判，修正行内公式边界、集合定界符及小于号的转义，并按 Word 可见内容逐式核对；同时让 LaTeX 生成器兼容 GitHub 的反引号行内数学语法，并据此清理 \texttt{15.6}、\texttt{21.5} 既有 LaTeX 输出中的反引号。
+\item
+  补全第31至35章中正文点名成果的来源：\texttt{31.1} 增补 LAPA、UniVLA 与 Moto，\texttt{32.2} 增补 RSSM、RTFM、IC-World、C-SWM、Marble 与 LeWorldModel，\texttt{32.3} 明确 PlaNet/RSSM、Dreamer 3、Dreamer 4 的对应文献，\texttt{33.2} 增补 LingBot-VA、LingBot-VA 2.0、PAR、PhysGen 与 DreamDojo，\texttt{33.4} 增补 CraftNet、Tactile-VLA 与 ForceVLA2，\texttt{34.1} 增补 GigaWorld-Policy，\texttt{35.1} 与 \texttt{35.2} 增补 Jim Fan 在 AI Ascent 2026 的``Robotics' End Game''演讲。
+\item
+  从用户提供的候选文献中，为 \texttt{34.2\ UMI数据} 选入与正文四项主题直接对应的 MV-UMI（多视角）、ViTaMIn（视触觉）、DexUMI（灵巧手）和机器人模仿学习数据缩放定律研究；未收录与本节现有论述对应关系较弱的候选项。
+\item
   同步当前 Word 对 \texttt{32.4} 的更新，将标题改为``联合嵌入预测架构（JEPA）''，并按原稿调整正文首句；保留原有38处图片内容的人工转写结果及11处裁剪对应关系，不重新处理图片，同时更新目录与 LaTeX 版本。
 \item
   删除原公开版第4、5部分（原第22至39章），按当前 Word 版本重新建立第4部分``大模型智能体''、第5部分``扩散模型与多模态生成''和第6部分``具身智能与世界模型''，公开范围调整为第22至35章、54节；Word 原稿未作修改。

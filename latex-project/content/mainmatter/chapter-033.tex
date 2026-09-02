@@ -15,10 +15,7 @@
 WAM的损失函数一般为状态（视频像素或视觉特征）损失与动作损失加权求和：
 
 \[
-\mathcal{L}_{\mathrm{vid}}
-+
-\lambda_{\mathrm{act}}
-\mathcal{L}_{\mathrm{act}}
+\mathcal{L}_{\mathrm{vid}}+\lambda_{\mathrm{act}}\mathcal{L}_{\mathrm{act}}
 \]
 
 两项大多采取流匹配损失：
@@ -32,14 +29,7 @@ y_t=(1-t)y+t\varepsilon.
 模型通过标准的流匹配损失预测速度场：
 
 \[
-\mathcal{L}_{\mathrm{FM}}(y)
-=
-\mathbb{E}_{y,\varepsilon,t}
-\left[
-\left\|
-f_\theta(y_t,t,o,l)-(\varepsilon-y)
-\right\|_2^2
-\right].
+\mathcal{L}_{\mathrm{FM}}(y)=\mathbb{E}_{y,\varepsilon,t}\left[\left\|f_\theta(y_t,t,o,l)-(\varepsilon-y)\right\|_2^2\right].
 \]
 
 \hypertarget{ux4e09ux5177ux8eabux539fux751fux6a21ux578b}{%
@@ -91,27 +81,13 @@ f_\theta(y_t,t,o,l)-(\varepsilon-y)
 在每个自回归步骤中，模型首先基于观测和动作历史预测未来 \(K\) 帧视频画面的隐状态：
 
 \[
-z_{t+1:t+K}
-\sim
-p_\theta
-\bigl(
-\cdot\mid z_{\le t},a_{<t},c_t
-\bigr).
+z_{t+1:t+K}\sim p_\theta\!\left(\,\cdot\mid z_{\leq t},a_{\lt t},c_t\right).
 \]
 
 随后，运动力学模型利用预测的未来视觉状态、历史观察和历史动作，以及任务条件，生成具体动作：
 
 \[
-a_{t:t+K-1}
-\sim
-q_\phi
-\bigl(
-\cdot\mid
-\hat{z}_{t+1:t+K},
-z_{\le t},
-a_{<t},
-c_t
-\bigr).
+a_{t:t+K-1}\sim q_\phi\!\left(\,\cdot\mid\hat{z}_{t+1:t+K},z_{\leq t},a_{\lt t},c_t\right).
 \]
 
 预测状态和预测动作在同一个模型中进行，采用MoT架构，即在统一的注意力层交互，但在FFN/MoE层则有各自分开的参数。输出时，模型可以在输出序列中交替输出视频token和动作token。
@@ -209,7 +185,7 @@ HCT（人机协同训练）：将人类视频与机器人数据置于共享世�
 
 将过去的视频和动作均编码为统一的物理token。设 \(t\) 时刻的视频帧token集合为 \(o_t\)（PhysGen中每个 \(o_t\) 包含360个token），动作token集合为 \(a_t\)（PhysGen中每个 \(a_t\) 包含8个token），则上下文序列为 \([\mathrm{prompt},o_1,a_1,o_2,a_2,\ldots,o_t,a_t]\)，联合预测下一步的 \([o_{t+1},a_{t+1}]\)。预测出的 \([o_{t+1},a_{t+1}]\) 再通过扩散解码，分别得出连续的未来状态值（视频）和要采取的动作值。
 
-具体来说，\(o_t\) 和 \(a_t\) 也不一样：\(o_t\) 内部的token可以并行生成；\(a_t\) 内部则按时间顺序严格串行，但利用Multi-token prediction的方法，在动作块内部拉长微观的规划视野。即便只预判2到3步极其微小的机械臂位姿，也能让自回归生成的动作轨迹更加连贯，有效避免控制上的``短视''和抖动。
+具体来说， \(o_t\) 和 \(a_t\) 也不一样： \(o_t\) 内部的token可以并行生成； \(a_t\) 内部则按时间顺序严格串行，但利用Multi-token prediction的方法，在动作块内部拉长微观的规划视野。即便只预判2到3步极其微小的机械臂位姿，也能让自回归生成的动作轨迹更加连贯，有效避免控制上的``短视''和抖动。
 
 \begin{figure}[htbp]
 \centering
@@ -269,31 +245,21 @@ HCT（人机协同训练）：将人类视频与机器人数据置于共享世�
 模型训练时对动作噪声进行预测，从而最小化均方误差损失：
 
 \[
-\mathcal{L}(P_n,Z_n)
-=
-\mathbb{E}_{\varepsilon,t}
-\left[
-\left\|
-\varepsilon
--\varepsilon_\theta(P_{n,t}\mid t,Z_n)
-\right\|^2
-\right].
+\mathcal{L}(P_n,Z_n)=\mathbb{E}_{\varepsilon,t}\left[\left\|\varepsilon-\varepsilon_\theta(P_{n,t}\mid t,Z_n)\right\|^2\right].
 \]
 
 推理阶段去噪的公式为：
 
 \[
+\begin{aligned}
 P_{n,t-1}
-=
-\frac{1}{\sqrt{\alpha_t}}
+&=\frac{1}{\sqrt{\alpha_t}}
 \left(
-P_{n,t}
--
-\frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}
+P_{n,t}-\frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}
 \varepsilon_\theta(P_{n,t}\mid t,Z_n)
 \right)
-+
-\sigma_t\varepsilon.
++\sigma_t\varepsilon.
+\end{aligned}
 \]
 
 去噪后的物理标记最终被分离，并解码为预测的视频帧和要在物理世界中执行的机器人动作。
@@ -311,7 +277,7 @@ P_{n,t}
   第一步 \(t=1\)：模型处理Frame 0的信息，决定伸出机械臂，输出第一个动作（Action 1）。动作使物理世界发生变化，机器人随后看到新的画面（Frame 1）。
 \end{itemize}
 
-PhysGen框架将视频帧标记（Frame Token）和动作标记（Action Token）拼在一起，组成物理标记（Physical Token）\(P_n\)，其具体编码为
+PhysGen框架将视频帧标记（Frame Token）和动作标记（Action Token）拼在一起，组成物理标记（Physical Token） \(P_n\)，其具体编码为
 
 \[
 P_n=[O_n;E_{A,n}].
@@ -322,12 +288,12 @@ P_n=[O_n;E_{A,n}].
 \begin{itemize}
 \tightlist
 \item
-  视觉观察序列：\(\{O_0,O_1,O_2,\ldots,O_{N-1}\}\)，从0开始，共 \(N\) 个初始帧。
+  视觉观察序列： \(\lbrace O_0,O_1,O_2,\ldots,O_{N-1}\rbrace\)，从0开始，共 \(N\) 个初始帧。
 \item
-  对应动作序列：\(\{A_1,A_2,\ldots,A_{N-1}\}\)，从1开始，共 \(N-1\) 个初始动作。
+  对应动作序列： \(\lbrace A_1,A_2,\ldots,A_{N-1}\rbrace\)，从1开始，共 \(N-1\) 个初始动作。
 \end{itemize}
 
-如果强行把二者打包成 \(P_n\)，就会遇到一个尴尬的时间偏移问题：\(P_0=[O_0;\mathcjk{什么都没有}]\)，而 \(P_1=[O_1;A_1]\)、\(P_2=[O_2;A_2]\)。
+如果强行把二者打包成 \(P_n\)，就会遇到一个尴尬的时间偏移问题： \(P_0=[O_0;\mathcjk{什么都没有}]\)，而 \(P_1=[O_1;A_1]\)、 \(P_2=[O_2;A_2]\)。
 
 为在数学结构上完美对齐这两个长度不一的序列，作者在动作序列最前面人为加入一个可学习的占位符，称为BOA（Begin of Action）Token。它使初始物理标记可以写成
 
@@ -369,11 +335,15 @@ P_0=[O_0;\mathrm{BOA}],
 \begin{itemize}
 \tightlist
 \item
-  Zhang, Q., Li, L., Zhang, L., et al.~(2026). \href{https://arxiv.org/abs/2607.08639}{Native Video-Action Pretraining for Generalizable Robot Control}. arXiv:2607.08639.
+  Li, L., Zhang, Q., Luo, Y., et al.~(2026). \href{https://arxiv.org/abs/2601.21998}{Causal World Modeling for Robot Control}. arXiv:2601.21998.（LingBot-VA）
 \item
-  Song, Z., Qin, S., Chen, T., Lin, L., \& Wang, G. (2025). \href{https://arxiv.org/abs/2508.09822}{Physical Autoregressive Model for Robotic Manipulation without Action Pretraining}. arXiv:2508.09822.
+  Zhang, Q., Li, L., Zhang, L., et al.~(2026). \href{https://arxiv.org/abs/2607.08639}{Native Video-Action Pretraining for Generalizable Robot Control}. arXiv:2607.08639.（LingBot-VA 2.0）
 \item
-  Song, Z., Li, Q., Qin, S., et al.~(2026). \href{https://arxiv.org/abs/2603.00110}{Learning Physics from Pretrained Video Models: A Multimodal Continuous and Sequential World Interaction Model for Robotic Manipulation}. arXiv:2603.00110.
+  Song, Z., Qin, S., Chen, T., Lin, L., \& Wang, G. (2025). \href{https://arxiv.org/abs/2508.09822}{Physical Autoregressive Model for Robotic Manipulation without Action Pretraining}. arXiv:2508.09822.（PAR）
+\item
+  Song, Z., Li, Q., Qin, S., et al.~(2026). \href{https://arxiv.org/abs/2603.00110}{Learning Physics from Pretrained Video Models: A Multimodal Continuous and Sequential World Interaction Models for Robotic Manipulation}. arXiv:2603.00110.（PhysGen）
+\item
+  Gao, S., Liang, W., Zheng, K., et al.~(2026). \href{https://arxiv.org/abs/2602.06949}{DreamDojo: A Generalist Robot World Model from Large-Scale Human Videos}. arXiv:2602.06949.（NVIDIA DreamDojo）
 \end{itemize}
 
 \clearpage
@@ -413,7 +383,7 @@ Fast-WAM以Wan2.2作为基座模型，复用了其视频DiT、文本编码器和
 
 \textbf{第二步：全局文本Cross-Attention注入}
 
-在这三个Token组进入DiT的每一层时，所有Token组都会通过Cross-Attention机制关注语言特征向量。数学上，\(f_0\)、\(f_{1:h}\) 和 \(a_{1:h}\) 都作为Query，而文本特征作为Key和Value。这保证了无论是提取当前环境的视觉特征、推演未来的物理变化，还是规划机器人的具体动作，都始终受到人类语言指令的引导。
+在这三个Token组进入DiT的每一层时，所有Token组都会通过Cross-Attention机制关注语言特征向量。数学上， \(f_0\)、 \(f_{1:h}\) 和 \(a_{1:h}\) 都作为Query，而文本特征作为Key和Value。这保证了无论是提取当前环境的视觉特征、推演未来的物理变化，还是规划机器人的具体动作，都始终受到人类语言指令的引导。
 
 \textbf{第三步：结构化Self-Attention掩码}
 
@@ -446,9 +416,7 @@ Fast-WAM以Wan2.2作为基座模型，复用了其视频DiT、文本编码器和
 \end{enumerate}
 
 \[
-p_\theta(a_{1:H}\mid o,l)
-=
-p_\theta(a_{1:H}\mid z(o,l)).
+p_\theta(a_{1:H}\mid o,l)=p_\theta(a_{1:H}\mid z(o,l)).
 \]
 
 \begin{enumerate}
@@ -566,11 +534,7 @@ S=[x;o_{-H:0};s;Q;a_{0:T}].
 训练时同步取得未来真实观测视频帧 \(\tilde{o}_{0:T}\)，使用冻结的预训练ViT和Perceiver重采样器 \(E\)，将其压缩为大小与 \(Q\) 一致的未来嵌入：
 
 \[
-z^{\mathrm{post}}
-=
-E(\tilde{o}_{0:T})
-\in
-\mathbb{R}^{K\times d}.
+z^{\mathrm{post}}=E(\tilde{o}_{0:T})\in\mathbb{R}^{K\times d}.
 \]
 
 \textbf{步骤3：混合Transformer双分支前向传播}
@@ -589,19 +553,11 @@ E(\tilde{o}_{0:T})
 \end{enumerate}
 
 \[
-\mathcal{L}_{\mathrm{FM}}^{\mathrm{prior}}
-=
-\left\|
-v_\theta^{\mathrm{prior}}(a_t,c)-u_t
-\right\|_2^2,
+\mathcal{L}_{\mathrm{FM}}^{\mathrm{prior}}=\left\|v_\theta^{\mathrm{prior}}(a_t,c)-u_t\right\|_2^2,
 \]
 
 \[
-\mathcal{L}_{\mathrm{FM}}^{\mathrm{post}}
-=
-\left\|
-v_\theta^{\mathrm{post}}(a_t,c,z^{\mathrm{post}})-u_t
-\right\|_2^2.
+\mathcal{L}_{\mathrm{FM}}^{\mathrm{post}}=\left\|v_\theta^{\mathrm{post}}(a_t,c,z^{\mathrm{post}})-u_t\right\|_2^2.
 \]
 
 \begin{enumerate}
@@ -613,15 +569,7 @@ v_\theta^{\mathrm{post}}(a_t,c,z^{\mathrm{post}})-u_t
 \end{enumerate}
 
 \[
-\mathcal{L}_{\mathrm{align}}
-=
-\frac{1}{L}
-\sum_{l=1}^{L}
-\left\|
-h_l^{\mathrm{prior}}
--
-h_l^{\mathrm{post}}
-\right\|_2^2.
+\mathcal{L}_{\mathrm{align}}=\frac{1}{L}\sum_{l=1}^{L}\left\|h_l^{\mathrm{prior}}-h_l^{\mathrm{post}}\right\|_2^2.
 \]
 
 \begin{enumerate}
@@ -633,22 +581,13 @@ h_l^{\mathrm{post}}
 \end{enumerate}
 
 \[
-\mathcal{R}_{\mathrm{norm}}(h)
-=
-\left[
-\operatorname{ReLU}
-\bigl(
-\tau-\|h\|_2
-\bigr)
-\right]^2.
+\mathcal{R}_{\mathrm{norm}}(h)=\left[\operatorname{ReLU}\!\left(\tau-\|h\|_2\right)\right]^2.
 \]
 
 秩正则化由Gram矩阵 \(G\) 的归一化特征值 \(p_i\) 的信息熵表示：
 
 \[
-\mathcal{R}_{\mathrm{rank}}(H)
-=
-\sum_{i=1}^{B}p_i\log p_i.
+\mathcal{R}_{\mathrm{rank}}(H)=\sum_{i=1}^{B}p_i\log p_i.
 \]
 
 \hypertarget{ux4e09ux63a8ux7406ux5de5ux4f5cux6d41}{%
@@ -786,7 +725,13 @@ h_l^{\mathrm{post}}
 \begin{itemize}
 \tightlist
 \item
+  Sharpa. (2026). \href{https://www.sharpa.com/blogs/news/sharpa-announces-craftnet-a-hierarchical-vtla-model-for-fine-manipulation}{Sharpa Announces CraftNet: A Hierarchical VTLA Model for Fine Manipulation}. Official technical article.
+\item
+  Huang, J., Wang, S., Lin, F., Hu, Y., Wen, C., \& Gao, Y. (2025). \href{https://arxiv.org/abs/2507.09160}{Tactile-VLA: Unlocking Vision-Language-Action Model's Physical Knowledge for Tactile Generalization}. arXiv:2507.09160.
+\item
   Yu, J., Liu, H., Yu, Q., et al.~(2025). \href{https://arxiv.org/abs/2505.22159}{ForceVLA: Enhancing VLA Models with a Force-aware MoE for Contact-rich Manipulation}. arXiv:2505.22159.
+\item
+  Li, Y., Zhaxizhuoma, Jiang, H., et al.~(2026). \href{https://arxiv.org/abs/2603.15169}{ForceVLA2: Unleashing Hybrid Force-Position Control with Force Awareness for Contact-Rich Manipulation}. arXiv:2603.15169.
 \item
   Yuan, C., Zhang, Z., Zhou, M., et al.~(2026). \href{https://arxiv.org/abs/2606.13102}{FTP-1: A Generalist Foundation Tactile Policy Across Tactile Sensors for Contact-Rich Manipulation}. arXiv:2606.13102.
 \end{itemize}
