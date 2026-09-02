@@ -149,7 +149,7 @@ y_i=\gamma\hat{x}_i+\beta
   多通道（Multi-Channel）
 \end{enumerate}
 
-事实上，输入数据或特征图不是一个单一的二维矩阵（H\emph{W），而是一个三维张量：H(Height) }W(Width)*C(Channels)。
+事实上，输入数据或特征图不是一个单一的二维矩阵（\(H \times W\)），而是一个三维张量：\(H(\mathrm{Height}) \times W(\mathrm{Width}) \times C(\mathrm{Channels})\)。
 
 对于输入图像，一个标准的RGB彩色图像的输入为H\emph{W}3矩阵，有3个通道：红色通道（R）、绿色通道（G）、蓝色通道（B）。每个通道都是一个二维网格（矩阵），网格中的每个值（像素）表示该位置对应颜色（R/G/B）的强度。灰度图像只有1个通道（亮度）。
 
@@ -170,7 +170,7 @@ y_i=\gamma\hat{x}_i+\beta
 
 经典的 CNN 架构通常遵循以下模式：
 
-输入图像 -\textgreater{} {[} {[}卷积层 -\textgreater{} 激活函数{]} * N -\textgreater{} 池化层 {]} * M -\textgreater{} 展平层 -\textgreater{} {[}全连接层 -\textgreater{} 激活函数{]} * K -\textgreater{} 输出层
+\texttt{输入图像\ -\textgreater{}\ {[}{[}卷积层\ -\textgreater{}\ 激活函数{]}\ *\ N\ -\textgreater{}\ 池化层{]}\ *\ M\ -\textgreater{}\ 展平层\ -\textgreater{}\ {[}全连接层\ -\textgreater{}\ 激活函数{]}\ *\ K\ -\textgreater{}\ 输出层}
 
 随着层数加深，空间分辨率逐渐降低（池化、大步长卷积），通道数逐渐增加（使用更多不同的滤波器），提取的特征从低级（边缘、角点、纹理）向高级（物体部件、完整物体、场景）演变。最后全连接层将提取到的高级特征进行整合，完成最终任务（分类、回归等）。
 

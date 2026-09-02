@@ -98,8 +98,10 @@ Nvidia在Cosmos中，提出在自回归预测的基础上，运用扩散提高�
   将其转化为条件输入，通过微调好的扩散去噪网络（Diffusion Denoiser）上采样并预测出更清晰的``连续 Token 视频''。
 \item
   最后，将这些连续 Tokens 送入 Cosmos 连续分词器的解码器，还原出更清晰的 RGB 物理世界视频。
-  \#\#\#\# （三）扩散模型的级联
 \end{enumerate}
+
+\hypertarget{ux4e09ux6269ux6563ux6a21ux578bux7684ux7ea7ux8054}{%
+\subsubsection{（三）扩散模型的级联}\label{ux4e09ux6269ux6563ux6a21ux578bux7684ux7ea7ux8054}}
 
 可以用一个块内扩散、块间自回归的模型生成低分辨率视频，然后一方面上采样并给扩散模型生成可用于解码的高分辨率视频，一方面将低分辨率视频存入KV Cache同步进行下一步生成，可能可减少延迟。
 
@@ -112,7 +114,9 @@ Nvidia在Cosmos中，提出在自回归预测的基础上，运用扩散提高�
 第一步：空间特征交互。输入的 Token 首先进入空间注意力层（Spatial Attention），只与同一帧内的其他 Token 交换信息。
 
 第二步：时间特征交互。经过空间层更新后的 Token 作为输入进入时间注意力层（Temporal Attention），与跨越不同帧但处于同一空间位置的 Token 交换信息。
-\#\#\#\# （一）空间注意力
+
+\hypertarget{ux4e00ux7a7aux95f4ux6ce8ux610fux529b}{%
+\subsubsection{（一）空间注意力}\label{ux4e00ux7a7aux95f4ux6ce8ux610fux529b}}
 
 对于任意给定的第 \(t\) 帧，其对应的 Token 矩阵为 \(Z_t\in\mathbb{R}^{S\times D}\)。在这个切片上，计算标准自注意力：
 
@@ -132,7 +136,9 @@ Q_t^S=Z_tW_Q^S,\quad K_t^S=Z_tW_K^S,\quad V_t^S=Z_tW_V^S
 双流架构（MMDiT Design）：借鉴 Stable Diffusion 3 的设计，空间层采用多模态自注意力（Multi-Modality Self-Attention）整合视觉和文本 Token。
 
 模态隔离的权重参数：由于视觉 Token（来自 VAE）和文本 Token（来自经过微调的 LLM）在特征分布和语义空间上存在很大差异，如果在同一空间内强制共享权重，容易导致优化冲突。因此，Seedance 在空间层为两种模态保留两套完全独立的网络权重，包括自适应层归一化（Adaptive Layer Norm, AdaLN）、\(Q,K,V\) 的投影矩阵（Projection）以及多层感知机（MLP）。
-\#\#\#\# （二）时间注意力
+
+\hypertarget{ux4e8cux65f6ux95f4ux6ce8ux610fux529b}{%
+\subsubsection{（二）时间注意力}\label{ux4e8cux65f6ux95f4ux6ce8ux610fux529b}}
 
 时间注意力仅对视觉token计算，文本token不参与。在每一帧内部执行窗口划分，每个token只与过去时间段内位于同一个窗口的token交互。（下面为了简化，默认一个窗口仅1个token）
 
@@ -237,7 +243,9 @@ Q_s^T=Z_sW_Q^T,\quad K_s^T=Z_sW_K^T,\quad V_s^T=Z_sW_V^T
 动作表示与注入：将连续的相机旋转（Plücker 嵌入）与离散的键盘输入（多热编码的 W、A、S、D）在通道维度拼接。融合后的动作信号通过自适应层归一化（AdaLN）机制注入到 DiT 块中，动态调节特征生成。
 
 参数高效微调：为了防止模型在学习交互时出现``灾难性遗忘''，即丧失原有的高保真画质，主 DiT 块参数被冻结，仅微调新增的动作适配器层，包括动作嵌入投影和 AdaLN 参数。
-\#\#\#\# （二）Self-Forcing（自展开训练）
+
+\hypertarget{ux4e8cself-forcingux81eaux5c55ux5f00ux8badux7ec3}{%
+\subsubsection{（二）Self-Forcing（自展开训练）}\label{ux4e8cself-forcingux81eaux5c55ux5f00ux8badux7ec3}}
 
 预训练本质上是Off-policy的，这意味着长时间的自回归生成依然会导致误差累积。可让模型通过KV Cache读取自己生成的历史帧（和预训练读取``标准答案''的历史帧）、预测下一帧来进行条件训练，强制其学会从自身生成的误差和伪影中恢复。
 

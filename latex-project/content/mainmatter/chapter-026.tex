@@ -1093,7 +1093,9 @@ Loss=\mathbb{E}_{x\sim p(x)}\left[\lVert f_\theta(s)-x\rVert^2\right]
 \end{itemize}
 
 \textbf{结论}：郎之万动力学是在概率密度曲面上寻找局部的极大值（Mode）。因为 \(x=0\) 是概率密度的低谷（或鞍点），梯度会将点推离均值，最终随机（取决于初始噪声和注入噪声）坍缩到左边（对应 \(x=-1\) ）或右边（对应 \(x=1\) ）的某一个确定峰值上。\textbf{它绝对不会停留在概率密度极低的折中点。}
-\#\#\# 三、自回归模型能否处理这样的分布？
+
+\hypertarget{ux4e09ux81eaux56deux5f52ux6a21ux578bux80fdux5426ux5904ux7406ux8fd9ux6837ux7684ux5206ux5e03}{%
+\subsection{三、自回归模型能否处理这样的分布？}\label{ux4e09ux81eaux56deux5f52ux6a21ux578bux80fdux5426ux5904ux7406ux8fd9ux6837ux7684ux5206ux5e03}}
 
 可以，但是只适合处理离散化的分布。
 
@@ -1161,7 +1163,9 @@ Loss=\mathbb{E}_{x\sim p(x)}\left[\lVert f_\theta(s)-x\rVert^2\right]
 \end{itemize}
 
 当网络被要求预测 \(\epsilon\) 或 \(v\) 时，它被迫去拟合一个覆盖整个高维空间的无结构映射。而当网络被要求直接预测 \(x\) 时，其预测目标被严格限制在低维的自然图像流形 \(\mathcal{M}\) 上。这种目标的降维极大地降低了神经网络的拟合难度，使得模型能够在不依赖 Latent 空间降维的情况下，直接在高分辨率像素空间（如 \(512\times512\)）中高效运作。
-\#\#\# 二、模型架构
+
+\hypertarget{ux4e8cux6a21ux578bux67b6ux6784-2}{%
+\subsection{二、模型架构}\label{ux4e8cux6a21ux578bux67b6ux6784-2}}
 
 JiT 的架构可以说是``除了标准的图像 Transformer，什么都没有''。
 
@@ -1176,8 +1180,9 @@ JiT 的架构可以说是``除了标准的图像 Transformer，什么都没有''
   \textbf{信息瓶颈（Bottleneck Design）}：实验发现，在 x-prediction 模式下，大幅压缩 Transformer 的线性嵌入维度（Embedding Dimension）不仅不会导致模型崩溃，反而能保持鲁棒性。这从侧面印证了流形假设：因为目标 \(x\) 本质是低维的，所以低容量（``under-capacity''）的网络瓶颈足以捕获其特征；而预测高维噪声 \(\epsilon\) 时，缩小网络容量则会导致灾难性失效。
 \item
   \textbf{无预训练与无额外损失}：不需要任何形式的预训练，也不依赖感知损失（Perceptual Loss）或对抗损失（Adversarial Loss）。
-  唯一新增的模块是在Transformer后加的一个全连接层，把生成的低维嵌入向量映射为高维的图像。这样做有效的原因在于，真实世界的高维图像斑块并不是随机杂乱的，它们具有极强的空间连贯性和规律，因此它们被紧紧约束在一个极低维的``流形''上。Transformer内部的低维隐变量已经足以捕捉这些低维的结构信息，最后的那个全连接层，本质上只是把这个低维结构``旋转''并``映射''回高维空间中对应的流形位置而已。
 \end{enumerate}
+
+唯一新增的模块是在Transformer后加的一个全连接层，把生成的低维嵌入向量映射为高维的图像。这样做有效的原因在于，真实世界的高维图像斑块并不是随机杂乱的，它们具有极强的空间连贯性和规律，因此它们被紧紧约束在一个极低维的``流形''上。Transformer内部的低维隐变量已经足以捕捉这些低维的结构信息，最后的那个全连接层，本质上只是把这个低维结构``旋转''并``映射''回高维空间中对应的流形位置而已。
 
 时间步和Diffusion Transformer一样，通过自适应层归一化的方式注入。
 
@@ -1202,8 +1207,15 @@ JiT 的架构可以说是``除了标准的图像 Transformer，什么都没有''
 \]
 
 在这里，归一化的尺度和偏移完全由当前的时间步 \(t\) 动态决定。
-4. \textbf{Zero 初始化（Zero Initialization）}：
-这是 adaLN-Zero 的核心创新点。回归 \(\gamma,\beta,\alpha\) 的线性层，其权重和偏置在网络初始化时会被严格设为 \(0\)。这意味着在训练之初，缩放因子不起作用，平移为零，且残差块的门控因子 \(\alpha=0\)。这使得每一个 Transformer Block 在初始化时等效于一个恒等映射（Identity Mapping）。这种设计极大地稳定了深层网络在训练早期的梯度流动，这对于在原始高维像素空间直接训练大规模 Transformer 尤为重要。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\item
+  \textbf{Zero 初始化（Zero Initialization）}：
+
+  这是 adaLN-Zero 的核心创新点。回归 \(\gamma,\beta,\alpha\) 的线性层，其权重和偏置在网络初始化时会被严格设为 \(0\)。这意味着在训练之初，缩放因子不起作用，平移为零，且残差块的门控因子 \(\alpha=0\)。这使得每一个 Transformer Block 在初始化时等效于一个恒等映射（Identity Mapping）。这种设计极大地稳定了深层网络在训练早期的梯度流动，这对于在原始高维像素空间直接训练大规模 Transformer 尤为重要。
+\end{enumerate}
 
 \hypertarget{ux4e09ux65e2ux7136ux5982ux6b64ux4e3aux4ec0ux4e48ux4e1aux754cux4ecdux7136ux4f7fux7528ux539fux59cbux6269ux6563ux6a21ux578b}{%
 \subsection{三、既然如此，为什么业界仍然使用原始扩散模型？}\label{ux4e09ux65e2ux7136ux5982ux6b64ux4e3aux4ec0ux4e48ux4e1aux754cux4ecdux7136ux4f7fux7528ux539fux59cbux6269ux6563ux6a21ux578b}}

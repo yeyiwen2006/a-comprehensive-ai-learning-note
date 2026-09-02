@@ -987,7 +987,7 @@ X=[x_1,x_2,\ldots,x_N],\qquad Y=[y_1,y_2,\ldots,y_N]
 \textbf{输入 Token：} 假设将输入特征 \(x_i\) 和目标标签 \(y_i\) 拼接成一个列向量作为 token，即：
 
 \[
-e_i=\begin{pmatrix}x_i\\\\y_i\end{pmatrix}
+e_i=\begin{pmatrix}x_i\\y_i\end{pmatrix}
 \]
 
 引入一个由权重矩阵 \(W\in\mathbb{R}^{N_y\times N_x}\) 参数化的参考线性模型 \(y(x)=Wx\)，以及一个包含输入样本 \(x_i\) 和标签 \(y_i\) 的训练数据集 \(D=\{(x_i,y_i)\}_{i=1}^{N}\)。学习的目标是最小化平方误差损失：
@@ -1010,7 +1010,7 @@ L(W)=\frac{1}{2N}\sum_{i=1}^{N}\|Wx_i-y_i\|^2
 对于测试token：
 
 \[
-e_{\mathrm{test}}=\begin{pmatrix}x_{\mathrm{test}}\\\\y_{\mathrm{init}}\end{pmatrix}
+e_{\mathrm{test}}=\begin{pmatrix}x_{\mathrm{test}}\\y_{\mathrm{init}}\end{pmatrix}
 \]
 
 我们初始化 \(y_{\mathrm{init}}\) 为 \(-W_0x_{\mathrm{test}}\)（后面会阐释为什么可以这么做）。通过构造 \(W_Q\)、\(W_K\)、\(W_V\) 矩阵，使得：
@@ -1018,29 +1018,29 @@ e_{\mathrm{test}}=\begin{pmatrix}x_{\mathrm{test}}\\\\y_{\mathrm{init}}\end{pmat
 当前查询 token \(j\) 的 Query 向量：
 
 \[
-q_j=W_Q e_j=\begin{pmatrix}I_x&0\\\\0&0\end{pmatrix}\begin{pmatrix}x_j\\\\y_j\end{pmatrix}=\begin{pmatrix}x_j\\\\0\end{pmatrix}
+q_j=W_Q e_j=\begin{pmatrix}I_x&0\\0&0\end{pmatrix}\begin{pmatrix}x_j\\y_j\end{pmatrix}=\begin{pmatrix}x_j\\0\end{pmatrix}
 \]
 
 上下文 token \(i\) 的 Key 向量：
 
 \[
-k_i=W_K e_i=\begin{pmatrix}I_x&0\\\\0&0\end{pmatrix}\begin{pmatrix}x_i\\\\y_i\end{pmatrix}=\begin{pmatrix}x_i\\\\0\end{pmatrix}
+k_i=W_K e_i=\begin{pmatrix}I_x&0\\0&0\end{pmatrix}\begin{pmatrix}x_i\\y_i\end{pmatrix}=\begin{pmatrix}x_i\\0\end{pmatrix}
 \]
 
 上下文 token \(i\) 的 Value 向量：
 
 \[
-v_i=W_V e_i=\begin{pmatrix}0&0\\\\W_0&-I_y\end{pmatrix}\begin{pmatrix}x_i\\\\y_i\end{pmatrix}=\begin{pmatrix}0\\\\W_0x_i-y_i\end{pmatrix}
+v_i=W_V e_i=\begin{pmatrix}0&0\\W_0&-I_y\end{pmatrix}\begin{pmatrix}x_i\\y_i\end{pmatrix}=\begin{pmatrix}0\\W_0x_i-y_i\end{pmatrix}
 \]
 
 计算注意力：
 
 \[
-k_i^\top q_j=(x_i^\top,0)\begin{pmatrix}x_j\\\\0\end{pmatrix}=x_i^\top x_j
+k_i^\top q_j=(x_i^\top,0)\begin{pmatrix}x_j\\0\end{pmatrix}=x_i^\top x_j
 \]
 
 \[
-\sum_{i=1}^{N}v_i(k_i^\top q_j)=\sum_{i=1}^{N}\begin{pmatrix}0\\\\W_0x_i-y_i\end{pmatrix}(x_i^\top x_j)
+\sum_{i=1}^{N}v_i(k_i^\top q_j)=\sum_{i=1}^{N}\begin{pmatrix}0\\W_0x_i-y_i\end{pmatrix}(x_i^\top x_j)
 \]
 
 \[
@@ -1050,16 +1050,16 @@ PVK^\top q_j=\begin{pmatrix}\eta/N&0\end{pmatrix}\left(\sum_{i=1}^{N}(W_0x_i-y_i
 这意味着对上下文中的 \(W_0x-y\) 进行``聚合''，可以视为得到的是 \(W_0x_{\mathrm{test}}-y_{\mathrm{test}}\)。我们想要的就是这个上下文聚合后得到的 \(y\) 值预测 \(y_{\mathrm{test}}=(W_0+\Delta W)x_{\mathrm{test}}\)，从而上式的下面部分就可以视为 \(W_0x_{\mathrm{test}}-y_{\mathrm{test}}=-\Delta W x_{\mathrm{test}}\)，也就是``原有输出-应然输出''。而这恰好和前面 \(\Delta W\) 的表达式对上了，因此：
 
 \[
-PVK^\top q_j=\begin{pmatrix}0\\\\-\Delta W x_j\end{pmatrix}
+PVK^\top q_j=\begin{pmatrix}0\\-\Delta W x_j\end{pmatrix}
 \]
 
 这意味着对于test token，（1）式等价于：
 
 \[
 \mathrm{Output}
-=\begin{pmatrix}x_{\mathrm{test}}\\\\-W_0x_{\mathrm{test}}\end{pmatrix}
-+\begin{pmatrix}0\\\\-\Delta W x_{\mathrm{test}}\end{pmatrix}
-=\begin{pmatrix}x_{\mathrm{test}}\\\\-(W_0+\Delta W)x_{\mathrm{test}}\end{pmatrix}
+=\begin{pmatrix}x_{\mathrm{test}}\\-W_0x_{\mathrm{test}}\end{pmatrix}
++\begin{pmatrix}0\\-\Delta W x_{\mathrm{test}}\end{pmatrix}
+=\begin{pmatrix}x_{\mathrm{test}}\\-(W_0+\Delta W)x_{\mathrm{test}}\end{pmatrix}
 \tag{4}
 \]
 
@@ -1123,7 +1123,7 @@ y_{K,test}=-W_0x_{\mathrm{test}}-\sum_{k=1}^{K}\Delta W_k x_{\mathrm{test}}
 这样，我们就把一个持续梯度下降的线性模型等价转化为了多个权重不变的线性层，数据在层间单向流动，每流过一个层，所有token（包括上下文token和test token）对应的 \(y\) 值都会减去 \(\Delta Wx\)，每一个这样的层就和Transformer中的每一个注意力层一一对应。值得注意的是，这样的 \(W_0\) 并非显式储存于Transformer的权重中，而是被隐式维护（虽然它也是不变的）：在前面的推理中，我们构造过：
 
 \[
-W_V=\begin{pmatrix}0&0\\\\W_0&-I_y\end{pmatrix}
+W_V=\begin{pmatrix}0&0\\W_0&-I_y\end{pmatrix}
 \]
 
 也就是说这里它由 \(W_V\) 决定。
@@ -1299,14 +1299,14 @@ e^{x_i^T W_{KQ}x_j} \approx 1 + x_i^T W_{KQ}x_j
 
 \[
 \begin{pmatrix}
-1+x_1^T W_{KQ}x_j \\\\
-\vdots \\\\
+1+x_1^T W_{KQ}x_j \\
+\vdots \\
 1+x_N^T W_{KQ}x_j
 \end{pmatrix}
 = \mathbf{1}+
 \begin{pmatrix}
-x_1^T W_{KQ}x_j \\\\
-\vdots \\\\
+x_1^T W_{KQ}x_j \\
+\vdots \\
 x_N^T W_{KQ}x_j
 \end{pmatrix}
 = \mathbf{1}+K^Tq_j
@@ -1346,10 +1346,10 @@ x_N^T W_{KQ}x_j
 \[
 \mathrm{Output} \approx PV \left[
 \begin{pmatrix}
-1+x_1^TW_{1,KQ}x_j \\\\
+1+x_1^TW_{1,KQ}x_j \\
 \vdots
 \end{pmatrix} - \begin{pmatrix}
-1+x_1^TW_{2,KQ}x_j \\\\
+1+x_1^TW_{2,KQ}x_j \\
 \vdots
 \end{pmatrix}
 \right]
@@ -1360,7 +1360,7 @@ x_N^T W_{KQ}x_j
 \[
 \begin{aligned}
 (1+x_i^TW_{1,KQ}x_j)-(1+x_i^TW_{2,KQ}x_j)
-&= 1-1+x_i^TW_{1,KQ}x_j-x_i^TW_{2,KQ}x_j \\\\
+&= 1-1+x_i^TW_{1,KQ}x_j-x_i^TW_{2,KQ}x_j \\
 &= x_i^T(W_{1,KQ}-W_{2,KQ})x_j
 \end{aligned}
 \]

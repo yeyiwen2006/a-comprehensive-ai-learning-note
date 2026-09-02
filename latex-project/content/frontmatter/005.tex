@@ -7,6 +7,12 @@
 \begin{itemize}
 \tightlist
 \item
+  全量复核 168 篇公开 Markdown 的 GitHub 数学与段落格式，修复 76 篇正文中的数学或段落格式问题；其中将分布在 63 篇正文及 README 中的 409 处有序列表标记改为 CommonMark 可识别的写法，并补齐标题、列表、正文和公式块之间缺失的空行。修正 \texttt{23.2\ 基于搜索的方法} 中与正文粘连的块公式定界符；修正 \texttt{15.6\ 注意力机制与梯度下降的等价性}、\texttt{21.5\ 强化微调前沿研究} 中矩阵与对齐环境中过量的反斜杠，以及 \texttt{25.2\ 模型的记忆} 中被隐藏制表符破坏的 \texttt{\textbackslash{}to}；同时处理会被 Markdown 误判为链接、强调、HTML 或正文的裸数学表达式、代码、伪代码与伪标签。增强上传前校验，使同行夹带正文的 \texttt{\$\$} 直接报错；章节数、文件数、正文字数和图片统计均未因这些格式修复而变化。
+\item
+  为 \texttt{20.3\ 流形假设与超连接} 补入正文开头提及的 Bengio、Courville 与 Vincent 表征学习综述论文。
+\item
+  修复 LaTeX 版本的数学与段落排版：为 Pandoc 生成的无界宽表格设置可换行列宽并校正超出正文宽度的比例表格；重排 HMM 后向递归、GRPO、序列级 KL、NF4 向量和 Diffusion Forcing ELBO 等过长公式；恢复 KV Cache 小节被误解析的复杂度记号，并消除图片前的段首缩进。重新生成 35 章内容并完成两遍 XeLaTeX 编译，609 页 A4 PDF 无越界、缺字、未定义命令及交叉引用待更新警告。
+\item
   将 README 与 PDF 封面标题更新为 \texttt{A\ Comprehensive\ AI\ Learning\ Note（v2.0）}，并通过固定宽度缩放使 PDF 标题保持在一行；同时把 PDF 封面落款日期更新为 \texttt{2026年9月2日}。删除 \texttt{35.1}、\texttt{35.2} 中 Jim Fan 演讲参考文献末尾的中文说明，仅保留正式的 \texttt{{[}Video{]}} 文献条目。
 \item
   按最新 Word 原稿同步 \texttt{30.1\ 具身智能模型的架构路线}：更新传统模块化、分层模型、VLA 与 WAM 四类路线的表述，补充世界模型规划作用；重写 OpenVLA、\(\pi_0\) 与 LingBot-VA 2.0 的动作空间说明，并新增从中间动作表示经 IK、运动学和传统控制模块转换到底层电机指令，以及策略层本体适配与控制层转换的区别。逐张确认原稿5张图片均无 DrawingML 裁剪且全部属于文字/公式截图，继续以 Markdown/LaTeX 转写而不新增公开图片；依据正文增补 YOLO、SLAM、SayCan、Code as Policies、PaLM-E、RT-2、WAM 综述、CrossFormer、URDF、逆运动学、阻抗控制、MPC 与 PID 等13条可核验来源。README 同步标明当前为 v2.0，完善第4至第6部分的重构说明，并将正文统计更新为约37.2万字。

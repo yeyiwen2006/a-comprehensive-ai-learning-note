@@ -334,7 +334,14 @@ u_t^i(x^i,z)=\frac{\dot{\kappa}_t}{1-\kappa_t}[p_{1\mid t}(x^i\mid z)-\delta_z(x
 \]
 
 其中 \(p_{1\mid t}(x^i\mid z)=\mathbb{E}[X_1\mid X_t=z]\) 是\textbf{概率去噪器（Probability Denoiser）}。这意味着速度场可以通过学习一个预测目标 \(X_1\) 分布的神经网络来参数化。
-3. 训练目标
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  训练目标
+\end{enumerate}
 
 \textbf{定理 3 的威力}：它把复杂的``速度计算''转化为了一个简单的监督学习任务。公式 \(u_t\propto p_{1\mid t}-\delta_z\) 告诉我们：只要训练一个神经网络，输入当前带噪声的句子 \(z\) 和时间 \(t\)，预测原始干净句子 \(X_1\) 的概率分布 \(p_{1\mid t}\)，这个网络就自动定义了正确的``流''速度。
 

@@ -310,11 +310,11 @@ int main() {
 
 （1）同步执行
 
-for \_ in range(10000):
-
-y = x + 1
-
-y.wait\_to\_read() \# 强制每次都等
+\begin{verbatim}
+for _ in range(10000):
+    y = x + 1
+    y.wait_to_read()  # 强制每次都等
+\end{verbatim}
 
 流程：Python发令 -\textgreater{} 等待 -\textgreater{} C++计算 -\textgreater{} Python发令 -\textgreater{} 等待 -\textgreater{} C++计算\ldots{}
 
@@ -322,11 +322,12 @@ y.wait\_to\_read() \# 强制每次都等
 
 （2）异步执行
 
-for \_ in range(10000):
+\begin{verbatim}
+for _ in range(10000):
+    y = x + 1
 
-y = x + 1
-
-npx.waitall() \# 最后等一次
+npx.waitall()  # 最后等一次
+\end{verbatim}
 
 流程：Python疯狂发令（发发发\ldots），同时 C++在后台疯狂计算（算算算\ldots）。
 
@@ -342,11 +343,11 @@ npx.waitall() \# 最后等一次
 
 既然Python扔下任务就走了，如果后面的任务依赖前面的结果怎么办？比如：
 
+\begin{verbatim}
 x = np.ones((1, 2))
-
 y = np.ones((1, 2))
-
-z = x * y + 2 * x \# z 的计算依赖 x 和 y
+z = x * y + 2 * x  # z 的计算依赖 x 和 y
+\end{verbatim}
 
 后端（厨房）非常聪明，它维护着一张计算图（依赖图）。当后端拿到z的计算任务时，它会检查：计算z需要x和y的结果。如果x和y还没算好，后端会把z的任务挂起，先算x和y。这就保证了：即使Python发令发得飞快，计算顺序也不会乱。
 

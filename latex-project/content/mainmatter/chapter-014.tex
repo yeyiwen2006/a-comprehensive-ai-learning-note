@@ -571,11 +571,12 @@ MBPO 的分支推演从真实经验池中的状态出发：
 
 伪代码：
 
+\begin{verbatim}
 初始化;
 
 先随机玩 5000 步存入真实池;
 
-for epoch in range(total\_epochs):
+for epoch in range(total_epochs):
 
 --- 步骤 A: 真实交互 ---
 
@@ -585,7 +586,7 @@ for epoch in range(total\_epochs):
 
 --- 步骤 B: 训练/更新模型 ---
 
-if epoch \% 250 == 0: \# 每 250 步真实交互，重新训练一次模型
+if epoch % 250 == 0: # 每 250 步真实交互，重新训练一次模型
 
 使用真实数据训练模型，以最小化Negative Log-Likelihood;
 
@@ -593,7 +594,7 @@ if epoch \% 250 == 0: \# 每 250 步真实交互，重新训练一次模型
 
 从真实池中选取起点;
 
-for i in range(k\_steps): \# k步推演
+for i in range(k_steps): # k步推演
 
 由当前策略产生动作，随机选一个模型网络预测下一个状态和奖励;
 
@@ -603,11 +604,12 @@ for i in range(k\_steps): \# k步推演
 
 --- 步骤 D: 策略更新 (SAC) ---
 
-for \_ in range(G\_updates): \# 环境每走1步，SAC训练G次(如 20 次)
+for _ in range(G_updates): # 环境每走1步，SAC训练G次(如 20 次)
 
 混合采样(模型数据占比通常很高);
 
 更新SAC参数;
+\end{verbatim}
 
 \hypertarget{ux53c2ux8003ux6587ux732e-62}{%
 \subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}

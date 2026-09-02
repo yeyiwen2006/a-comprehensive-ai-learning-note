@@ -515,18 +515,14 @@ Value 计算 & 在采样时顺便计算 \(V(s_t)\)。 & 同样需要计算 \(V(s
 
 PPO 与 VAPO 在优势估计上的差异：
 
+\textbf{PPO}：
+
 \begin{itemize}
 \tightlist
 \item
-  \textbf{PPO}：
-
-  \begin{itemize}
-  \tightlist
-  \item
-    算法是标准 GAE（Generalized Advantage Estimation）。
-  \item
-    公式为：
-  \end{itemize}
+  算法是标准 GAE（Generalized Advantage Estimation）。
+\item
+  公式为：
 \end{itemize}
 
 \[
@@ -536,22 +532,23 @@ A_t
 \]
 
 \begin{itemize}
+\tightlist
 \item
   特征是 \(\lambda\) 是固定常数，例如 0.95。
 \item
   局限是对长短不一的序列使用相同视野，容易导致长序列信号丢失。
-\item
-  \textbf{VAPO}：
+\end{itemize}
 
-  \begin{itemize}
-  \tightlist
-  \item
-    算法是解耦 GAE + 长度自适应 GAE。
-  \item
-    步骤 1：先计算每个回答 \(o_i\) 的长度 \(l_i\)。
-  \item
-    步骤 2：为每个样本单独计算 \(\lambda_i\)，满足：
-  \end{itemize}
+\textbf{VAPO}：
+
+\begin{itemize}
+\tightlist
+\item
+  算法是解耦 GAE + 长度自适应 GAE。
+\item
+  步骤 1：先计算每个回答 \(o_i\) 的长度 \(l_i\)。
+\item
+  步骤 2：为每个样本单独计算 \(\lambda_i\)，满足：
 \end{itemize}
 
 \[
@@ -1062,7 +1059,7 @@ ExGRPO采用了一种混合策略的优化目标，除了对重要性采样进�
 \left[
 \frac{1}{K}\sum_{i=1}^{K}
 \mathrm{CLIP}\left(w_i(\theta),\hat{A}(o_i,\mathcal{G}_q)\right)
-\right] \\\\
+\right] \\
 &+\rho\cdot
 \mathbb{E}_{q^{\ast}\sim\mathcal{B}_{\mathrm{exp}}}
 \left[

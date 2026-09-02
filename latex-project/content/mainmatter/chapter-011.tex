@@ -912,7 +912,9 @@ L(\theta)=\mathbb{E}\left[\left(r+\gamma\max_{a'}Q(s',a';\theta^-)-Q(s,a;\theta)
 \]
 
 对比来看，Q-Learning 直接修改 \(Q(s,a)\) 的值，增加量正比于 TD Error；DQN 修改的是参数 \(\theta\)，使 \(Q(s,a;\theta)\) 的输出值沿梯度方向变化，变化幅度同样正比于 TD Error。
-\#\#\# 四、经验回放
+
+\hypertarget{ux56dbux7ecfux9a8cux56deux653e}{%
+\subsection{四、经验回放}\label{ux56dbux7ecfux9a8cux56deux653e}}
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
