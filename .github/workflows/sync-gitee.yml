@@ -41,7 +41,7 @@ jobs:
 
       - name: Checkout GitHub repository
         if: steps.config.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
