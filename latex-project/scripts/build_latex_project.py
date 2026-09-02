@@ -23,7 +23,7 @@ TYPO_REPORT = PROJECT / "TYPO_REPORT.md"
 
 ROOT_MARKDOWN = [
     "README.md",
-    "学习路径.md",
+    "初学者学习路径.md",
     "DISCLAIMER.md",
     "CONTRIBUTING.md",
     "CHANGELOG.md",
@@ -110,7 +110,8 @@ def latex_escape(text: str) -> str:
 
 def part_heading(title: str) -> str:
     escaped = latex_escape(title)
-    return raw_latex(rf"\part*{{{escaped}}}" + "\n" + rf"\addcontentsline{{toc}}{{part}}{{{escaped}}}")
+    displayed = escaped.replace(" ", r"\ ", 1)
+    return raw_latex(rf"\part*{{{displayed}}}" + "\n" + rf"\addcontentsline{{toc}}{{part}}{{{displayed}}}")
 
 
 def split_front_matter(text: str) -> tuple[list[str], str]:
@@ -542,6 +543,7 @@ def write_main_tex() -> None:
 \usepackage{bookmark}
 \usepackage{caption}
 \usepackage{titlesec}
+\usepackage{indentfirst}
 \usepackage{fancyhdr}
 \usepackage{microtype}
 \usepackage{fancyvrb}
@@ -578,10 +580,10 @@ def write_main_tex() -> None:
 }
 \makeatother
 
-\definecolor{latexprojectBlue}{HTML}{1F4E79}
+\definecolor{latexprojectBlue}{HTML}{1565C0}
 \definecolor{latexprojectGray}{HTML}{555555}
-\definecolor{latexprojectLightBlue}{HTML}{EAF3FB}
-\definecolor{latexprojectRule}{HTML}{B6CFE5}
+\definecolor{latexprojectLightBlue}{HTML}{E3F2FD}
+\definecolor{latexprojectRule}{HTML}{64B5F6}
 
 \hypersetup{
   unicode=true,
@@ -804,7 +806,7 @@ def split_body_tex() -> None:
             in_mainmatter = True
         elif part_match:
             relative = Path("content") / "mainmatter" / f"part-{part_index:02d}.tex"
-            title = part_match.group(1)
+            title = part_match.group(1).replace(r"\ ", " ")
             part_index += 1
             in_mainmatter = True
         elif chapter_match and in_mainmatter:

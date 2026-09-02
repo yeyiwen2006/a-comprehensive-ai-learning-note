@@ -717,6 +717,7 @@ def clean_outputs(repo_root: Path, local_only_root: Path) -> None:
         repo_root / "引用与版权清理报告.md",
         repo_root / "目录.md",
         repo_root / "学习路径.md",
+        repo_root / "初学者学习路径.md",
         repo_root / "TODO.md",
         repo_root / "README.md",
         repo_root / "LICENSE",
@@ -768,64 +769,36 @@ def build_directory_markdown(records: list[ConvertedDoc]) -> str:
 def build_learning_path_markdown() -> str:
     return textwrap.dedent(
         """\
-        # 学习路径
+        # 初学者学习路径
 
-        本文件面向第一次进入仓库的学习者，给出几条可执行的阅读路线。笔记内容覆盖面很广，不建议从目录第一篇开始机械阅读。
+        本文件面向第一次进入仓库的初学者。建议先按以下顺序阅读：
 
-        ## 路线 A：人工智能入门
+        1. [1.1 机器学习的分类](docs/01-deep-learning/01-深度学习基础理论/01-01-机器学习的分类.md)
+        2. [1.2 神经网络与深度学习](docs/01-deep-learning/01-深度学习基础理论/01-02-神经网络与深度学习.md)
+        3. [1.3 梯度下降与反向传播](docs/01-deep-learning/01-深度学习基础理论/01-03-梯度下降与反向传播.md)
+        4. [1.4 过拟合](docs/01-deep-learning/01-深度学习基础理论/01-04-过拟合.md)
+        5. [1.5 交叉熵损失（CE）与Softmax回归](docs/01-deep-learning/01-深度学习基础理论/01-05-交叉熵损失-CE与Softmax回归.md)
+        6. [1.6 The Bitter Lesson](docs/01-deep-learning/01-深度学习基础理论/01-06-The-Bitter-Lesson.md)
+        7. [2.1 模型正则化](docs/01-deep-learning/02-神经网络训练的常用方法/02-01-模型正则化.md)
+        8. [2.2 超参数优化与验证集](docs/01-deep-learning/02-神经网络训练的常用方法/02-02-超参数优化与验证集.md)
+        9. [2.3 批量规范化（BN）](docs/01-deep-learning/02-神经网络训练的常用方法/02-03-批量规范化-BN.md)
+        10. [3.1 卷积神经网络（CNN）](docs/01-deep-learning/03-卷积神经网络/03-01-卷积神经网络-CNN.md)
+        11. [3.4 残差网络（ResNet）](docs/01-deep-learning/03-卷积神经网络/03-04-残差网络-ResNet.md)
+        12. [7.1 硬件部件](docs/01-deep-learning/07-计算性能与AI-Infra/07-01-硬件部件.md)
+        13. [15.1 注意力机制的核心原理](docs/03-large-language-model/15-注意力机制与Transformer/15-01-注意力机制的核心原理.md)
+        14. [15.3 Transformer](docs/03-large-language-model/15-注意力机制与Transformer/15-03-Transformer.md)
+        15. [15.4 位置编码](docs/03-large-language-model/15-注意力机制与Transformer/15-04-位置编码.md)
+        16. [16.1 GPT与预训练](docs/03-large-language-model/16-大语言模型的基本原理/16-01-GPT与预训练.md)
+        17. [16.2 词嵌入（Embedding）](docs/03-large-language-model/16-大语言模型的基本原理/16-02-词嵌入-Embedding.md)
+        18. [16.3 生成过程的干预](docs/03-large-language-model/16-大语言模型的基本原理/16-03-生成过程的干预.md)
+        19. [16.4 后训练](docs/03-large-language-model/16-大语言模型的基本原理/16-04-后训练.md)
+        20. [16.5 混合专家模块](docs/03-large-language-model/16-大语言模型的基本原理/16-05-混合专家模块.md)
+        21. [16.6 多模态大语言模型](docs/03-large-language-model/16-大语言模型的基本原理/16-06-多模态大语言模型.md)
+        22. [22.1 智能体及其架构](docs/04-llm-agents/22-智能体/22-01-智能体及其架构.md)
+        23. [22.2 提示工程](docs/04-llm-agents/22-智能体/22-02-提示工程.md)
+        24. [22.5 编程智能体框架](docs/04-llm-agents/22-智能体/22-05-编程智能体框架.md)
 
-        适合已有基础数学和编程能力，但还没有系统学习深度学习的读者。
-
-        1. 第1部分：1.深度学习基础理论
-        2. 第1部分：2.神经网络训练的常用方法
-        3. 第1部分：3.1 卷积神经网络（CNN）
-        4. 第1部分：3.4 残差网络（ResNet）
-        5. 第3部分：15.注意力机制与Transformer
-        6. 第3部分：16.大语言模型的基本原理
-
-        ## 路线 B：强化学习
-
-        适合希望理解经典 RL、RLHF、PPO、GRPO 等内容的读者。
-
-        1. 第2部分：10.强化学习的基本知识
-        2. 第2部分：11.基于价值的强化学习
-        3. 第2部分：12.基于策略的强化学习
-        4. 第2部分：13.综合价值与策略的算法
-        5. 第3部分：17.强化微调
-
-        ## 路线 C：大语言模型与智能体
-
-        适合希望系统理解现代 LLM 架构、训练、推理、工具调用和 RAG 的读者。
-
-        1. 第3部分：15.注意力机制与Transformer
-        2. 第3部分：16.大语言模型的基本原理
-        3. 第3部分：17.强化微调
-        4. 第3部分：19.注意力机制的工程优化
-        5. 第4部分：22.大模型智能体
-        6. 第4部分：23.大模型的推理增强
-        7. 第4部分：24.工具调用
-        8. 第4部分：25.上下文与记忆
-
-        ## 路线 D：多模态生成、世界模型与具身智能
-
-        适合已经具备深度学习、Transformer 和生成模型基础，想了解前沿研究方向的读者。
-
-        1. 第5部分：26.扩散模型
-        2. 第5部分：27.流匹配模型
-        3. 第5部分：28.多模态生成
-        4. 第5部分：29.统一多模态理解-生成模型
-        5. 第6部分：30.具身智能的基本知识
-        6. 第6部分：31.VLA模型
-        7. 第6部分：32.世界模型
-        8. 第6部分：33.世界-动作模型
-        9. 第6部分：34.具身智能的数据范式
-        10. 第6部分：35.具身智能的展望
-
-        ## 阅读提示
-
-        - 标题含“论文”的文档通常是前沿论文阅读笔记，不代表领域共识或业界标准做法。
-        - 图片内容暂不使用自动 OCR；公式、表格和图示会按批次人工重建。
-        - 如果你发现概念错误、公式错误、引用缺失或图片重建问题，欢迎通过 Issue 反馈。
+        完成上述内容后，可以再根据自身兴趣阅读感兴趣的章节。完整内容参见[目录](目录.md)。
         """
     )
 
@@ -838,7 +811,7 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 
 这是一份面向人工智能学习者的中文学习笔记，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、扩散模型、多模态生成、世界模型与具身智能等方向。
 
-本仓库由作者叶逸文的本地 Word 笔记自动转换而来。原始 Word 文件不上传 GitHub；本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本。
+本仓库由作者叶逸文的本地 Word 笔记自动转换而来。原始 Word 文件不上传 GitHub；本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本及与之对应的 LaTeX 版本。
 
 ## 内容范围
 
@@ -851,9 +824,15 @@ def build_readme(records: list[ConvertedDoc], usage_text: str) -> str:
 
 当前上传 Markdown 文档数：`{upload_count}`。
 
+## 版本说明
+
+- 2026年5月10日发布 v1.0 版本。
+- 2026年5月22日发布 v1.1 版本，对部分图文进行了补充。
+- 2026年9月2日发布 v2.0 版本（当前版本），对第2部分（强化学习）、第3部分（大语言模型）进行了微调，删除了一些非主流的内容；并对原第4部分、第5部分（涉及大模型智能体、扩散模型、多模态生成、具身智能、世界模型等）进行了重构，新增了业界的一些新方向、新趋势，删除了一些非主流、学习价值不高的内容，修改了部分文字表述。
+
 ## 推荐入口
 
-- [学习路径](学习路径.md)
+- [初学者学习路径](初学者学习路径.md)
 - [完整目录](目录.md)
 - [免责声明](DISCLAIMER.md)
 - [贡献说明](CONTRIBUTING.md)
@@ -878,7 +857,7 @@ Word 原稿中有部分内容是图片格式。早期转换曾尝试使用普通
 
 这份资料本来是个人学习笔记，包含作者整理、教材学习笔记、论文阅读笔记、业界动态整理，以及 AI 辅助写作和修改。参考文献只应写入已核验来源；仍可能存在当时漏标来源的情况。请以原论文、官方文档和权威教材为最终依据。
 
-标题含“论文”的文档通常是对学界或业界探索性工作的阅读笔记，不代表领域共识或业界标准范式。
+部分内容来自前沿研究论文，代表对应论文方法或作者理解，不应直接视为领域共识、工程最佳实践或业界标准范式。
 
 ## 许可协议
 
@@ -917,7 +896,7 @@ def build_disclaimer() -> str:
 
         ## 前沿研究说明
 
-        标题含“论文”的文档通常是论文阅读笔记，代表对应论文方法或作者理解，不应直接视为领域共识、工程最佳实践或业界标准范式。
+        部分内容来自前沿研究论文，代表对应论文方法或作者理解，不应直接视为领域共识、工程最佳实践或业界标准范式。
         """
     )
 
@@ -1070,7 +1049,7 @@ def build_structure_doc() -> str:
         - `CITATION.cff`：推荐引用格式。
         - `CHANGELOG.md`：开源版更新记录。
         - `目录.md`：自动生成的全量上传目录。
-        - `学习路径.md`：面向不同学习目标的阅读路线。
+        - `初学者学习路径.md`：初学者建议优先阅读的内容顺序。
         - `docs/`：由 Word 原稿自动转换出的公开 Markdown 正文。
         - `tools/convert_docx_to_markdown.py`：批量转换脚本。
         - `tools/winrt_ocr.ps1`：调用 Windows 自带 OCR 的辅助脚本。
@@ -1106,7 +1085,7 @@ def build_structure_doc() -> str:
         - `convert_single_doc`：转换单个 Word 文档，生成 Markdown 并返回统计记录。
         - `clean_outputs`：清理导出目录中的旧生成物，不接触 Word 原稿。
         - `build_directory_markdown`：生成当前公开章节的完整上传目录。
-        - `build_learning_path_markdown`：生成学习路径。
+        - `build_learning_path_markdown`：生成初学者学习路径。
         - `build_readme`：生成 GitHub 首页。
         - `build_disclaimer`：生成免责声明。
         - `build_contributing`：生成贡献说明。
@@ -1141,7 +1120,7 @@ def write_project_files(repo_root: Path, records: list[ConvertedDoc], usage_text
         "CITATION.cff": build_citation(),
         "CHANGELOG.md": build_changelog(),
         "目录.md": build_directory_markdown(records),
-        "学习路径.md": build_learning_path_markdown(),
+        "初学者学习路径.md": build_learning_path_markdown(),
     }
     for relative, content in files.items():
         (repo_root / relative).write_text(content, encoding="utf-8")

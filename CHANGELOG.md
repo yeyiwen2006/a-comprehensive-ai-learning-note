@@ -2,6 +2,7 @@
 
 ## 2026-09-02
 
+- 将根目录 `学习路径.md` 重命名为 `初学者学习路径.md`，删除原有按主题划分的多条路线，改为24节初学者建议阅读顺序，并在 README 新增 v1.0、v1.1、v2.0 版本说明；同时调整 README 与免责声明中的前沿研究说明，补充仓库包含对应 LaTeX 版本的说明，修复 PDF 目录中“第x部分”与部分标题之间缺少可见空格及标题后首段不缩进的问题，将 PDF 强调色调整为由天蓝到蓝的统一色阶，并同步更新入口链接、转换与校验脚本及 LaTeX 版本。
 - 修复 `31.2 VLA模型的强化学习` 在 GitHub 上仍存在的数学公式渲染问题：消除被误识别为 Markdown 一级标题的独立等号行，修正紧邻中文标点、星号上标及参考文献链接文字中的未渲染公式；并按 Word 可见原稿补回噪声转移的步长因子，校正 Flow-Noise 内部状态、噪声网络及 Policy Agnostic RL 的参数符号。
 - 修复 `32.3 状态空间模型`、`33.1 世界-动作模型概述`、`33.2 世界-动作统一生成模型` 和 `33.3 推理时不生成视频的世界-动作模型` 的 GitHub 数学公式渲染问题：消除独立等号造成的 Setext 标题误判，修正行内公式边界、集合定界符及小于号的转义，并按 Word 可见内容逐式核对；同时让 LaTeX 生成器兼容 GitHub 的反引号行内数学语法，并据此清理 `15.6`、`21.5` 既有 LaTeX 输出中的反引号。
 - 补全第31至35章中正文点名成果的来源：`31.1` 增补 LAPA、UniVLA 与 Moto，`32.2` 增补 RSSM、RTFM、IC-World、C-SWM、Marble 与 LeWorldModel，`32.3` 明确 PlaNet/RSSM、Dreamer 3、Dreamer 4 的对应文献，`33.2` 增补 LingBot-VA、LingBot-VA 2.0、PAR、PhysGen 与 DreamDojo，`33.4` 增补 CraftNet、Tactile-VLA 与 ForceVLA2，`34.1` 增补 GigaWorld-Policy，`35.1` 与 `35.2` 增补 Jim Fan 在 AI Ascent 2026 的“Robotics' End Game”演讲。
