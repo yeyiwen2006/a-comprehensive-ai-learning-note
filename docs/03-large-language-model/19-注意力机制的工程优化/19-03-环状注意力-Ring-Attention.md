@@ -10,7 +10,7 @@ local_only: false
 # 19.3 环状注意力（Ring Attention）
 
 
-Ring Attention（环状注意力）是分布式系统（多GPU/TPU）上的Flash Attention延伸，Google Gemini等模型均运用了此技术。
+Ring Attention（环状注意力）是一种面向多 GPU/TPU 分布式系统的块式注意力方法，通过让 Key/Value 块在设备环上轮转，使超长序列的注意力计算能够跨设备展开。公开论文可以支持这一算法原理，但若没有模型技术报告的明确披露，不应进一步断言某个具体商用模型采用了该实现。
 
 FlashAttention 解决的是单张显卡内，如何通过分块计算（Tiling）把超长序列塞进有限的 SRAM 中；Ring Attention 解决的是多张显卡间，如何通过分块轮转，把超长序列（比如100万+ Token）塞进集群的显存中，并打破单卡显存的物理上限。
 

@@ -667,14 +667,24 @@ VAEs 擅长学习一个平滑且有意义的潜空间（适合插值和理解数
   挑战：方法简单有效、成本低，但难以创造真正新的类别内变化。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-37}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-37}}
+\hypertarget{ux53c2ux8003ux6587ux732e-38}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-38}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Goodfellow, I., Pouget-Abadie, J., Mirza, M., et al.~(2014). \href{https://papers.nips.cc/paper/5423-generative-adversarial-nets}{Generative Adversarial Nets}. NeurIPS 2014.
+\item
+  Karras, T., Laine, S., \& Aila, T. (2019). \href{https://openaccess.thecvf.com/content_CVPR_2019/html/Karras_A_Style-Based_Generator_Architecture_for_Generative_Adversarial_Networks_CVPR_2019_paper.html}{A Style-Based Generator Architecture for Generative Adversarial Networks}. CVPR 2019.（StyleGAN）
+\item
+  Brock, A., Donahue, J., \& Simonyan, K. (2019). \href{https://arxiv.org/abs/1809.11096}{Large Scale GAN Training for High Fidelity Natural Image Synthesis}. ICLR 2019.（BigGAN）
+\item
+  Isola, P., Zhu, J.-Y., Zhou, T., \& Efros, A. A. (2017). \href{https://openaccess.thecvf.com/content_cvpr_2017/html/Isola_Image-To-Image_Translation_With_CVPR_2017_paper.html}{Image-to-Image Translation with Conditional Adversarial Networks}. CVPR 2017.（Pix2Pix）
+\item
+  Zhu, J.-Y., Park, T., Isola, P., \& Efros, A. A. (2017). \href{https://openaccess.thecvf.com/content_iccv_2017/html/Zhu_Unpaired_Image-To-Image_Translation_ICCV_2017_paper.html}{Unpaired Image-to-Image Translation Using Cycle-Consistent Adversarial Networks}. ICCV 2017.（CycleGAN）
+\item
+  Ronneberger, O., Fischer, P., \& Brox, T. (2015). \href{https://arxiv.org/abs/1505.04597}{U-Net: Convolutional Networks for Biomedical Image Segmentation}. MICCAI 2015.
 \end{itemize}
 
 \clearpage
@@ -819,12 +829,10 @@ D_{KL}(p_{data}\parallel M)=\sum_x p_{data}(x)\log 2=\log 2
 \hypertarget{ux4e8cux566aux58f0ux6ce8ux5165}{%
 \subsubsection{（二）噪声注入}\label{ux4e8cux566aux58f0ux6ce8ux5165}}
 
-``噪声注入'' (Noise Injection) 的原理，就是用来``对抗'' \(G\)（生成器）变得``太确定''、``太死板''的。``模式崩溃''的发生是因为 \(G\) 找到了一个``捷径''：它发现只要生成``7''这个数字，\(D\)（判别器）就没法分辨。于是 \(G\) 就``偷懒''了，无论给它什么输入 \(z\)，它都只生成``7''。从而我们还在``生产线''的中间好几个工序（即 \(G\) 的中间层）上，随机``洒''上一些新的、小的噪声。
+``噪声注入''不是一种单一、普适的模式崩溃解决方案，噪声加在何处决定了它的作用。向判别器输入添加 instance noise 可以平滑真实分布与生成分布，缓和二者支撑集几乎不重叠时的训练困难；在 StyleGAN 等模型的生成器中逐层注入噪声，主要用于控制头发、雀斑等随机细节，并不能据此断言它能普遍防止模式崩溃。因此，使用噪声时应明确具体方法及其目标，不能把``在生成器中间层加噪声''直接等同于通用的防模式崩溃机制。
 
-它让 \(D\) 的``记忆''失效了。没有抖动时 \(D\) 可能会学会``记住'' \(G\) 生成的那个``完美的7''。它只要看到这个``完美的7''，就给出某个特定的置信度分数。加入噪声后，即使 \(G\) 两次都想生成那个``完美的7''，但由于``抖动''的存在，它两次生成的``7''都会有细微的、随机的差别。\(D\) 被迫去学习数字真正的、普遍的特征（比如它该有的笔画、结构），而不是去记 \(G\) 的某一个``作品''。这反过来又``逼迫'' \(G\) 必须学会生成各种各样、符合模式的、高质量的数字，而不能只依赖一个``捷径''。通过在中间层增加随机性，迫使 \(G\) 学习一个更健壮、更多样化的``生成策略''，从而防止它``崩溃''到一个单一的模式上。
-
-\hypertarget{ux53c2ux8003ux6587ux732e-38}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-38}}
+\hypertarget{ux53c2ux8003ux6587ux732e-39}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-39}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -832,7 +840,13 @@ D_{KL}(p_{data}\parallel M)=\sum_x p_{data}(x)\log 2=\log 2
 \item
   Goodfellow, I., Pouget-Abadie, J., Mirza, M., et al.~(2014). \href{https://papers.nips.cc/paper/5423-generative-adversarial-nets}{Generative Adversarial Nets}. NeurIPS 2014.
 \item
+  Arjovsky, M., \& Bottou, L. (2017). \href{https://arxiv.org/abs/1701.04862}{Towards Principled Methods for Training Generative Adversarial Networks}. ICLR 2017.
+\item
   Arjovsky, M., Chintala, S., \& Bottou, L. (2017). \href{https://arxiv.org/abs/1701.07875}{Wasserstein GAN}. ICML 2017.
+\item
+  Gulrajani, I., Ahmed, F., Arjovsky, M., Dumoulin, V., \& Courville, A. (2017). \href{https://proceedings.neurips.cc/paper/2017/hash/892c3b1c6dccd52936e27cbd0ff683d6-Abstract.html}{Improved Training of Wasserstein GANs}. NeurIPS 2017.（WGAN-GP）
+\item
+  Karras, T., Laine, S., \& Aila, T. (2019). \href{https://openaccess.thecvf.com/content_CVPR_2019/html/Karras_A_Style-Based_Generator_Architecture_for_Generative_Adversarial_Networks_CVPR_2019_paper.html}{A Style-Based Generator Architecture for Generative Adversarial Networks}. CVPR 2019.
 \end{itemize}
 
 \clearpage
@@ -1034,7 +1048,7 @@ VAE学习的是一个连续的潜空间，而VQ-VAE则学习一个离散的潜�
   关键机制：向量量化
 \end{enumerate}
 
-和VAE一样，编码器首先将输入数据映射为一个高维向量的高斯分布。但不同于VAE的是，编码器会去查找一个预先定义好的代码本，找到与高斯分布中心最接近的代码向量。这个查找过程就是向量量化。具体到图像处理中：我们输入一个图像（高度H、宽度W、通道数C），我们将图像重新划分为h\emph{w个矩形区域（h\textless H,w\textless W），把这h}w个(H\emph{W}C/(h*w))维向量分别送进VQ-VAE，然后分别转变为Codebook中最相近的向量对应的编码，就得到了图像的embedding编码。
+VQ-VAE 的编码器先把输入映射为连续特征向量，但并不构造 VAE 式的高斯后验。随后，模型在预先定义的代码本中寻找距离该特征最近的代码向量，并用这个离散代码替换连续特征，这一步就是向量量化。具体到图像处理中，编码器会产生一个空间特征网格；网格中每个位置的特征分别量化为代码本中最近向量的索引，从而得到离散的图像 token。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -1052,8 +1066,8 @@ VAE学习的是一个连续的潜空间，而VQ-VAE则学习一个离散的潜�
 
 代表性应用：DALL-E~的第一代和~OpenAI Jukebox~都使用了VQ-VAE的变体来将图像和音频压缩为离散表示，然后用Transformer进行生成。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-39}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-39}}
+\hypertarget{ux53c2ux8003ux6587ux732e-40}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-40}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1062,6 +1076,10 @@ VAE学习的是一个连续的潜空间，而VQ-VAE则学习一个离散的潜�
   Kingma, D. P., \& Welling, M. (2014). \href{https://arxiv.org/abs/1312.6114}{Auto-Encoding Variational Bayes}. ICLR 2014.
 \item
   van den Oord, A., Vinyals, O., \& Kavukcuoglu, K. (2017). \href{https://arxiv.org/abs/1711.00937}{Neural Discrete Representation Learning}. NeurIPS 2017.
+\item
+  Ramesh, A., Pavlov, M., Goh, G., et al.~(2021). \href{https://arxiv.org/abs/2102.12092}{Zero-Shot Text-to-Image Generation}. ICML 2021.（DALL-E）
+\item
+  Dhariwal, P., Jun, H., Payne, C., et al.~(2020). \href{https://arxiv.org/abs/2005.00341}{Jukebox: A Generative Model for Music}. arXiv:2005.00341.
 \end{itemize}
 
 \clearpage

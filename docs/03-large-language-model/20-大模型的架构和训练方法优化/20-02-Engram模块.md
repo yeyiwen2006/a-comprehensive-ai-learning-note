@@ -46,4 +46,4 @@ N取2和3是因为，N=2和N=3覆盖了绝大多数的固定搭配、短语、�
 
 ## 参考文献
 
-- Cheng, X., Zeng, W., Dai, D., et al. (2026). [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372). arXiv:2601.07372.
+- Cheng, X., Tian, R., Zeng, W., et al. (2026). [Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models](https://arxiv.org/abs/2601.07372). arXiv:2601.07372.

@@ -63,7 +63,7 @@ $$
 
 ### （二）Multi-token Prediction
 
-基于自回归生成的世界模型存在着生成速度慢的问题，但在具身智能等领域，这种延迟会对机器人的灵活性造成较大的影响。为了提高推理速度，可以采用Multi-token prediction的方法，一次生成多个token后并行验证。
+基于自回归生成的世界模型存在生成速度慢的问题，但在具身智能等领域，这种延迟会对机器人的灵活性造成较大的影响。一种可选路线是 Multi-token Prediction：在训练时为同一隐藏状态设置多个预测头，同时预测后续若干 token；推理时再结合自推测解码（Self-speculative Decoding）并行提出和验证候选，从而减少串行前向次数。它并非对任意现成自回归模型都能无条件生效，通常需要相应的多 token 预测头或推测解码机制。
 
 ## 二、自回归与扩散的结合范式
 
@@ -147,8 +147,11 @@ $$
 ## 参考文献
 
 - Kondratyuk, D., Yu, L., Gu, X., et al. (2023). [VideoPoet: A Large Language Model for Zero-Shot Video Generation](https://arxiv.org/abs/2312.14125). arXiv:2312.14125.
-- Villegas, R., Yang, J., Hong, S., et al. (2022). [Phenaki: Variable Length Video Generation from Open Domain Textual Description](https://arxiv.org/abs/2210.02399). arXiv:2210.02399.
+- Villegas, R., Babaeizadeh, M., Kindermans, P.-J., et al. (2022). [Phenaki: Variable Length Video Generation From Open Domain Textual Description](https://arxiv.org/abs/2210.02399). arXiv:2210.02399.
 - Peebles, W., & Xie, S. (2023). [Scalable Diffusion Models with Transformers](https://arxiv.org/abs/2212.09748). ICCV.
+- Gloeckle, F., Idrissi, B. Y., Rozière, B., Lopez-Paz, D., & Synnaeve, G. (2024). [Better & Faster Large Language Models via Multi-token Prediction](https://arxiv.org/abs/2404.19737). arXiv:2404.19737.
+- Esser, P., Kulal, S., Blattmann, A., et al. (2024). [Scaling Rectified Flow Transformers for High-Resolution Image Synthesis](https://arxiv.org/abs/2403.03206). arXiv:2403.03206.
+- Gao, Y., Guo, H., Hoang, T., et al. (2025). [Seedance 1.0: Exploring the Boundaries of Video Generation Models](https://arxiv.org/abs/2506.09113). arXiv:2506.09113.
 - Bruce, J., Dennis, M., Edwards, A., et al. (2024). [Genie: Generative Interactive Environments](https://arxiv.org/abs/2402.15391). ICML.
 - Hafner, D., Yan, W., & Lillicrap, T. (2025). [Training Agents Inside of Scalable World Models](https://arxiv.org/abs/2509.24527). arXiv:2509.24527.
 - NVIDIA, Agarwal, N., Ali, A., et al. (2025). [Cosmos World Foundation Model Platform for Physical AI](https://arxiv.org/abs/2501.03575). arXiv:2501.03575.

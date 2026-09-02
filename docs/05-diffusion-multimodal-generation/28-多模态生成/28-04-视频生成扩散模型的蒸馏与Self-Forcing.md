@@ -37,7 +37,7 @@ $$
 
 ## 二、轨迹分段一致性蒸馏（TSCD）
 
-直接让网络跨越极长的时间步去预测 $x_0$，对于视频这种高维且高度非线性的数据来说，学习难度极大，容易陷入局部最优并导致画面模糊。引入自 HyperSD 的 TSCD 技术，其核心思想是“分而治之”。
+直接让网络跨越极长的时间步去预测 $x_0$，对于视频这种高维且高度非线性的数据来说，学习难度极大，容易陷入局部最优并导致画面模糊。引入自 Hyper-SD 的 TSCD 技术，其核心思想是“分而治之”。
 
 1. 时间域分段：将完整的时间轨迹 $[0,T]$ 划分为 $k$ 个连续的子区间：
 
@@ -389,6 +389,7 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
 - Salimans, T., & Ho, J. (2022). [Progressive Distillation for Fast Sampling of Diffusion Models](https://arxiv.org/abs/2202.00512). ICLR.
 - Song, Y., Dhariwal, P., Chen, M., & Sutskever, I. (2023). [Consistency Models](https://arxiv.org/abs/2303.01469). ICML.
 - Yin, T., Gharbi, M., Zhang, R., Shechtman, E., Durand, F., Freeman, W. T., & Park, T. (2024). [One-step Diffusion with Distribution Matching Distillation](https://arxiv.org/abs/2311.18828). CVPR.
+- Ren, Y., Xia, X., Lu, Y., et al. (2024). [Hyper-SD: Trajectory Segmented Consistency Model for Efficient Image Synthesis](https://arxiv.org/abs/2404.13686). NeurIPS.
 - Huang, X., Li, Z., He, G., Zhou, M., & Shechtman, E. (2025). [Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion](https://arxiv.org/abs/2506.08009). arXiv:2506.08009.
 - Savva, G., Michel, O., Lu, D., Waiwitlikhit, S., Meehan, T., Mishra, D., Poddar, S., Lu, J., & Xie, S. (2026). [Solaris: Building a Multiplayer Video World Model in Minecraft](https://arxiv.org/abs/2602.22208). arXiv:2602.22208.
 - Goyal, S., Agrawal, S., Anil, G. G., Jain, P., Paul, S., & Kusupati, A. (2026). [ELT: Elastic Looped Transformers for Visual Generation](https://arxiv.org/abs/2604.09168). arXiv:2604.09168.

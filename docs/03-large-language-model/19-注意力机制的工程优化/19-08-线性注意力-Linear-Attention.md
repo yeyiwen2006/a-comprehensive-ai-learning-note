@@ -305,4 +305,5 @@ $$
 
 ## 参考文献
 
+- Katharopoulos, A., Vyas, A., Pappas, N., & Fleuret, F. (2020). [Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention](https://arxiv.org/abs/2006.16236). ICML 2020.
 - Shen, Z., Zhang, M., Zhao, H., Yi, S., & Li, H. (2021). [Efficient Attention: Attention with Linear Complexities](https://arxiv.org/abs/1812.01243). WACV 2021.

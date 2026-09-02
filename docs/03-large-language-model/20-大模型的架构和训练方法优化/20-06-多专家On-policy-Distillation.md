@@ -24,4 +24,4 @@ DeepSeek-V4采用了多专家On-policy Distillation的方法，先基于预训�
 
 ## 参考文献
 
-- DeepSeek-AI. (2026). [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf). Technical report.
+- DeepSeek-AI. (2026). [DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence](https://arxiv.org/abs/2606.19348). arXiv:2606.19348.

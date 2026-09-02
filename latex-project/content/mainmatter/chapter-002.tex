@@ -233,14 +233,14 @@ h'=
 
 注：可以认为比如每个特征由一个神经元负责，一个识别动物的神经网络中，老虎这个输出和黄色、条纹等特征虽然需要相关，但不能过度依赖这些表层特征（也就是对这些特征过拟合，形成比较固定的神经元之间的组合），也不能一个特征只有一个神经元负责（风险大且数字只能上下调，灵活性差），这会使模型在训练数据略有变化时（如例子里说的黄色缺失）泛化性、鲁棒性差。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-5}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-5}}
+\hypertarget{ux53c2ux8003ux6587ux732e-6}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-6}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \item
   Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., \& Salakhutdinov, R. (2014). \href{https://jmlr.org/papers/v15/srivastava14a.html}{Dropout: A Simple Way to Prevent Neural Networks from Overfitting}. Journal of Machine Learning Research.
 \end{itemize}
@@ -262,14 +262,14 @@ h'=
 
 另外，当训练数据稀缺时，我们甚至可能无法提供足够的数据来构成一个合适的验证集。这个问题的一个流行的解决方案是采用K折交叉验证。这里，原始训练数据被分成K个不重叠的子集。 然后执行次模型训练和验证，每次在K-1个子集上进行训练，并在剩余的一个子集（在该轮中没有用于训练的子集）上进行验证。最后，通过对K次实验的结果取平均来估计训练和验证误差。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-6}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-6}}
+\hypertarget{ux53c2ux8003ux6587ux732e-7}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-7}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage
@@ -477,14 +477,14 @@ Batch Size依赖：~BN的效果严重依赖于Batch Size。如果Batch Size太�
 
 它深刻地体现了深度学习中的一个重要思想：不仅要对数据做变换，更要让网络自己学会如何控制这个变换，以达到最优的性能。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-7}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-7}}
+\hypertarget{ux53c2ux8003ux6587ux732e-8}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-8}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \item
   Ioffe, S., \& Szegedy, C. (2015). \href{https://arxiv.org/abs/1502.03167}{Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift}. ICML 2015.
 \end{itemize}
@@ -734,8 +734,8 @@ E[(a^{l-1})^2]
 
 一般来说，取前向传播对应的方差2/n\_in即可达到足够好的效果（一般用2/n\_in和2/n\_out初始化差别也不大）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-8}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-8}}
+\hypertarget{ux53c2ux8003ux6587ux732e-9}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-9}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1160,14 +1160,14 @@ P_{\mathrm{test}}(y)=C^{-1}\cdot\mu_{\mathrm{test}}(\hat{y})
 
 RL 是``鞋子-贷款''问题的真正解： 银行（Agent）做出``发放贷款''（Action）的决策，环境（客户）做出``穿牛津鞋''（State change）的反应，银行最终得到``盈利情况''（Reward）。RL 框架天生就是为了解决这种``反馈循环''而设计的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-9}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-9}}
+\hypertarget{ux53c2ux8003ux6587ux732e-10}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-10}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage

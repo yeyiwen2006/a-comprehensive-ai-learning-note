@@ -112,8 +112,8 @@ P(st+1\textbar st,at)
   世界模型可以作为合成数据引擎。世界模型可以生成大量带有物理反馈交互逻辑的合成轨迹，以极低的边际成本反哺动作策略的训练。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
+\hypertarget{ux53c2ux8003ux6587ux732e-154}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-154}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -233,8 +233,8 @@ P(st+1\textbar st,at)
 
 但不可否认的是，如果被压缩得足够抽象，它更容易迁移，却可能偏离动作空间内在的流形结构，丢失预测下一个状态的准确性，以及生成所需的细节。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-154}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-154}}
+\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -248,11 +248,11 @@ P(st+1\textbar st,at)
 \item
   Kipf, T., van der Pol, E., \& Welling, M. (2019). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. arXiv:1911.12247.
 \item
-  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2022). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR.
+  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2023). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR 2023.
 \item
   World Labs. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. Official research article.
 \item
-  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.（V-JEPA）
 \item
   Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
 \item
@@ -791,8 +791,8 @@ Dreamer 4在世界模型中训练Actor和Critic，世界模型需要输出奖励
 
 Dreamer 3这样的端到端强化学习要求每一帧数据都必须包含精确的（状态，动作，奖励，下一状态）四元组，否则就会因为缺了奖励预测分支的梯度而学偏。但在现实世界中，获取海量带动作标签和奖励的数据极其昂贵且困难。通过解耦，Dreamer 4的前两个最庞大的阶段（Tokenizer和Flow Matching Transformer）完全不需要奖励和动作标签，可以直接用海量无标签视频学习。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
+\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1323,20 +1323,20 @@ LeWM在Push-T和Reacher上表现很好，但在简单的Two-Room环境中不如P
 \mathrm{Curvature}(z_{t-1}, z_t, z_{t+1}) = 1 - \frac{\Delta z_t \cdot \Delta z_{t+1}}{\|\Delta z_t\|\,\|\Delta z_{t+1}\|}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
+\hypertarget{ux53c2ux8003ux6587ux732e-157}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-157}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{V-JEPA: Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.（V-JEPA）
 \item
   Assran, M., Bardes, A., Fan, D., et al.~(2025). \href{https://arxiv.org/abs/2506.09985}{V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}. arXiv:2506.09985.
 \item
   Mur-Labadia, L., Muckley, M., Bar, A., et al.~(2026). \href{https://arxiv.org/abs/2603.14482}{V-JEPA 2.1: Unlocking Dense Features in Video Self-Supervised Learning}. arXiv:2603.14482.
 \item
-  Maes, H., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
+  Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
 \item
   Wang, Y., Bounou, O., Zhou, G., Balestriero, R., Rudner, T. G. J., LeCun, Y., \& Ren, M. (2026). \href{https://arxiv.org/abs/2603.12231}{Temporal Straightening for Latent Planning}. arXiv:2603.12231.
 \item

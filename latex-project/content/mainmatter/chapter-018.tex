@@ -9,7 +9,7 @@
 
 由于大模型的计算、存储开销巨大，计算需要的时间较长，在大模型推理部署时，我们考虑降低模型中数值的精度，以使模型无需在专业的GPU上就可以运行。一般我们会将模型的32位浮点数转换为8位整数（有时还会选择转换为4位整数）格式。
 
-值得注意的是，由于模型训练过程需要精确的参数进行梯度更新，模型训练时不应量化。对于物理模拟等对数值精度要求高的领域，也不宜运用模型量化。
+值得注意的是，训练过程对数值精度较敏感，不能简单地把全部权重、梯度和优化器状态都改成低位整数。最常见的部署流程仍是训练后量化（PTQ），但``训练时不应量化''并不成立：量化感知训练（QAT）会在前向过程中模拟量化误差，通常保留更高精度的主权重或梯度；QLoRA 等量化微调方法则冻结低比特基座权重，并以更高精度训练适配器和优化器状态。是否采用这些方法应结合硬件、精度目标和训练稳定性评估。对于物理模拟等对数值误差高度敏感的任务，也应先验证量化误差是否可接受。
 
 \hypertarget{ux4e8c8-bitux91cfux5316}{%
 \subsection{二、8-bit量化}\label{ux4e8c8-bitux91cfux5316}}
@@ -307,8 +307,8 @@ q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
 
 应用：对于 Transformer/LLM（参数巨大，计算相对稀疏），动态量化通常能带来1.5x到2x的推理加速。因为``加载权重的收益''远大于``动态计算量化参数的开销''；对于 CNN（如 ResNet，计算密集型），动态量化效果往往不如静态量化，甚至可能比纯FP32慢，因为 CNN 的权重复用率高，计算量大，频繁的动态转换开销占比过高。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
+\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -560,8 +560,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 这样可以使模型分布稳定在教师``圈定''的合理范围内，保证输出质量。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-88}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-88}}
+\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -593,8 +593,8 @@ D_{KL}(\pi_{\mathrm{student}} \Vert \pi_{\mathrm{teacher}}) = \mathbb{E}_{y \sim
 
 流程通常包括：训练一个大模型 -\textgreater{} 评估参数重要性（如根据绝对值大小或梯度） -\textgreater{} 移除不重要的参数 -\textgreater{} 对剪枝后的模型进行微调。现代方法常采用迭代剪枝。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-89}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-89}}
+\hypertarget{ux53c2ux8003ux6587ux732e-90}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-90}}
 
 \vspace{0.25em}
 \begin{itemize}

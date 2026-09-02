@@ -42,7 +42,7 @@ LLM尽管通用能力较强，但知识范围、实时性以及回答时知识�
 
 主动触发：在生成过程中监测生成概率。如果 LLM 对当前生成的词``犹豫不决''（概率低），则立即触发检索，用检索到的信息``纠正''生成方向。
 
-反思与自纠：训练LLM输出特殊的反思Token，判定是否需要检索，检索到的内容是否相关，生成的内容是否有用。
+反思与自纠：以Self-RAG为代表的方法会训练LLM输出特殊的反思Token，判定是否需要检索、检索到的内容是否相关，以及生成的内容是否有用。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -68,7 +68,7 @@ LLM尽管通用能力较强，但知识范围、实时性以及回答时知识�
 
 稀疏检索即传统关键词检索方法，如BM25。稠密检索即利用Embedding向量检索的方法。相较于稀疏检索而言，稠密检索能更好地利用语义层面的信息。
 
-实践中常采取稠密和稀疏索引结合的方法。如Claude-mem：查询先走Chroma向量检索（基于语义相似度的稠密检索），召回Top 100结果，再做90天时间窗口过滤，最后用SQLite（稀疏检索）按时间顺序补全/重排数据。
+实践中常采取稠密和稀疏索引结合的方法。以claude-mem为例，其部分版本同时使用Chroma语义索引与SQLite持久化、过滤和结果补全。候选数量、时间窗口与排序逻辑会随版本变化，因此在没有固定release或commit时，不应把某一版本的默认常量当作稳定接口。
 
 \hypertarget{ux4e8cux7a20ux5bc6ux68c0ux7d22}{%
 \subsection{二、稠密检索}\label{ux4e8cux7a20ux5bc6ux68c0ux7d22}}
@@ -303,22 +303,26 @@ P_{\mathrm{Ret}}(D_i\mid Q)=\frac{\exp(S_i)}{\sum_{j=1}^{K}\exp(S_j)}
 \mathrm{Keep}(x_t)=\mathbf{1}\!\left[-\log P\!\left(x_t\mid x_{<t}\right)>\tau\right]
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-124}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-124}}
+\hypertarget{ux53c2ux8003ux6587ux732e-125}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-125}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
+\item
+  Lewis, P., Perez, E., Piktus, A., et al.~(2020). \href{https://proceedings.neurips.cc/paper/2020/hash/6b493230-Abstract.html}{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}. NeurIPS 2020.
+\item
+  Asai, A., Wu, Z., Wang, Y., Sil, A., \& Hajishirzi, H. (2024). \href{https://openreview.net/forum?id=hSyW5go0v8}{Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection}. ICLR 2024.
 \item
   Jin, B., Zeng, H., Yue, Z., et al.~(2025). \href{https://arxiv.org/abs/2503.09516}{Search-R1: Training LLMs to Reason and Leverage Search Engines with Reinforcement Learning}. arXiv:2503.09516.
 \item
   Robertson, S., \& Zaragoza, H. (2009). \href{https://doi.org/10.1561/1500000019}{The Probabilistic Relevance Framework: BM25 and Beyond}. Foundations and Trends in Information Retrieval, 3(4), 333-389.
 \item
-  Manning, C. D., Raghavan, P., \& Schütze, H. (2008). \href{https://nlp.stanford.edu/IR-book/}{Introduction to Information Retrieval: Okapi BM25, a non-binary model}. Cambridge University Press.
+  Manning, C. D., Raghavan, P., \& Schütze, H. (2008). \href{https://nlp.stanford.edu/IR-book/}{Introduction to Information Retrieval}. Cambridge University Press.
 \item
-  thedotmack. (2026). \href{https://github.com/thedotmack/claude-mem}{claude-mem GitHub repository}.
+  thedotmack. (n.d.). \href{https://github.com/thedotmack/claude-mem}{claude-mem GitHub repository}. 访问于2026-09-02.
 \item
   van den Oord, A., Li, Y., \& Vinyals, O. (2018). \href{https://arxiv.org/abs/1807.03748}{Representation Learning with Contrastive Predictive Coding}. arXiv:1807.03748.
 \item
@@ -341,7 +345,7 @@ P_{\mathrm{Ret}}(D_i\mid Q)=\frac{\exp(S_i)}{\sum_{j=1}^{K}\exp(S_j)}
 \hypertarget{ux4e00ux77edux671fux8bb0ux5fc6ux4e0aux4e0bux6587}{%
 \subsection{一、短期记忆（上下文）}\label{ux4e00ux77edux671fux8bb0ux5fc6ux4e0aux4e0bux6587}}
 
-短期记忆是大模型执行任务时对当前任务上下文的记忆，对应``上下文学习''，其底层实现是注意力中存储的KV Cache，任务结束后即清空。
+短期记忆是大模型执行任务时可利用的当前任务上下文，对应输入给模型的消息、工具结果和其他上下文Token。推理系统通常使用KV Cache缓存已经处理过的Token在各注意力层中的Key/Value状态，以避免自回归生成时重复计算；KV Cache是推理优化和运行时状态，不等同于上下文本身，关闭它不会消除上下文信息，只会增加重复计算。
 
 由于硬件显存有限，大模型的上下文窗口长度有限，如果超出长度就必须采取一些机制。对于短期记忆自身而言，可以采取的措施例如：
 
@@ -530,20 +534,24 @@ AI Agent（智能体）的运行过程中，系统内存（System RAM / CPU Memo
 
 前面提到过，当对话超出上下文限制时，让LLM为之前的对话生成一段摘要，注入之后的上下文窗口。写成程序语句如summary=agent.ask(massage)，massage里包含了要求生成摘要的prompt，这里的summary就暂时存在内存中，等待被注入新的上下文。
 
-summary并非简单把长文本变成短文本，这会丢失大量细节。它应当保留模型对原始对话的``隐性理解''，就像把一本厚书压缩成一个``记忆卡片''，模型读了卡片就能回忆起整本书的内容。例如OpenAI Codex的策略是，对于代码项目中的对话，当上下文窗口满时，用一个小项目列表替换前文，概括前面都执行了什么。
+summary并非简单把长文本变成短文本，否则会丢失大量细节。它应尽量保留继续任务所需的目标、约束、已完成工作和未解决问题。OpenAI Codex在上下文Token超过阈值后，会调用Responses API的\texttt{/responses/compact}端点，用一组更小但能代表原对话的input items替换旧输入；其中包含带加密内容的\texttt{type=compaction}项，以保留模型对原对话的潜在理解。早期Codex曾使用摘要消息替换旧输入，但当前实现并不是固定的``小项目列表''。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-125}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-125}}
+\hypertarget{ux53c2ux8003ux6587ux732e-126}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-126}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
 \item
-  OpenClaw. (2026). \href{https://github.com/openclaw/openclaw}{OpenClaw GitHub repository}.
+  OpenClaw. (n.d.). \href{https://github.com/openclaw/openclaw}{OpenClaw GitHub repository}. 访问于2026-09-02.
 \item
-  thedotmack. (2026). \href{https://github.com/thedotmack/claude-mem}{claude-mem GitHub repository}.
+  thedotmack. (n.d.). \href{https://github.com/thedotmack/claude-mem}{claude-mem GitHub repository}. 访问于2026-09-02.
+\item
+  Hugging Face. (n.d.). \href{https://huggingface.co/docs/transformers/main/kv_cache}{Cache strategies}. Transformers Documentation. 访问于2026-09-02.
+\item
+  Bolin, M. (2026). \href{https://openai.com/index/unrolling-the-codex-agent-loop/}{Unrolling the Codex agent loop}. OpenAI.
 \end{itemize}
 
 \clearpage
@@ -600,7 +608,7 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 \def\labelenumi{\arabic{enumi}.}
 \setcounter{enumi}{1}
 \item
-  只保留工具列表，让模型在需要的时候在文件系统中检索工具定义。GPT-5.4采取的就是这种策略。
+  只保留轻量的工具列表，让模型在需要时再检索并加载完整工具定义。GPT-5.4在API中引入的tool search采用了这一思路：模型先接收可用工具的轻量列表和工具搜索能力，需要调用某项工具时再查找其完整定义并把定义追加到会话。该机制不要求工具定义必须存放在文件系统中，具体存储和检索方式由实现决定。
 \item
   在需要移除工具时，不直接将工具移出上下文，而是在解码过程中掩蔽token的logits，以基于当前上下文阻止（或强制）选择某些动作，或者通过prompt要求模型禁止使用特定工具（但这本质上变成了注意力机制的博弈，模型仍然有概率``违规操作''生成被禁用的工具）。
 \end{enumerate}
@@ -683,16 +691,18 @@ Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions�
 \caption{主 Agent 与子 Agent 共享上下文}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-126}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-126}}
+\hypertarget{ux53c2ux8003ux6587ux732e-127}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-127}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Martin, L. (2025). \href{https://rlancemartin.github.io/2025/10/15/manus/}{Context Engineering for Agents}.
+  Martin, L. (2025). \href{https://rlancemartin.github.io/2025/10/15/manus/}{Context Engineering in Manus}.
 \item
-  Manus. (2025). \href{https://manus.im/zh-cn/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus}{Context Engineering for AI Agents: Lessons from Building Manus}.
+  Ji, Y. (2025). \href{https://manus.im/zh-cn/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus}{Context Engineering for AI Agents: Lessons from Building Manus}. Manus.
+\item
+  OpenAI. (2026). \href{https://openai.com/index/introducing-gpt-5-4/}{Introducing GPT-5.4}.
 \end{itemize}
 
 \clearpage

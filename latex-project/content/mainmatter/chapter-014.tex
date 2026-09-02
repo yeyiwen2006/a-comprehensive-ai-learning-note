@@ -152,8 +152,8 @@ r(s,a)
   解决复合误差：因为 GAIL 匹配的是整个分布（Occupancy Measure），而不是单步误差。即使智能体偏离了轨迹，判别器也会给出相应的反馈，促使其回到正确的分布上来。这使得 GAIL 具有长期一致性，鲁棒性远强于 BC。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-61}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-61}}
+\hypertarget{ux53c2ux8003ux6587ux732e-62}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -161,7 +161,11 @@ r(s,a)
 \item
   \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
 \item
+  Ross, S., Gordon, G. J., \& Bagnell, J. A. (2011). \href{https://proceedings.mlr.press/v15/ross11a.html}{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}. AISTATS 2011.
+\item
   Ho, J., \& Ermon, S. (2016). \href{https://arxiv.org/abs/1606.03476}{Generative Adversarial Imitation Learning}. NeurIPS 2016.
+\item
+  Silver, D., Huang, A., Maddison, C. J., et al.~(2016). \href{https://doi.org/10.1038/nature16961}{Mastering the game of Go with deep neural networks and tree search}. Nature, 529, 484--489.
 \end{itemize}
 
 \clearpage
@@ -611,8 +615,8 @@ for _ in range(G_updates): # 环境每走1步，SAC训练G次(如 20 次)
 更新SAC参数;
 \end{verbatim}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-62}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}
+\hypertarget{ux53c2ux8003ux6587ux732e-63}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-63}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -941,8 +945,8 @@ L(\theta)
 
 因此，CQL不是直接限制策略动作，而是通过训练更保守的Q函数，让策略在优化时自然避开被高估的OOD动作。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-63}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-63}}
+\hypertarget{ux53c2ux8003ux6587ux732e-64}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-64}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1183,8 +1187,8 @@ a_j'=\mu_j'(o_j')
 
 训练方法：先训练子智能体（大模型）；在子智能体训练完毕后，冻结子智能体的参数，用端到端的强化学习方法训练编排器（刚开始先用小模型充当子智能体，后续再换为大模型）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-64}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-64}}
+\hypertarget{ux53c2ux8003ux6587ux732e-65}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-65}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1196,7 +1200,7 @@ a_j'=\mu_j'(o_j')
 \item
   de Witt, C. S., Gupta, T., Makoviichuk, D., et al.~(2020). \href{https://arxiv.org/abs/2011.09533}{Is Independent Learning All You Need in the StarCraft Multi-Agent Challenge?}. arXiv:2011.09533.
 \item
-  Moonshot AI. (2026). \href{https://github.com/MoonshotAI/Kimi-K2.5/blob/master/tech_report.pdf}{Kimi K2.5 Technical Report}.
+  Kimi Team. (2026). \href{https://arxiv.org/abs/2602.02276}{Kimi K2.5: Visual Agentic Intelligence}. arXiv:2602.02276.
 \end{itemize}
 
 \clearpage
@@ -1638,16 +1642,18 @@ LLM的状态s是已生成的Token序列。在文本生成中，定义``距离目
 
 GORL 需要模型在训练时不断改变目标进行探索。LLM 的推理成本极高。在海量目标空间下进行充分探索，其计算量呈指数级增长。目前的 RLVR（如GRPO算法）通过组内相对比较已经非常耗能，GORL的多目标采样会让训练成本更难以承受。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-65}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-65}}
+\hypertarget{ux53c2ux8003ux6587ux732e-66}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-66}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
+  Schaul, T., Horgan, D., Gregor, K., \& Silver, D. (2015). \href{https://proceedings.mlr.press/v37/schaul15.html}{Universal Value Function Approximators}. ICML 2015.
+\item
   Andrychowicz, M., Wolski, F., Ray, A., et al.~(2017). \href{https://arxiv.org/abs/1707.01495}{Hindsight Experience Replay}. NeurIPS 2017.
 \item
-  Agarwal, R., et al.~(2025). \href{https://openreview.net/forum?id=ZMRJQg39iE}{1000 Layer Networks for Self-Supervised RL: Scaling Depth Can Enable New Goal-Reaching Capabilities}. NeurIPS 2025.
+  Wang, K., Javali, I., Bortkiewicz, M., Trzcinski, T., \& Eysenbach, B. (2025). \href{https://proceedings.neurips.cc/paper_files/paper/2025/hash/e74ee34cc0f2d0780f34ee77d8fba25b-Abstract-Conference.html}{1000 Layer Networks for Self-Supervised RL: Scaling Depth Can Enable New Goal-Reaching Capabilities}. NeurIPS 2025.
 \end{itemize}
 
 \clearpage

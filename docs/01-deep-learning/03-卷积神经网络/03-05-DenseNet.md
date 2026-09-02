@@ -129,8 +129,11 @@ DenseNet-BC：结合Bottleneck与Transition压缩，综合优化内存与计算�
 
 VoVNet（One-Shot Aggregation）：仅在模块最后一层聚合前面所有层特征，保留多尺度特征的同时，将MAC降至与ResNet相当。
 
-通道剪枝与MFM（Max-Feature-Map）：对中间层特征进行通道选择，减少拼接时的通道数。
+MFM（Max-Feature-Map）并不是结构化通道剪枝。它把特征图分组后逐元素取最大值，通过竞争式激活保留特征，并可减少输出通道数。
 
 ## 参考文献
 
 - Huang, G., Liu, Z., van der Maaten, L., & Weinberger, K. Q. (2017). [Densely Connected Convolutional Networks](https://arxiv.org/abs/1608.06993). CVPR 2017.
+- Pleiss, G., Chen, D., Huang, G., Li, T., van der Maaten, L., & Weinberger, K. Q. (2017). [Memory-Efficient Implementation of DenseNets](https://arxiv.org/abs/1707.06990). arXiv:1707.06990.
+- Lee, Y., Hwang, J., Lee, S., Bae, Y., & Park, J. (2019). [An Energy and GPU-Computation Efficient Backbone Network for Real-Time Object Detection](https://openaccess.thecvf.com/content_CVPRW_2019/html/CEFRL/Lee_An_Energy_and_GPU-Computation_Efficient_Backbone_Network_for_Real-Time_Object_CVPRW_2019_paper.html). CVPR Workshops 2019.（VoVNet）
+- Wu, X., He, R., Sun, Z., & Tan, T. (2018). [A Light CNN for Deep Face Representation with Noisy Labels](https://arxiv.org/abs/1511.02683). *IEEE Transactions on Information Forensics and Security*, 13(11), 2884–2896.（MFM）

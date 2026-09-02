@@ -99,8 +99,8 @@ DeepSeek原论文中插图如下：
 \caption{DeepSeek 原论文中的 MTP 模块结构图}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-100}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-100}}
+\hypertarget{ux53c2ux8003ux6587ux732e-101}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-101}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -168,14 +168,14 @@ N取2和3是因为，N=2和N=3覆盖了绝大多数的固定搭配、短语、�
   分层设计：自然语言中的N-gram 遵循Zipfian分布，即少量高频模式贡献了绝大多数的记忆访问，故可以构建一种多级缓存层次结构（Multi-Level Cache Hierarchy）：将高频访问的嵌入缓存于更快的存储介质中（如GPU HBM或主机DRAM），而将大量低频的长尾模式存放在容量更大但速度较慢的存储介质中（如NVMe SSD）。这种分层设计使Engram能够扩展到极大规模的记忆容量，同时对有效访问延迟的影响保持在最低水平。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-101}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-101}}
+\hypertarget{ux53c2ux8003ux6587ux732e-102}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-102}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Cheng, X., Zeng, W., Dai, D., et al.~(2026). \href{https://arxiv.org/abs/2601.07372}{Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models}. arXiv:2601.07372.
+  Cheng, X., Tian, R., Zeng, W., et al.~(2026). \href{https://arxiv.org/abs/2601.07372}{Conditional Memory via Scalable Lookup: A New Axis of Sparsity for Large Language Models}. arXiv:2601.07372.
 \end{itemize}
 
 \clearpage
@@ -222,7 +222,7 @@ Yoshua Bengio团队在论文《Representation Learning: A Review and New Perspec
 \hypertarget{ux4e09ux6d41ux5f62ux7ea6ux675fux8d85ux8fdeux63a5}{%
 \subsection{三、流形约束超连接}\label{ux4e09ux6d41ux5f62ux7ea6ux675fux8d85ux8fdeux63a5}}
 
-流形约束超连接（Manifold-Constrained Hyper-Connections，mHC）由DeepSeek于2026年提出，是对HC的重要工程化改进。
+流形约束超连接（Manifold-Constrained Hyper-Connections，mHC）由 DeepSeek 团队于 2025 年首次公开，是对 HC 的重要工程化改进。
 
 \hypertarget{ux4e00hcux5b58ux5728ux7684ux95eeux9898}{%
 \subsubsection{（一）HC存在的问题}\label{ux4e00hcux5b58ux5728ux7684ux95eeux9898}}
@@ -273,8 +273,8 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 
 注意：这里不用Softmax，因为Softmax要求每行权重之和为1。Hl\_pre如果为10000*1000维，则Softmax会导致输入总信号减小10倍（单个维度信号大小数量级不变，维度除以10）。作为一个门控机制的实现模块，这是不可接受的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-102}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-102}}
+\hypertarget{ux53c2ux8003ux6587ux732e-103}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-103}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -284,7 +284,7 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 \item
   Zhu, D., et al.~(2025). \href{https://arxiv.org/abs/2409.19606}{Hyper-Connections}. arXiv:2409.19606.
 \item
-  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2512.24880}{mHC: Manifold-Constrained Hyper-Connections}. arXiv:2512.24880.
+  Xie, Z., Wei, Y., Cao, H., et al.~(2025). \href{https://arxiv.org/abs/2512.24880}{mHC: Manifold-Constrained Hyper-Connections}. arXiv:2512.24880.
 \end{itemize}
 
 \clearpage
@@ -317,14 +317,14 @@ Hl\_pre是一个特征重组矩阵，调节各个特征的信号。其第i行第
 
 Kimi的解法是，不用存每一层，改为存每一组。把所有层分成若干个块（block），每个块内部还是用传统方式累加，但把整个块压缩成一个向量存起来。跨块之间，再用注意力机制选择。这样存储量从正比于层数，变成正比于块数。实验发现，分成大约8块就能恢复Full Attention Residuals绝大部分的效果，而内存和通信开销只是原来的一小部分。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-103}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-103}}
+\hypertarget{ux53c2ux8003ux6587ux732e-104}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-104}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Moonshot AI. (2026). \href{https://arxiv.org/abs/2603.15031}{Attention Residuals}. arXiv:2603.15031.
+  Kimi Team. (2026). \href{https://arxiv.org/abs/2603.15031}{Attention Residuals}. arXiv:2603.15031.
 \end{itemize}
 
 \clearpage
@@ -445,8 +445,8 @@ RL的训练中，我们通常只会给出一个稀疏的标量结果（如``通�
 
 这种在PyTorch中仅需调用一次 .forward() 就能算出整条序列密集梯度的设计，不仅避开了off-policy带来的偏移，在显存利用率和计算效率上也远超让两个模型各自生成不同长度序列的传统方法。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-104}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-104}}
+\hypertarget{ux53c2ux8003ux6587ux732e-105}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-105}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -454,7 +454,7 @@ RL的训练中，我们通常只会给出一个稀疏的标量结果（如``通�
 \item
   Shenfeld, I., Damani, M., Hubotter, J., \& Agrawal, P. (2026). \href{https://arxiv.org/abs/2601.19897}{Self-Distillation Enables Continual Learning}. arXiv:2601.19897.
 \item
-  Xu, H., et al.~(2026). \href{https://arxiv.org/abs/2601.20802}{Reinforcement Learning via Self-Distillation}. arXiv:2601.20802.
+  Hübotter, J., Lübeck, F., Behric, L., et al.~(2026). \href{https://arxiv.org/abs/2601.20802}{Reinforcement Learning via Self-Distillation}. arXiv:2601.20802.
 \end{itemize}
 
 \clearpage
@@ -476,14 +476,14 @@ DeepSeek-V4采用了多专家On-policy Distillation的方法，先基于预训�
 
 运用On-Policy蒸馏方法，把所有专家的知识融合到统一的学生模型里。相比于Off-policy方法而言，On-policy更能避免灾难性遗忘。具体而言，即让学生在自己生成的轨迹上学习多个专家模型的输出概率分布。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-105}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-105}}
+\hypertarget{ux53c2ux8003ux6587ux732e-106}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-106}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  DeepSeek-AI. (2026). \href{https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/DeepSeek_V4.pdf}{DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence}. Technical report.
+  DeepSeek-AI. (2026). \href{https://arxiv.org/abs/2606.19348}{DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence}. arXiv:2606.19348.
 \end{itemize}
 
 \clearpage
@@ -555,8 +555,8 @@ D_{\mathrm{KL}}\left(P(y_t\mid y_{<t})\Vert Q(y_t\mid y_{<t})\right)
 
 这意味着，两个序列分布的KL散度，等于每一步条件概率分布之间KL散度的期望之和（期望是基于分布 \(P\) 生成的历史轨迹计算的）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-106}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-106}}
+\hypertarget{ux53c2ux8003ux6587ux732e-107}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-107}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -736,14 +736,14 @@ L=\frac{1}{N}\sum_{t=1}^{N}-\log P(w_t\mid w_{<t})
 
 这可以解释为：虽然真实的词表可能有成千上万个词，但这个模型的能力非常强，它在预测每个词时，其不确定性平均只相当于在一个仅有64个候选词的小集合里做选择。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-107}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-107}}
+\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Jurafsky, D., \& Martin, J. H. (2026). \href{https://web.stanford.edu/~jurafsky/slp3/3.pdf}{Speech and Language Processing, Chapter 3: N-gram Language Models}. Draft of January 6, 2026.
+  Jurafsky, D., \& Martin, J. H. (2026). \href{https://web.stanford.edu/~jurafsky/slp3/3.pdf}{Speech and Language Processing, Chapter 3: N-gram Language Models}. Draft of August 19, 2026.
 \item
   Brown, P. F., Della Pietra, V. J., deSouza, P. V., Lai, J. C., \& Mercer, R. L. (1992). \href{https://aclanthology.org/J92-4003/}{Class-Based n-gram Models of Natural Language}. Computational Linguistics, 18(4), 467-480.
 \end{itemize}

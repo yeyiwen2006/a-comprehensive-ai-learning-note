@@ -69,7 +69,7 @@ E_{\mathrm{input}}=E_{\mathrm{video}}+E_{\mathrm{action}}+E_{\mathrm{position}}
 \hypertarget{ux4e8cmulti-token-prediction}{%
 \subsubsection{（二）Multi-token Prediction}\label{ux4e8cmulti-token-prediction}}
 
-基于自回归生成的世界模型存在着生成速度慢的问题，但在具身智能等领域，这种延迟会对机器人的灵活性造成较大的影响。为了提高推理速度，可以采用Multi-token prediction的方法，一次生成多个token后并行验证。
+基于自回归生成的世界模型存在生成速度慢的问题，但在具身智能等领域，这种延迟会对机器人的灵活性造成较大的影响。一种可选路线是 Multi-token Prediction：在训练时为同一隐藏状态设置多个预测头，同时预测后续若干 token；推理时再结合自推测解码（Self-speculative Decoding）并行提出和验证候选，从而减少串行前向次数。它并非对任意现成自回归模型都能无条件生效，通常需要相应的多 token 预测头或推测解码机制。
 
 \hypertarget{ux4e8cux81eaux56deux5f52ux4e0eux6269ux6563ux7684ux7ed3ux5408ux8303ux5f0f}{%
 \subsection{二、自回归与扩散的结合范式}\label{ux4e8cux81eaux56deux5f52ux4e0eux6269ux6563ux7684ux7ed3ux5408ux8303ux5f0f}}
@@ -161,8 +161,8 @@ Q_s^T=Z_sW_Q^T,\quad K_s^T=Z_sW_K^T,\quad V_s^T=Z_sW_V^T
 
 复杂度分析：单位置的时间注意力复杂度为 \(O(T^2)\)。由于有 \(S\) 个空间位置，总复杂度为 \(S\times O(T^2)=O(ST^2)\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-137}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-137}}
+\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -170,9 +170,15 @@ Q_s^T=Z_sW_Q^T,\quad K_s^T=Z_sW_K^T,\quad V_s^T=Z_sW_V^T
 \item
   Kondratyuk, D., Yu, L., Gu, X., et al.~(2023). \href{https://arxiv.org/abs/2312.14125}{VideoPoet: A Large Language Model for Zero-Shot Video Generation}. arXiv:2312.14125.
 \item
-  Villegas, R., Yang, J., Hong, S., et al.~(2022). \href{https://arxiv.org/abs/2210.02399}{Phenaki: Variable Length Video Generation from Open Domain Textual Description}. arXiv:2210.02399.
+  Villegas, R., Babaeizadeh, M., Kindermans, P.-J., et al.~(2022). \href{https://arxiv.org/abs/2210.02399}{Phenaki: Variable Length Video Generation From Open Domain Textual Description}. arXiv:2210.02399.
 \item
   Peebles, W., \& Xie, S. (2023). \href{https://arxiv.org/abs/2212.09748}{Scalable Diffusion Models with Transformers}. ICCV.
+\item
+  Gloeckle, F., Idrissi, B. Y., Rozière, B., Lopez-Paz, D., \& Synnaeve, G. (2024). \href{https://arxiv.org/abs/2404.19737}{Better \& Faster Large Language Models via Multi-token Prediction}. arXiv:2404.19737.
+\item
+  Esser, P., Kulal, S., Blattmann, A., et al.~(2024). \href{https://arxiv.org/abs/2403.03206}{Scaling Rectified Flow Transformers for High-Resolution Image Synthesis}. arXiv:2403.03206.
+\item
+  Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
 \item
   Bruce, J., Dennis, M., Edwards, A., et al.~(2024). \href{https://arxiv.org/abs/2402.15391}{Genie: Generative Interactive Environments}. ICML.
 \item
@@ -343,16 +349,16 @@ M=(1-t)\|\mathbf{v}_A\|+t\|\mathbf{v}_B\|
   多轮动态博弈：为了防止奖励黑客（Reward Hacking），例如模型为获取高美学分而让画面彻底静止，生成模型和奖励模型之间执行多轮迭代学习，从而稳步提高人类偏好对齐能力。
 \end{enumerate}
 
-\hypertarget{ux4e8cabot-worldux4e2dux5229ux7528rlux5b66ux4e60ux7269ux7406ux89c4ux5f8b}{%
-\subsubsection{（二）ABot-World中利用RL学习物理规律}\label{ux4e8cabot-worldux4e2dux5229ux7528rlux5b66ux4e60ux7269ux7406ux89c4ux5f8b}}
+\hypertarget{ux4e8cabot-physworld-ux4e2dux5229ux7528ux504fux597dux4f18ux5316ux5b66ux4e60ux7269ux7406ux89c4ux5f8b}{%
+\subsubsection{（二）ABot-PhysWorld 中利用偏好优化学习物理规律}\label{ux4e8cabot-physworld-ux4e2dux5229ux7528ux504fux597dux4f18ux5316ux5b66ux4e60ux7269ux7406ux89c4ux5f8b}}
 
-高德通过两个核心组件，把优化目标从像素相似度转向物理一致性：
+高德的 ABot-PhysWorld 通过两个核心组件，把优化目标从像素相似度转向物理一致性：
 
 Proposer module：负责根据当前任务，列一份物理规则清单，说清哪些能做，哪些绝对不行。
 
 Scorer module：对模型生成的多个结果逐帧打分。
 
-然后用Diffusion-DPO强化合规行为，物理正确就奖励，物理错误就扣分。反复纠正下来，模型自然学会了``什么动作不违反物理''，例如能够根据输入的末端位姿和夹爪状态，推演出未来的时空动力学变化，不再只是像素层面的``看起来像''。
+然后用 Diffusion-DPO 基于偏好数据提高物理合规性：物理正确的结果作为偏好样本，物理错误的结果作为非偏好样本。反复优化后，模型逐渐学会``什么动作不违反物理''，例如能够根据输入的末端位姿和夹爪状态，推演出未来的时空动力学变化，不再只是像素层面的``看起来像''。
 
 \hypertarget{ux56dbux6a21ux578bux84b8ux998fux4e0eself-forcing}{%
 \subsection{四、模型蒸馏与Self Forcing}\label{ux56dbux6a21ux578bux84b8ux998fux4e0eself-forcing}}
@@ -436,8 +442,8 @@ SOAR不是要替代RL，而是为RL提供一个更稳定的起点。当前RL的�
   长尾分布重平衡：统计视频在动作、风格、分辨率等维度的概率分布。对头部冗余类别进行降采样，对尾部类别进行概率加权，确保联合分布均衡。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-138}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-138}}
+\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -445,9 +451,11 @@ SOAR不是要替代RL，而是为RL提供一个更稳定的起点。当前RL的�
 \item
   Bruce, J., Dennis, M., Edwards, A., et al.~(2024). \href{https://arxiv.org/abs/2402.15391}{Genie: Generative Interactive Environments}. ICML.
 \item
-  Yang, M., Du, Y., Ghasemipour, S. K. S., Tompson, J., Schuurmans, D., \& Abbeel, P. (2023). \href{https://arxiv.org/abs/2309.17080}{GAIA-1: A Generative World Model for Autonomous Driving}. arXiv:2309.17080.
+  Hu, A., Russell, L., Yeo, H., et al.~(2023). \href{https://arxiv.org/abs/2309.17080}{GAIA-1: A Generative World Model for Autonomous Driving}. arXiv:2309.17080.
 \item
   Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
+\item
+  Chen, Y., Chen, R., Huo, D., et al.~(2026). \href{https://arxiv.org/abs/2603.23376}{ABot-PhysWorld: Interactive World Foundation Model for Robotic Manipulation with Physics Alignment}. arXiv:2603.23376.
 \item
   Lin, W., Chen, R., Liu, B., et al.~(2025). \href{https://arxiv.org/abs/2506.05343}{ContentV: Efficient Training of Video Generation Models with Limited Compute}. arXiv:2506.05343.
 \item
@@ -871,7 +879,7 @@ M=
 其中 \(m\) 代表原始视觉 token 数量，\(n\) 代表因果查询符数量；在本文设计中 \(m=n\)。\(1\) 表示允许注意力交互，\(0\) 表示被掩码屏蔽，\(\mathrm{LowerTri}(n)\) 表示下三角矩阵（对角线及以下为 1，以上为 0）。
 
 \hypertarget{ux516dinfotokux57faux4e8eux4fe1ux606fux8bbaux7684ux89c6ux89c9ux52a8ux6001-tokenizer}{%
-\subsection{六、INFOTOK：基于信息论的视觉动态 Tokenizer}\label{ux516dinfotokux57faux4e8eux4fe1ux606fux8bbaux7684ux89c6ux89c9ux52a8ux6001-tokenizer}}
+\subsection{六、InfoTok：基于信息论的视觉动态 Tokenizer}\label{ux516dinfotokux57faux4e8eux4fe1ux606fux8bbaux7684ux89c6ux89c9ux52a8ux6001-tokenizer}}
 
 处理长视频序列时，准确且高效的离散视频分词（Tokenization）至关重要。现有大多数视频分词器，如 Cosmos、OmniTokenizer 等，使用固定压缩率策略。这带来一个显著瓶颈：视频本身的复杂度和信息密度不断变化。
 
@@ -915,7 +923,7 @@ M=
 D_{\mathrm{KL}}(q_\phi(z|x)\|p(z))
 \]
 
-ELBO 是数据对数似然的可证明下界。INFOTOK 因此设计如下路由器函数来决定视频 token 长度：
+ELBO 是数据对数似然的可证明下界。InfoTok 因此设计如下路由器函数来决定视频 token 长度：
 
 \[
 r_\beta(N_x|x) =
@@ -928,7 +936,7 @@ r_\beta(N_x|x) =
 
 其中 \(\beta\) 是平均压缩因子，决定平均使用的 token 数量；\(\delta(\cdot)\) 代表狄拉克分布，即确定性输出；\(\mathbb{E}[\mathrm{ELBO}(x)]\) 用于归一化。
 
-定理 3.1 证明，只要这种分词器成功最小化重建损失，那么在推理时，INFOTOK 的预期长度将严格以熵为界，逼近理论最优压缩率。
+定理 3.1 证明，只要这种分词器成功最小化重建损失，那么在推理时，InfoTok 的预期长度将严格以熵为界，逼近理论最优压缩率。
 
 \hypertarget{ux4e09ux538bux7f29ux6b65ux9aa4ux5de5ux4f5cux6d41}{%
 \subsubsection{（三）压缩步骤工作流}\label{ux4e09ux538bux7f29ux6b65ux9aa4ux5de5ux4f5cux6d41}}
@@ -949,7 +957,7 @@ r_\beta(N_x|x) =
 \hypertarget{ux56dbux6574ux4f53ux5de5ux4f5cux6d41}{%
 \subsubsection{（四）整体工作流}\label{ux56dbux6574ux4f53ux5de5ux4f5cux6d41}}
 
-INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其编码器 \(E_0\) 和解码器 \(D_0\)，并引入路由器（Router）和自适应压缩器/解压器。训练过程如下：
+InfoTok 建立在现有固定长度分词器（如 Cosmos）之上，利用其编码器 \(E_0\) 和解码器 \(D_0\)，并引入路由器（Router）和自适应压缩器/解压器。训练过程如下：
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -972,8 +980,8 @@ INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其�
   计算损失并优化：通过优化重建损失函数，例如 MSE，来端到端训练网络模型。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-139}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-139}}
+\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -984,6 +992,14 @@ INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其�
   Esser, P., Rombach, R., \& Ommer, B. (2021). \href{https://arxiv.org/abs/2012.09841}{Taming Transformers for High-Resolution Image Synthesis}. CVPR.
 \item
   Rombach, R., Blattmann, A., Lorenz, D., Esser, P., \& Ommer, B. (2022). \href{https://arxiv.org/abs/2112.10752}{High-Resolution Image Synthesis with Latent Diffusion Models}. CVPR.
+\item
+  Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
+\item
+  Zhang, R., Isola, P., Efros, A. A., Shechtman, E., \& Wang, O. (2018). \href{https://arxiv.org/abs/1801.03924}{The Unreasonable Effectiveness of Deep Features as a Perceptual Metric}. CVPR.
+\item
+  Heek, J., Hoogeboom, E., Mensink, T., \& Salimans, T. (2026). \href{https://arxiv.org/abs/2602.17270}{Unified Latents (UL): How to train your latents}. arXiv:2602.17270.
+\item
+  Ye, H., He, Q., Han, J., et al.~(2025). \href{https://arxiv.org/abs/2512.16975}{InfoTok: Adaptive Discrete Video Tokenizer via Information-Theoretic Compression}. arXiv:2512.16975.
 \item
   Wei, H., Sun, Y., \& Li, Y. (2026). \href{https://arxiv.org/abs/2601.20552}{DeepSeek-OCR 2: Visual Causal Flow}. arXiv:2601.20552.
 \end{itemize}
@@ -1036,7 +1052,7 @@ f_\theta(x_t,t)=f_\theta(x_{t'},t')
 \hypertarget{ux4e8cux8f68ux8ff9ux5206ux6bb5ux4e00ux81f4ux6027ux84b8ux998ftscd}{%
 \subsection{二、轨迹分段一致性蒸馏（TSCD）}\label{ux4e8cux8f68ux8ff9ux5206ux6bb5ux4e00ux81f4ux6027ux84b8ux998ftscd}}
 
-直接让网络跨越极长的时间步去预测 \(x_0\)，对于视频这种高维且高度非线性的数据来说，学习难度极大，容易陷入局部最优并导致画面模糊。引入自 HyperSD 的 TSCD 技术，其核心思想是``分而治之''。
+直接让网络跨越极长的时间步去预测 \(x_0\)，对于视频这种高维且高度非线性的数据来说，学习难度极大，容易陷入局部最优并导致画面模糊。引入自 Hyper-SD 的 TSCD 技术，其核心思想是``分而治之''。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -1528,8 +1544,8 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
   \(\lambda\) 是一个随训练进行从 1 线性衰减到 0 的课程学习权重。这迫使共享参数块学会把复杂的变换压缩到更早的循环步骤中。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-140}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-140}}
+\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1540,6 +1556,8 @@ Google DeepMind在《ELT: Elastic Looped Transformers for Visual Generation》�
   Song, Y., Dhariwal, P., Chen, M., \& Sutskever, I. (2023). \href{https://arxiv.org/abs/2303.01469}{Consistency Models}. ICML.
 \item
   Yin, T., Gharbi, M., Zhang, R., Shechtman, E., Durand, F., Freeman, W. T., \& Park, T. (2024). \href{https://arxiv.org/abs/2311.18828}{One-step Diffusion with Distribution Matching Distillation}. CVPR.
+\item
+  Ren, Y., Xia, X., Lu, Y., et al.~(2024). \href{https://arxiv.org/abs/2404.13686}{Hyper-SD: Trajectory Segmented Consistency Model for Efficient Image Synthesis}. NeurIPS.
 \item
   Huang, X., Li, Z., He, G., Zhou, M., \& Shechtman, E. (2025). \href{https://arxiv.org/abs/2506.08009}{Self Forcing: Bridging the Train-Test Gap in Autoregressive Video Diffusion}. arXiv:2506.08009.
 \item
@@ -1835,8 +1853,8 @@ p_\theta(x_t^{j-1}\mid x_t^j,z_{t-1})
   \textbf{混合训练策略}：将 RF 的滚动窗口目标与 SF 的逐帧生成目标混合训练。SF 的目标在此处起到了正则化作用，防止滚动窗口机制导致不自然的相机运镜。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-141}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-141}}
+\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1974,8 +1992,8 @@ F_\theta(c_{\mathrm{in}}^\tau x_{t+1}^{\tau},\psi_t) -
 
 可采用双专家或多专家设计，以更好地实现自适应。高噪声专家负责早期去噪和全局结构，低噪声专家负责后期细节处理。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-142}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-142}}
+\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -2124,14 +2142,14 @@ Matrix-Game 3.0通过设计长程记忆模块，提升了在自回归的长程�
 \hat{\theta}_h = \theta_{base}(1 + \sigma_{\theta}\epsilon_h)
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-143}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-143}}
+\hypertarget{ux53c2ux8003ux6587ux732e-144}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-144}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Wang, Z., Liu, Z., Li, J., Huang, K., Xu, B., Kang, F., An, M., Wang, P., Jiang, B., Wei, Y., Xietian, Y., Pei, J., Hu, L., Jiang, B., Xue, H., Wang, Z., Sun, H., Li, W., Ouyang, W., He, X., Liu, Y., Li, Y., \& Yang, Y. (2026). \href{https://arxiv.org/abs/2604.08995}{Matrix-Game 3.0: Real-Time and Streaming Interactive World Model with Long-Horizon Memory}. arXiv:2604.08995.
+  Wang, Z., Liu, Z., Li, J., Huang, K., Xu, B., Kang, F., An, M., Wang, P., Jiang, B., Wei, Y., Xietian, Y., Pei, J., Hu, L., Jiang, B., Xue, H., Wang, Z., Sun, H., Li, W., Ouyang, W., He, X., Liu, Y., Li, Y., \& Zhou, Y. (2026). \href{https://arxiv.org/abs/2604.08995}{Matrix-Game 3.0: Real-Time and Streaming Interactive World Model with Long-Horizon Memory}. arXiv:2604.08995.
 \item
   Chen, B., Monso, D. M., Du, Y., Simchowitz, M., Tedrake, R., \& Sitzmann, V. (2024). \href{https://arxiv.org/abs/2407.01392}{Diffusion Forcing: Next-token Prediction Meets Full-Sequence Diffusion}. NeurIPS.
 \item
@@ -2237,20 +2255,20 @@ Noise at Frame & 在特定的某一帧（Frame），对所有的去噪步注入�
   \textbf{引导生成}：利用平均后的稳定潜变量继续后续的生成。实验证明，这一简单的集成策略使得模型在 VBVR-Bench 推理基准测试上的绝对得分直接提升了 2\%。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-144}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-144}}
+\hypertarget{ux53c2ux8003ux6587ux732e-145}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-145}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Wang, R., Cai, Z., Pu, F., et al.~(2026). \emph{Demystifing Video Reasoning}. ECCV.
+  Wang, R., Cai, Z., Pu, F., et al.~(2026). \href{https://arxiv.org/abs/2603.16870}{Demystifying Video Reasoning}. arXiv:2603.16870.
 \item
   Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
 \item
   Wiedemer, T., Li, Y., Vicol, P., et al.~(2025). \href{https://arxiv.org/abs/2509.20328}{Video Models are Zero-Shot Learners and Reasoners}. arXiv:2509.20328.
 \item
-  Wang, M., Wang, R., Lin, J., et al.~(2026). \emph{A Very Big Video Reasoning Suite}. ICML.
+  Wang, M., Wang, R., Lin, J., et al.~(2026). \href{https://arxiv.org/abs/2602.20159}{A Very Big Video Reasoning Suite}. arXiv:2602.20159.
 \end{itemize}
 
 \clearpage

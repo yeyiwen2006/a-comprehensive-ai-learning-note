@@ -187,8 +187,8 @@ x_t=(1-t)x_0+t x_1
 
 此外，VLA通常依赖当前观测和语言指令直接预测动作，在长时序任务中容易累积误差；当机器人进入训练数据覆盖较少的状态时，模型也缺乏显式的未来预测和自我纠错机制。因此，如何引入世界模型、强化学习或更统一的物理表征，是进一步提升VLA可靠性与长期规划能力的重要方向。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-151}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-151}}
+\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -199,6 +199,8 @@ x_t=(1-t)x_0+t x_1
   Kim, M. J., Pertsch, K., Karamcheti, S., et al.~(2024). \href{https://arxiv.org/abs/2406.09246}{OpenVLA: An Open-Source Vision-Language-Action Model}. arXiv:2406.09246.
 \item
   Black, K., Brown, N., Driess, D., et al.~(2024). \href{https://arxiv.org/abs/2410.24164}{π0: A Vision-Language-Action Flow Model for General Robot Control}. arXiv:2410.24164.
+\item
+  Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
 \item
   Ye, S., Jang, J., Jeon, B., et al.~(2024). \href{https://arxiv.org/abs/2410.11758}{Latent Action Pretraining from Videos}. arXiv:2410.11758.
 \item
@@ -484,8 +486,8 @@ DSRL-NA先用机器人数据(s,a,s',r)训练出Q(s,a)，进而就可以训练得
 
 由于RL的策略比没有人类策略中存在的少量犹豫、停顿、晃动等，且rollout轨迹里常存在从错误状态恢复的数据，故该方法得到的样本用于训练的效果在一些情况下可能反超人类数据。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-152}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-152}}
+\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
 
 \vspace{0.25em}
 \begin{itemize}

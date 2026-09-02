@@ -107,10 +107,10 @@ Codex收到模型的请求，在本地执行命令，把README.md的内容读出
 
 我们希望构建能自主循环的智能体，能根据总目标，独立设定子目标、制定计划并持续执行。它的工作流是一个可持续自主运行的循环，可以动态衡量与目标的差距、进行反思、生成新子任务、调整执行子任务的顺序等，直至完成目标。挑战在于，可能逐渐偏离原始目标，需要纠偏机制；需要设立合理的终止判断机制；持续运行成本较大；可解释性弱，甚至可能存在安全风险。
 
-\hypertarget{ux516dralgh-loop}{%
-\subsection{六、Ralgh Loop}\label{ux516dralgh-loop}}
+\hypertarget{ux516dralph-loop}{%
+\subsection{六、Ralph Loop}\label{ux516dralph-loop}}
 
-2025年底，澳大利亚前程序员Geoffrey Huntley编写了5行代码：while :; do cat prompt.md \textbar{} claude-code ; Done并让AI自动运行这个循环，最终取得了惊人的效果。该循环被称为Ralph Loop，是一种AI Agent自动化循环工作流。将AI置于一个while(true)循环中，给AI指定一个任务，以及一个可编程客观验证的``完成标志''（如输出特定字符串、通过特定测试案例、返回0错误码）。AI完成任务后尝试退出，如果没有检测到完成标志，Stop Hook脚本会拦截退出，并把同一个提示词再次送入系统，开启一个全新的会话重新解决，此时AI可以看到自己的上轮输出、错误日志或Git历史，但不保留上一轮的其他上下文，这样也避免了上下文溢出。从而这样可以形成一个自我反馈闭环，每一轮AI不断尝试解决问题，直至全部成功。
+2025年7月，软件工程师Geoffrey Huntley把Ralph描述为一种极简的循环式编程智能体工作流，其纯粹形式是一行Bash命令：\texttt{while\ :;\ do\ cat\ PROMPT.md\ \textbar{}\ claude-code\ ;\ done}。每一轮都会重新读取同一份任务提示并启动一次新的智能体进程；代码改动、测试结果和Git历史等外部状态可以保留，但上一轮的完整对话上下文不会自动延续。原始Ralph循环本身不包含``完成标志''或Stop Hook。后来的一些工具在这一思想上增加了可编程完成条件和Stop Hook：若测试未通过或未检测到完成条件，Hook会阻止流程结束并触发下一轮。介绍时应把这种后续封装与Huntley提出的一行循环区分开。
 
 Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多数人使用AI编程工具时，只有一个想法，但任务太大了，AI在上下文窗口内无法一次性解决。而Ralph不强求一次性解决问题，就意味着我们可以让AI先制定计划，然后在一个循环中，把所有事情拆到``AI一次就能做完、一次就能判断对错''的最小颗粒度。具体而言，可以分为以下步骤：
 
@@ -121,17 +121,25 @@ Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多�
 \item
   让AI拆解任务，转化为需求清单，每个任务都需要一个明确的检查方式来判断是否成功。如：``增加一个优先级列，默认为中等。''``下拉菜单显示选项：全部、高、中、低''，而不是用``好看''这种模糊的表述。需求的描述直接决定输出结果的好坏。
 \item
-  运行Ralgh循环。
+  运行Ralph循环。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-113}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-113}}
+\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
+\item
+  Yao, S., Zhao, J., Yu, D., et al.~(2023). \href{https://arxiv.org/abs/2210.03629}{ReAct: Synergizing Reasoning and Acting in Language Models}. ICLR 2023.
+\item
+  Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
+\item
+  Huntley, G. (2025). \href{https://ghuntley.com/ralph/}{Ralph Wiggum as a ``software engineer''}.
+\item
+  Bolin, M. (2026). \href{https://openai.com/index/unrolling-the-codex-agent-loop/}{Unrolling the Codex agent loop}. OpenAI.
 \end{itemize}
 
 \clearpage
@@ -229,14 +237,20 @@ Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多�
 
 随着模型能力不断提升，部分提示词设计技巧逐渐失去价值，Prompt Engineering逐渐融入了后来的Context Engineering和Harness Engineering等。但讲清楚需求、给明限制范围等依然是必要的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
+\hypertarget{ux53c2ux8003ux6587ux732e-115}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-115}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
+\item
+  Wei, J., Wang, X., Schuurmans, D., et al.~(2022). \href{https://arxiv.org/abs/2201.11903}{Chain-of-Thought Prompting Elicits Reasoning in Large Language Models}. NeurIPS 2022.
+\item
+  Wang, X., Wei, J., Schuurmans, D., et al.~(2023). \href{https://openreview.net/forum?id=1PL1NIMMrw}{Self-Consistency Improves Chain of Thought Reasoning in Language Models}. ICLR 2023.
+\item
+  Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
 \end{itemize}
 
 \clearpage
@@ -315,7 +329,7 @@ Subagent 2负责鸟：它做了一只不像游戏里的鸟，移动方式也不�
 \hypertarget{ux4e94ux5927ux6a21ux578bux5e7bux89c9ux95eeux9898ux7684ux591aux667aux80fdux4f53ux89e3ux51b3ux65b9ux6848}{%
 \subsection{五、大模型``幻觉''问题的多智能体解决方案}\label{ux4e94ux5927ux6a21ux578bux5e7bux89c9ux95eeux9898ux7684ux591aux667aux80fdux4f53ux89e3ux51b3ux65b9ux6848}}
 
-通过多智能体（Multi-Agent）协作、互评和辩论来降低幻觉，是目前大模型领域最有效的技术路径之一。
+通过多智能体（Multi-Agent）协作、互评和辩论来降低幻觉，是当前大模型研究中的常见技术路径之一。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -464,16 +478,20 @@ PARL的训练任务专门设计用于压力测试顺序执行的极限，通过�
 
 每个智能体任务作为独立异步协程运行，支持递归子任务调用（子智能体可进一步创建子智能体）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-115}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-115}}
+\hypertarget{ux53c2ux8003ux6587ux732e-116}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-116}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
 \item
-  Moonshot AI. (2026). \href{https://github.com/MoonshotAI/Kimi-K2.5/blob/master/tech_report.pdf}{Kimi K2.5 Technical Report}.
+  Du, Y., Li, S., Torralba, A., Tenenbaum, J. B., \& Mordatch, I. (2023). \href{https://arxiv.org/abs/2305.14325}{Improving Factuality and Reasoning in Language Models through Multiagent Debate}. arXiv:2305.14325.
+\item
+  Wang, X., Wei, J., Schuurmans, D., et al.~(2023). \href{https://openreview.net/forum?id=1PL1NIMMrw}{Self-Consistency Improves Chain of Thought Reasoning in Language Models}. ICLR 2023.
+\item
+  Kimi Team. (2026). \href{https://arxiv.org/abs/2602.02276}{Kimi K2.5: Visual Agentic Intelligence}. arXiv:2602.02276.
 \end{itemize}
 
 \clearpage
@@ -502,8 +520,8 @@ PARL的训练任务专门设计用于压力测试顺序执行的极限，通过�
   不使用Loss Mask：在SFT或RL中，我们需要运用Loss Mask，因为我们要优化模型的输出策略，而User Prompt或环境反馈是无法被优化的，模型训练中也不应该试图优化它们，故需要加Loss Mask以免干扰训练。而Mid-Training的重点是``学习知识''而非``解决真实问题''，要让它通过预测环境反馈token并优化对应Loss，学到环境中真实的数据概率分布。模型不仅需要学会``如何修改代码''，还需要学会``如何描述一个Bug''以及``代码库通常长什么样''。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-116}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-116}}
+\hypertarget{ux53c2ux8003ux6587ux732e-117}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-117}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -515,7 +533,7 @@ PARL的训练任务专门设计用于压力测试顺序执行的极限，通过�
 \item
   Tu, C., Zhang, X., Weng, R., et al.~(2025). \href{https://arxiv.org/abs/2510.23081}{A Survey on LLM Mid-training}. arXiv:2510.23081.
 \item
-  SII-GAIR. (2026). \href{https://arxiv.org/abs/2601.18418}{daVinci-Dev: Agent-native Mid-training for Software Engineering}. arXiv:2601.18418.
+  Zeng, J., Fu, D., Mi, T., et al.~(2026). \href{https://arxiv.org/abs/2601.18418}{daVinci-Dev: Agent-native Mid-training for Software Engineering}. arXiv:2601.18418.
 \item
   Zhu, Q., Chen, T., Lu, S., et al.~(2026). \href{https://arxiv.org/abs/2602.07457}{Pull Requests as a Training Signal for Repo-Level Code Editing}. arXiv:2602.07457.
 \item
@@ -669,8 +687,8 @@ OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的�
   可替换能力层：文件系统、Shell、Web、LSP、Subagent、Sandbox、模型适配器、Session持久化和Storage都被设计成独立能力。如Session Persistence可以使用JSONL或SQLite等不同后端，而无需修改Agent Loop。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-117}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-117}}
+\hypertarget{ux53c2ux8003ux6587ux732e-118}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-118}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -680,17 +698,17 @@ OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的�
 \item
   Bonamy, N., \& Choi, D. (2026). \href{https://developers.openai.com/blog/codex-as-a-platform}{Codex as a platform: build on the open agent harness}. OpenAI Developers.
 \item
-  Cursor. (2026). \href{https://cursor.com/docs/agent/overview}{Cursor Agent: Overview}. Cursor Documentation.
+  Cursor. (n.d.). \href{https://cursor.com/docs/agent/overview}{Cursor Agent: Overview}. Cursor Documentation. 访问于2026-09-02.
 \item
-  Cursor. (2026). \href{https://cursor.com/docs/cloud-agent}{Cloud Agents}. Cursor Documentation.
+  Cursor. (n.d.). \href{https://cursor.com/docs/cloud-agent}{Cloud Agents}. Cursor Documentation. 访问于2026-09-02.
 \item
-  Cursor. (2026). \href{https://cursor.com/docs/subagents}{Subagents}. Cursor Documentation.
+  Cursor. (n.d.). \href{https://cursor.com/docs/subagents}{Subagents}. Cursor Documentation. 访问于2026-09-02.
 \item
   Cursor Team. (2026). \href{https://cursor.com/blog/joining-spacex}{Cursor is now a part of SpaceX}. Cursor.
 \item
-  Anthropic. (2026). \href{https://code.claude.com/docs/en/quickstart}{Claude Code overview}. Claude Code Documentation.
+  Anthropic. (n.d.). \href{https://code.claude.com/docs/en/quickstart}{Quickstart}. Claude Code Documentation. 访问于2026-09-02.
 \item
-  Anthropic. (2026). \href{https://code.claude.com/docs/en/how-claude-code-works}{How Claude Code works}. Claude Code Documentation.
+  Anthropic. (n.d.). \href{https://code.claude.com/docs/en/how-claude-code-works}{How Claude Code works}. Claude Code Documentation. 访问于2026-09-02.
 \item
   Anthropic. (2025). \href{https://www.anthropic.com/engineering/claude-code-sandboxing}{Beyond permission prompts: making Claude Code more secure and autonomous with sandboxing}. Anthropic Engineering.
 \item
@@ -698,9 +716,9 @@ OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的�
 \item
   Chen, C. (2026). \href{https://openai.com/index/unlocking-the-codex-harness/}{Unlocking the Codex harness: how we built the App Server}. OpenAI.
 \item
-  OpenClaw. (2026). \href{https://docs.openclaw.ai/}{OpenClaw Documentation}.
+  OpenClaw. (n.d.). \href{https://docs.openclaw.ai/}{OpenClaw Documentation}. 访问于2026-09-02.
 \item
-  DeepSeek-AI. (2026). \href{https://github.com/deepseek-ai/deepseek-harness}{DeepSeek Harness developer preview: Everything is a plugin}.
+  DeepSeek-AI. (n.d.). \href{https://github.com/deepseek-ai/deepseek-harness}{DeepSeek Harness developer preview: Everything is a plugin}. GitHub repository. 访问于2026-09-02.
 \item
   Shi, Y., Zhang, W., \& Cui, T. (2026). \href{https://arxiv.org/abs/2608.25512}{A Programming Paradigm for Spatiotemporal Composability}. arXiv:2608.25512.
 \end{itemize}

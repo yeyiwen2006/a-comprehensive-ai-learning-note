@@ -22,8 +22,8 @@ Adam 优化器正是为了同时解决这两个问题，它结合了两种先进
 
 实验证明，用SGD进行全量微调，实际修改的参数可能比LoRA还少，效果却不逊于用AdamW进行全量微调。学习率需要取较大的值（1e-1左右）。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-24}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-24}}
+\hypertarget{ux53c2ux8003ux6587ux732e-25}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-25}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -109,8 +109,8 @@ m_t = \beta_1 \cdot m_{t-1} + (1-\beta_1)\cdot g_t
 
 参数更新的方向不再是 \(g_t\)，而是平滑后的 \(m_t\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-25}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-25}}
+\hypertarget{ux53c2ux8003ux6587ux732e-26}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-26}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -217,16 +217,18 @@ v_t = \beta_2 \cdot v_{t-1} + (1-\beta_2)\cdot (g_t \odot g_t)
 
 注意：这里的除法和乘法也都是逐元素的。\(\alpha\) 被 \(v_t\) 中每个参数对应的``均方根''所缩放。
 
-注：在 RMSProp 的原始论文中，更新使用的是 \(\frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t\)，而不是 \(m_t\)。
+注：RMSProp 最初通过 Geoffrey Hinton 的课程讲义公开，而不是以一篇``原始论文''的形式发表。讲义中的更新使用 \(\frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t\)，而不是 \(m_t\)。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-26}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-26}}
+\hypertarget{ux53c2ux8003ux6587ux732e-27}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-27}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Duchi, J., Hazan, E., \& Singer, Y. (2011). \href{https://jmlr.org/papers/v12/duchi11a.html}{Adaptive Subgradient Methods for Online Learning and Stochastic Optimization}. Journal of Machine Learning Research.
+\item
+  Hinton, G., Srivastava, N., \& Swersky, K. (2012). \href{https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf}{Neural Networks for Machine Learning, Lecture 6e: RMSProp}. University of Toronto / Coursera.
 \end{itemize}
 
 \clearpage
@@ -366,8 +368,8 @@ Adam（及其变体，如AdamW）是当今深度学习领域绝大多数任务�
   在强化学习中：智能体一边学习，一边改变其策略，这导致它采集到的数据分布（即``经验''）是不断变化的。RL中的奖励信号往往是稀疏且延迟的，这导致计算出的梯度方差极大，噪声很大。Adam的二阶矩 \(v_t\)（RMSProp部分）能有效估计梯度的方差，而一阶矩 \(m_t\)（Momentum部分）能平滑噪声，增强鲁棒性。这使其成为在RL这种高噪声、非平稳环境中进行稳定训练的理想选择。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-27}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-27}}
+\hypertarget{ux53c2ux8003ux6587ux732e-28}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-28}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -449,8 +451,8 @@ v_t = \beta_2v_{t-1} + (1-\beta_2)g_t^2
 
 权重衰减项直接作用于参数，不再受到学习率的缩放影响。这恢复了SGD中权重衰减的原始物理意义（即每次迭代让权重按比例收缩），使得模型的泛化能力通常优于Adam。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-28}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-28}}
+\hypertarget{ux53c2ux8003ux6587ux732e-29}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-29}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -470,10 +472,10 @@ Adam/AdamW优化器在实现自适应学习率时，对于每个维度（参数�
 
 在矩阵正交化计算上，Muon使用Newton-Schulz迭代 来逼近矩阵的``符号函数''，从而实现正交化，极大地减小了计算量。
 
-目前，在Kimi K2等一些大模型的训练中，已经改用了Muon优化器。
+目前，一些大模型训练采用了 Muon 的改进版本。例如，Kimi K2 使用的是在 Muon 基础上加入 QK-clip 的 MuonClip，而不是未经修改的原始 Muon。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-29}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-29}}
+\hypertarget{ux53c2ux8003ux6587ux732e-30}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-30}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -623,8 +625,8 @@ f(E) = 729 f(F) = 289 f(G) = 225 f(H) = 289
 
 总结：遗传算法是一种强大而灵活的全局优化工具，它通过模拟自然进化过程，在巨大的搜索空间中有效地寻找``足够好''的解决方案。虽然它不一定能找到绝对的最优解，并且在计算上可能不是最高效的，但其在处理那些没有现成数学模型或传统方法难以解决的复杂问题时，展现出了独特的优势。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-30}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-30}}
+\hypertarget{ux53c2ux8003ux6587ux732e-31}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-31}}
 
 \vspace{0.25em}
 \begin{itemize}

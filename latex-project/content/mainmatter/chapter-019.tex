@@ -147,8 +147,8 @@ KV Cache是为了解决推理（Inference）阶段每次生成一个token的``�
 
 KV Cache在显存中需要连续空间，导致大量的显存碎片浪费（类似于操作系统的内存碎片）。借鉴操作系统的虚拟内存页（Paging）技术。将KV Cache分块存储在不连续的物理显存中，通过页表来索引。这极大地提高了显存利用率，使得在同样的显存下可以支持更大的Batch Size，从而提升推理吞吐量。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-90}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-90}}
+\hypertarget{ux53c2ux8003ux6587ux732e-91}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-91}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -545,8 +545,8 @@ Flash Attention 算法的选择是：现用现算。
 
 这就是 Flash Attention 节省显存的核心：保留线性规模的必要状态，丢弃平方规模的中间注意力矩阵，并在反向传播需要时按块重算。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-91}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-91}}
+\hypertarget{ux53c2ux8003ux6587ux732e-92}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-92}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -564,7 +564,7 @@ Flash Attention 算法的选择是：现用现算。
 \hypertarget{ux73afux72b6ux6ce8ux610fux529bring-attention}{%
 \section{环状注意力（Ring Attention）}\label{ux73afux72b6ux6ce8ux610fux529bring-attention}}
 
-Ring Attention（环状注意力）是分布式系统（多GPU/TPU）上的Flash Attention延伸，Google Gemini等模型均运用了此技术。
+Ring Attention（环状注意力）是一种面向多 GPU/TPU 分布式系统的块式注意力方法，通过让 Key/Value 块在设备环上轮转，使超长序列的注意力计算能够跨设备展开。公开论文可以支持这一算法原理，但若没有模型技术报告的明确披露，不应进一步断言某个具体商用模型采用了该实现。
 
 FlashAttention 解决的是单张显卡内，如何通过分块计算（Tiling）把超长序列塞进有限的 SRAM 中；Ring Attention 解决的是多张显卡间，如何通过分块轮转，把超长序列（比如100万+ Token）塞进集群的显存中，并打破单卡显存的物理上限。
 
@@ -709,8 +709,8 @@ l_{\mathrm{new}}
 
 这样，每张卡不需要保存完整的 \(K, V\)，只要在每一轮合并局部统计量和局部输出，就能得到等价于全局 softmax 的注意力结果。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-92}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-92}}
+\hypertarget{ux53c2ux8003ux6587ux732e-93}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-93}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -804,8 +804,8 @@ KV Cache大小是MHA的1/2，是MQA的2倍。
 
 效果：速度接近 MQA，质量接近 MHA。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-93}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-93}}
+\hypertarget{ux53c2ux8003ux6587ux732e-94}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-94}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -958,8 +958,8 @@ y_t
 
 总体而言，MLA 把``先逐 token 升维再聚合''改成``先在压缩空间聚合再延迟升维''，主要复杂度从 \(O(t \cdot d_c \cdot d_h)\) 变为 \(O(t \cdot d_c + d_c \cdot d_h)\)，当历史长度 \(t\) 较大时可近似理解为降低约 \(d_h\) 倍。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-94}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-94}}
+\hypertarget{ux53c2ux8003ux6587ux732e-95}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-95}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -980,7 +980,7 @@ KV Cache 默认通常使用 FP16（16-bit）存储。量化方法的核心思想
 
 以 Key 张量的 INT8 量化为例，可以写为 \(K_{int8}=round(K_{fp16}/scale)\)。其中 \(scale\) 是量化缩放因子，用来把 FP16 数值映射到整数表示范围内。
 
-这种方法的效果很直接：如果从 FP16 压缩到 INT8，KV Cache 的显存占用大约减半；如果进一步压缩到 INT4，显存占用可以接近原来的四分之一。对长文本推理来说，KV Cache 占用越大，量化带来的显存收益越明显；实际使用中通常几乎无感，但会引入很小的精度损失。
+这种方法的效果很直接：如果从 FP16 压缩到 INT8，KV Cache 的显存占用大约减半；如果进一步压缩到 INT4，显存占用可以接近原来的四分之一。对长文本推理来说，KV Cache 占用越大，量化带来的显存收益越明显；具体精度损失取决于位宽、分组方式、模型和任务，不能一概视为``几乎无感''。KIVI 是这一方向的代表方法：它根据 Key 和 Value 的元素分布差异，分别采用按通道和按 token 的非对称 2-bit 量化。
 
 \hypertarget{ux4e8cux5b58ux5728ux4fe1ux606fux635fux5931ux7684kvux5e8fux5217ux538bux7f29}{%
 \subsection{二、存在信息损失的K、V序列压缩}\label{ux4e8cux5b58ux5728ux4fe1ux606fux635fux5931ux7684kvux5e8fux5217ux538bux7f29}}
@@ -998,7 +998,7 @@ Pooling/Clustering：对 K 和 V 进行池化或聚类，减少其数量。
 \item
   H2O（Heavy Hitter Oracle）：只保留那些注意力分数比较高的 token，也就是 heavy hitter，同时保留最近生成的 recent token，避免模型完全丢失局部上下文。
 \item
-  Token Merging（ToMe）：发现两个 token 向量很像、余弦相似度较高时，就把它们合并成一个 token 表示，减少后续注意力需要处理的 K/V 数量。
+  KVMerger：根据同一序列中 Key 状态的相似性识别可合并集合，再用高斯核加权合并对应的 KV 状态，从而减少后续需要保留的 KV 数量。这里讨论的是专门用于 KV Cache 的 KVMerger，而不是面向视觉 token 的通用 ToMe 方法。
 \end{itemize}
 
 这类方法目前更适合中等偏低的应用场景，尤其是超长文本推理或资源受限的端侧设备。不过它也有明显缺点：第一，KV Cache 会随着生成过程动态变稀疏，内存不再连续，很难充分利用 GPU 的并行计算能力，反而可能变慢；第二，在``大海捞针''任务中，如果早期剪掉了看似不重要、但实际包含关键信息的 token，例如一个人名，模型后续就可能永远找不到这个信息。
@@ -1007,8 +1007,8 @@ Pooling/Clustering：对 K 和 V 进行池化或聚类，减少其数量。
 
 Learned Compressors：使用一个可学习的网络（如低维投影）来压缩 K 和 V。但有损且不可逆：一旦压缩成摘要，原始的逐字逐句信息就丢了，很难做精确引用。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-95}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-95}}
+\hypertarget{ux53c2ux8003ux6587ux732e-96}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-96}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1017,6 +1017,10 @@ Learned Compressors：使用一个可学习的网络（如低维投影）来压�
   Zhang, Z., Sheng, Y., Zhou, T., et al.~(2023). \href{https://arxiv.org/abs/2306.14048}{H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models}. NeurIPS 2023.
 \item
   Xiao, G., Tian, Y., Chen, B., Han, S., \& Lewis, M. (2023). \href{https://arxiv.org/abs/2309.17453}{Efficient Streaming Language Models with Attention Sinks}. ICLR 2024.
+\item
+  Liu, Z., Yuan, J., Jin, H., et al.~(2024). \href{https://arxiv.org/abs/2402.02750}{KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache}. ICML 2024.
+\item
+  Wang, Z., Jin, B., Yu, Z., \& Zhang, M. (2024). \href{https://arxiv.org/abs/2407.08454}{Model Tells You Where to Merge: Adaptive KV Cache Merging for LLMs on Long-Context Tasks}. arXiv:2407.08454.
 \end{itemize}
 
 \clearpage
@@ -1150,8 +1154,8 @@ Lightning Indexer 被训练来预测每个 token 的 Query 与每个 token 的 K
 
 第三步：开启稀疏化（Top-K Selection），同步用各自的损失函数训练主模型和 Lightning Indexer。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-96}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-96}}
+\hypertarget{ux53c2ux8003ux6587ux732e-97}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-97}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1522,12 +1526,14 @@ o_t = \frac{\phi(q_t)S_t}{\phi(q_t)Z_t}
 
 因此，我们不需要存储整个键值的历史，只需要维护一个固定大小的状态 \(S\) 和 \(Z\)。每一步的计算成本是常数 \(O(1)\)（相对于序列长度），极大地提高了长文本生成的效率。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-97}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-97}}
+\hypertarget{ux53c2ux8003ux6587ux732e-98}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-98}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
+\item
+  Katharopoulos, A., Vyas, A., Pappas, N., \& Fleuret, F. (2020). \href{https://arxiv.org/abs/2006.16236}{Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention}. ICML 2020.
 \item
   Shen, Z., Zhang, M., Zhao, H., Yi, S., \& Li, H. (2021). \href{https://arxiv.org/abs/1812.01243}{Efficient Attention: Attention with Linear Complexities}. WACV 2021.
 \end{itemize}
@@ -1796,14 +1802,14 @@ S_t=S_{t-1}+\beta_tk_t\left(v_t-k_t^\top S_{t-1}\right)
 
 此外，对于输入的token，模型会根据先验参数判断是否需要启动上下文学习机制。如果问一个单纯的常识问题（比如``法国的首都是？''），模型根本不需要启动复杂的在下文梯度下降，它的MLP（先验知识）直接就能把``巴黎''的特征输出出来，此时 \(W_0\ne 0\) 而后续注意力层的 \(\Delta W\to 0\)。而对于模型在训练时没有见过的分布，会让 \(W_0\to 0\)（几乎没有先验，避免干扰上下文学习），而交给后续的 \(\Delta W\) 自主分析。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-98}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-98}}
+\hypertarget{ux53c2ux8003ux6587ux732e-99}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-99}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Moonshot AI. (2025). \href{https://arxiv.org/abs/2510.26692}{Kimi Linear: An Expressive, Efficient Attention Architecture}. arXiv:2510.26692.
+  Kimi Team. (2025). \href{https://arxiv.org/abs/2510.26692}{Kimi Linear: An Expressive, Efficient Attention Architecture}. arXiv:2510.26692.
 \end{itemize}
 
 \clearpage
@@ -1882,8 +1888,8 @@ Gated Attention在这个输出后再引入门控矩阵 \(G\in(0,1)\)。门控对
 
 实验证明，门控矩阵往往是一个稀疏矩阵，这也解决了上面所述不合理的权重分配问题。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-99}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-99}}
+\hypertarget{ux53c2ux8003ux6587ux732e-100}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-100}}
 
 \vspace{0.25em}
 \begin{itemize}

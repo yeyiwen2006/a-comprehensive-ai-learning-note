@@ -318,7 +318,7 @@ $$
 
 其中 $m$ 代表原始视觉 token 数量，$n$ 代表因果查询符数量；在本文设计中 $m=n$。$1$ 表示允许注意力交互，$0$ 表示被掩码屏蔽，$\mathrm{LowerTri}(n)$ 表示下三角矩阵（对角线及以下为 1，以上为 0）。
 
-## 六、INFOTOK：基于信息论的视觉动态 Tokenizer
+## 六、InfoTok：基于信息论的视觉动态 Tokenizer
 
 处理长视频序列时，准确且高效的离散视频分词（Tokenization）至关重要。现有大多数视频分词器，如 Cosmos、OmniTokenizer 等，使用固定压缩率策略。这带来一个显著瓶颈：视频本身的复杂度和信息密度不断变化。
 
@@ -355,7 +355,7 @@ $$
 D_{\mathrm{KL}}(q_\phi(z|x)\|p(z))
 $$
 
-ELBO 是数据对数似然的可证明下界。INFOTOK 因此设计如下路由器函数来决定视频 token 长度：
+ELBO 是数据对数似然的可证明下界。InfoTok 因此设计如下路由器函数来决定视频 token 长度：
 
 $$
 r_\beta(N_x|x) =
@@ -368,7 +368,7 @@ $$
 
 其中 $\beta$ 是平均压缩因子，决定平均使用的 token 数量；$\delta(\cdot)$ 代表狄拉克分布，即确定性输出；$\mathbb{E}[\mathrm{ELBO}(x)]$ 用于归一化。
 
-定理 3.1 证明，只要这种分词器成功最小化重建损失，那么在推理时，INFOTOK 的预期长度将严格以熵为界，逼近理论最优压缩率。
+定理 3.1 证明，只要这种分词器成功最小化重建损失，那么在推理时，InfoTok 的预期长度将严格以熵为界，逼近理论最优压缩率。
 
 ### （三）压缩步骤工作流
 
@@ -379,7 +379,7 @@ $$
 
 ### （四）整体工作流
 
-INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其编码器 $E_0$ 和解码器 $D_0$，并引入路由器（Router）和自适应压缩器/解压器。训练过程如下：
+InfoTok 建立在现有固定长度分词器（如 Cosmos）之上，利用其编码器 $E_0$ 和解码器 $D_0$，并引入路由器（Router）和自适应压缩器/解压器。训练过程如下：
 
 1. 采样输入：从视频分布 $\mathcal{D}$ 中采样视频 $x$。
 2. 初步编码：使用编码器将视频映射为固定长度连续潜在表示（Embeddings），$h\leftarrow E_0(x)$。
@@ -395,4 +395,8 @@ INFOTOK 建立在现有固定长度分词器（如 Cosmos）之上，利用其�
 - van den Oord, A., Vinyals, O., & Kavukcuoglu, K. (2017). [Neural Discrete Representation Learning](https://arxiv.org/abs/1711.00937). NeurIPS.
 - Esser, P., Rombach, R., & Ommer, B. (2021). [Taming Transformers for High-Resolution Image Synthesis](https://arxiv.org/abs/2012.09841). CVPR.
 - Rombach, R., Blattmann, A., Lorenz, D., Esser, P., & Ommer, B. (2022). [High-Resolution Image Synthesis with Latent Diffusion Models](https://arxiv.org/abs/2112.10752). CVPR.
+- Gao, Y., Guo, H., Hoang, T., et al. (2025). [Seedance 1.0: Exploring the Boundaries of Video Generation Models](https://arxiv.org/abs/2506.09113). arXiv:2506.09113.
+- Zhang, R., Isola, P., Efros, A. A., Shechtman, E., & Wang, O. (2018). [The Unreasonable Effectiveness of Deep Features as a Perceptual Metric](https://arxiv.org/abs/1801.03924). CVPR.
+- Heek, J., Hoogeboom, E., Mensink, T., & Salimans, T. (2026). [Unified Latents (UL): How to train your latents](https://arxiv.org/abs/2602.17270). arXiv:2602.17270.
+- Ye, H., He, Q., Han, J., et al. (2025). [InfoTok: Adaptive Discrete Video Tokenizer via Information-Theoretic Compression](https://arxiv.org/abs/2512.16975). arXiv:2512.16975.
 - Wei, H., Sun, Y., & Li, Y. (2026). [DeepSeek-OCR 2: Visual Causal Flow](https://arxiv.org/abs/2601.20552). arXiv:2601.20552.

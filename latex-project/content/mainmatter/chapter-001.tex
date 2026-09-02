@@ -55,6 +55,26 @@ AlphaGo：通过不断地自我对弈（试错），并根据输赢（奖励/惩
 
 大语言模型微调：目前的大模型（如ChatGPT）在经过自监督训练后，还会进行强化学习微调。它们会生成几个答案，然后由人类评估员（或另一个AI）来打分（奖励），模型会学习如何生成更符合人类偏好的、得分更高的答案。
 
+\hypertarget{ux53c2ux8003ux6587ux732e}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jumper, J., Evans, R., Pritzel, A., et al.~(2021). \href{https://www.nature.com/articles/s41586-021-03819-2}{Highly Accurate Protein Structure Prediction with AlphaFold}. \emph{Nature}, 596, 583--589.
+\item
+  Ho, J., Jain, A., \& Abbeel, P. (2020). \href{https://proceedings.neurips.cc/paper/2020/hash/4c5bcfec8584af0d967f1ab10179ca4b-Abstract.html}{Denoising Diffusion Probabilistic Models}. NeurIPS 2020.
+\item
+  Kingma, D. P., \& Welling, M. (2014). \href{https://arxiv.org/abs/1312.6114}{Auto-Encoding Variational Bayes}. ICLR 2014.
+\item
+  Chen, T., Kornblith, S., Norouzi, M., \& Hinton, G. (2020). \href{https://proceedings.mlr.press/v119/chen20j.html}{A Simple Framework for Contrastive Learning of Visual Representations}. ICML 2020.
+\item
+  Silver, D., Huang, A., Maddison, C. J., et al.~(2016). \href{https://doi.org/10.1038/nature16961}{Mastering the Game of Go with Deep Neural Networks and Tree Search}. \emph{Nature}, 529, 484--489.
+\item
+  Ouyang, L., Wu, J., Jiang, X., et al.~(2022). \href{https://arxiv.org/abs/2203.02155}{Training Language Models to Follow Instructions with Human Feedback}. NeurIPS 2022.
+\end{itemize}
+
 \clearpage
 
 \hypertarget{ux795eux7ecfux7f51ux7edcux4e0eux6df1ux5ea6ux5b66ux4e60}{%
@@ -168,8 +188,8 @@ p(y \mid \mathbf{x};\theta)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(y-f(\
 
 后续，我们还会介绍另一种损失函数------交叉熵损失函数。
 
-\hypertarget{ux53c2ux8003ux6587ux732e}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e}}
+\hypertarget{ux53c2ux8003ux6587ux732e-1}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-1}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -364,8 +384,8 @@ p(y \mid \mathbf{x};\theta)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(y-f(\
 g\leftarrow \frac{\text{threshold}}{\lVert g\rVert}\cdot g
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-1}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-1}}
+\hypertarget{ux53c2ux8003ux6587ux732e-2}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-2}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -453,14 +473,14 @@ g\leftarrow \frac{\text{threshold}}{\lVert g\rVert}\cdot g
 \hypertarget{ux4e09ux6a21ux578bux6b63ux5219ux5316ux964dux4f4eux6a21ux578bux590dux6742ux5ea6ux89c1ux540eux7eedux5173ux4e8eux6a21ux578bux6b63ux5219ux5316ux7684ux5185ux5bb9}{%
 \subsection{三、模型正则化（降低模型复杂度，见后续关于模型正则化的内容）}\label{ux4e09ux6a21ux578bux6b63ux5219ux5316ux964dux4f4eux6a21ux578bux590dux6742ux5ea6ux89c1ux540eux7eedux5173ux4e8eux6a21ux578bux6b63ux5219ux5316ux7684ux5185ux5bb9}}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-2}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-2}}
+\hypertarget{ux53c2ux8003ux6587ux732e-3}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-3}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage
@@ -703,14 +723,14 @@ manual_loss = total_loss / num_elements
 print(f"手动计算的平均损失: {manual_loss.item()}")
 \end{verbatim}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-3}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-3}}
+\hypertarget{ux53c2ux8003ux6587ux732e-4}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-4}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage
@@ -738,8 +758,8 @@ print(f"手动计算的平均损失: {manual_loss.item()}")
 
 第二点是，人类心智的实际内容极其复杂，而且这种复杂性无法简化。我们应该停止寻找简单的方法来思考心智的内容，比如关于空间、物体、多智能体或对称性的简单概念。所有这些都是外部世界的一部分，而外部世界是任意的、内在复杂的。我们不应该把这些内容嵌入系统，因为它们的复杂性是无穷的。我们应该只嵌入能够发现和捕捉这种任意复杂性的元方法。这些方法的关键在于：它们能够找到好的近似解，但寻找的过程应该由我们的方法来完成，而不是由我们人类自己来完成。我们希望智能体能够像我们一样去发现，而不是在系统里集成我们已经发现的东西。把系统建立在我们已知的发现之上，只会让我们更难看清发现过程本身是如何运作的。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-4}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-4}}
+\hypertarget{ux53c2ux8003ux6587ux732e-5}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-5}}
 
 \vspace{0.25em}
 \begin{itemize}

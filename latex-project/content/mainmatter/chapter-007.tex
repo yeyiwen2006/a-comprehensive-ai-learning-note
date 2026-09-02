@@ -161,14 +161,14 @@ NVLink：专门用于GPU之间的高速互连。带宽（300 Gbit/s）远超PCIe
 
 （3）避免过多格式转换：当我们打印张量或将张量转换为NumPy格式时，如果数据不在内存中，框架会首先将其复制到内存中，这会导致额外的传输开销，有时也可能成为瓶颈。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-33}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-33}}
+\hypertarget{ux53c2ux8003ux6587ux732e-34}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-34}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage
@@ -419,14 +419,14 @@ z.asnumpy() 或 z.item()：把数据从框架（显存/MXNet格式）转回Pytho
 \caption{CPU 与双 GPU 上两层 MLP 的计算依赖关系图}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-34}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-34}}
+\hypertarget{ux53c2ux8003ux6587ux732e-35}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-35}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
 \end{itemize}
 
 \clearpage
@@ -631,14 +631,16 @@ ZeRO 本质上还是\textbf{数据并行（Data Parallelism）}。这意味着�
   必要的时候使用层间切分。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-35}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-35}}
+\hypertarget{ux53c2ux8003ux6587ux732e-36}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-36}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). \href{https://zh.d2l.ai/}{《动手学深度学习》}. Cambridge University Press.
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Rajbhandari, S., Rasley, J., Ruwase, O., \& He, Y. (2020). \href{https://arxiv.org/abs/1910.02054}{ZeRO: Memory Optimizations Toward Training Trillion Parameter Models}. SC 2020.
 \end{itemize}
 
 \clearpage
@@ -1139,8 +1141,8 @@ Rank 3 & Stage 3 和 Stage 4 & 流水线折返点 \\
 
 在折叠模型中，由于 \(B\) 和 \(W\) 的依赖关系更复杂，很难做到像 DualPipe 那样几乎``零气泡''。DeepSeek 的目标是把 MFU（模型算力利用率）推向 70\% 以上，2x 冗余是一笔划算的交易。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-36}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-36}}
+\hypertarget{ux53c2ux8003ux6587ux732e-37}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-37}}
 
 \vspace{0.25em}
 \begin{itemize}

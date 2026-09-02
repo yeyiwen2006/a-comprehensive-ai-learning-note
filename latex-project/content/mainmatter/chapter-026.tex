@@ -452,8 +452,8 @@ P(x_N^{(T)} \mid x_1^{(T+1)},x_2^{(T+1)},\ldots)
   \textbf{Step 6: 计算损失并更新梯度。} 计算真实噪声 \(\epsilon\) 和预测噪声 \(\epsilon_\theta\) 之间的均方误差（MSE），进行反向传播更新网络权重。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-127}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-127}}
+\hypertarget{ux53c2ux8003ux6587ux732e-128}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-128}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -680,8 +680,8 @@ dx=\left[f(x,t)-g(t)^2\nabla_x\log p_t(x)\right]dt+g(t)d\bar{w}
 
 这里的 \(d\bar{w}\) 是时间反转下的布朗运动。观察这个反向 SDE 的核心项：\(-g(t)^2\nabla_x\log p_t(x)\)。它精确地对应了朗之万动力学中的梯度引导项。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-128}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-128}}
+\hypertarget{ux53c2ux8003ux6587ux732e-129}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-129}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -690,6 +690,12 @@ dx=\left[f(x,t)-g(t)^2\nabla_x\log p_t(x)\right]dt+g(t)d\bar{w}
   Welling, M., \& Teh, Y. W. (2011). \href{https://www.stats.ox.ac.uk/~teh/research/compstats/WelTeh2011a.pdf}{Bayesian Learning via Stochastic Gradient Langevin Dynamics}. ICML.
 \item
   Roberts, G. O., \& Tweedie, R. L. (1996). \href{https://doi.org/10.2307/3318418}{Exponential Convergence of Langevin Distributions and Their Discrete Approximations}. Bernoulli.
+\item
+  Hyvärinen, A. (2005). \href{https://www.jmlr.org/papers/v6/hyvarinen05a.html}{Estimation of Non-Normalized Statistical Models by Score Matching}. Journal of Machine Learning Research, 6, 695--709.
+\item
+  Ho, J., Jain, A., \& Abbeel, P. (2020). \href{https://arxiv.org/abs/2006.11239}{Denoising Diffusion Probabilistic Models}. NeurIPS.
+\item
+  Song, Y., Sohl-Dickstein, J., Kingma, D. P., Kumar, A., Ermon, S., \& Poole, B. (2021). \href{https://arxiv.org/abs/2011.13456}{Score-Based Generative Modeling through Stochastic Differential Equations}. ICLR.
 \end{itemize}
 
 \clearpage
@@ -734,8 +740,8 @@ U-Net采用卷积神经网络，前半部分类似Encoder，通过池化或步�
 
 但U-Net的可扩展性一般，且与当前基于Transformer的大模型架构不兼容。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-129}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-129}}
+\hypertarget{ux53c2ux8003ux6587ux732e-130}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-130}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1024,8 +1030,8 @@ L=L_{\mathrm{simple}}+\lambda L_{\mathrm{vlb}}
 
 在 DiT 中，通常设置 \(\lambda=0.001\)，以确保方差学习不会干扰主体的噪声预测。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-130}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-130}}
+\hypertarget{ux53c2ux8003ux6587ux732e-131}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-131}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1034,6 +1040,10 @@ L=L_{\mathrm{simple}}+\lambda L_{\mathrm{vlb}}
   Dosovitskiy, A., Beyer, L., Kolesnikov, A., et al.~(2021). \href{https://arxiv.org/abs/2010.11929}{An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale}. ICLR.
 \item
   Peebles, W., \& Xie, S. (2023). \href{https://arxiv.org/abs/2212.09748}{Scalable Diffusion Models with Transformers}. ICCV.
+\item
+  Esser, P., Kulal, S., Blattmann, A., et al.~(2024). \href{https://arxiv.org/abs/2403.03206}{Scaling Rectified Flow Transformers for High-Resolution Image Synthesis}. arXiv:2403.03206.
+\item
+  Nichol, A. Q., \& Dhariwal, P. (2021). \href{https://arxiv.org/abs/2102.09672}{Improved Denoising Diffusion Probabilistic Models}. ICML.
 \end{itemize}
 
 \clearpage
@@ -1128,8 +1138,8 @@ Loss=\mathbb{E}_{x\sim p(x)}\left[\lVert f_\theta(s)-x\rVert^2\right]
   \textbf{如果把连续空间强制离散化再用 AR}：就像 VQ-VAE 将图像变成离散 Token 然后用 Transformer 自回归生成（比如早期的 VideoPoet 或 Parti）。这种方法可以避免折中，但随之而来的是极其恐怖的计算量和上面提到过的\textbf{曝光偏差（Exposure Bias）}，导致长序列生成的误差成倍放大。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-131}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-131}}
+\hypertarget{ux53c2ux8003ux6587ux732e-132}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-132}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1300,8 +1310,8 @@ v=x_1-x_0
 
 它既规避了早期预测 \(x_0\) 的方差爆炸，又规避了晚期预测 \(\epsilon\) 的信噪比问题，而且由于轨迹是直接的（ODE），它大幅减少了推理步数，这才是世界模型（生成高帧率视频）真正渴求的特性。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-132}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-132}}
+\hypertarget{ux53c2ux8003ux6587ux732e-133}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-133}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1310,6 +1320,8 @@ v=x_1-x_0
   Li, T., \& He, K. (2025). \href{https://arxiv.org/abs/2511.13720}{Back to Basics: Let Denoising Generative Models Denoise}. arXiv:2511.13720.
 \item
   Ho, J., Jain, A., \& Abbeel, P. (2020). \href{https://arxiv.org/abs/2006.11239}{Denoising Diffusion Probabilistic Models}. NeurIPS.
+\item
+  Chi, C., Xu, Z., Feng, S., et al.~(2023). \href{https://arxiv.org/abs/2303.04137}{Diffusion Policy: Visuomotor Policy Learning via Action Diffusion}. Robotics: Science and Systems.
 \item
   Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
 \end{itemize}
@@ -1493,8 +1505,8 @@ x_{l,t} &= \sqrt{\bar{\alpha}_t}x_l+\sqrt{1-\bar{\alpha}_t}\epsilon.
   反向传播更新：将上述四个误差标量代入 \(\mathcal{L}_{\mathrm{DPO}\text{-}\mathrm{Diff}}(\theta)\) 公式中。通过深度学习框架（如 PyTorch）的自动求导机制计算关于 \(\theta\) 的梯度，并使用优化器（如 AdamW）更新模型权重。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-133}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-133}}
+\hypertarget{ux53c2ux8003ux6587ux732e-134}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-134}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1502,7 +1514,9 @@ x_{l,t} &= \sqrt{\bar{\alpha}_t}x_l+\sqrt{1-\bar{\alpha}_t}\epsilon.
 \item
   Black, K., Janner, M., Du, Y., Kostrikov, I., \& Levine, S. (2023). \href{https://arxiv.org/abs/2305.13301}{Training Diffusion Models with Reinforcement Learning}. arXiv:2305.13301.
 \item
-  Wallace, B., Gokul, A., Ermon, S., \& Naik, N. (2024). \href{https://arxiv.org/abs/2311.12908}{Diffusion Model Alignment Using Direct Preference Optimization}. CVPR.
+  Wallace, B., Dang, M., Rafailov, R., et al.~(2024). \href{https://arxiv.org/abs/2311.12908}{Diffusion Model Alignment Using Direct Preference Optimization}. CVPR 2024.
+\item
+  Liu, J., Liu, G., Liang, J., et al.~(2025). \href{https://arxiv.org/abs/2501.13918}{Improving Video Generation with Human Feedback}. NeurIPS.
 \end{itemize}
 
 \clearpage

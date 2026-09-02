@@ -32,4 +32,4 @@ Kimi的解法是，不用存每一层，改为存每一组。把所有层分成�
 
 ## 参考文献
 
-- Moonshot AI. (2026). [Attention Residuals](https://arxiv.org/abs/2603.15031). arXiv:2603.15031.
+- Kimi Team. (2026). [Attention Residuals](https://arxiv.org/abs/2603.15031). arXiv:2603.15031.

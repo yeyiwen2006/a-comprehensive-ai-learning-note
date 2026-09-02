@@ -49,12 +49,14 @@ y_t=(1-t)y+t\varepsilon.
 
 故现在许多WAM转向了用具身数据原生训练。这种方式对算力和数据要求更高，但模型能力的上限也更高。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-157}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-157}}
+\hypertarget{ux53c2ux8003ux6587ux732e-158}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-158}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
+\item
+  Wang, S., Shi, J., Fu, Z., et al.~(2026). \href{https://arxiv.org/abs/2605.12090}{World Action Models: The Next Frontier in Embodied AI}. arXiv:2605.12090.
 \item
   Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
 \end{itemize}
@@ -107,7 +109,7 @@ a_{t:t+K-1}\sim q_\phi\!\left(\,\cdot\mid\hat{z}_{t+1:t+K},z_{\leq t},a_{\lt t},
   Backbone
 \end{enumerate}
 
-Lingbot-VA以视频生成模型Wan2.2作为预训练backbone，在此基础上进行后训练；Lingbot-VA 2.0从零开始用具身数据预训练Diffusion Transformer，属于具身原生的世界-动作模型。
+LingBot-VA以视频生成模型Wan2.2作为预训练backbone，在此基础上进行后训练；LingBot-VA 2.0从零开始用具身数据预训练Diffusion Transformer，属于具身原生的世界-动作模型。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -117,7 +119,7 @@ Lingbot-VA以视频生成模型Wan2.2作为预训练backbone，在此基础上�
   Tokenizer的设计
 \end{enumerate}
 
-Lingbot-VA复用了Wan 2.2主干的Tokenizer。LingBot-VA 2.0则单独训练了Tokenizer，如图是其语义视觉动作分词器的结构，视觉重建、语义对齐与潜在动作提取三路并行，共同构成训练Tokenizer的损失函数。
+LingBot-VA复用了Wan 2.2主干的Tokenizer。LingBot-VA 2.0则单独训练了Tokenizer，如图是其语义视觉动作分词器的结构，视觉重建、语义对齐与潜在动作提取三路并行，共同构成训练Tokenizer的损失函数。
 
 \begin{figure}[htbp]
 \centering
@@ -330,8 +332,8 @@ P_0=[O_0;\mathrm{BOA}],
 
 此时，模型会增加一个用于编码动作的Action Tokenizer（一个MLP），以及一个轻量级的动作解码器（Action-DiT）。微调时，模型被训练为一旦看到BOA token，后面就按``360个视频帧token+8个动作token''交替生成，系统也会按token数量交替分发给不同解码器。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-158}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-158}}
+\hypertarget{ux53c2ux8003ux6587ux732e-159}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-159}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -608,8 +610,8 @@ z^{\mathrm{post}}=E(\tilde{o}_{0:T})\in\mathbb{R}^{K\times d}.
   动作块输出与UAC异步控制：模型一次性生成连续的未来动作块 \(a_{0:T}\)。真实系统部署时结合通用异步分块机制（UAC），服务器异步推理未来动作序列，机器人驱动器从线程安全缓冲池持续取出历史前缀锁定动作执行。二者解耦后，以约3至4毫秒每步的延迟实现平滑动态控制。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-159}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-159}}
+\hypertarget{ux53c2ux8003ux6587ux732e-160}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-160}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -722,8 +724,8 @@ z^{\mathrm{post}}=E(\tilde{o}_{0:T})\in\mathbb{R}^{K\times d}.
 
 不同类型传感器信号经过翻译后进入主干模型。主干模型主要由视觉语言、动作和触觉专家构成，视觉语言专家具备VLM的能力，动作专家用流匹配方法生成连续动作，触觉专家处理触觉信号。动作专家可以从触觉专家中单向获取信息。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-160}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-160}}
+\hypertarget{ux53c2ux8003ux6587ux732e-161}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-161}}
 
 \vspace{0.25em}
 \begin{itemize}

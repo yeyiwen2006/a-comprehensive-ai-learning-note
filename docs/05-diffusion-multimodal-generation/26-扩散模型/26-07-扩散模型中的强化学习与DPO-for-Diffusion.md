@@ -149,4 +149,5 @@ $$
 ## 参考文献
 
 - Black, K., Janner, M., Du, Y., Kostrikov, I., & Levine, S. (2023). [Training Diffusion Models with Reinforcement Learning](https://arxiv.org/abs/2305.13301). arXiv:2305.13301.
-- Wallace, B., Gokul, A., Ermon, S., & Naik, N. (2024). [Diffusion Model Alignment Using Direct Preference Optimization](https://arxiv.org/abs/2311.12908). CVPR.
+- Wallace, B., Dang, M., Rafailov, R., et al. (2024). [Diffusion Model Alignment Using Direct Preference Optimization](https://arxiv.org/abs/2311.12908). CVPR 2024.
+- Liu, J., Liu, G., Liang, J., et al. (2025). [Improving Video Generation with Human Feedback](https://arxiv.org/abs/2501.13918). NeurIPS.

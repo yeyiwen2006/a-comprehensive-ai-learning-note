@@ -222,8 +222,8 @@ SARSA（以及 AC 中的 Critic）的视角：
 
 目前主流的Actor-Critic算法（包括PPO），其底层并行架构基本都沿用了A2C的``向量化环境''模式。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-55}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-55}}
+\hypertarget{ux53c2ux8003ux6587ux732e-56}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-56}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -633,14 +633,16 @@ L(\theta_{\mathrm{old}}+\Delta\theta)\ge L(\theta_{\mathrm{old}})
   更新：\(\theta_{\mathrm{new}}=\theta_{\mathrm{old}}+\mathrm{final\_step}\)。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-56}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-56}}
+\hypertarget{ux53c2ux8003ux6587ux732e-57}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-57}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Schulman, J., Levine, S., Abbeel, P., Jordan, M., \& Moritz, P. (2015). \href{https://arxiv.org/abs/1502.05477}{Trust Region Policy Optimization}. ICML 2015.
+  Schulman, J., Levine, S., Moritz, P., Jordan, M. I., \& Abbeel, P. (2015). \href{https://arxiv.org/abs/1502.05477}{Trust Region Policy Optimization}. ICML 2015.
+\item
+  Pearlmutter, B. A. (1994). \href{https://doi.org/10.1162/neco.1994.6.1.147}{Fast Exact Multiplication by the Hessian}. Neural Computation, 6(1), 147--160.
 \end{itemize}
 
 \clearpage
@@ -1055,14 +1057,16 @@ L=-L^{\mathrm{CLIP}}+c_1L^{\mathrm{VF}}-c_2S
 
 因此，一个大循环中一共产生 320 次反向传播。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-57}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-57}}
+\hypertarget{ux53c2ux8003ux6587ux732e-58}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-58}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Schulman, J., Wolski, F., Dhariwal, P., Radford, A., \& Klimov, O. (2017). \href{https://arxiv.org/abs/1707.06347}{Proximal Policy Optimization Algorithms}. arXiv:1707.06347.
+\item
+  Schulman, J., Moritz, P., Levine, S., Jordan, M., \& Abbeel, P. (2016). \href{https://arxiv.org/abs/1506.02438}{High-Dimensional Continuous Control Using Generalized Advantage Estimation}. ICLR 2016.
 \end{itemize}
 
 \clearpage
@@ -1075,31 +1079,31 @@ L=-L^{\mathrm{CLIP}}+c_1L^{\mathrm{VF}}-c_2S
 \hypertarget{ux63a2ux7d22ux4e0eux4fe1ux606fux589eux76ca}{%
 \subsection{1. 探索与信息增益}\label{ux63a2ux7d22ux4e0eux4fe1ux606fux589eux76ca}}
 
-在好奇心驱动探索和基于信息的探索方法中，KL 散度被用来量化``惊喜''或``信息增益''。
+在基于信息增益的探索方法中，KL 散度可以衡量一次观测让智能体对环境动力学参数的信念改变了多少。VIME 是这一思路的代表方法。
 
 \begin{itemize}
 \tightlist
 \item
   核心思想：智能体应该探索那些能带来最多``新信息''的状态。
 \item
-  如何实现：使用 KL 散度来衡量新观测数据与当前模型预测之间的差异。
+  如何实现：智能体维护动力学参数 \(\theta\) 的后验分布；观察新的状态转移后，比较更新前后的参数后验。
 \item
-  如果一个状态转换 \((s,a,s')\) 与智能体内部动态模型的预测分布相差很大，即 KL 散度高，那么这个转换就是``令人惊讶的''，应该获得额外的``内在奖励''。
+  如果一次状态转换 \((s_t,a_t,s_{t+1})\) 明显改变了智能体对动力学参数的认识，它便带来较高的信息增益，并获得额外的内在奖励。
 \end{itemize}
 
 数学形式为：
 
 \[
-r_{\mathrm{intrinsic}}
+r_{\mathrm{intrinsic},t}
 =
 D_{\mathrm{KL}}\bigl(
-P_{\mathrm{predicted}}(\cdot\mid s,a)
+p(\theta\mid \xi_t,a_t,s_{t+1})
 \Vert
-P_{\mathrm{empirical}}(s')
+p(\theta\mid \xi_t)
 \bigr)
 \]
 
-其中 \(P_{\mathrm{empirical}}(s')\) 是实际到达状态的分布，通常用 Dirac delta 函数表示。
+其中 \(\xi_t\) 表示截至时刻 \(t\) 的交互历史，\(\theta\) 表示动力学模型参数。该式比较的是加入新转移数据前后的参数后验，而不是把连续预测分布与单个观测对应的 Dirac 分布直接做 KL 散度。
 
 这鼓励智能体主动探索那些它无法准确预测结果的环境区域，从而更高效地学习世界模型。
 
@@ -1171,44 +1175,56 @@ r(s_t,a_t)+\alpha\mathcal{H}(\pi(\cdot\mid s_t))
 \hypertarget{ux591aux4efbux52a1ux5b66ux4e60ux4e0eux77e5ux8bc6ux8fc1ux79fb}{%
 \subsection{4. 多任务学习与知识迁移}\label{ux591aux4efbux52a1ux5b66ux4e60ux4e0eux77e5ux8bc6ux8fc1ux79fb}}
 
-当智能体需要学习多个相关任务时，KL 散度可以帮助防止灾难性遗忘并促进知识迁移。
-
-\begin{itemize}
-\tightlist
-\item
-  防止遗忘：在学习新任务时，可以在损失函数中加入一个 KL 散度项，约束新策略不要偏离在旧任务上学到的策略太远：
-\end{itemize}
+当智能体需要学习多个相关任务时，可以通过策略蒸馏把教师策略中的行为知识迁移到学生策略。此时 KL 散度直接约束学生的动作分布去匹配教师：
 
 \[
-L
+L_{\mathrm{distill}}
 =
-L_{\mathrm{new\_task}}
-+
-\beta D_{\mathrm{KL}}\bigl(
-\pi_{\mathrm{old}}
+\mathbb{E}_{s\sim\mathcal{D}}
+\left[
+D_{\mathrm{KL}}\bigl(
+\pi_{\mathrm{teacher}}(\cdot\mid s)
 \Vert
-\pi_{\mathrm{new}}
+\pi_{\mathrm{student}}(\cdot\mid s)
 \bigr)
+\right]
 \]
 
 \begin{itemize}
 \tightlist
 \item
-  知识迁移：通过最小化不同任务策略之间的 KL 散度，可以鼓励它们共享共同的行为模式，从而加速新任务的学习。
+  知识迁移：最小化该损失，使学生在数据集 \(\mathcal{D}\) 覆盖的状态上复现教师的动作分布。
+\item
+  防止遗忘：如果旧任务策略充当教师，该约束可帮助保留旧行为，但效果取决于状态数据是否覆盖旧任务。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-58}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-58}}
+弹性权重固化（Elastic Weight Consolidation, EWC）同样用于缓解灾难性遗忘，但它并不直接约束新旧策略的 KL 散度，而是利用旧任务的 Fisher 信息对重要参数的变化施加二次惩罚：
+
+\[
+L_{\mathrm{EWC}}
+=
+L_{\mathrm{new\_task}}
++
+\frac{\lambda}{2}
+\sum_i F_i(\theta_i-\theta_i^{*})^{2}
+\]
+
+其中 \(\theta_i^{*}\) 是旧任务训练结束时的参数，\(F_i\) 衡量参数 \(i\) 对旧任务的重要程度。
+
+\hypertarget{ux53c2ux8003ux6587ux732e-59}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-59}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  Pathak, D., Agrawal, P., Efros, A. A., \& Darrell, T. (2017). \href{https://arxiv.org/abs/1705.05363}{Curiosity-driven Exploration by Self-supervised Prediction}. ICML 2017.
+  Houthooft, R., Chen, X., Duan, Y., Schulman, J., De Turck, F., \& Abbeel, P. (2016). \href{https://arxiv.org/abs/1605.09674}{VIME: Variational Information Maximizing Exploration}. NeurIPS 2016.
 \item
-  Ho, J., \& Ermon, S. (2016). \href{https://proceedings.neurips.cc/paper/2016/hash/cc7e2b878868cbae992d1fb743995d8f-Abstract.html}{Generative Adversarial Imitation Learning}. NeurIPS 2016.
+  Ross, S., Gordon, G. J., \& Bagnell, J. A. (2011). \href{https://proceedings.mlr.press/v15/ross11a.html}{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}. AISTATS 2011.
 \item
   Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Rusu, A. A., Colmenarejo, S. G., Gülçehre, Ç., et al.~(2016). \href{https://arxiv.org/abs/1511.06295}{Policy Distillation}. ICLR 2016.
 \item
   Kirkpatrick, J., Pascanu, R., Rabinowitz, N., et al.~(2017). \href{https://doi.org/10.1073/pnas.1611835114}{Overcoming catastrophic forgetting in neural networks}. Proceedings of the National Academy of Sciences, 114(13), 3521-3526.
 \end{itemize}
@@ -1445,14 +1461,16 @@ Q值估计过高：Critic的更新目标实质上和DQN的r+gamma*maxQ(s,a)，�
 
 稳定性不如 PPO：容易收敛到局部最优或震荡。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-59}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-59}}
+\hypertarget{ux53c2ux8003ux6587ux732e-60}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-60}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Lillicrap, T. P., Hunt, J. J., Pritzel, A., et al.~(2016). \href{https://arxiv.org/abs/1509.02971}{Continuous control with deep reinforcement learning}. ICLR 2016.
+\item
+  Fujimoto, S., van Hoof, H., \& Meger, D. (2018). \href{https://proceedings.mlr.press/v80/fujimoto18a.html}{Addressing Function Approximation Error in Actor-Critic Methods}. ICML 2018.
 \end{itemize}
 
 \clearpage
@@ -1850,8 +1868,8 @@ V(s_t)
   Actor的梯度获取方式不同：DDPG直接用链式法则；SAC必须重参数化，剥离随机变量。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-60}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-60}}
+\hypertarget{ux53c2ux8003ux6587ux732e-61}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-61}}
 
 \vspace{0.25em}
 \begin{itemize}

@@ -50,14 +50,18 @@
 
 早期这通过提示词实现，后期模型通过强化学习直接学会了在推理轨迹中融入动态调整与反思过程。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-118}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-118}}
+\hypertarget{ux53c2ux8003ux6587ux732e-119}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-119}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Wei, J., Wang, X., Schuurmans, D., et al.~(2022). \href{https://arxiv.org/abs/2201.11903}{Chain-of-Thought Prompting Elicits Reasoning in Large Language Models}. NeurIPS 2022.
+\item
+  Wang, L., Xu, W., Lan, Y., et al.~(2023). \href{https://aclanthology.org/2023.acl-long.147/}{Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning by Large Language Models}. ACL 2023. DOI: 10.18653/v1/2023.acl-long.147.
+\item
+  Zhou, D., Schärli, N., Hou, L., et al.~(2023). \href{https://openreview.net/forum?id=WZH7099tgfM}{Least-to-Most Prompting Enables Complex Reasoning in Large Language Models}. ICLR 2023.
 \item
   Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
 \end{itemize}
@@ -115,8 +119,10 @@
 
 对同一问题进行多次独立推理，再通过投票机制，把出现频率最高的答案作为最终输出答案。其原理在于，错误推理往往错误原因和路径各不相同，不同错误路径的输出结果较难集中；正确推理路径虽然可能形式不同，但往往会收敛到同一个答案，在概率和采样获得的频率上更有优势。
 
-\hypertarget{ux4e09ux5f15ux5165ux8499ux7279ux5361ux6d1bux6811ux641cux7d22ux7684ux7b97ux6cd5lats2017ux5e74ux66feux7528ux4e8ealphazeroux540eux5f15ux5165llm}{%
-\subsection{三、引入蒙特卡洛树搜索的算法（LATS）（2017年曾用于AlphaZero，后引入LLM）}\label{ux4e09ux5f15ux5165ux8499ux7279ux5361ux6d1bux6811ux641cux7d22ux7684ux7b97ux6cd5lats2017ux5e74ux66feux7528ux4e8ealphazeroux540eux5f15ux5165llm}}
+\hypertarget{ux4e09ux5f15ux5165ux8499ux7279ux5361ux6d1bux6811ux641cux7d22ux7684ux8bedux8a00ux667aux80fdux4f53ux7b97ux6cd5lats}{%
+\subsection{三、引入蒙特卡洛树搜索的语言智能体算法：LATS}\label{ux4e09ux5f15ux5165ux8499ux7279ux5361ux6d1bux6811ux641cux7d22ux7684ux8bedux8a00ux667aux80fdux4f53ux7b97ux6cd5lats}}
+
+蒙特卡洛树搜索（MCTS）早于LATS，并被AlphaZero用于棋类决策。LATS则是2023年提出、发表于ICML 2024的语言智能体算法，它把树搜索用于大模型的推理、行动与规划。下文先介绍MCTS及AlphaZero中的通用机制，再说明LATS在语言智能体中的扩展，二者不应视为同一个算法。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -335,15 +341,15 @@ a_t=\arg\max_a\left(Q(s,a)+c_{\mathrm{puct}}\mathbf{p}(a\mid s)\frac{\sqrt{\sum_
 
 在前向推理中，由于搜索会让生成速度更慢，一般只会在慢思考模式、长推理问题中运用该方法（或者其他基于搜索的方法如Tree of Thoughts），在快思考模式、日常问答中则不使用。但即便推理时不显式使用，模型在训练时也学到了这种搜索模式，在逐个token的输出中也会出现``尝试方法A\ldots 发现走不通\ldots 回退\ldots 尝试方法B''这样的思考过程。
 
-由于需要额外的评估网络，该方法算力开销偏大。DeepSeek就没有使用该方法，而是直接将蒙特卡洛思想融入算法中，即GRPO算法。DeepSeek团队认为，只要奖励信号足够清晰（比如数学题答案对不对），迭代次数够多，纯粹的RL（GRPO）就能让模型隐式地学会``尝试-评估-回溯''的过程，并以token流（即状态转移）的形式输出出来。
+由于显式MCTS需要维护搜索树并反复评估候选节点，算力开销较大。DeepSeek-R1没有在推理阶段显式运行MCTS，而是使用GRPO进行强化学习。GRPO最初在DeepSeekMath中提出，是一种利用同组样本的相对奖励来估计优势、从而不必训练独立critic的PPO变体。在奖励信号清晰且采样充分时，纯强化学习可能让模型在token序列中形成``尝试---检查---修正''等推理模式，但这并不等同于在推理时执行带节点扩展和回传过程的蒙特卡洛树搜索。
 
 \hypertarget{ux56dbux76f8ux5173ux6027ux68c0ux7d22}{%
 \subsection{四、相关性检索}\label{ux56dbux76f8ux5173ux6027ux68c0ux7d22}}
 
 让模型在推理时回忆相关问题或者对解决问题有用的子问题的思路，就类似于做新题时回想已经做过的类似题或碰到过的二级结论。这和目标导向的强化学习有一点类似，虽然模型不知道怎么去A，但它可能已经学习过怎么去B、C，从中可以类比并合理外推得出去A的方法。这也体现了检索在推理中的重要性。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-119}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-119}}
+\hypertarget{ux53c2ux8003ux6587ux732e-120}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-120}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -351,7 +357,11 @@ a_t=\arg\max_a\left(Q(s,a)+c_{\mathrm{puct}}\mathbf{p}(a\mid s)\frac{\sqrt{\sum_
 \item
   Yao, S., Yu, D., Zhao, J., et al.~(2023). \href{https://arxiv.org/abs/2305.10601}{Tree of Thoughts: Deliberate Problem Solving with Large Language Models}. NeurIPS 2023.
 \item
+  Wang, X., Wei, J., Schuurmans, D., et al.~(2023). \href{https://openreview.net/forum?id=1PL1NIMMrw}{Self-Consistency Improves Chain of Thought Reasoning in Language Models}. ICLR 2023.
+\item
   Silver, D., Hubert, T., Schrittwieser, J., et al.~(2018). \href{https://www.science.org/doi/10.1126/science.aar6404}{A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play}. Science.
+\item
+  Shao, Z., Wang, P., Zhu, Q., et al.~(2024). \href{https://arxiv.org/abs/2402.03300}{DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models}. arXiv:2402.03300.
 \item
   DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2501.12948}{DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning}. arXiv:2501.12948.
 \item
@@ -487,8 +497,8 @@ AlphaEvolve明确提到，优化多个指标（即使只关心其中一个）有
 
 AlphaEvolve 不只是随机抽取旧代码，其核心在于In-Context Learning（上下文学习）与进化策略的结合：父本决定了进化的起点；灵感决定了进化的方向指引。通过精心挑选``灵感''，系统实际上是在构建一个动态的Prompt，利用LLM强大的上下文理解能力，将数据库中蕴含的隐性知识（比如某种特定的编程模式在当前任务中很有效）显式地传递给LLM，从而提高生成高质量Diff的概率。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-120}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-120}}
+\hypertarget{ux53c2ux8003ux6587ux732e-121}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-121}}
 
 \vspace{0.25em}
 \begin{itemize}

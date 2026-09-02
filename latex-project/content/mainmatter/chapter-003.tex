@@ -93,7 +93,7 @@ B的列数=output\_channels（可以看成output\_channels个不同滤波器各�
 
 （3）现代改进
 
-可学习的汇聚参数：研究引入少量参数，让汇聚规则（如权重）能自适应学习，而非固定为~max~或~mean（如Learnable Power Pooling, SoftPool）。
+可学习或平滑的汇聚规则：研究通过可学习参数或平滑加权，让汇聚不再固定为 max 或 mean。例如，SoftPool 根据激活值的指数权重对局部特征加权求和。
 
 结合注意力机制：利用注意力机制动态调整汇聚区域的重要性权重，更智能地选择或融合信息。
 
@@ -231,8 +231,8 @@ F6全连接层 & 全连接 & 120 & 84 & 非线性特征映射 \\
   使用更小的滤波器（如3x3卷积堆叠代替大卷积核）。
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-10}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-10}}
+\hypertarget{ux53c2ux8003ux6587ux732e-11}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-11}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -241,6 +241,8 @@ F6全连接层 & 全连接 & 120 & 84 & 非线性特征映射 \\
   LeCun, Y., Bottou, L., Bengio, Y., \& Haffner, P. (1998). \href{http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf}{Gradient-Based Learning Applied to Document Recognition}. Proceedings of the IEEE.
 \item
   Krizhevsky, A., Sutskever, I., \& Hinton, G. E. (2012). \href{https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks}{ImageNet Classification with Deep Convolutional Neural Networks}. NeurIPS 2012.
+\item
+  Stergiou, A., Poppe, R., \& Kalliatakis, G. (2021). \href{https://arxiv.org/abs/2101.00440}{Refining Activation Downsampling with SoftPool}. ICCV 2021.
 \end{itemize}
 
 \clearpage
@@ -331,8 +333,8 @@ Softmax
 
 （3）最后一级的MLPConv层，其输出通道数直接设置为类别数（如10）。最终通过``全局平均池化''得到分类结果。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-11}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-11}}
+\hypertarget{ux53c2ux8003ux6587ux732e-12}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-12}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -517,8 +519,8 @@ Inception模块的任务：~处理已经过初步处理的特征图。它的核�
 
 极致的高效性：~在取得顶级精度的同时，参数量仅为500万左右（AlexNet的1/12，VGG的1/27），计算量也更低，展示了卓越的性能-计算比。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-12}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-12}}
+\hypertarget{ux53c2ux8003ux6587ux732e-13}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-13}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -633,14 +635,16 @@ ResNet通过堆叠上述残差块构建了不同深度的网络。
 
 现代大模型中，不是用一个从输入直接连到输出的残差一般在每个块或层中，都会加一个残差结构，以让梯度和信息顺畅流过该块或层，使信息流动更灵活，如 Transformer 架构里的多处 Add。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-13}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-13}}
+\hypertarget{ux53c2ux8003ux6587ux732e-14}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-14}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   He, K., Zhang, X., Ren, S., \& Sun, J. (2016). \href{https://arxiv.org/abs/1512.03385}{Deep Residual Learning for Image Recognition}. CVPR 2016.
+\item
+  Veit, A., Wilber, M. J., \& Belongie, S. (2016). \href{https://proceedings.neurips.cc/paper_files/paper/2016/hash/37bc2f75bf1bcfe8450a1a41c200364c-Abstract.html}{Residual Networks Behave Like Ensembles of Relatively Shallow Networks}. NeurIPS 2016.
 \end{itemize}
 
 \clearpage
@@ -794,16 +798,22 @@ DenseNet-BC：结合Bottleneck与Transition压缩，综合优化内存与计算�
 
 VoVNet（One-Shot Aggregation）：仅在模块最后一层聚合前面所有层特征，保留多尺度特征的同时，将MAC降至与ResNet相当。
 
-通道剪枝与MFM（Max-Feature-Map）：对中间层特征进行通道选择，减少拼接时的通道数。
+MFM（Max-Feature-Map）并不是结构化通道剪枝。它把特征图分组后逐元素取最大值，通过竞争式激活保留特征，并可减少输出通道数。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-14}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-14}}
+\hypertarget{ux53c2ux8003ux6587ux732e-15}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-15}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Huang, G., Liu, Z., van der Maaten, L., \& Weinberger, K. Q. (2017). \href{https://arxiv.org/abs/1608.06993}{Densely Connected Convolutional Networks}. CVPR 2017.
+\item
+  Pleiss, G., Chen, D., Huang, G., Li, T., van der Maaten, L., \& Weinberger, K. Q. (2017). \href{https://arxiv.org/abs/1707.06990}{Memory-Efficient Implementation of DenseNets}. arXiv:1707.06990.
+\item
+  Lee, Y., Hwang, J., Lee, S., Bae, Y., \& Park, J. (2019). \href{https://openaccess.thecvf.com/content_CVPRW_2019/html/CEFRL/Lee_An_Energy_and_GPU-Computation_Efficient_Backbone_Network_for_Real-Time_Object_CVPRW_2019_paper.html}{An Energy and GPU-Computation Efficient Backbone Network for Real-Time Object Detection}. CVPR Workshops 2019.（VoVNet）
+\item
+  Wu, X., He, R., Sun, Z., \& Tan, T. (2018). \href{https://arxiv.org/abs/1511.02683}{A Light CNN for Deep Face Representation with Noisy Labels}. \emph{IEEE Transactions on Information Forensics and Security}, 13(11), 2884--2896.（MFM）
 \end{itemize}
 
 \clearpage
@@ -908,12 +918,14 @@ YOLO的损失函数是它能训练成功的关键，它由定位误差、置信�
 
 （3）分类损失：v1用均方损失，v2以后用交叉熵损失。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-15}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-15}}
+\hypertarget{ux53c2ux8003ux6587ux732e-16}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-16}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
+\item
+  Ren, S., He, K., Girshick, R., \& Sun, J. (2015). \href{https://proceedings.neurips.cc/paper/2015/hash/14bfa6bb14875e45bba028a21ed38046-Abstract.html}{Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks}. NeurIPS 2015.
 \item
   Redmon, J., Divvala, S., Girshick, R., \& Farhadi, A. (2016). \href{https://arxiv.org/abs/1506.02640}{You Only Look Once: Unified, Real-Time Object Detection}. CVPR 2016.
 \item

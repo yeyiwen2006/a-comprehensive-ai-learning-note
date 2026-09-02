@@ -38,4 +38,5 @@ $$
 
 ## 参考文献
 
-- Aston Zhang, Zachary C. Lipton, Mu Li, Alexander J. Smola. (2023). [《动手学深度学习》](https://zh.d2l.ai/). Cambridge University Press.
+- Zhang, A., Lipton, Z. C., Li, M., & Smola, A. J. (2023). [Dive into Deep Learning](https://D2L.ai). Cambridge University Press.
+- Sutskever, I., Vinyals, O., & Le, Q. V. (2014). [Sequence to Sequence Learning with Neural Networks](https://proceedings.neurips.cc/paper_files/paper/2014/hash/5a18e133cbf9f257297f410bb7eca942-Abstract.html). NeurIPS 2014.

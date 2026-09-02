@@ -157,8 +157,8 @@ UMI（Universal Manipulation Interface）是一类面向机器人操作的数据
 \caption{GigaWorld-Policy 的训练与推理数据配方}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-161}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-161}}
+\hypertarget{ux53c2ux8003ux6587ux732e-162}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-162}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -247,16 +247,14 @@ Generalist的GEN系列模型利用大规模UMI数据进行具身原生预训练�
 \caption{GEN-1.5 的训练损失曲线}
 \end{figure}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-162}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-162}}
+\hypertarget{ux53c2ux8003ux6587ux732e-163}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-163}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Chi, C., Xu, Z., Pan, C., et al.~(2024). \href{https://arxiv.org/abs/2402.10329}{Universal Manipulation Interface: In-The-Wild Robot Teaching Without In-The-Wild Robots}. arXiv:2402.10329.
-\item
-  具身纪元. (2025). \href{https://www.jintiankansha.com/column/cqUI9xm0ob?page=11}{UMI是革命性具身数采新范式，但这仅仅是个开始}. 微信公众号文章.
 \item
   Rayyan, O., Abanes, J., Hafez, M., Tzes, A., \& Abu-Dakka, F. (2025). \href{https://arxiv.org/abs/2509.18757}{MV-UMI: A Scalable Multi-View Interface for Cross-Embodiment Learning}. arXiv:2509.18757.
 \item
@@ -493,8 +491,8 @@ Dyna-2的技术报告还提出，视频预测本身带来了指令跟随能力�
 
 结果显示，从action-only切换到视频联合训练后，总体成功率显著提升；进一步使用更大规模视频预料进行视频联合训练后，成功率进一步大幅提升，其中物体指代和复杂动作原语的提升最明显。这些结果表明，更大、更丰富的视频数据和世界建模不仅提升跨本体泛化，可能也可以通过帮助模型学习``语言---物体---动作---物理结果''之间的对应关系，增强模型的语言指令跟随能力。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-163}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-163}}
+\hypertarget{ux53c2ux8003ux6587ux732e-164}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -587,8 +585,8 @@ Dyna-2的技术报告还提出，视频预测本身带来了指令跟随能力�
 
 有了这些丰富的context，模型就能分得清训练数据里的好坏、快慢、对错，从而可以用好以前用不了的数据，如失败的rollouts、低质量的演示、其他机器人的片段等。π0.7加的这层prompt，就是让模型知道``这段数据是什么质量、用什么策略做的''。
 
-\hypertarget{ux4e8cqwen-robomanipux6570ux636eux7684ux5bf9ux9f50}{%
-\subsection{二、Qwen-RoboManip：数据的对齐}\label{ux4e8cqwen-robomanipux6570ux636eux7684ux5bf9ux9f50}}
+\hypertarget{ux4e8cqwen-robotmanipux6570ux636eux7684ux5bf9ux9f50}{%
+\subsection{二、Qwen-RobotManip：数据的对齐}\label{ux4e8cqwen-robotmanipux6570ux636eux7684ux5bf9ux9f50}}
 
 处理来自大量机器人和数据集的数据时，不能简单把它们收集到一起。比如，同样是``把杯子推到桌子边缘''这个动作，不同机器人记录它的方式可能完全不同。有的机器人记录7个关节分别转了多少角度；有的记录机械臂末端在机器人基座坐标系里的位置和姿态；还有一些灵巧手，本身就有二十多个可以独立运动的关节。这些数字虽然描述的是类似的动作，但它们并不是同一种``语言''。如果直接把它们混在一起训练，模型很难知道哪些变化其实代表同一个动作，最后往往会学到噪声。Qwen-RobotManip在多个层面对数据进行对齐和清晰，观察到模型的性能随着数据量的增大稳步提升。
 
@@ -626,8 +624,8 @@ Qwen-RobotManip会检查机器人日志本身。首先检查状态和动作随�
 
 这些步骤是必要的。如果不先清洗数据，大量错误样本就会直接进入训练。这时候模型学到的并不是机器人真正应该怎样行动，而是数据采集过程中产生的错误。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-164}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-164}}
+\hypertarget{ux53c2ux8003ux6587ux732e-165}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-165}}
 
 \vspace{0.25em}
 \begin{itemize}

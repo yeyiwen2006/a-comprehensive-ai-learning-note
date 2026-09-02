@@ -197,3 +197,5 @@ $$
 
 - Dosovitskiy, A., Beyer, L., Kolesnikov, A., et al. (2021). [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](https://arxiv.org/abs/2010.11929). ICLR.
 - Peebles, W., & Xie, S. (2023). [Scalable Diffusion Models with Transformers](https://arxiv.org/abs/2212.09748). ICCV.
+- Esser, P., Kulal, S., Blattmann, A., et al. (2024). [Scaling Rectified Flow Transformers for High-Resolution Image Synthesis](https://arxiv.org/abs/2403.03206). arXiv:2403.03206.
+- Nichol, A. Q., & Dhariwal, P. (2021). [Improved Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2102.09672). ICML.

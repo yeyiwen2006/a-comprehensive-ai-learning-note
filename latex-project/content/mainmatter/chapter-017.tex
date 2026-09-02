@@ -131,8 +131,8 @@ R_{total}=R_{model}(s,a)-\beta\log\frac{\pi_\theta(a|s)}{\pi_{ref}(a|s)}
 
 但在 RLHF 中，我们通常选择把KL``通过每一步的Reward 注入''，而不是直接加在最终的Loss里。这是为了让价值函数V(s)感知到难度，如果把 KL 扣分算在Reward里，那么V(s)在预测``这个状态（生成这个token）好不好''时，就会自动把``偏离SFT模型的代价''也考虑进去。智能体会通过V(s)提前预判到``如果我这就开始乱说话，虽然可能骗到高分，但会被 KL 罚得很惨所以这并不是一个好的状态''。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-78}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-78}}
+\hypertarget{ux53c2ux8003ux6587ux732e-79}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-79}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -220,8 +220,8 @@ r^*(x,y_w)-r^*(x,y_l)=\beta\log\frac{\pi^*(y_w|x)}{\pi_{ref}(y_w|x)}-\beta\log\f
 
 也就是说，这两个项的差越大，经过Sigmoid函数后算出的概率也就越大。取负对数，相当于交叉熵损失，让概率预测值尽可能接近1。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-79}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-79}}
+\hypertarget{ux53c2ux8003ux6587ux732e-80}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-80}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -399,14 +399,16 @@ l_{\mathrm{value}} = (z - v)^2
 
 原因是：MCTS 的 \(Q\) 值虽然比 \(v\) 准，但它仍然是基于网络预测的 \(v\) 聚合出来的，存在偏差（Bias）。如果让网络去拟合 \(Q\)，相当于``左脚踩右脚''，可能会导致偏差累积。而真实结局 \(z\) 是无偏的（Unbiased），虽然方差大（例如一盘棋赢了不代表这步棋一定好），但只要数据量足够大，网络就能学到最准确的局势判断。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-80}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-80}}
+\hypertarget{ux53c2ux8003ux6587ux732e-81}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-81}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Silver, D., Hubert, T., Schrittwieser, J., et al.~(2018). \href{https://www.science.org/doi/10.1126/science.aar6404}{A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play}. Science.
+\item
+  Anthony, T., Tian, Z., \& Barber, D. (2017). \href{https://arxiv.org/abs/1705.08439}{Thinking Fast and Slow with Deep Learning and Tree Search}. arXiv:1705.08439.
 \item
   Zelikman, E., Wu, Y., Mu, J., \& Goodman, N. (2022). \href{https://arxiv.org/abs/2203.14465}{STaR: Bootstrapping Reasoning With Reasoning}. NeurIPS 2022.
 \item
@@ -484,8 +486,8 @@ l_{\mathrm{value}} = (z - v)^2
 
 DeepSeek 的论文中提供了一个非常精彩的反面教材，证明了如果没有专门的可读性约束，RL 会把可读性彻底毁掉。DeepSeek-R1-Zero没有经过SFT冷启动，没有加可读性奖励，纯RL后模型确实变聪明了，做题正确率飙升，但输出变得极度难以阅读。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-81}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-81}}
+\hypertarget{ux53c2ux8003ux6587ux732e-82}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-82}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -493,7 +495,7 @@ DeepSeek 的论文中提供了一个非常精彩的反面教材，证明了如�
 \item
   DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2501.12948}{DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning}. arXiv:2501.12948.
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇（2025）。\href{https://haa.boyuai.com/}{《动手学大模型智能体》}。人民邮电出版社。ISBN 978-7-115-68638-1。
 \end{itemize}
 
 \clearpage
@@ -625,7 +627,7 @@ SRL不再把一个完整的解题过程看作一个整体，而是将其分解�
   从中间状态开始推理
 \end{enumerate}
 
-在RLVR训练中，模型经常会产生一些部分正确的推理链。HiPO提取这些成功或部分成功轨迹的前缀作为``提示（Hint）''，强制模型从这些有希望的中间状态继续探索。这实际上是将一个长程的稀疏奖励问题分解成了若干个短程的条件生成问题，人为地增加了获得奖励的频率。
+在 RLVR 训练中，模型经常会产生一些接近成功的推理组。HiPO 从这些近失误组中的成功轨迹提取中间状态作为``提示（Hint）''，让一部分新轨迹以原问题和提示为条件继续生成。这样做旨在提高同组结果的多样性，缓解全错样本导致相对优势为零的问题；它可以增加获得非零学习信号的机会，但并不保证每个提示都能带来更好的最终策略。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -673,7 +675,7 @@ RL算法的改进也能让稀疏的奖励信号更好地回传，如GRPO在这�
   直接修改RL算法的目标函数
 \end{enumerate}
 
-有时模型输出冗余token，可能是因为奖励函数的设计还需要优化。如DeepSeek-V3.2生成大量冗余token的问题就和GRPO的目标函数里把奖励期望除以T，变成了每个token奖励的期望直接相关。通过修改目标函数的形式，能一定程度上缓解该问题。
+有时模型输出冗余 token，可能与奖励、损失聚合和长度归一化设计有关。按序列长度 \(T\) 归一化的目标会改变不同长度样本的梯度权重，因此修改损失聚合方式或长度惩罚有可能缓解冗余生成。但 DeepSeek-V3.2 的公开技术报告并不足以把冗余 token 单因果地归结为 GRPO 中的 \(1/T\) 归一化；实际结果还会受到训练数据、采样策略和解码设置等因素影响，需要结合具体消融实验判断。
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
@@ -761,14 +763,20 @@ Top-k 筛选：只选择熵最高的前 \(k\) 个段落（Top-k Segments）进�
 
 然后，通过计算过程评分的提升量 \(\Delta S\)，作为这一片段的``过程级奖励''，与最终正确与否结合，作为 RL 的优势函数输入。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-82}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-82}}
+\hypertarget{ux53c2ux8003ux6587ux732e-83}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-83}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
-  《动手学大模型智能体》。
+  温睦宁、林江浩、张伟楠、俞勇（2025）。\href{https://haa.boyuai.com/}{《动手学大模型智能体》}。人民邮电出版社。ISBN 978-7-115-68638-1。
+\item
+  Andrychowicz, M., Wolski, F., Ray, A., et al.~(2017). \href{https://arxiv.org/abs/1707.01495}{Hindsight Experience Replay}. NeurIPS 2017.
+\item
+  Deng, Q., Chen, K., Zhang, M., \& Xu, Z. (2026). \href{https://openreview.net/forum?id=rcb20pHmT1}{HiPO: Self-Hint Policy Optimization for RLVR}. ICLR 2026.
+\item
+  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2512.02556}{DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models}. arXiv:2512.02556.
 \item
   Deng, Y., Hsu, I.-H., Yan, J., et al.~(2025). \href{https://arxiv.org/abs/2510.25992}{Supervised Reinforcement Learning: From Expert Trajectories to Step-wise Reasoning}. arXiv:2510.25992.
 \item
@@ -1444,12 +1452,14 @@ r(s_t,a_t)
   PPO（类似蒙特卡洛的回归）：PPO 使用 GAE（Generalized Advantage Estimation）来计算优势函数 \(\hat{A}_t\)。虽然它也使用 Critic（Value Network），但它更多地利用了整个轨迹的实际回报（Returns）。相比于 SAC 这种高度依赖 bootstrapping 的 TD-learning，PPO 在长序列生成任务（Episode Length 很大）中通常更鲁棒。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-83}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-83}}
+\hypertarget{ux53c2ux8003ux6587ux732e-84}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-84}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
+\item
+  Schulman, J., Moritz, P., Levine, S., Jordan, M., \& Abbeel, P. (2015). \href{https://arxiv.org/abs/1506.02438}{High-Dimensional Continuous Control Using Generalized Advantage Estimation}. arXiv:1506.02438.
 \item
   Schulman, J., Wolski, F., Dhariwal, P., Radford, A., \& Klimov, O. (2017). \href{https://arxiv.org/abs/1707.06347}{Proximal Policy Optimization Algorithms}. arXiv:1707.06347.
 \item
@@ -1662,8 +1672,8 @@ GRPO的优势函数估计看似是无偏的，实则往往对难题低估、对�
 
 对此，可将难题优势函数乘以更大系数，简单题优势函数乘以更小系数，以尽可能实现无偏估计。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-84}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-84}}
+\hypertarget{ux53c2ux8003ux6587ux732e-85}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-85}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -1911,14 +1921,16 @@ KL散度项可以减在Reward或加在Loss里。在实际训练中，K1 in loss�
   因为总概率（这个``蛋糕''的大小）是固定的 1，所以所有变化的加和必须为 0。
 \end{itemize}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-85}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-85}}
+\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   Schulman, J. (2020). \href{http://joschu.net/blog/kl-approx.html}{Approximating KL Divergence}.
+\item
+  Liu, K., Liu, J. K., Chen, M., \& Liu, Y. (2025). \href{https://arxiv.org/abs/2510.01555}{Rethinking KL Regularization in RLHF: From Value Estimation to Gradient Optimization}. arXiv:2510.01555.
 \item
   Ziegler, D. M., Stiennon, N., Wu, J., et al.~(2019). \href{https://arxiv.org/abs/1909.08593}{Fine-Tuning Language Models from Human Preferences}. arXiv:1909.08593.
 \item
@@ -2092,8 +2104,8 @@ M-Step（M-Projection）：用策略梯度更新参数 \(\pi\)，使其逼近 \(
 
 正是因为每一步 M-Projection 都是在拉近 \(\pi\) 和 \(q\)（而 \(q\) 又是 \(\pi\) 自身的重加权），所以整个轨迹被约束在一条 KL 变化最小的路径上，从而避免了 SFT 那种因拟合外部分布而导致的剧烈参数漂移和遗忘。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
+\hypertarget{ux53c2ux8003ux6587ux732e-87}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-87}}
 
 \vspace{0.25em}
 \begin{itemize}

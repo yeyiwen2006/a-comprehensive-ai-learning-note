@@ -139,7 +139,7 @@ VAE学习的是一个连续的潜空间，而VQ-VAE则学习一个离散的潜�
 
 2. 关键机制：向量量化
 
-和VAE一样，编码器首先将输入数据映射为一个高维向量的高斯分布。但不同于VAE的是，编码器会去查找一个预先定义好的代码本，找到与高斯分布中心最接近的代码向量。这个查找过程就是向量量化。具体到图像处理中：我们输入一个图像（高度H、宽度W、通道数C），我们将图像重新划分为h*w个矩形区域（h<H,w<W），把这h*w个(H*W*C/(h*w))维向量分别送进VQ-VAE，然后分别转变为Codebook中最相近的向量对应的编码，就得到了图像的embedding编码。
+VQ-VAE 的编码器先把输入映射为连续特征向量，但并不构造 VAE 式的高斯后验。随后，模型在预先定义的代码本中寻找距离该特征最近的代码向量，并用这个离散代码替换连续特征，这一步就是向量量化。具体到图像处理中，编码器会产生一个空间特征网格；网格中每个位置的特征分别量化为代码本中最近向量的索引，从而得到离散的图像 token。
 
 3. VQ-VAE的优势与意义
 
@@ -155,3 +155,5 @@ VAE学习的是一个连续的潜空间，而VQ-VAE则学习一个离散的潜�
 
 - Kingma, D. P., & Welling, M. (2014). [Auto-Encoding Variational Bayes](https://arxiv.org/abs/1312.6114). ICLR 2014.
 - van den Oord, A., Vinyals, O., & Kavukcuoglu, K. (2017). [Neural Discrete Representation Learning](https://arxiv.org/abs/1711.00937). NeurIPS 2017.
+- Ramesh, A., Pavlov, M., Goh, G., et al. (2021). [Zero-Shot Text-to-Image Generation](https://arxiv.org/abs/2102.12092). ICML 2021.（DALL-E）
+- Dhariwal, P., Jun, H., Payne, C., et al. (2020). [Jukebox: A Generative Model for Music](https://arxiv.org/abs/2005.00341). arXiv:2005.00341.

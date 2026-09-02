@@ -33,4 +33,4 @@ Agent的skills，可以理解为它的“专项能力包”，是一组可复用
 
 ## 参考文献
 
-- Anthropic. (2026). [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview). Claude API Docs.
+- Anthropic. (n.d.). [Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview). Claude API Docs. 访问于2026-09-02.

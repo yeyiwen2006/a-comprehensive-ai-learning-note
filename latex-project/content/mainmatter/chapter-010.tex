@@ -244,14 +244,16 @@ Beta 分布的形状决定了我们对拉杆的看法：
   \end{itemize}
 \end{enumerate}
 
-\hypertarget{ux53c2ux8003ux6587ux732e-41}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-41}}
+\hypertarget{ux53c2ux8003ux6587ux732e-42}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-42}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Thompson, W. R. (1933). \href{https://doi.org/10.1093/biomet/25.3-4.285}{On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples}. Biometrika, 25(3/4), 285--294.
 \item
   Auer, P., Cesa-Bianchi, N., \& Fischer, P. (2002). \href{https://link.springer.com/article/10.1023/A:1013689704352}{Finite-time Analysis of the Multiarmed Bandit Problem}. Machine Learning.
 \end{itemize}
@@ -472,8 +474,8 @@ Q^{*}(s,a)=r(s,a)+\gamma\sum_{s'\in\mathcal{S}}P(s'\mid s,a)
 
 我们发现，和贝尔曼期望方程与策略 \(\pi\) 挂钩不同的是，贝尔曼最优方程与策略 \(\pi\) 无关，只与环境的状态转移特征有关。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-42}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-42}}
+\hypertarget{ux53c2ux8003ux6587ux732e-43}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-43}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -744,8 +746,8 @@ J(\pi) = \frac{1}{1-\gamma}\sum_{s,a}\rho^\pi(s,a)R(s,a) = \frac{1}{1-\gamma}\ma
 \pi_\rho = \frac{\rho(s,a)}{\sum_{a'}\rho(s,a')}
 \]
 
-\hypertarget{ux53c2ux8003ux6587ux732e-43}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-43}}
+\hypertarget{ux53c2ux8003ux6587ux732e-44}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-44}}
 
 \vspace{0.25em}
 \begin{itemize}
@@ -790,10 +792,8 @@ J(\pi) = \frac{1}{1-\gamma}\sum_{s,a}\rho^\pi(s,a)R(s,a) = \frac{1}{1-\gamma}\ma
 \def\labelenumi{\arabic{enumi}.}
 \tightlist
 \item
-  AutoML 与神经架构搜索（NAS）------最典型的场景
+  AutoML 与神经架构搜索（NAS）------典型场景之一
 \end{enumerate}
-
-这是该问题最原本的出处。
 
 \begin{itemize}
 \tightlist
@@ -831,7 +831,7 @@ J(\pi) = \frac{1}{1-\gamma}\sum_{s,a}\rho^\pi(s,a)R(s,a) = \frac{1}{1-\gamma}\ma
   差异：``死代码消除''（瞬时）；``多面体优化''或``循环展开''（可能导致编译时间激增）。
 \end{itemize}
 
-A3C算法也是异步更新，但后来研究人员发现不如同步更新的A2C算法。
+A3C 是经典的异步 Actor-Critic 算法；OpenAI Baselines 随后给出了同步版本 A2C，并报告其在相同硬件和超参数条件下可取得与 A3C 相当的表现。因此，二者的优劣取决于实现、硬件和任务，不能笼统地断言 A3C 一定不如 A2C。
 
 \hypertarget{ux4e09ux5f02ux6b65ux66f4ux65b0ux7684ux65f6ux95f4ux52a0ux6743}{%
 \subsection{三、异步更新的时间加权}\label{ux4e09ux5f02ux6b65ux66f4ux65b0ux7684ux65f6ux95f4ux52a0ux6743}}
@@ -876,7 +876,7 @@ P_{sample}(a)\propto \frac{\pi(a)}{\Delta t(a)}
 
 既然由于时间短导致采样次数多，那就在每次更新时，根据耗时长度赋予权重。
 
-作者引入了时间项 \(\Delta t_k\)（动作 \(k\) 的执行时长）作为权重乘数。修正后的梯度估计 \(\hat{g}\) 为：
+一种针对持续时间偏差的修正方法是引入时间项 \(\Delta t_k\)（动作 \(k\) 的执行时长）作为权重乘数。修正后的梯度估计 \(\hat{g}\) 为：
 
 \[
 \hat{g}\approx \Delta t_k\cdot \nabla_\theta\log\pi_\theta(a_k|s_k)\cdot A(s_k,a_k)
@@ -941,14 +941,20 @@ P_{sample}(a)\propto \frac{\pi(a)}{\Delta t(a)}
 
 注：为了数值稳定性，通常会将 \(\Delta t\) 进行截断或归一化，防止极长任务导致梯度爆炸。
 
-\hypertarget{ux53c2ux8003ux6587ux732e-44}{%
-\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-44}}
+\hypertarget{ux53c2ux8003ux6587ux732e-45}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-45}}
 
 \vspace{0.25em}
 \begin{itemize}
 \tightlist
 \item
   \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Mnih, V., Badia, A. P., Mirza, M., et al.~(2016). \href{https://proceedings.mlr.press/v48/mniha16.html}{Asynchronous Methods for Deep Reinforcement Learning}. ICML 2016.
+\item
+  Dhariwal, P., et al.~(2017). \href{https://openai.com/index/openai-baselines-acktr-a2c/}{OpenAI Baselines: ACKTR \& A2C}. OpenAI.
+\item
+  Yang, S., He-Yueya, J., \& Liang, P. (2025). \href{https://arxiv.org/abs/2509.01684}{Reinforcement Learning for Machine Learning Engineering Agents}. arXiv:2509.01684.
 \end{itemize}
 
 \clearpage
