@@ -715,16 +715,16 @@ def write_main_tex() -> None:
 \newcommand{\mathcjk}[1]{\mbox{{\mathcjkfont #1}}}
 \newunicodechar{∈}{\ensuremath{\in}}
 
-\title{A Comprehensive AI Learning Note}
+\title{A Comprehensive AI Learning Note（v2.0）}
 \author{叶逸文}
-\date{2026年5月10日}
+\date{2026年9月2日}
 
 \begin{document}
 \makeatletter
 \begin{titlepage}
 \centering
 \vspace*{0.18\textheight}
-{\Huge\bfseries\color{latexprojectBlue}\@title\par}
+{\color{latexprojectBlue}\resizebox{0.92\textwidth}{!}{\bfseries\@title}\par}
 \vspace{2.2em}
 {\Large\@author\par}
 \vfill
