@@ -2,8 +2,8 @@
 
 - 已纳入根目录 Markdown：6
 - 已纳入 docs Markdown：168
-- 原始 assets 文件：56
-- 已转换图片引用：56
+- 原始 assets 文件：64
+- 已转换图片引用：64
 
 ## 图片引用映射
 
@@ -65,3 +65,11 @@
 | `assets/images/06-embodied-ai-world-models/34-02/gen0-scaling-data-compute.png` | `images/image-0054.png` |
 | `assets/images/06-embodied-ai-world-models/34-02/gen0-scaling-task-set.png` | `images/image-0055.png` |
 | `assets/images/06-embodied-ai-world-models/34-02/gen15-training-loss.png` | `images/image-0056.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egoscale-training-pipeline.png` | `images/image-0057.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/lapa-overview.png` | `images/image-0058.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egomimic-before-masking.png` | `images/image-0059.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egomimic-after-masking.png` | `images/image-0060.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-held-out-human-scaling.png` | `images/image-0061.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-zero-shot-robot-scaling.png` | `images/image-0062.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-real-robot-scaling.png` | `images/image-0063.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-world-modeling-ablation.png` | `images/image-0064.png` |
