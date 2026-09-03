@@ -104,10 +104,10 @@ AlphaGo：通过不断地自我对弈（试错），并根据输赢（奖励/惩
 
 但线性回归这个``机器''毕竟只能处理线性关系。如果``甜度''和``配料''的关系不是线性的（比如加太多反而导致甜度下降），线性回归就不能拟合了。我们需要引入更具复杂性和灵活性的函数。
 
-\hypertarget{ux4e09ux6fc0ux6d3bux51fdux6570activation-function}{%
-\subsection{三、激活函数（Activation Function）}\label{ux4e09ux6fc0ux6d3bux51fdux6570activation-function}}
+\hypertarget{ux4e09ux6fc0ux6d3bux51fdux6570}{%
+\subsection{三、激活函数}\label{ux4e09ux6fc0ux6d3bux51fdux6570}}
 
-我们需要一个``魔法道具''来打破这种线性，这个道具就是激活函数。
+我们需要一个``魔法道具''来打破这种线性，这个道具就是激活函数（Activation Function）。
 
 最著名的激活函数之一叫做 ReLU (Rectified Linear Unit，修正线性单元)。它的规则简单到极致：\(\mathrm{ReLU}(x)=\max(x,0)\)，也就是值在大于0时不变，小于0时取0.
 
