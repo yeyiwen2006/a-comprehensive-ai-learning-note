@@ -754,8 +754,22 @@ def build_directory_markdown(records: list[ConvertedDoc]) -> str:
     natural_key = lambda value: [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", value)]
     for top in sorted(grouped, key=natural_key):
         lines.extend([f"## {top}", ""])
+        current_chapter: str | None = None
         for record in sorted(grouped[top], key=lambda item: natural_key(item.source_rel)):
             assert record.output_rel is not None
+            source_parts = record.source_rel.split("/")
+            if len(source_parts) < 3:
+                raise ValueError(f"正文路径缺少章节目录: {record.source_rel}")
+            chapter_match = re.fullmatch(r"(\d+)\.(.+)", source_parts[1])
+            if not chapter_match:
+                raise ValueError(f"无法识别章节目录: {record.source_rel}")
+            chapter_number = str(int(chapter_match.group(1)))
+            chapter_title = chapter_match.group(2).strip()
+            if current_chapter != chapter_number:
+                if current_chapter is not None:
+                    lines.append("")
+                lines.extend([f"### 第{chapter_number}章 {chapter_title}", ""])
+                current_chapter = chapter_number
             link = markdown_link(record.output_rel)
             flags = []
             if "论文" in record.title:

@@ -2,6 +2,7 @@
 
 ## 2026-09-05
 
+- Added standalone headings for Chapters 1–35 to both complete tables of contents, making the part–chapter–section hierarchy explicit. Updated the bilingual navigation generators and added structural and completeness checks for chapter titles, part placement, and section grouping so future regeneration cannot silently lose or misplace the headings.
 - After pushing, the automatic Gitee synchronization reads the target branch back and confirms that its commit matches the current GitHub run. This check compares Git commit references only; it does not calculate file hashes.
 - Added English Markdown and LaTeX editions that strictly correspond to the Chinese edition, using Yiwen Ye consistently as the author's English name. The Chinese README remains the default entry point, with language-switch buttons and corresponding English contents, learning path, disclaimer, contribution guidelines, and changelog.
 - Individually reviewed the 64 existing public visual assets, retained the Chinese originals, and added 11 English-annotation variants. Only explanatory text is translated in the English images; graphics, data, mathematical symbols, and example tokens are preserved. Added tools for bilingual navigation and reproducible statistics: the English body text contains approximately 187,000 words, while the Chinese body text remains approximately 374,000 counting units.

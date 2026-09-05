@@ -392,6 +392,130 @@ def validate_directory_links(repo_root: Path, failures: list[str]) -> None:
                 fail(f"本地链接失效或越出仓库: {path.relative_to(repo_root)} -> {link}", failures)
 
 
+def validate_catalog_chapter_headings(
+    repo_root: Path, failures: list[str], allow_partial_english: bool
+) -> None:
+    catalogs = [
+        (repo_root / "目录.md", repo_root / "docs", "中文", False),
+        (repo_root / "TABLE_OF_CONTENTS_EN.md", repo_root / "docs-en", "英文", True),
+    ]
+    for catalog, docs_root, language, is_english in catalogs:
+        if is_english and allow_partial_english and not catalog.is_file():
+            continue
+        if not catalog.is_file():
+            fail(f"缺少{language}目录文件: {catalog.name}", failures)
+            continue
+
+        expected: dict[int, tuple[str, int]] = {}
+        expected_section_ids: set[str] = set()
+        for section_path in sorted(docs_root.rglob("*.md")):
+            section_match = re.match(r"^(\d{2})-(\d{2})-", section_path.name)
+            part_match = re.match(r"^(\d{2})-", section_path.relative_to(docs_root).parts[0])
+            if not section_match or not part_match:
+                continue
+            chapter_number = int(section_match[1])
+            part_number = int(part_match[1])
+            expected_section_ids.add(f"{section_match[1]}-{section_match[2]}")
+            if is_english:
+                text = section_path.read_text(encoding="utf-8")
+                title_match = re.search(r'^chapter_title:\s*"([^"]+)"\s*$', text, re.M)
+                if not title_match:
+                    fail(f"英文文件缺少 chapter_title: {section_path.relative_to(repo_root)}", failures)
+                    continue
+                chapter_title = title_match[1]
+            else:
+                chapter_title = re.sub(r"^\d+-", "", section_path.parent.name)
+            value = (chapter_title, part_number)
+            if chapter_number in expected and expected[chapter_number] != value:
+                fail(f"{language}第{chapter_number}章元数据不一致", failures)
+            expected[chapter_number] = value
+
+        chapter_pattern = (
+            re.compile(r"^### Chapter (\d+): (.+)$")
+            if is_english
+            else re.compile(r"^### 第(\d+)章 (.+)$")
+        )
+        part_pattern = re.compile(r"^## Part (\d+) ") if is_english else re.compile(r"^## 第(\d+)部分 ")
+        section_pattern = re.compile(r"^- \[(\d+)\.(\d+) .+\]\(([^)]+)\)")
+        actual_chapters: list[int] = []
+        actual_target_ids: list[str] = []
+        current_part: int | None = None
+        current_chapter: int | None = None
+        for line_number, line in enumerate(catalog.read_text(encoding="utf-8").splitlines(), start=1):
+            part_match = part_pattern.match(line)
+            if part_match:
+                current_part = int(part_match[1])
+                current_chapter = None
+                continue
+            chapter_match = chapter_pattern.fullmatch(line)
+            if chapter_match:
+                chapter_number = int(chapter_match[1])
+                actual_chapters.append(chapter_number)
+                current_chapter = chapter_number
+                if chapter_number not in expected:
+                    fail(f"{language}目录包含未知章节: {catalog.name}:{line_number}", failures)
+                    continue
+                expected_title, expected_part = expected[chapter_number]
+                if chapter_match[2] != expected_title:
+                    fail(
+                        f"{language}目录第{chapter_number}章标题不一致: "
+                        f"{chapter_match[2]} != {expected_title}",
+                        failures,
+                    )
+                if current_part != expected_part:
+                    fail(f"{language}目录第{chapter_number}章位于错误的部分", failures)
+                continue
+            section_match = section_pattern.match(line)
+            if section_match:
+                section_chapter = int(section_match[1])
+                display_section_id = f"{section_chapter:02d}-{int(section_match[2]):02d}"
+                if current_chapter != section_chapter:
+                    fail(
+                        f"{language}目录小节 {section_chapter}.{int(section_match[2])} "
+                        f"未位于对应章节标题下: {catalog.name}:{line_number}",
+                        failures,
+                    )
+                target = (catalog.parent / unquote(section_match[3].split("#", 1)[0])).resolve()
+                target_match = re.match(r"^(\d{2})-(\d{2})-", target.name)
+                if not target.is_relative_to(docs_root.resolve()) or not target_match:
+                    fail(
+                        f"{language}目录小节 {section_chapter}.{int(section_match[2])} "
+                        f"未指向{language}正文文件: {catalog.name}:{line_number}",
+                        failures,
+                    )
+                    continue
+                target_section_id = f"{target_match[1]}-{target_match[2]}"
+                actual_target_ids.append(target_section_id)
+                if display_section_id != target_section_id:
+                    fail(
+                        f"{language}目录显示编号 {display_section_id} 与链接目标编号 "
+                        f"{target_section_id} 不一致: {catalog.name}:{line_number}",
+                        failures,
+                    )
+                target_part_match = re.match(r"^(\d{2})-", target.relative_to(docs_root.resolve()).parts[0])
+                if not target_part_match or current_part != int(target_part_match[1]):
+                    fail(
+                        f"{language}目录小节 {display_section_id} 的链接目标位于错误的部分: "
+                        f"{catalog.name}:{line_number}",
+                        failures,
+                    )
+
+        expected_chapters = sorted(expected)
+        if actual_chapters != expected_chapters:
+            fail(
+                f"{language}目录的章节标题编号应完整且按顺序排列，"
+                f"期望: {expected_chapters}，实际: {actual_chapters}",
+                failures,
+            )
+        expected_target_ids = sorted(expected_section_ids)
+        if actual_target_ids != expected_target_ids:
+            fail(
+                f"{language}目录必须按顺序且恰好链接每个正文小节一次，"
+                f"期望: {expected_target_ids}，实际: {actual_target_ids}",
+                failures,
+            )
+
+
 def validate_bilingual_mapping(repo_root: Path, failures: list[str], allow_partial: bool) -> None:
     from collections import Counter
     mappings = {}
@@ -451,6 +575,7 @@ def main() -> int:
     validate_no_banned_files(repo_root, failures)
     validate_markdown_files(repo_root, failures)
     validate_directory_links(repo_root, failures)
+    validate_catalog_chapter_headings(repo_root, failures, args.allow_partial_english)
     validate_license(repo_root, failures)
     validate_bilingual_mapping(repo_root, failures, args.allow_partial_english)
 
