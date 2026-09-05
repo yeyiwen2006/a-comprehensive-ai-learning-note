@@ -1,0 +1,124 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{adaptive-learning-rates}{%
+\section{Adaptive Learning Rates}\label{adaptive-learning-rates}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-what-problem-do-adaptive-learning-rates-address}{%
+\subsection{I. What Problem Do Adaptive Learning Rates Address?}\label{i.-what-problem-do-adaptive-learning-rates-address}}
+
+They primarily address SGD's learning-rate selection problem, especially when gradient scales differ greatly across parameters.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The global learning-rate dilemma
+\end{enumerate}
+
+In deep networks, gradients for different parameters, such as shallow-layer weights, deep-layer weights, and biases, can differ by orders of magnitude. SGD uses one learning rate for all of them. If it is too large, parameters with large gradients (where the loss changes sharply) update too quickly, oscillating or even ``exploding.'' If too small, parameters with small gradients (where the loss varies gently) update too slowly, requiring extremely long convergence times.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Nonstationary objectives
+\end{enumerate}
+
+In some tasks, such as reinforcement learning, or later in training, gradient statistics such as average magnitude may change. A fixed value cannot accommodate this.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-the-adaptive-learning-rate-solution}{%
+\subsection{II. The Adaptive Learning-Rate Solution}\label{ii.-the-adaptive-learning-rate-solution}}
+
+When updating parameters, an adaptive method divides each dimension's learning rate by the root mean square of its past gradients (sqrt(v\_t)), scaling its magnitude. Parameters with consistently large recent gradients automatically receive smaller effective learning rates, preventing aggressive updates and oscillations. Those with consistently small recent gradients receive larger effective learning rates to converge faster.
+
+\Needspace{5\baselineskip}
+Two approaches arise for computing this root mean square:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  AdaGrad: use the arithmetic mean of all past squared gradients.
+\item
+  Root Mean Square Propagation (RMSProp): use a moving average v\_t of past squared gradients. This vector, with the same dimensions as the parameters, tracks each parameter's recent average gradient magnitude (or energy), placing greater weight on recent gradients.
+\end{enumerate}
+
+RMSProp performs better, so the following discussion focuses on it.
+
+\Needspace{5\baselineskip}
+Two questions arise:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Why use recent history rather than one step?
+\end{enumerate}
+
+The ``overall landscape'' better reflects reality. A single point may have a large gradient even when gradients are generally small. We should not divide by a large value in that case: first, a single point can be incidental; second, it may genuinely be special and should not be suppressed by ``averaging.''
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Why use the root mean square?
+\end{enumerate}
+
+First, violent oscillation within a ``ravine'' produces large gradients. The root mean square, highly sensitive to outliers, increases rapidly and sharply reduces that parameter's learning rate---exactly the desired behavior. We need a powerful automatic stabilizer that reacts quickly and strongly to oscillation (large gradients).
+
+Second, as optimization proceeds, the mean gradient approaches 0 (with positive and negative values). Since variance is E(X\textsuperscript{2)-E(X)}2, when E(X)≈0, the mean square effectively estimates variance. Statistically, variance represents the ``degree of oscillation,'' making it suitable for adjusting learning-rate magnitude.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-mathematical-expression-1}{%
+\subsection{III. Mathematical Expression}\label{iii.-mathematical-expression-1}}
+
+RMSProp introduces two hyperparameters for gradient division: β2 and epsilon. The former is the decay rate for the moving average of squared gradients; the latter is a tiny value such as 10\^{}-8 that prevents a zero denominator. Updates divide gradients elementwise by (root mean square of recent gradients + epsilon), then multiply by the learning rate.
+
+\Needspace{5\baselineskip}
+Compute the gradient:
+
+\[
+g_t = \nabla_\theta J(\theta_{t-1})
+\]
+
+\Needspace{5\baselineskip}
+Update the EMA of squared gradients (the second-moment estimate):
+
+\[
+v_t = \beta_2 \cdot v_{t-1} + (1-\beta_2)\cdot (g_t \odot g_t)
+\]
+
+Note: \(\odot\) denotes elementwise multiplication, so each element of \(g_t\) is squared individually.
+
+\Needspace{5\baselineskip}
+Update parameters:
+
+\[
+\theta_t = \theta_{t-1} - \frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t
+\]
+
+The division and multiplication here are also elementwise. \(\alpha\) is scaled by the ``root mean square'' corresponding to each parameter in \(v_t\).
+
+Note: RMSProp was first made public through Geoffrey Hinton's course slides, not an ``original paper.'' The slides use \(\frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t\) in the update, not \(m_t\).
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-27}{%
+\subsection{References}\label{references-27}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Duchi, J., Hazan, E., \& Singer, Y. (2011). \href{https://jmlr.org/papers/v12/duchi11a.html}{Adaptive Subgradient Methods for Online Learning and Stochastic Optimization}. Journal of Machine Learning Research.
+\item
+  Hinton, G., Srivastava, N., \& Swersky, K. (2012). \href{https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf}{Neural Networks for Machine Learning, Lecture 6e: RMSProp}. University of Toronto / Coursera.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,31 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{hyperparameter-optimization-and-validation-sets}{%
+\section{Hyperparameter Optimization and Validation Sets}\label{hyperparameter-optimization-and-validation-sets}}
+
+When optimizing parameters on the training set, we cannot treat hyperparameters as optimization variables. They belong to the objective function being optimized: different hyperparameters define different optimization problems.
+
+How, then, do we adjust hyperparameters? We cannot use the test set. If we overfit the training data, we can still detect overfitting by evaluating on test data. But if we overfit the test data, how would we know? We must therefore never rely on test data to select model hyperparameters. However, neither can we rely solely on training data to choose hyperparameters, because we cannot estimate the training data's generalization error.
+
+In practice, the situation is more complicated. Ideally, we would use the test data only once to evaluate the best model or compare several models. In reality, test data are rarely discarded after a single use. We seldom have enough data to use an entirely new test set for every round of experiments.
+
+A common solution is to divide the data into three parts: in addition to training and test datasets, we introduce a validation dataset, also called a validation set. We generally optimize the model (hyperparameters and so forth) based on its validation performance, but must avoid overly aggressive adjustment to prevent overfitting the validation set.
+
+The difficulty is that hyperparameters cannot be optimized with ordinary gradient descent. A direct brute-force search has an enormous search space. Automated optimization would require training a new model for every attempted hyperparameter combination (every step), incurring tremendous computational overhead. We therefore often ``tune by hand,'' using experience and trials on the validation set to adjust hyperparameters.
+
+Furthermore, when training data are scarce, we may not even have enough data for a suitable validation set. A popular solution is K-fold cross-validation. The original training data are divided into K nonoverlapping subsets. Model training and validation are then performed repeatedly: each time, training uses K-1 subsets, and validation uses the remaining subset (the one not used for training in that round). Finally, training and validation errors are estimated by averaging the results of the K experiments.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-7}{%
+\subsection{References}\label{references-7}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\end{itemize}
+
+\clearpage

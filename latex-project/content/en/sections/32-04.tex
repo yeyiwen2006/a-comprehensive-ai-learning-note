@@ -1,0 +1,586 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{joint-embedding-predictive-architecture-jepa}{%
+\section{Joint Embedding Predictive Architecture (JEPA)}\label{joint-embedding-predictive-architecture-jepa}}
+
+Joint embedding predictive architecture (JEPA) is a world-model architecture that predicts in abstract representation space, including the V-JEPA series, LeWorldModel, and others.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-v-jepa-series}{%
+\subsection{I. The V-JEPA Series}\label{i.-the-v-jepa-series}}
+
+\Needspace{5\baselineskip}
+\hypertarget{core-idea-6}{%
+\subsubsection{(1) Core Idea}\label{core-idea-6}}
+
+Before V-JEPA, mainstream unsupervised video learning usually relied on pixel-level reconstruction, as in the masked autoencoder VideoMAE. However, prediction in pixel space has a clear disadvantage: the model must devote substantial computation and capacity to low-level, potentially irrelevant details in visual inputs.
+
+\Needspace{5\baselineskip}
+The core idea of V-JEPA is feature-space prediction:
+
+\begin{itemize}
+\tightlist
+\item
+  It completely abandons pixel reconstruction, predicting representations of masked regions in semantic feature space rather than raw pixels.
+\item
+  By predicting in latent representation space, the model can flexibly eliminate unpredictable or semantically irrelevant pixel-level details from videos and learn highly general visual features.
+\end{itemize}
+
+Other latent-variable methods resemble decoders, generating next-step latents in temporal order. V-JEPA resembles an encoder, performing masked prediction across space and time without reconstruction loss (that is, generating images from latents or indirectly participating in image generation).
+
+\Needspace{5\baselineskip}
+\hypertarget{core-architecture-and-loss-function}{%
+\subsubsection{(2) Core Architecture and Loss Function}\label{core-architecture-and-loss-function}}
+
+V-JEPA has three core components: encoder \(E_\theta(\cdot)\), predictor \(P_\theta(\cdot)\), and target encoder \(E_{\theta'}(\cdot)\). The goal is for a representation computed from one part \(x\) of a video to predict the representation of another part \(y\).
+
+To prevent the model from outputting constant vectors and undergoing ``representation collapse,'' V-JEPA draws on noncontrastive learning strategies, adopting an exponential moving average (EMA) architecture with stop-gradient.
+
+\Needspace{5\baselineskip}
+The objective minimizes the \(L_1\) distance between predicted and target features:
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{VJEPA}}
+&=
+\left\|
+P_\theta(E_\theta(x),\Delta_y)
+\, - \, \mathrm{sg}(E_{\theta'}(y))
+\right\|_1
+\end{aligned}
+\]
+
+Here, \(\mathrm{sg}(\cdot)\) denotes stop-gradient, \(E_{\theta'}(\cdot)\) is an exponential-moving-average network of the weights of \(E_\theta(\cdot)\), and \(\Delta_y\) provides positional conditioning to the predictor.
+
+\Needspace{5\baselineskip}
+Explanation:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  The \(L_1\) norm is used because it is less affected by extreme values and was found empirically to be more stable. It is nondifferentiable only at \(0\) (similarly to ReLU).
+\item
+  Without a reconstruction loss, the encoder for \(y\) is updated similarly to the ``target network'' in reinforcement learning to prevent ``mode collapse'': it is softly updated from the encoder for \(x\).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+EMA update (\(y\)-encoder): The \(y\)-encoder weights \(\theta'_t\) are not updated by an optimizer, but slowly through an exponential moving average:
+
+\[
+\theta'_t=\tau\theta'_{t-1}+(1-\tau)\theta_t
+\]
+
+Here, \(\tau\) is a momentum parameter, gradually increased from \(0.998\) to \(1.0\) in V-JEPA. The \(y\)-encoder is therefore always a smoothed, lagging shadow of the \(x\)-encoder's history.
+
+Why does this prevent mode collapse?
+
+Suppose we freeze the encoder and train only predictor \(P_\theta\). The loss is the \(L_1\) norm (absolute error). Statistically, the prediction minimizing expected absolute error is precisely the median of the target distribution.
+
+\Needspace{5\baselineskip}
+When the predictor has been trained perfectly (\(P=P^{*}\)), substituting it into the loss turns the entire loss into the conditional median absolute deviation (MAD) of target \(Y\):
+
+\[
+\begin{aligned}
+\mathrm{MAD}(Y\mid E_\theta(x))
+&=
+\mathbb{E}
+\left[
+\left|
+Y-\mathrm{median}(Y\mid E_\theta(x))
+\right|
+\right]
+\end{aligned}
+\]
+
+The encoder \(E_\theta\) is then optimized (through its gradient) to minimize this MAD.
+
+\Needspace{5\baselineskip}
+Intuitively:
+
+\begin{itemize}
+\tightlist
+\item
+  If \(E_\theta(x)\) ``learns nothing and outputs a constant,'' it provides no clues about target \(Y\). The conditional distribution of \(Y\) given \(E_\theta(x)\) is then highly dispersed, with a very large MAD.
+\item
+  To minimize MAD, encoder \(E_\theta(x)\) must extract useful information from the video so that the state of \(Y\) can be inferred with high certainty. The richer the information in \(E_\theta(x)\), the lower the uncertainty of \(Y\), the more concentrated its distribution, and the smaller its MAD.
+\item
+  Although minimizing MAD encourages learning, if target \(Y\) (generated by the \(y\)-encoder) updates as quickly as the predictor, they can ``collude'' to become constants and reduce MAD to \(0\).
+\item
+  This explains EMA: the \(y\)-encoder is not updated by gradient descent but is a historical average of \(x\)-encoder weights, making changes to the \(y\)-encoder very slow.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Workflow:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The predictor learns quickly and rapidly approaches the optimum \(P^{*}\).
+\item
+  Because target \(Y\) changes slowly, it does not cooperate with the \(x\)-encoder in collapsing.
+\item
+  Under pressure from a rapidly improving predictor and a stable, slowly changing target, the \(x\)-encoder has no choice but to learn to extract rich information to reduce MAD, fundamentally eliminating the possibility of collapse.
+\end{enumerate}
+
+Softly copying online-network parameters into the target network thus keeps target-network changes behind \(E_\theta(x)\). The target network can only passively follow the online network, as if the latter were chasing a ``moving target,'' avoiding the shortcut in which both converge to constants together.
+
+\Needspace{5\baselineskip}
+\hypertarget{training-methods}{%
+\subsubsection{(3) Training Methods}\label{training-methods}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Masked-Token Prediction}
+\end{enumerate}
+
+\begin{itemize}
+\item
+  First extract a short clip of \(16\) frames from a video (with temporal stride \(4\)), resize it to \(224\times224\), and obtain a tensor of shape \(16\times224\times224\times3\).
+\item
+  Use a 3D convolutional layer (filter size \(2\times16\times16\)) to divide the video into patches and flatten them into a one-dimensional token sequence of length \(1568\).
+\item
+  Add absolute 3D sine--cosine positional embeddings to this feature map.
+\item
+  Use multiblock sampling: extract short-range masks (\(8\) random blocks each covering \(15\%\) of the area) and long-range masks (\(2\) random blocks each covering \(70\%\)). The average masking ratio is approximately \(90\%\).
+\item
+  Construct learnable ``mask tokens'' containing the missing regions' 3D spatiotemporal positions.
+\item
+  The predictor (a narrower Transformer) receives context representations and mask tokens and directly outputs predicted missing-region features \(\hat{s}_y\) in latent space.
+\item
+  Compute the \(L_1\) distance loss between predicted features \(\hat{s}_y\) and true features \(s_y\).
+  Why not follow strict temporal causality?
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{The physical world's non-strict causality}: In the visual world, we can predict the ``future'' from the ``past,'' but also infer the ``past'' or ``occluded parts'' from the ``future'' and ``surrounding environment.'' V-JEPA's multiblock masking randomly removes large spatiotemporal regions (up to \(90\%\)), requiring the model to use spatial context and earlier and later temporal clues to fill gaps in latent space.
+\item
+  \textbf{Causal-mask ablation results}: The paper conducts comparative experiments with a causal multiblock strategy, showing the model only the first few frames and asking it to predict later frames. This strictly causal training actually reduces downstream-task performance.
+\item
+  \textbf{Conclusion}: V-JEPA aims to extract general visual representations of motion and appearance, rather than generate a causally constrained next frame as a video-generation model does. Random spatiotemporal masking forces the model to learn more robust physical laws than purely causal prediction, such as spatial object consistency and motion continuity.
+\item
+  \textbf{Loss for Unmasked Tokens}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+V-JEPA 2.1 also introduces a loss on unmasked tokens, requiring prediction of these visible features to use data more fully and improve understanding of continuity:
+
+However, there is a critical logical loophole: for a visible context patch, the model has already ``seen'' its input feature. Directly predicting these visible patches creates a trivial shortcut: copy input features unchanged to the output. Once the model starts ``copying the answers,'' it no longer makes the effort to learn genuinely useful spatial structures and features.
+
+\Needspace{5\baselineskip}
+The paper addresses this with dynamic weighting:
+
+\[
+\lambda_i = \frac{\lambda}{\sqrt{d_{\min}(i, M)}}
+\]
+
+\begin{itemize}
+\item
+  \(d_{\min}(i, M)\): The spatiotemporal distance, in patch units, from visible context token \(i\) to the nearest masked token.
+\item
+  \(\sqrt{d_{\min}(i, M)}\): The square root of this distance, used as the denominator.
+\item
+  \textbf{Overall logic}: Visible patches closer to masked regions receive larger loss weights \(\lambda_i\); those farther away receive smaller weights.
+\Needspace{5\baselineskip}
+  Benefits of this design:
+\item
+  \textbf{Enforcing local continuity}: Assigning higher weights to visible patches near occlusion boundaries forces the model to attend to smooth spatial and temporal transitions between visible and masked regions. It can no longer simply ``copy'' its own features, but must infer them using neighboring states.
+\item
+  \textbf{Balancing global understanding and local detail}: Giving all visible patches equal weight (even a small fixed value) substantially degrades global semantic tasks such as action recognition on SSv2. Dynamic distance decay lets the model learn fine-grained boundary segmentation while retaining global capabilities such as action recognition, achieving an excellent trade-off.
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{Deep Self-Supervision}
+\end{enumerate}
+
+In traditional vision Transformers (ViTs), lower layers extract ``local details'' such as edges and textures, while upper layers extract ``global concepts'' such as object categories and action intent. As a result, many fine-grained spatial details are usually lost by the time features reach the top.
+
+V-JEPA 2.1's deep self-supervision fundamentally changes this.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{How does it work?}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \textbf{Feature extraction and fusion}: When processing visible patches, the x-encoder outputs not only its final-layer features but also features from \(3\) intermediate layers, concatenating them with final-layer features along the channel dimension.
+  \item
+    \textbf{Dimensionality reduction and input}: A lightweight MLP reduces and fuses the large concatenated features, which are then concatenated with mask tokens representing occluded positions and fed into the predictor.
+  \item
+    \textbf{Hierarchical prediction and loss computation}: Instead of one final result, the predictor simultaneously outputs predictions at \(4\) levels, corresponding to the \(4\) extracted encoder levels. These \(4\) predictions are compared against the target network's (y-encoder's) outputs at the corresponding \(4\) levels, computing prediction and context losses at every level.
+  \end{itemize}
+\item
+  \textbf{What are the benefits?}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \textbf{Preserving low-level details through the top layer}: The predictor's final output must predict not only high-level semantics but also ``work backward'' to accurately predict intermediate-layer local features rich in spatial geometry. This supervision propagates backward throughout the network, forcing local detail to flow from lower layers to the final layer.
+  \item
+    \textbf{Convenient downstream use without multilayer concatenation}: Previously, semantic segmentation and depth estimation usually required researchers to manually concatenate features from different model depths to obtain sufficient detail. After deep self-supervision, V-JEPA 2.1 achieves very high dense-prediction performance using only its final-layer features, nearly eliminating reliance on multilayer fusion and greatly simplifying downstream deployment.
+  \item
+    \textbf{Strong recovery of global performance}: The paper finds that context loss alone harms global-classification accuracy. Adding deep self-supervision not only further improves dense tasks such as segmentation and depth, but also successfully restores lost global understanding such as action classification.
+  \end{itemize}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{combining-with-an-llm}{%
+\subsubsection{(4) Combining with an LLM}\label{combining-with-an-llm}}
+
+After pretraining, we obtain a model that does not understand human language but deeply understands the physical world, object appearance, and motion. A projector (usually an MLP) is added between V-JEPA 2 and an LLM to ``translate'' the pure visual features (visual tokens) extracted by V-JEPA 2 into the LLM's input space (text-embedding space). Training the whole system on large-scale image/video--text question-answer alignment data allows it to gradually learn to understand V-JEPA 2's visual information and, through the LLM, answer questions about video content in natural language, achieving preliminary spatial reasoning.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-leworldmodel}{%
+\subsection{II. LeWorldModel}\label{ii.-leworldmodel}}
+
+\Needspace{5\baselineskip}
+\hypertarget{background-5}{%
+\subsubsection{(1) Background}\label{background-5}}
+
+World models aim to learn environmental dynamics so that agents can predict the future and plan in ``imagination.'' Joint embedding predictive architecture (JEPA) has attracted considerable attention in recent years. Rather than reconstructing images directly in pixel space, it compresses observations into a compact, low-dimensional latent space and predicts future representations there.
+
+However, existing end-to-end JEPA methods face a critical problem: \textbf{representation collapse}. To minimize prediction error, the encoder can take a shortcut, mapping all different input images to the same constant vector and stripping learned representations of useful environmental information. Earlier methods prevent collapse either through extremely complex seven-term losses (such as PLDM) or by freezing an encoder pretrained on large-scale data (such as DINO-WM), making training highly unstable or severely limiting task-specific representational capacity.
+Yann LeCun and colleagues propose LeWorldModel, which effectively addresses representation collapse through a very simple method and achieves good results with small models.
+
+\Needspace{5\baselineskip}
+\hypertarget{model-architecture-1}{%
+\subsubsection{(2) Model Architecture}\label{model-architecture-1}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Encoder}: Uses a vision Transformer (ViT) to map the current raw-pixel observation \(o_t\) into a compact, low-dimensional latent representation \(z_t\).
+\item
+  \textbf{Predictor}: Uses a standard Transformer, autoregressively combining current latent state \(z_t\) and agent action \(a_t\) to predict the next latent representation \(\hat{z}_{t+1}\). To make action signals effective, action vectors are injected into every predictor layer through adaptive layer normalization (AdaLN).
+\end{itemize}
+
+Note: \(a_t\) is an action vector, and the meaning of \(a_t\) must be consistent within one model. The predictor's context actually contains the latest \(N\) latent states and \(N\) actions, with \(N\) defaulting to 3. The paper trains a separate model for each environment.
+
+\Needspace{5\baselineskip}
+\hypertarget{loss-function-2}{%
+\subsubsection{(3) Loss Function}\label{loss-function-2}}
+
+\[
+\mathcal{L}_{LeWM} \triangleq \mathcal{L}_{pred} + \lambda\,SIGReg(Z)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{Prediction loss}: Uses mean squared error (MSE) to measure the difference between the predictor's next-step representation \(\hat{z}_{t+1}\) and the true next-step representation \(z_{t+1}\) produced by the encoder:
+\end{itemize}
+
+\[
+\mathcal{L}_{pred} \triangleq \left\|\hat{z}_{t+1}-z_{t+1}\right\|_2^2
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Sketched-isotropic-Gaussian regularizer (SIGReg)}: This is LeWM's core innovation for preventing representation collapse. SIGReg forces the entire batch's latent-representation matrix \(Z\) to follow an isotropic Gaussian distribution, ensuring spatial feature diversity. Because testing normality directly in high dimensions is extremely difficult, SIGReg uses the Cramér--Wold theorem. It randomly generates \(M\) unit direction vectors \(u^{(m)}\), projects high-dimensional features into one dimension as \(h^{(m)} = Zu^{(m)}\), and independently applies the Epps--Pulley normality test \(T(\cdot)\) to each projection.
+\end{itemize}
+
+\[
+SIGReg(Z) \triangleq \frac{1}{M}\sum_{m=1}^{M} T(h^{(m)})
+\]
+
+Only hyperparameter \(\lambda\), the regularization weight, then requires manual adjustment. Compared with previous methods (for example, PLDM requires tuning \(6\) hyperparameters), this greatly reduces tuning complexity, enabling highly efficient logarithmic-time hyperparameter search.
+\Needspace{5\baselineskip}
+The principles of SIGReg:
+
+SIGReg bypasses high-dimensional computation through the \textbf{Cramér--Wold theorem} from statistics. The theorem states that if a high-dimensional random vector's projected distribution along every possible one-dimensional direction matches the corresponding projection of a target Gaussian distribution, the two high-dimensional distributions are exactly equivalent.
+
+Although the target is a multidimensional isotropic Gaussian, its projection along any one-dimensional direction should be a standard univariate Gaussian \(\mathcal{N}(0,1)\). SIGReg therefore transforms complex ``high-dimensional distribution matching'' into many simple ``one-dimensional distribution-matching'' problems.
+\Needspace{5\baselineskip}
+Suppose a batch yields latent-representation tensor \(Z \in \mathbb{R}^{N\times B\times d}\), where \(N\) is history length, \(B\) is batch size, and \(d\) is embedding dimensionality. SIGReg proceeds as follows:
+
+\textbf{Step 1: Sketching through random-direction projection}
+
+Uniformly sample \(M\) random unit direction vectors \(u^{(m)} \in \mathbb{S}^{d-1}\) on the \(d\)-dimensional hypersphere. Project high-dimensional representations \(Z\) onto these directions to obtain \(M\) sets of one-dimensional scalars.
+
+\[
+h^{(m)} \triangleq Zu^{(m)}
+\]
+
+Each \(h^{(m)}\) contains the projection values of all samples in the current batch along direction \(u^{(m)}\).
+
+\textbf{Step 2: One-dimensional normality testing with the Epps--Pulley test}
+
+For each of the \(M\) projections, use the Epps--Pulley test to measure its discrepancy from the standard Gaussian \(\mathcal{N}(0,1)\). This is an efficient statistical test based on the empirical characteristic function (ECF).
+
+For projection direction \(m\), statistic \(T^{(m)}\) is the weighted integral of the squared difference between empirical characteristic function \(\phi_N\) and standard-Gaussian characteristic function \(\phi_0\).
+
+\[
+T^{(m)} = \int_{-\infty}^{\infty} \omega(t)\left|\phi_N(t;h^{(m)}) - \phi_0(t)\right|^2 dt
+\]
+
+\Needspace{5\baselineskip}
+Here:
+
+\begin{itemize}
+\tightlist
+\item
+  \(\phi_N(t;h)=\frac{1}{N}\sum_{n=1}^{N} e^{ith_n}\) is the one-dimensional empirical characteristic function of the projected data.
+\item
+  \(\phi_0(t)\) is the characteristic function of the target distribution (the standard Gaussian).
+\item
+  \(\omega(t)\) is a weighting function.
+\end{itemize}
+
+\textbf{Step 3: Aggregating Statistics}
+
+Average the Epps--Pulley statistics across all \(M\) directions to obtain the final SIGReg loss.
+
+\[
+SIGReg(Z) \triangleq \frac{1}{M}\sum_{m=1}^{M}T(h^{(m)})
+\]
+
+When \(SIGReg(Z)\to 0\), features follow a one-dimensional standard normal distribution along all random directions. By the Cramér--Wold theorem, the high-dimensional feature matrix \(Z\) then perfectly follows an isotropic Gaussian distribution.
+
+\Needspace{5\baselineskip}
+Why SIGReg does not become a computational bottleneck:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Minimal matrix operations}: The high-to-one-dimensional projection in Step 1 is simply matrix multiplication (\(Z\times U\)) in code. GPUs process such dense linear algebra very quickly.
+\item
+  \textbf{Very low numerical-integration cost}: Step 2 does not solve the integral analytically. It uses quadrature (such as the trapezoidal rule), summing over \(T\) uniformly spaced integration knots in \([0.2,4]\). Ablations show that even very few knots (for example, \(17\)) do not affect final control-task performance.
+\item
+  \textbf{Insensitivity to projection count \(M\)}: Although perfect equivalence theoretically requires \(M\to\infty\), experiments show strong robustness to the number of projection directions. Even substantially reducing \(M\) (the paper defaults to \(M=1024\)) leaves performance stable.
+\item
+  \textbf{No redundant hyperparameter tuning}: Compared with PLDM-like models with more than \(6\) loss terms and tuning complexity \(O(n^6)\), SIGReg's internal parameters (such as knot and direction counts) require almost no tuning. The only hyperparameter is weight \(\lambda\), controlling the overall regularization contribution, which can be determined quickly by logarithmic-time binary search.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{training-workflow-1}{%
+\subsubsection{(4) Training Workflow}\label{training-workflow-1}}
+
+\Needspace{5\baselineskip}
+LeWM's end-to-end training requires no additional stabilization heuristics such as stop-gradient:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Input a raw-pixel sequence of \(T\) time steps and its corresponding action sequence.
+\item
+  The encoder encodes the pixel sequence frame by frame into true latent representations.
+\item
+  The predictor receives representations and actions, uses a temporal causal mask to avoid seeing future information, and autoregressively generates predicted future representations.
+\item
+  Compute the MSE prediction loss between predicted and true next-step representations.
+\item
+  Apply SIGReg to the transpose of the true representation sequence to compute the distribution-matching loss.
+\item
+  Add the two weighted losses and backpropagate once to jointly optimize all encoder and predictor parameters.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{inference-workflow-1}{%
+\subsubsection{(5) Inference Workflow}\label{inference-workflow-1}}
+
+\Needspace{5\baselineskip}
+During inference, LeWM combines the cross-entropy method (CEM) with model predictive control (MPC) in latent space:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The encoder extracts representations \(z_1\) and \(z_g\) of the initial and goal observations.
+\item
+  Initialize sampling-distribution parameters and sample \(N\) candidate action sequences.
+\item
+  Feed these actions into the predictor and predict future latent states step by step, ending at \(\hat{z}_H\) at the planning horizon.
+\item
+  Use the Euclidean distance between final predicted state \(\hat{z}_H\) and goal state \(z_g\) as the action sequence's cost.
+\item
+  Select the \(K\) lowest-cost ``elite'' sequences and update the next sampling distribution with their mean and variance.
+\item
+  Repeat prediction and optimization until convergence, then output the best action plan. To avoid prediction-error accumulation over long sequences, usually execute only the first few planned actions, acquire new observations, and replan.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{advantages}{%
+\subsubsection{(6) Advantages}\label{advantages}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Minimal, stable losses without traditional ``hacks''}: Earlier JEPA models depended heavily on complex engineering techniques to prevent representation collapse, such as EMA, stop-gradient, predicting frozen-encoder features, or seven or eight regularization losses. LeWM abandons these and trains with only two losses, reducing tunable loss hyperparameters from \(6\) to \(1\).
+\item
+  \textbf{Completely resolving representation collapse}: The original SIGReg regularizer uses random projections and one-dimensional normality tests to force latent embeddings to follow a Gaussian distribution. This theoretically guarantees feature diversity and prevents the shortcut of mapping all images to one vector.
+\item
+  \textbf{Extremely lightweight with minimal compute requirements}: The model has only approximately \(15M\) parameters (\(5M\) in the encoder and \(10M\) in the predictor). Researchers can complete training on one GPU within hours, greatly lowering the barrier to pixel-based world-model research.
+\item
+  \textbf{Up to 48-fold faster planning}: Compared with large-language-model-based, or foundation-model-based, world models, LeWM performs all dynamics predictions in a highly compressed latent space without image-level pixel prediction. This fast, compact representation improves downstream control-task planning speed by \(48\) times.
+\item
+  \textbf{Emergent intuitive physics}: Although training merely predicts next-frame latents without physical-law or 3D-space supervision, probing shows that its latent space naturally encodes meaningful physical structure. Surprise evaluation demonstrates reliable detection of events that violate physical common sense, such as objects passing through walls or suddenly disappearing.
+  Moreover, without a latent-space straightening loss, it achieves substantially greater straightening than earlier V-JEPA.
+\end{enumerate}
+
+Notably, ablation experiments find that adding a reconstruction loss actually reduces performance.
+
+\Needspace{5\baselineskip}
+\hypertarget{remaining-limitations}{%
+\subsubsection{(7) Remaining Limitations}\label{remaining-limitations}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Dependence on action data
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Unlike earlier V-JEPA, LeWM's predictor does not merely watch frames; it explicitly models:
+
+\[
+\hat{z}_{t+1} = f_\theta(z_t, a_t)
+\]
+
+It therefore does not learn purely from action-free videos. This requires action labels and consistent meanings of those labels within a model. Because actions are represented directly as vectors, this limits generalization to some extent. The paper's limitations explicitly note that current end-to-end latent world models depend on action labels for future-state prediction, and that future work could use inverse dynamics models to learn future action representations and reduce dependence on explicit labels. However, actions do not necessarily require manual annotation. In robotics or simulated control, they usually come from controller logs, such as joint velocities, end-effector controls, or environmental action commands, which are far cheaper than manual annotation.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Difficulty capturing fine-grained rotations and poses
+\end{enumerate}
+
+LeWM's compact latents capture major dynamics and positional structure but inadequately encode fine-grained rotations, poses, and end-effector orientations in 3D scenes. This is apparent in OGBench-Cube rollouts and probing.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Limited planning horizon
+\end{enumerate}
+
+Prediction errors accumulate as autoregressive steps increase, degrading long-horizon planning. The paper therefore uses MPC: rather than planning far ahead at once, it executes only the first few actions and replans from new observations.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Strong dependence on data coverage
+\end{enumerate}
+
+LeWM is offline and reward-free, training on observation--action trajectories from a fixed dataset. These trajectories need not come from an optimal policy but must sufficiently cover environmental dynamics. The limitations section also states that the method relies on offline data with sufficient interaction coverage, which may be expensive or difficult to collect in practice.
+
+This is particularly important: successful LeWM planning does not imply arbitrary out-of-distribution generalization. If offline data fails to cover certain states, contact modes, object poses, or action consequences, the world model struggles to predict reliably, and planning is prone to failure.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  SIGReg's regularization-matching challenge in minimal environments
+\end{enumerate}
+
+LeWM performs well on Push-T and Reacher but underperforms PLDM and DINO-WM in the simple Two-Room environment. The paper suggests that Two-Room data has low diversity and intrinsic dimensionality, while SIGReg encourages embeddings to match a high-dimensional isotropic Gaussian, potentially degrading representational structure and planning.
+
+The appendix adds a nuance, however: although LeWM's downstream planning is somewhat worse in Two-Room, its probing metrics are not necessarily worse. The planning gap in simple environments may therefore not arise entirely from ``insufficient information in latent representations,'' but also from dynamics modeling or planning.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-spatial-straightening-of-latents}{%
+\subsection{III. Spatial Straightening of Latents}\label{iii.-spatial-straightening-of-latents}}
+
+\Needspace{5\baselineskip}
+\hypertarget{background-6}{%
+\subsubsection{(1) Background}\label{background-6}}
+
+Traditional pretrained visual encoders (such as reconstruction- or contrastive-learning-based models) extract rich semantic features but are not designed specifically for ``planning.'' Their latent trajectories are often highly curved. In such spaces, Euclidean distance between two points does not accurately reflect the difficulty of reaching one from the other (geodesic distance, representing actual physical transitions and action costs). Gradient-based planners can therefore become trapped in local optima, substantially reducing decision and control efficiency.
+
+\textbf{Perceptual straightening hypothesis}: This work is inspired by the perceptual straightening hypothesis in human visual neuroscience. Studies show that, when processing complex natural video streams, the human visual system tends to transform them internally into straighter representational trajectories to better predict object motion. Inspired by this, the authors introduce temporal straightening into AI world models, requiring encoded latent-state transition trajectories to remain as locally straight as possible.
+
+\Needspace{5\baselineskip}
+\hypertarget{core-algorithm-1}{%
+\subsubsection{(2) Core Algorithm}\label{core-algorithm-1}}
+
+\Needspace{5\baselineskip}
+Straightening requires latent motion trajectories to resemble uniform linear motion as closely as possible. Mathematically, displacement vectors at adjacent time steps should be as similar as possible:
+
+\[
+\Delta z_t = z_t - z_{t-1}
+\]
+
+\[
+\Delta z_{t+1} = z_{t+1} - z_t
+\]
+
+When predicting next-state latent z\_t+1, a curvature-based loss can therefore be added as regularization alongside prediction loss.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  MSE-based loss
+\end{enumerate}
+
+\[
+\mathcal{L}_{curv} = \mathbb{E}_t\left[\left\| (z_{t+1}-z_t) - (z_t-z_{t-1}) \right\|^2\right]
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Cosine-similarity-based loss
+\end{enumerate}
+
+\[
+\mathrm{Curvature}(z_{t-1}, z_t, z_{t+1}) = 1 - \frac{\Delta z_t \cdot \Delta z_{t+1}}{\|\Delta z_t\|\,\|\Delta z_{t+1}\|}
+\]
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-157}{%
+\subsection{References}\label{references-157}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471. (V-JEPA)
+\item
+  Assran, M., Bardes, A., Fan, D., et al.~(2025). \href{https://arxiv.org/abs/2506.09985}{V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}. arXiv:2506.09985.
+\item
+  Mur-Labadia, L., Muckley, M., Bar, A., et al.~(2026). \href{https://arxiv.org/abs/2603.14482}{V-JEPA 2.1: Unlocking Dense Features in Video Self-Supervised Learning}. arXiv:2603.14482.
+\item
+  Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
+\item
+  Wang, Y., Bounou, O., Zhou, G., Balestriero, R., Rudner, T. G. J., LeCun, Y., \& Ren, M. (2026). \href{https://arxiv.org/abs/2603.12231}{Temporal Straightening for Latent Planning}. arXiv:2603.12231.
+\item
+  Assran, M., Duval, Q., Misra, I., et al.~(2023). \href{https://arxiv.org/abs/2301.08243}{Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture}. CVPR.
+\end{itemize}
+
+\clearpage

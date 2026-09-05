@@ -1,0 +1,363 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux79bbux7ebfux5f3aux5316ux5b66ux4e60}{%
+\section{离线强化学习}\label{ux79bbux7ebfux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux79bbux7ebfux5f3aux5316ux5b66ux4e60ux7684ux5b9aux4e49ux548cux4e3bux8981ux65b9ux6cd5}{%
+\subsection{一、离线强化学习的定义和主要方法}\label{ux4e00ux79bbux7ebfux5f3aux5316ux5b66ux4e60ux7684ux5b9aux4e49ux548cux4e3bux8981ux65b9ux6cd5}}
+
+离线强化学习的核心在于：智能体不与环境交互，仅从已收集的静态数据集（Experience Replay Buffer）中学习策略。这解决了现实场景（如自动驾驶、医疗、推荐系统）中在线试错成本过高或反馈滞后的问题。
+
+在在线策略（On-policy）或离线策略（Off-policy）算法中，智能体可以通过交互修正误差。但在纯离线设定下，直接使用传统 Off-policy 算法（如DDPG）会失败，因为数据集中状态-动作对 \((s,a)\) 的分布与当前策略 \(\pi\) 产生的分布不匹配，价值函数 \(Q(s,a)\) 会对数据集中未出现的动作（Out-of-Distribution, OOD）给出错误的高估值。由于智能体无法去环境验证，这个错误会不断累积，导致策略失效。
+
+为了解决这个问题，主要有两种思路：限制策略选择（如BCQ）和 限制价值函数（如CQL）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6279ux91cfux9650ux5236q-learningbcq}{%
+\subsection{二、批量限制Q-learning（BCQ）}\label{ux4e8cux6279ux91cfux9650ux5236q-learningbcq}}
+
+BCQ的核心思想是：为了解决``外推误差'' (Extrapolation Error)，我们将策略限制在离线数据集（Batch）的分布范围内，并在该范围内寻找最优动作。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux7ec4ux6210}{%
+\subsubsection{（一）模型组成}\label{ux4e00ux6a21ux578bux7ec4ux6210}}
+
+\Needspace{5\baselineskip}
+BCQ主要由三类网络组成：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Q网络（Critic）：估计动作价值\(Q_\theta(s,a)\)。实际实现中通常使用两个Q网络\(Q_{\theta_1}(s,a)\)和\(Q_{\theta_2}(s,a)\)，用较保守的组合方式减轻Q值过估计。
+\item
+  条件VAE：用于学习离线数据集中状态\(s\)下可能出现的动作分布，近似行为策略\(P_{\mathcal B}(a \mid s)\)。它由编码器\(E_\omega(s,a)\)和解码器\(D_\omega(s,z)\)组成。
+\item
+  扰动网络：记为\(\xi_\phi(s,a)\)。它接收VAE生成的候选动作，在很小范围内做微调，使动作既不远离数据分布，又能获得更高的\(Q\)值。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5de5ux4f5cux6d41}{%
+\subsubsection{（二）工作流}\label{ux4e8cux5de5ux4f5cux6d41}}
+
+\hypertarget{ux8badux7ec3-vae}{%
+\paragraph{1. 训练 VAE}\label{ux8badux7ec3-vae}}
+
+第一步是训练VAE，这是BCQ限制动作范围的基础。
+
+\begin{itemize}
+\tightlist
+\item
+  训练数据来自离线 Buffer 中的真实 \((s,a)\) 对。
+\item
+  VAE 学习的是``在状态 \(s\) 下，数据集中常见动作 \(a\) 长什么样''。
+\item
+  编码器根据 \((s,a)\) 生成潜变量分布，解码器再根据 \((s,z)\) 重构动作 \(\hat{a}\)。
+\item
+  训练完成后，给定新状态 \(s\) 并采样不同 \(z\)，解码器就能生成一批接近数据分布的候选动作。
+\end{itemize}
+
+具体训练方式见后文。
+
+\hypertarget{ux8ba1ux7b97ux76eeux6807-q-ux503c}{%
+\paragraph{2. 计算目标 Q 值}\label{ux8ba1ux7b97ux76eeux6807-q-ux503c}}
+
+在 Q-learning 中，目标 \(Q\) 值为``奖励 + 下一状态 \(s'\) 的 \(Q\) 值''的最大值。这里的难题是怎么估计下一状态 \(s'\) 的 \(Q\) 值。
+
+\Needspace{5\baselineskip}
+BCQ不直接在所有可能动作上计算\(\max_a Q(s',a)\)，因为这会选到离线数据集之外的OOD动作。它改为只在VAE生成的候选动作中选最大值：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  对下一状态\(s'\)，从标准正态分布采样\(n\)个潜变量\(z_i \sim \mathcal{N}(0,I)\)。
+\item
+  用目标VAE生成候选动作\(a_i = D_{\omega'}(s',z_i)\)。
+\item
+\Needspace{5\baselineskip}
+  用目标扰动网络做小幅修正：
+\end{enumerate}
+
+\[
+\tilde a_i = a_i + \xi_{\phi'}(s',a_i)
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  在这些候选动作中选择目标Q值最大的动作。常见的BCQ目标写作：
+\end{enumerate}
+
+\[
+y = r + \gamma \max_i \bigl[
+\lambda \min_{j=1,2} Q_{\theta'_j}(s', \tilde a_i)
++ (1-\lambda) \max_{j=1,2} Q_{\theta'_j}(s', \tilde a_i)
+\bigr]
+\]
+
+其中 \(\lambda\) 控制目标值的保守程度，\(\theta'_j\)、\(\omega'\) 和 \(\phi'\) 表示目标网络参数。
+
+\hypertarget{ux66f4ux65b0-q-ux7f51ux7edc}{%
+\paragraph{3. 更新 Q 网络}\label{ux66f4ux65b0-q-ux7f51ux7edc}}
+
+\Needspace{5\baselineskip}
+Q 网络按标准 TD 误差更新，使当前 \(Q\) 值接近目标值 \(y\)：
+
+\[
+L_Q(\theta)=\mathbb{E}_{(s,a,r,s')\sim\mathcal B}
+[(Q_\theta(s,a)-y)^{2}]
+\]
+
+若使用双 \(Q\) 网络，则分别最小化 \(Q_{\theta_1}\) 和 \(Q_{\theta_2}\) 对应的均方误差。
+
+\hypertarget{ux66f4ux65b0ux6270ux52a8ux7f51ux7edcux89c1ux540eux6587}{%
+\paragraph{4. 更新扰动网络（见后文）}\label{ux66f4ux65b0ux6270ux52a8ux7f51ux7edcux89c1ux540eux6587}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09vaeux7684ux8badux7ec3}{%
+\subsubsection{（三）VAE的训练}\label{ux4e09vaeux7684ux8badux7ec3}}
+
+\Needspace{5\baselineskip}
+VAE训练包含编码、重参数化、解码和损失优化四步：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  编码器输入\((s,a)\)，输出潜变量分布参数\(\mu_\omega(s,a)\)和\(\sigma_\omega(s,a)\)。
+\item
+\Needspace{5\baselineskip}
+  通过重参数化采样潜变量：
+\end{enumerate}
+
+\[
+\epsilon \sim \mathcal{N}(0,I), \qquad z=\mu_\omega(s,a)+\sigma_\omega(s,a)\odot\epsilon
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  解码器输入\((s,z)\)，输出重构动作：
+\end{enumerate}
+
+\[
+\hat a = D_\omega(s,z)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  损失函数由动作重构误差和KL散度正则项组成：
+\end{enumerate}
+
+\[
+L_{\mathrm{VAE}}
+=\mathbb{E}[\lVert a-D_\omega(s,z)\rVert^{2}]
++ D_{\mathrm{KL}}(q_\omega(z\mid s,a)\Vert \mathcal{N}(0,I))
+\]
+
+重构误差让解码器能生成数据集中出现过的动作，KL正则让潜变量空间接近标准正态分布，便于测试时直接从\(\mathcal{N}(0,I)\)采样。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux4e3aux4ec0ux4e48ux8981ux7528vaeux800cux4e0dux80fdux7528ux56deux5f52ux4ea4ux53c9ux71b5ux7b49ux65b9ux5f0f}{%
+\subsubsection{（四）为什么要用VAE，而不能用回归、交叉熵等方式？}\label{ux56dbux4e3aux4ec0ux4e48ux8981ux7528vaeux800cux4e0dux80fdux7528ux56deux5f52ux4ea4ux53c9ux71b5ux7b49ux65b9ux5f0f}}
+
+\hypertarget{ux56deux5f52ux7684ux95eeux9898}{%
+\paragraph{1. 回归的问题}\label{ux56deux5f52ux7684ux95eeux9898}}
+
+普通回归网络通常学习确定性映射 \(a=\pi(s)\)。如果同一个状态 \(s\) 下存在多个合理动作，回归会倾向输出这些动作的平均值，而这个平均动作未必合理。
+
+\Needspace{5\baselineskip}
+例如在十字路口导航中，同一状态 \(s\) 下历史数据可能包含左转 \(a_1=-1\) 和右转 \(a_2=+1\)，二者都能避障。若用确定性网络 \(\mathrm{Net}(s)\) 最小化均方误差：
+
+\[
+Loss=(Net(s)-(-1))^{2}+(Net(s)-(+1))^{2}
+\]
+
+最优输出会接近 \(a=0\)，也就是直行。直行动作可能正好是危险动作。这个例子说明：多峰动作分布的均值可能落在低概率甚至错误的区域。
+
+\hypertarget{ux4ea4ux53c9ux71b5ux7684ux95eeux9898}{%
+\paragraph{2. 交叉熵的问题}\label{ux4ea4ux53c9ux71b5ux7684ux95eeux9898}}
+
+交叉熵适合离散动作分类，但连续控制动作不能直接用一个有限类别表示。若强行离散化，类别数会迅速爆炸。
+
+\Needspace{5\baselineskip}
+例如机械臂每个关节角度位于 \([-180^{\circ},180^{\circ}]\)，如果每个关节切成100个 bin，7个关节的组合类别数就是：
+
+\[
+100^{7} = 100000000000000
+\]
+
+这意味着 Softmax 输出层需要覆盖极大的组合动作空间，计算和泛化都很困难。因此，对连续、多模态动作分布，VAE 比简单回归或交叉熵分类更合适。
+
+\hypertarget{vae-ux7684ux597dux5904}{%
+\paragraph{3. VAE 的好处}\label{vae-ux7684ux597dux5904}}
+
+把 VAE 的编码器和解码器合起来，实际上就是一个``模仿器''，其能有效在给定 \(a\) 的情况下，``模仿''出一批相似的 \(a\)，无论 \(a\) 的分布如何。
+
+VAE 通过潜变量 \(z\) 表达同一状态下的多种可能动作。在 BCQ 使用的条件 VAE 中，映射不是单纯的 \(s\to a\)，而是 \((s,z)\to a\)。
+
+\begin{itemize}
+\tightlist
+\item
+  训练阶段，编码器看到完整的 \((s,a)\)。如果同一状态下有``左转''和``右转''两种动作，编码器可以把``状态 + 左转动作''映射到某个 \(z_{\mathrm{left}}\)，把``状态 + 右转动作''映射到另一个 \(z_{\mathrm{right}}\)。
+\item
+  生成阶段，只给定状态 \(s\)，从 \(\mathcal{N}(0,I)\) 采样不同 \(z\)，再交给解码器 \(D_\omega(s,z)\) 生成不同动作。
+\end{itemize}
+
+这里的重点仍是：通过改变潜变量 \(z\)，VAE 可以在同一状态下生成多种不同但都接近数据分布的动作。
+
+\Needspace{5\baselineskip}
+继续以上例子，解码器可以把不同潜变量映射回不同动作：
+
+\begin{itemize}
+\tightlist
+\item
+  采样 \(z_1\) 时，\(D_\omega(s,z_1)\) 可能输出 \(a\approx -1\)，对应左转。
+\item
+  采样 \(z_2\) 时，\(D_\omega(s,z_2)\) 可能输出 \(a\approx +1\)，对应右转。
+\end{itemize}
+
+因此，VAE 不是把状态 \(s\) 强行压成一个固定动作，而是在学习条件动作分布 \(P(a\mid s)\)。通过改变 \(z\)，BCQ 可以在同一状态下生成多种``数据中见过或接近见过''的候选动作。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux6270ux52a8ux7f51ux7edcux7684ux66f4ux65b0}{%
+\subsubsection{（四）扰动网络的更新}\label{ux56dbux6270ux52a8ux7f51ux7edcux7684ux66f4ux65b0}}
+
+VAE负责把动作限制在数据分布附近，但它只是在模仿行为数据，不保证生成动作在当前Q函数下最优。扰动网络的作用是在``不要偏离数据分布太远''的约束下，做局部改进。
+
+\begin{itemize}
+\tightlist
+\item
+  输入：VAE生成的动作\(a_{\mathrm{vae}}=D_\omega(s,z)\)。
+\item
+  输出：小扰动\(\xi_\phi(s,a_{\mathrm{vae}})\)。
+\item
+\Needspace{5\baselineskip}
+  修正动作：
+\end{itemize}
+
+\[
+\tilde a = a_{\mathrm{vae}}+\xi_\phi(s,a_{\mathrm{vae}})
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  约束：通常把扰动限制在\([-\Phi,\Phi]\)，例如\(\Phi=0.05\)，体现Batch-Constrained的思想。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+扰动网络通常在更新Q网络之后，或与Q网络交替更新。更新时冻结Q网络，只优化扰动网络参数\(\phi\)，目标是让微调后的动作获得更高Q值：
+
+\[
+L_\phi
+=-\mathbb{E}_{s\sim\mathcal B,\ z\sim\mathcal{N}(0,I)}
+\bigl[
+Q_\theta(s,a_{\mathrm{vae}}+\xi_\phi(s,a_{\mathrm{vae}}))
+\bigr]
+\]
+
+其中\(a_{\mathrm{vae}}=D_\omega(s,z)\)。最小化\(L_\phi\)等价于最大化微调动作的\(Q\)值。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4fddux5b88q-learningcql}{%
+\subsection{三、保守Q-learning（CQL）}\label{ux4e09ux4fddux5b88q-learningcql}}
+
+CQL算法基于SAC算法，对Q函数的更新方式进行了修改。既然在无法与环境互动的情况下，未知动作容易被高估，那就直接在Q函数的更新目标中加入惩罚项，人为压低没见过的动作的Q值。
+
+\Needspace{5\baselineskip}
+CQL的Critic损失可以理解为``Bellman误差 + 保守正则项''：
+
+\[
+L_{\mathrm{CQL}}(\theta)
+=\frac{1}{2}\mathbb{E}_{(s,a,r,s')\sim\mathcal D}
+[(Q_\theta(s,a)-y)^{2}]
++\alpha \mathcal R(\theta)
+\]
+
+第一项是标准Bellman误差，使Q函数满足时序差分目标；第二项\(\mathcal R(\theta)\)是保守正则项，用来压低可能被高估的动作，特别是离线数据集中很少出现的OOD动作。
+
+\Needspace{5\baselineskip}
+离散动作空间中，保守正则项常写成：
+
+\[
+\mathcal R(\theta)
+=\mathbb{E}_{s\sim\mathcal D}
+\bigl[
+\log \sum_a \exp(Q_\theta(s,a))
+-\mathbb{E}_{a\sim\mathcal D(\cdot\mid s)}[Q_\theta(s,a)]
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+这个式子包含两个方向相反的力量：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(-\mathbb{E}_{a\sim\mathcal D(\cdot\mid s)}[Q_\theta(s,a)]\)：最小化损失时，相当于拉高数据集中真实动作的Q值。
+\item
+  \(\log \sum_a \exp(Q_\theta(s,a))\)：这是LogSumExp，也可以看作Soft-Maximum，会近似关注当前状态下Q值最高的动作。最小化这一项会压低高Q动作，尤其是数据集中没有充分支持的OOD动作。
+\end{enumerate}
+
+最终效果是：数据集中真实动作受到数据项的支撑，不会被无差别压低；OOD动作没有数据项支撑，主要会被LogSumExp项压低，从而得到更保守的Q函数。
+
+\Needspace{5\baselineskip}
+在连续动作空间中，\(\log\sum_a\exp(Q(s,a))\)对应的求和或积分无法直接精确计算，CQL通常用采样近似。一个实现层面的写法是：
+
+\[
+L(\theta)
+=\alpha\mathbb{E}_{s\sim\mathcal D}
+\bigl[
+\mathbb{E}_{a\sim\mu(a\mid s)}[Q_\theta(s,a)]
+-\mathbb{E}_{a\sim\mathcal D(\cdot\mid s)}[Q_\theta(s,a)]
+\bigr]
++\mathrm{Bellman\ Error}
+\]
+
+\Needspace{5\baselineskip}
+其中\(\mu(a\mid s)\)表示用于产生``可能被高估动作''的采样分布。实践中常从两类动作中采样近似保守项：
+
+\begin{itemize}
+\tightlist
+\item
+  当前策略动作：\(a\sim\pi_\phi(\cdot\mid s)\)，用于压低策略可能选择但缺少数据支持的动作。
+\item
+  随机动作：\(a\sim\mathrm{Uniform}(-1,1)\)，用于覆盖更广的连续动作空间。
+\end{itemize}
+
+因此，CQL不是直接限制策略动作，而是通过训练更保守的Q函数，让策略在优化时自然避开被高估的OOD动作。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-64}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-64}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Fujimoto, S., Meger, D., \& Precup, D. (2019). \href{https://arxiv.org/abs/1812.02900}{Off-Policy Deep Reinforcement Learning without Exploration}. ICML 2019.
+\item
+  Kumar, A., Zhou, A., Tucker, G., \& Levine, S. (2020). \href{https://arxiv.org/abs/2006.04779}{Conservative Q-Learning for Offline Reinforcement Learning}. NeurIPS 2020.
+\end{itemize}
+
+\clearpage

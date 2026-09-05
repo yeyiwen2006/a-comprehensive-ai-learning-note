@@ -1,0 +1,440 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{sac}{%
+\section{SAC}\label{sac}}
+
+Soft Actor-Critic (SAC) is currently one of the most widely used reinforcement learning algorithms for continuous-action control (such as robot control and autonomous driving).
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-4}{%
+\subsection{I. Core Idea}\label{i.-core-idea-4}}
+
+\Needspace{5\baselineskip}
+The objective of traditional RL is:
+
+\[
+\max_\pi
+\sum_t
+\mathbb{E}[r_t]
+\]
+
+In other words, only a high score matters; neither the route taken nor the lack of variety in the actions matters. This often causes the policy to collapse to a particular path. A slight change in the environment may then cause the policy to fail, resulting in poor robustness.
+
+\Needspace{5\baselineskip}
+SAC's objective is:
+
+\[
+\max_\pi
+\sum_t
+\mathbb{E}
+\bigl[
+r_t+\alpha\mathcal{H}(\pi(\cdot\mid s_t))
+\bigr]
+\]
+
+In other words, it seeks both a high score and maximum entropy \(\mathcal{H}\).
+
+SAC encourages the Actor to make its action distribution as ``broad'' and random as possible while maintaining a high return. For an intuitive example, suppose two paths can both reach the destination and earn 100 points. DDPG/PPO usually converges randomly to one of them and stops exploring the other; SAC follows both paths according to their probabilities. The benefits are extremely strong exploration (there is no need to add noise manually as in DDPG, because the policy itself is stochastic) and robustness (the agent has multiple solutions available when faced with disturbances). It is suitable for situations where more possibilities need to be retained.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-architecture}{%
+\subsection{II. Architecture}\label{ii.-architecture}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Actor: unlike DDPG, which ``approximates the policy with the highest \(Q\) value'' (a DQN variant), SAC's Actor samples randomly from the entire probability distribution (a Gaussian distribution, usually by first outputting the mean and standard deviation and then sampling). The Actor wants its output probability distribution to maximize the expected total reward; the Critic is used to estimate that reward.
+\item
+  Critic: uses the Bellman expectation equation.
+\end{enumerate}
+
+Because the Actor selects policies with high \(Q\) values, when a state is updated, the policy selected at the next state is likely to be one whose \(Q\) value has been overestimated. This causes overestimated \(Q\) values to propagate backward continuously. To solve this problem, a twin \(Q\) network architecture uses two Critic networks (\(Q_1,Q_2\)) to calculate values and takes their minimum to mitigate overestimation. When considering the ``value of a state,'' it also considers both the value of the action and the randomness of the policy at the current position.
+
+\Needspace{5\baselineskip}
+An ordinary temporal-difference update can be written as:
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t+\gamma Q(s_{t+1},a_{t+1})-Q(s_t,a_t)
+\bigr]
+\]
+
+SAC's Critic update can be understood as adding an entropy term to this kind of action-value recursion, allowing the policy to retain sufficient randomness while pursuing a high return.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-objective-functions}{%
+\subsection{III. Objective Functions}\label{iii.-objective-functions}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The Critic's objective function
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+In the derivation of SAC, the relationship between the state value \(V(s)\) and the action value \(Q(s,a)\) is:
+
+\[
+V(s_t)
+=
+\mathbb{E}_{a_t\sim\pi}
+\bigl[
+Q(s_t,a_t)
+-
+\alpha\log\pi(a_t\mid s_t)
+\bigr]
+\]
+
+In plain language: standing in state \(s_t\) before taking an action, what is my current worth \(V\)? The answer is the total subsequent return \(Q(s_t,a_t)\) brought by any next action \(a_t\), plus the pleasure of randomness from taking that action itself, namely the current entropy bonus.
+
+\Needspace{5\baselineskip}
+The Critic is therefore trained to make \(Q(s_t,a_t)\) approach the following value:
+
+\[
+y
+=
+r_t
++
+\gamma
+\bigl(
+Q(s_{t+1},a_{t+1})
+-
+\alpha\log\pi(a_{t+1}\mid s_{t+1})
+\bigr)
+\]
+
+\Needspace{5\baselineskip}
+This is a recursive process that can be expanded as:
+
+\[
+Q(s_t,a_t)
+\approx
+\mathbb{E}
+\bigl[
+r_t
++
+\gamma(r_{t+1}+\alpha\mathcal{H}_{t+1})
++
+\gamma^{2}(r_{t+2}+\alpha\mathcal{H}_{t+2})
++
+\cdots
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+Key points:
+
+\begin{itemize}
+\tightlist
+\item
+  It contains \(r_t\) and all future rewards and entropies starting at time \(t+1\).
+\item
+  It does not contain the entropy \(-\alpha\log\pi(a_t\mid s_t)\) at the current time \(t\).
+\end{itemize}
+
+In other words, \(Q(s_t,a_t)\) actually contains \(r_t\) and all future rewards and entropies starting at time \(t+1\). Note, however, that it does not include the entropy at the current time \(t\), because for the same state \(s_t\), the randomness in the current state at \(t\) is fixed (only future randomness differs across policies), so comparing the entropies of different actions \(a_t\) at time \(t\) is meaningless.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  The Actor's objective function
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+For a given state s, the Actor aims to select a policy that maximizes the following expression:
+
+\[
+J(\theta)
+=
+\mathbb{E}_{a\sim\pi}
+\bigl[
+Q(s,a)
+-
+\alpha\log\pi(a\mid s)
+\bigr]
+\]
+
+Its practical meaning is to make both the action value (the expected future rewards and the expected entropy of future states) and the entropy of the policy in the current state as large as possible.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-two-problems-in-sac-training-and-their-solutions}{%
+\subsection{IV. Two Problems in SAC Training and Their Solutions}\label{iv.-two-problems-in-sac-training-and-their-solutions}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  In the Actor update, the objective function \(J(\theta)\) contains action \(a\). Action \(a\) is obtained by sampling, and the sampling operation is not differentiable. In other words, we cannot calculate the derivative of \(a\) with respect to \(u\). In sampling, \(u\) only changes the probability density rather than participating directly in the arithmetic that generates \(a\). We cannot answer ``how much would \(a\) increase if \(u\) increased by a small amount?'' The gradient cannot pass through, so backpropagation is impossible. Nevertheless, we need to use gradients to update the sampling distribution.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The solution is reparameterization: instead of sampling directly from \(\mathcal{N}(\mu,\sigma)\), sample from the standard normal distribution \(\epsilon\sim\mathcal{N}(0,1)\) and then transform:
+
+\[
+a
+=
+\tanh\bigl(
+\mu_\theta(s)+\sigma_\theta(s)\cdot\epsilon
+\bigr)
+\]
+
+The variables we need to adjust (the mean and variance) are then back in the computation graph, while the distribution of \(\epsilon\) is fixed as \(\mathcal{N}(0,1)\). It effectively becomes ordinary random noise that is independent of the parameters and does not need adjustment, moving randomness from inside the computation graph to outside it (the input end).
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Adjusting \(\alpha\): early SAC required manual adjustment, which was difficult. The authors later proposed automatic adjustment. The principle is to set a target entropy: if the current policy is too random (actual entropy \(>\) target entropy), decrease \(\alpha\) to make it more concentrated; if the current policy is too deterministic (actual entropy \(<\) target entropy), increase \(\alpha\) to force it to explore.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-sacs-update-target-depends-on-the-policy-so-why-is-sac-off-policy}{%
+\subsection{V. SAC's Update Target Depends on the Policy, so Why Is SAC Off-Policy?}\label{v.-sacs-update-target-depends-on-the-policy-so-why-is-sac-off-policy}}
+
+SAC does use the paths it previously followed from experience replay. However, when calculating the target value, it discards the ``old next action'' stored in the replay buffer and uses the current policy to resample a ``new next action'' at the ``old next state.''
+
+\Needspace{5\baselineskip}
+Suppose an old transition stored in the replay buffer is:
+
+\[
+(s_t,a_t,r_t,s_{t+1})
+\]
+
+This transition may have been collected 1 hour ago, when the policy was \(\pi_{\mathrm{old}}\).
+
+\textbf{A. Left-hand term (prediction): \(Q(s_t,a_t)\)}
+
+The \(s_t\) and \(a_t\) used here are both old data from the buffer.
+
+\begin{itemize}
+\tightlist
+\item
+  Logic: the Critic's task is to remember history. It needs to learn that ``taking action \(a_t\) in state \(s_t\) did yield reward \(r_t\) and lead to \(s_{t+1}\).''
+\item
+  There is no problem with this part: learning the Q function is itself intended to fit the environment dynamics and is independent of the policy.
+\end{itemize}
+
+\textbf{B. Right-hand term (target): \(y\)}
+
+\Needspace{5\baselineskip}
+This is where the issue arises. We need to calculate the value at the next time step:
+
+\[
+y
+=
+r_t
++
+\gamma
+\bigl(
+Q(s_{t+1},\tilde{a}_{t+1})
+-
+\alpha\log\pi(\tilde{a}_{t+1}\mid s_{t+1})
+\bigr)
+\]
+
+Note \(\tilde{a}_{t+1}\), the new next action. Where does it come from?
+
+\begin{itemize}
+\tightlist
+\item
+  For Sarsa (on-policy): Sarsa directly uses the old action \(a_{t+1}\) stored in the buffer, because Sarsa evaluates ``the old policy that generated this transition.'' Once the policy changes, the old transition's \(a_{t+1}\) no longer represents the new policy's behavior, and the data become invalid.
+\item
+  For SAC (off-policy): SAC ignores the \(a_{t+1}\) originally stored in the buffer. It looks at \(s_{t+1}\) in the buffer and asks the current Actor (the new policy \(\pi_{\mathrm{new}}\)): if you were now standing at \(s_{t+1}\), what action would you take?
+\end{itemize}
+
+The Actor resamples an action \(\tilde{a}_{t+1}\sim\pi_{\mathrm{new}}(\cdot\mid s_{t+1})\) using its current parameters. The Critic then uses this new action \(\tilde{a}_{t+1}\) to calculate the future value.
+
+Resampling \(a_{t+1}\) does not require interaction with the environment: we only need to sample an action according to the current sampling policy, without obtaining a reward or performing a state transition in the environment.
+
+Recall the definition of off-policy: the behavior policy that generates the data used for optimization differs from the target policy currently being evaluated or optimized.
+
+\Needspace{5\baselineskip}
+In SAC:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The old policy provides the data, because it supplies \(s_t,a_t,r_t,s_{t+1}\), particularly the physical fact of the state transition.
+\item
+  The new policy evaluates the value, because at \(s_{t+1}\) we imagine what the new policy would do, namely by resampling \(\tilde{a}_{t+1}\).
+\end{enumerate}
+
+This ``grafting'' operation is precisely the essence of off-policy learning: use the old policy's paths \((s\to s')\) to understand the world, but use the new policy's mind to judge how much the future is worth.
+
+There is actually another theoretical problem: the states s in the replay buffer were visited by the old policy. The new policy may visit entirely different regions of the state space. Deep learning's generalization ability can usually mitigate this problem, however, so DDPG/SAC works well in practice.
+
+\Needspace{5\baselineskip}
+\hypertarget{vi.-can-sarsa-a2c-and-ppo-become-off-policy-in-this-way}{%
+\subsection{VI. Can Sarsa, A2C, and PPO Become Off-Policy in This Way?}\label{vi.-can-sarsa-a2c-and-ppo-become-off-policy-in-this-way}}
+
+\Needspace{5\baselineskip}
+In standard Sarsa:
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t
++
+\gamma Q(s_{t+1},a_{t+1})
+-
+Q(s_t,a_t)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+Following a similar idea, discard \(a_{t+1}\) from the historical data and resample \(a_{t+1}\) with the current policy \(\pi_{\mathrm{new}}\):
+
+\Needspace{5\baselineskip}
+That is, discard \(a_{t+1}\) from the historical data and use the current policy \(\pi_{\mathrm{new}}\) to resample \(\tilde{a}_{t+1}\) at \(s_{t+1}\):
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t
++
+\gamma Q(s_{t+1},\tilde{a}_{t+1})
+-
+Q(s_t,a_t)
+\bigr],
+\quad
+\tilde{a}_{t+1}\sim\pi_{\mathrm{new}}(\cdot\mid s_{t+1})
+\]
+
+The data \((s_t,a_t,s_{t+1})\) come from the old behavior policy, namely the replay buffer; the future estimate \(Q(s_{t+1},\tilde{a}_{t+1})\) uses the current new policy \(\pi_{\mathrm{new}}\). The behavior and target policies are therefore decoupled: you use old experience to reach \(s_{t+1}\), then evaluate what would happen if the current policy took over the subsequent operations. This is precisely the definition of off-policy learning.
+
+Therefore, this is possible. In fact, just as DDPG can be viewed as DQN for continuous actions, SAC can be viewed as an ``evolved Sarsa'' with deep networks, continuous actions, and entropy.
+
+But A2C and PPO cannot do this. In A2C, the Critic network V(s) takes only state s as input. Its update uses V(s') to update V(s), where s' is the next state obtained after sampling action a according to the current policy. If we retrieve old data from the replay buffer, change the policy to the current one, and change the action to a', we no longer know the next state and cannot update.
+
+In A2C, the Critic is a V network \(V(s)\).
+
+\begin{itemize}
+\tightlist
+\item
+  \(V(s)\) takes only state \(s\) as input.
+\item
+  \(V(s)\) outputs the average expected return from following the current policy in that state.
+\end{itemize}
+
+If you sample a new action \(\tilde{a}'\) at \(s'\) and ask the Critic whether taking this new action \(\tilde{a}'\) in this state is good, the V network will answer: I do not know. I can only tell you whether \(s'\) is a good state overall, namely \(V(s')\). I cannot distinguish which of actions \(\tilde{a}_1\) and \(\tilde{a}_2\) is better, because I do not accept an action as input.
+
+If you insist on using the ``resampling'' idea, namely off-policy learning, the Critic must be able to evaluate specific actions. This means that the Critic must be upgraded from \(V(s)\) to \(Q(s,a)\).
+
+\Needspace{5\baselineskip}
+Once you make this change:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Introduce a \(Q(s,a)\) network.
+\item
+  Use a replay buffer.
+\item
+  Use \(y=r+\gamma Q(s',\tilde{a}')\), where \(\tilde{a}'\) is resampled.
+\end{enumerate}
+
+This is no longer A2C; you have reinvented SAC (Soft Actor-Critic).
+
+\Needspace{5\baselineskip}
+In PPO, the advantage function \(A_t\) is calculated using GAE:
+
+\[
+\hat{A}_t
+\approx
+\sum_{k=0}^{\infty}
+\gamma^{k} r_{t+k}
+-
+V(s_t)
+\]
+
+\Needspace{5\baselineskip}
+The dilemma is now this: if you use an old state \(s_t\) from the replay buffer in PPO and then sample a new action \(\tilde{a}_t\) with the new policy:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  You do not know the immediate reward \(r(s_t,\tilde{a}_t)\) that the environment would give for \(\tilde{a}_t\), because you have not actually run it in the environment.
+\item
+  You do not know the next state \(s_{t+1}\) after executing \(\tilde{a}_t\).
+\item
+  Without \(r\) and \(s'\), you cannot calculate \(\hat{A}_t\).
+\item
+  Without \(\hat{A}_t\), PPO's gradient cannot be calculated.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{vii.-comparison-of-ddpg-and-sac}{%
+\subsection{VII. Comparison of DDPG and SAC}\label{vii.-comparison-of-ddpg-and-sac}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i-similarities}{%
+\subsubsection{(I) Similarities}\label{i-similarities}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Same architecture: both have an explicit Actor (responsible for actions) and Critic (responsible for scoring).
+\item
+  Same way of using data: both are off-policy, can extract knowledge from historical data, and use a replay buffer.
+\item
+  Same training-stability techniques: to prevent the Critic from chasing a rapidly changing target, both use target networks. Both use soft updates so that the target networks slowly follow the main networks.
+\item
+  Same application domains: both address problems with continuous action spaces (such as robotic arms and autonomous driving).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii-differences}{%
+\subsubsection{(II) Differences}\label{ii-differences}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Different mathematical principles: DDPG is based on the Bellman optimality equation and is more like a variant of Q-learning and DQN; SAC is based on the Bellman expectation equation (more precisely, the soft Bellman expectation equation) and is more like a variant of Sarsa.
+\item
+  Deterministic versus stochastic policies: DDPG takes a state as input and outputs a fixed action value (more precisely, it fits a fixed value). Its Actor does not explore, so noise must be manually added to the output action. If the noise is removed late in training, the policy may become very rigid and easily overfit to a single path. SAC takes a state as input, outputs the mean and variance of a Gaussian distribution, and samples an action. Its exploration is therefore intrinsic: the policy itself is stochastic, the variance determines the amount of exploration, training and exploration are integrated, and robustness is extremely strong.
+\item
+  Different optimization objectives: DDPG only cares about cumulative reward, is prone to convergence to local optima, and is extremely sensitive to hyperparameters. SAC cares about both cumulative reward and policy diversity, is less likely to become trapped in local optima, and has good fault tolerance and resistance to disturbances.
+\item
+  Different Critic structures: DDPG usually uses only 1 Q network and is prone to Q-value overestimation; SAC uses 2 Q networks to suppress overestimation.
+\item
+  Different ways of obtaining the Actor gradient: DDPG directly uses the chain rule; SAC requires reparameterization to separate out the random variable.
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-61}{%
+\subsection{References}\label{references-61}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Haarnoja, T., Zhou, A., Hartikainen, K., et al.~(2018). \href{https://arxiv.org/abs/1812.05905}{Soft Actor-Critic Algorithms and Applications}. arXiv:1812.05905.
+\end{itemize}
+
+\clearpage

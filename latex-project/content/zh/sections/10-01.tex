@@ -1,0 +1,284 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux81c2ux8001ux864eux673aux4e0eux4e0aux7f6eux4fe1ux754cucbux7b97ux6cd5}{%
+\section{多臂老虎机与上置信界（UCB）算法}\label{ux591aux81c2ux8001ux864eux673aux4e0eux4e0aux7f6eux4fe1ux754cucbux7b97ux6cd5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux591aux81c2ux8001ux864eux673amulti-armed-banditmab}{%
+\subsection{一、多臂老虎机（multi-armed bandit，MAB）}\label{ux4e00ux591aux81c2ux8001ux864eux673amulti-armed-banditmab}}
+
+在多臂老虎机问题（见图 2-1）中，有一个拥有~K根拉杆的老虎机，拉动每一根拉杆都对应一个关于奖励的概率分布R。我们每次拉动其中一根拉杆，就可以从该拉杆对应的奖励概率分布中获得一个奖励r。我们在各根拉杆的奖励概率分布未知的情况下，从头开始尝试，目标是在操作T~次拉杆后获得尽可能高的累积奖励。由于奖励的概率分布是未知的，因此我们需要在``探索拉杆的获奖概率''（探索）和``根据经验选择获奖最多的拉杆''（利用）中进行权衡。``采用怎样的操作策略才能使获得的累积奖励最高''便是多臂老虎机问题。
+
+\Needspace{5\baselineskip}
+形式化表述：
+
+\Needspace{5\baselineskip}
+多臂老虎机问题可以表示为一个元组 \((\mathcal{A}, \mathcal{R})\)，其中：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\mathcal{A}\) 为动作集合，其中一个动作表示拉动一个拉杆。若多臂老虎机一共有 \(K\) 根拉杆，那么动作空间就是集合 \(\{a_1,\ldots,a_K\}\)，我们用 \(a_t \in \mathcal{A}\) 表示任意一个动作。
+\item
+  \(\mathcal{R}\) 为奖励概率分布，拉动每一根拉杆的动作 \(a\) 都对应一个奖励概率分布 \(R(r\mid a)\)，不同拉杆的奖励分布通常是不同的。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+假设每个时间步只能拉动一个拉杆，多臂老虎机的目标为最大化一段时间步 \(T\) 内累积的奖励：
+
+\[
+\max \sum_{t=1}^{T} r_t,\qquad r_t \sim R(\cdot\mid a_t).
+\]
+
+其中 \(a_t\) 表示在第 \(t\) 时间步拉动某一拉杆的动作，\(r_t\) 表示动作 \(a_t\) 获得的奖励。
+
+对于每一个动作 \(a\)，我们定义其期望奖励为
+
+\[
+Q(a)=\mathbb{E}_{r\sim R(\cdot\mid a)}[r].
+\]
+
+于是，至少存在一根拉杆，它的期望奖励不小于拉动其他任意一根拉杆，我们将该最优期望奖励表示为
+
+\[
+Q^{*}=\max_{a\in\mathcal{A}} Q(a).
+\]
+
+为了更加直观地观察某一拉杆的期望奖励与最优拉杆期望奖励之间的差距，我们引入``遗憾''（regret）概念。遗憾定义为当前动作与最优动作期望奖励之差，即
+
+\[
+R(a)=Q^{*}-Q(a).
+\]
+
+累积遗憾（cumulative regret）即操作 \(T\) 次拉杆后累积的遗憾总量。对于一次完整的 \(T\) 步决策 \(\{a_1,a_2,\ldots,a_T\}\)，累积遗憾为
+
+\[
+\mathcal{R}_T=\sum_{t=1}^{T} R(a_t).
+\]
+
+MAB 问题的目标是最大化累积奖励，等价于最小化累积遗憾。
+
+\Needspace{5\baselineskip}
+为了知道拉动哪一根拉杆能获得更高的奖励，我们需要估计这根拉杆的期望奖励。由于只拉动一次拉杆获得的奖励存在随机性，所以需要多次拉动同一根拉杆，然后计算得到的多次奖励的期望。一个增量式估计流程如下：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  对于任意 \(a\in\mathcal{A}\)，初始化计数器 \(N(a)=0\) 和期望奖励估计值 \(\hat{Q}(a)=0\)。
+\item
+\Needspace{5\baselineskip}
+  对 \(t=1,\ldots,T\) 循环：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    选取某根拉杆，该动作记为 \(a_t\)。
+  \item
+    得到奖励 \(r_t\)。
+  \item
+    更新计数器：\(N(a_t)=N(a_t)+1\)。
+  \item
+    更新期望奖励估计值：\(\hat{Q}(a_t)\leftarrow \hat{Q}(a_t)+\frac{1}{N(a_t)}[r_t-\hat{Q}(a_t)]\)。
+  \end{itemize}
+\end{enumerate}
+
+注：如果将所有数求和再除以次数，其缺点是每次更新的时间复杂度和空间复杂度均为 \(O(n)\)。而采用增量式更新，时间复杂度和空间复杂度均为 \(O(1)\)。
+
+一个最简单的策略就是一直采取第一个动作，但这就非常依赖运气的好坏。如果运气绝佳，可能拉动的刚好是能获得最大期望奖励的拉杆，即最优拉杆；但如果运气很糟糕，获得的就有可能是最小的期望奖励。
+
+在多臂老虎机问题中，一个经典的问题就是探索与利用的平衡问题。探索（exploration）是指尝试拉动更多可能的拉杆，这根拉杆不一定会获得最大的奖励，但这种方案能够摸清楚所有拉杆的获奖情况。例如，对于一个 10 臂老虎机，我们要把所有的拉杆都拉动一下才知道哪根拉杆可能获得最大的奖励。利用（exploitation）是指拉动已知期望奖励最大的那根拉杆，由于已知的信息仅仅来自有限次的交互观测，所以当前的最优拉杆不一定是全局最优的。例如，对于一个 10 臂老虎机，我们只拉动过其中 3 根拉杆，接下来就一直拉动这 3 根拉杆中期望奖励最大的那根拉杆，但很有可能期望奖励最大的拉杆在剩下的 7 根当中，即使我们对 10 根拉杆各自都尝试了 20 次，发现 5 号拉杆的经验期望奖励是最高的，但仍然存在着微小的概率---另一根 6 号拉杆的真实期望奖励是比 5 号拉杆更高的。
+
+于是在多臂老虎机问题中，设计策略时就需要平衡探索和利用的次数，使得累积奖励最大化。一个比较常用的思路是在开始时做比较多的探索，在对每根拉杆都有比较准确的估计后，再进行利用。目前已有一些比较经典的算法来解决这个问题，例如epsilon-贪婪算法、上置信界算法和汤普森采样算法等。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cepsilon-ux8d2aux5a6aux7b97ux6cd5}{%
+\subsection{二、epsilon-贪婪算法}\label{ux4e8cepsilon-ux8d2aux5a6aux7b97ux6cd5}}
+
+完全贪婪算法即在每一时刻采取期望奖励值最大的动作（拉动拉杆），这就是纯粹的利用，而没有探索。所以我们通常需要对完全贪婪算法进行一些修改，其中比较经典的一种方法为 \(\epsilon\)-贪婪（\(\epsilon\)-Greedy）算法。
+
+\Needspace{5\baselineskip}
+\(\epsilon\)-贪婪算法在完全贪婪算法的基础上添加了噪声，每次以概率 \(1-\epsilon\) 选择以往经验中期望奖励值最大的那根拉杆（利用），以概率 \(\epsilon\) 随机选择一根拉杆（探索），公式如下：
+
+\[
+a_t=
+\begin{cases}
+\arg\max\limits_{a\in\mathcal{A}} \hat{Q}(a), & \mathcjk{采样概率 } 1-\epsilon,\\
+\mathcjk{从 }\mathcal{A}\mathcjk{ \mathcjk{中随机选择}}, & \mathcjk{采样概率 } \epsilon.
+\end{cases}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e0aux7f6eux4fe1ux754cucbux7b97ux6cd5}{%
+\subsubsection{（三）上置信界（UCB）算法}\label{ux4e09ux4e0aux7f6eux4fe1ux754cucbux7b97ux6cd5}}
+
+设想这样一种情况：对于一台双臂老虎机，其中第一根拉杆只被拉动过一次；第二根拉杆被拉动过很多次，我们对它的奖励分布已经有了大致的把握。这时你会怎么做？或许你会进一步尝试拉动第一根拉杆，从而更加确定其奖励分布。这种思路主要是基于不确定性，因为此时第一根拉杆只被拉动过一次，它的不确定性很高。一根拉杆的不确定性越大，它就越具有探索的价值，因为探索之后我们可能发现它的期望奖励很大。我们在此引入不确定性度量U(a)，它会随着一个动作被尝试次数的增加而减小。我们可以使用一种基于不确定性的策略来综合考虑现有的期望奖励估值和不确定性，其核心问题是如何估计不确定性。
+
+上置信界（upper confidence bound, UCB）算法是一种经典的基于不确定性的策略算法，它的思想用到了一个非常著名的数学原理：霍夫丁不等式（Hoeffding's inequality）。在霍夫丁不等式中，令 \(X_1,\ldots,X_n\) 为 \(n\) 个独立同分布的随机变量，取值范围为 \([0,1]\)，其经验期望为
+
+\[
+\bar{x}_n=\frac{1}{n}\sum_{j=1}^{n} X_j,
+\]
+
+则有
+
+\[
+\Pr\{\mathbb{E}[X]\ge \bar{x}_n+u\}\le e^{-2nu^{2}}.
+\]
+
+现在我们将霍夫丁不等式运用于多臂老虎机问题中。将 \(\hat{Q}_t(a)\) 代入 \(\bar{x}_n\)，不等式中的参数 \(u=\hat{U}_t(a)\) 代表不确定性度量。给定一个概率
+
+\[
+p=e^{-2N_t(a)\hat{U}_t(a)^{2}},
+\]
+
+根据上述不等式，\(Q_t(a)<\hat{Q}_t(a)+\hat{U}_t(a)\) 至少以概率 \(1-p\) 成立。当 \(p\) 很小时，\(Q_t(a)<\hat{Q}_t(a)+\hat{U}_t(a)\) 就会在很大概率上成立，\(\hat{Q}_t(a)+\hat{U}_t(a)\) 便是期望奖励上界。
+
+\Needspace{5\baselineskip}
+此时，上置信界算法便选取期望奖励上界最大的动作：
+
+\[
+a_t=\arg\max_{a\in\mathcal{A}}[\hat{Q}_t(a)+\hat{U}_t(a)].
+\]
+
+\Needspace{5\baselineskip}
+所谓的``误判''（或者说我们在设定 \(p\) 时想要规避的那个``小概率事件''），指的正是：拉杆的真实期望值竟然比``我们观察到的平均值加上不确定性红利''还要高。用数学公式表示，就是当下面这个事件发生时，我们视为``误判''：
+
+\[
+Q(a)>\hat{Q}_t(a)+\hat{U}_t(a).
+\]
+
+如果我们希望降低``把一个很好的杆误认为不好，错过好的解''的概率 \(p\)，我们就要选择把 \(u\) 放宽，拉高上置信界，从而鼓励更多的探索。
+
+\Needspace{5\baselineskip}
+当设定p后，我们可以得出不确定度u的值：
+
+\[
+u=\sqrt{\frac{-\ln p}{2n}}.
+\]
+
+我们一般设置 \(p=1/t\)。在 \(t\) 较小的时候，鼓励算法先通过少数探索快速找到一个近似最优；在 \(t\) 较大的时候，如果一个臂很久没有被选中（\(n\) 没变），但总时间 \(t\) 增加了，那么它的探索加分项就会变大。这会强行把它的得分拉高，让算法去``再试一次''这个臂，以满足我们随时间日益严苛的置信度要求。否则，臂只要被选中一次，\(u\) 就会减小一点，尽管``冷门臂''的 \(u\) 始终更大，但随着时间推移和 \(n\) 的增大，所有臂的 \(u\) 都会逐渐接近 \(0\)，使得这一项远远小于 \(Q\)，最终不起作用，可能让算法收敛向一个次优解。
+
+\Needspace{5\baselineskip}
+这里还可以进一步写成经典的 UCB 形式：
+
+\[
+a_t=\arg\max_{a\in\mathcal{A}}[\hat{Q}_t(a)+\sqrt{\frac{2\ln t}{N_t(a)}}].
+\]
+
+技术彩蛋：在更严谨的 UCB1 推导中，常取 \(p=t^{-4}\)，由此得到探索项 \(\sqrt{\frac{2\ln t}{N_t(a)}}\)。如果只取 \(p=1/t\)，则 \(\sum_t 1/t\) 发散；而 \(p=t^{-4}\) 对应的级数收敛，更便于从数学上证明遗憾上界。但无论取 \(1/t\) 还是 \(t^{-4}\)，核心都是利用 \(\ln t\) 维持长期探索动力。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux6c64ux666eux68eeux91c7ux6837}{%
+\subsection{四、汤普森采样}\label{ux56dbux6c64ux666eux68eeux91c7ux6837}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  核心思想
+\end{enumerate}
+
+如果说 UCB 是一个严谨的数学家（计算严格的边界，绝不冒险漏掉任何可能性），那么汤普森采样就是一个智慧的赌徒（基于概率分布模拟未来，用随机性来对抗未知）。UCB 是频率学派的方法：它根据观察到的数据计算一个固定的数值（平均值 + 误差项）。汤普森采样则是贝叶斯学派的方法。它的核心逻辑是：我不直接估计拉杆的中奖率是多少，而是维护一个``中奖率的概率分布''。在每一步，我从每根拉杆的分布里随机抽一个数（Sample），假装这个数就是这根拉杆的真实能力，然后选那个抽出来数值最大的拉杆。
+
+对于陌生的拉杆：我不知道它中奖率是多少，所以我认为它可能是0到1之间的任何值（分布很宽，很平）。
+
+对于熟悉的拉杆：我知道它中奖率大概是 80\%，所以我认为它的概率分布主要集中在 0.75 到 0.85 之间（分布很窄，很尖）。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  数学模型：Beta分布
+\end{enumerate}
+
+在处理二元奖励（赢/输，\(1/0\)）的老虎机问题时，汤普森采样通常使用 Beta 分布（Beta Distribution）作为共轭先验。
+
+不需要被名字吓到，你只需要记住 Beta 分布有两个参数：\(\alpha\) 和 \(\beta\)。
+
+\[
+f(x;\alpha,\beta)=\mathrm{Beta}(\alpha,\beta)
+\]
+
+\Needspace{5\baselineskip}
+在老虎机场景下，它们的物理含义极其简单：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\alpha\)（Alpha）：代表该拉杆``赢（获得奖励 1）''的次数 \(+1\)。
+\item
+  \(\beta\)（Beta）：代表该拉杆``输（获得奖励 0）''的次数 \(+1\)。
+\end{itemize}
+
+为什么这么做？
+
+\Needspace{5\baselineskip}
+Beta 分布的形状决定了我们对拉杆的看法：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  初始状态（\(\alpha=1,\beta=1\)）：相当于均匀分布。我觉得中奖率在 \([0,1]\) 之间任意一个值的概率都一样。这就是``无知''。
+\item
+  赢多输少（\(\alpha=100,\beta=10\)）：曲线会在 \(0.9\) 附近高高隆起。这意味着``我很确定它是个好拉杆''。
+\item
+  尝试极少（\(\alpha=2,\beta=1\)）：曲线比较平缓。这意味着``它可能很好，也可能很差，不确定性很大''。
+\item
+  算法流程
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+汤普森采样的步骤非常简洁，不需要像 UCB 那样计算复杂的根号和对数：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化：给每根拉杆 \(k\) 设定两个计数器 \(\alpha_k=1,\beta_k=1\)。
+\item
+\Needspace{5\baselineskip}
+  循环每一步 \(t\)：
+
+  \begin{itemize}
+  \item
+    采样（Sample）：对于每一根拉杆 \(k\)，从其对应的分布 \(\mathrm{Beta}(\alpha_k,\beta_k)\) 中随机抽取一个样本值 \(\theta_k\sim \mathrm{Beta}(\alpha_k,\beta_k)\)。
+  \item
+    选择（Select）：选择 \(\theta_k\) 最大的那根拉杆（记为动作 \(A_t\)）。
+  \item
+    观察（Observe）：拉动拉杆 \(A_t\)，得到奖励 \(r\)（\(0\) 或 \(1\)）。
+  \item
+\Needspace{5\baselineskip}
+    更新（Update）：更新参数（贝叶斯推断）：
+
+    \begin{itemize}
+    \tightlist
+    \item
+      如果赢了（\(r=1\)）：\(\alpha_{A_t}\leftarrow \alpha_{A_t}+1\)
+    \item
+      如果输了（\(r=0\)）：\(\beta_{A_t}\leftarrow \beta_{A_t}+1\)
+    \end{itemize}
+  \end{itemize}
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-42}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-42}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Thompson, W. R. (1933). \href{https://doi.org/10.1093/biomet/25.3-4.285}{On the Likelihood that One Unknown Probability Exceeds Another in View of the Evidence of Two Samples}. Biometrika, 25(3/4), 285--294.
+\item
+  Auer, P., Cesa-Bianchi, N., \& Fischer, P. (2002). \href{https://link.springer.com/article/10.1023/A:1013689704352}{Finite-time Analysis of the Multiarmed Bandit Problem}. Machine Learning.
+\end{itemize}
+
+\clearpage

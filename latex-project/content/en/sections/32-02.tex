@@ -1,0 +1,153 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{technical-approaches-to-world-models}{%
+\section{Technical Approaches to World Models}\label{technical-approaches-to-world-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-main-technical-approaches-to-world-models}{%
+\subsection{I. Main Technical Approaches to World Models}\label{i.-main-technical-approaches-to-world-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{latent-variable-world-models}{%
+\subsubsection{(1) Latent-Variable World Models}\label{latent-variable-world-models}}
+
+Latent-variable world models are among the earliest forms of world models, including RSSM and related derivatives. They compress the world state at time t into a latent z\_t and combine it with action a\_t and other information to predict the next latent z\_t+1. They are generally trained using or incorporating downstream-task losses.
+
+This approach rarely appears on its own in industry, but it has not disappeared; instead, it has been incorporated into generative world models. Video pixels have very high dimensionality, but according to the manifold hypothesis, meaningful data actually lies in lower dimensions. Inputs are therefore generally first compressed into low-dimensional latents for processing in latent space, then restored to high dimensionality for output.
+
+\Needspace{5\baselineskip}
+\hypertarget{generative-world-models}{%
+\subsubsection{(2) Generative World Models}\label{generative-world-models}}
+
+Generative world models are currently the mainstream form. By generating future video frames and other outputs, they learn autonomously from videos and similar data. Their training can broadly follow that of multimodal generative models. Current generative world models are almost all combined with the latent-variable approach.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Loss computation: The final generated high-dimensional frames can be used directly to compute the loss. Alternatively, a VAE or another autoencoder can first be trained and frozen, followed by pretraining of a generative model in latent space using latent flow-matching or similar losses directly. Other downstream-task losses can also be used for training.
+\item
+  Generation paradigms
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Autoregression: Inherits LLMs' next-token-prediction idea to predict the next state token. Its disadvantages are that high-dimensional visual generation is usually slow and errors can progressively accumulate.
+\item
+  Diffusion: Starts from noise and gradually denoises future videos or states. Outputs become increasingly clear from an initially blurred state, with information content growing progressively, resembling human perception or imagination progressing from rough outlines to concrete details. Its disadvantages are high GPU-memory use and computational cost in high dimensions, so it is generally used only to generate latents in low-dimensional spaces.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{viewpoint-modeling-world-models}{%
+\subsubsection{(3) Viewpoint-Modeling World Models}\label{viewpoint-modeling-world-models}}
+
+This approach treats each 2D frame as a different observation of the same 3D world. Given user-provided images and their viewpoints, it implicitly maintains a multiview 3D world model and outputs the corresponding 2D representation from the user's viewpoint. Representative work includes RTFM and IC-World.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Advantages: Modeling 3D space is consistent with the binocular/multi-eye views of humans and animals and the consistency required across multiple robot sensors. It may be key to spatial understanding and an important technical foundation for embodied AI.
+\item
+  Disadvantages: It must handle viewpoints and correctly determine their transformations, but training videos do not inherently include viewpoint information, making it difficult to recognize the shared 3D identity of multiple views at test time. Adding estimated viewpoints to training data through hard-coded algorithms introduces errors; performance may be difficult to maintain as scenes become more complex, making data-driven scaling difficult.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{object-modeling-world-models}{%
+\subsubsection{(4) Object-Modeling World Models}\label{object-modeling-world-models}}
+
+This approach separates, extracts, and explicitly models individual objects in space, their properties, and their relationships. Rather than viewing the world as a single image, it views it as cups, tables, and robotic arms, together with their positions, masses, contact relationships, friction, and so on. The model contains a fixed number of ``slots,'' into which object information enters competitively, enabling important objects' information to be handled during subsequent generation. Representative work includes C-SWM, SlotFormer, and Marble.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Advantages: Well suited to spatial relationships, contact, occlusion, and compositional generalization. It is highly interpretable, interventions are simple (such as adding or moving objects), and it is closer to genuine physical reasoning.
+\item
+  Disadvantages: It must process complex visual information and decompose the world into the correct structure, requiring training on structured data, which is extremely scarce. Decomposition itself is also error-prone, and errors at this step cause subsequent prediction errors.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{world-models-that-predict-in-abstract-representation-spaces}{%
+\subsubsection{(5) World Models That Predict in Abstract Representation Spaces}\label{world-models-that-predict-in-abstract-representation-spaces}}
+
+Predicting every pixel is unnecessary in everyday life and natural science. For example, object-motion prediction only requires abstractions such as point masses and rigid bodies, not pixel- or atom-level analysis. Following this idea, we map observations into hidden states as in generative world models, but no longer drive learning with direct or indirect pixel objectives such as pixel generation or reconstruction. Instead, the model learns hidden-state representations autonomously through self-supervised prediction, using only regularization losses to avoid representation collapse. One current method extracts all hidden states from observations, randomly masks them in space and time, and trains the model to predict the hidden states at masked positions. By minimizing the gap between predicted and actual hidden states in latent space, it learns spatiotemporal and physical representations. Representative work includes the V-JEPA series and LeWorldModel.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Advantages: Can naturally encode vision, touch, sensor data, and other modalities together, and best matches the thinking process of scientific reasoning. It does not need to predict pixels, saving compute and enabling high speed.
+\item
+  Disadvantages: Abstract representation spaces are invisible to humans, making problems difficult to identify directly. The model is essentially an encoder, requiring fine-tuning for downstream tasks.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-how-is-action-conditioning-injected-into-a-video-world-model}{%
+\subsection{II. How Is Action Conditioning Injected into a Video World Model?}\label{ii.-how-is-action-conditioning-injected-into-a-video-world-model}}
+
+Many world models are fine-tuned from video-generation models. A video world model does not merely predict the next frame from existing frames, but predicts it from existing frames and action interventions. How action interventions are injected into the video-generation backbone is therefore crucial. An action-injection head is generally designed, with typical injection methods including:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Inject actions through cross-attention in the DiT backbone.
+\item
+  Use action-injection values to control AdaLN parameters.
+\end{enumerate}
+
+Fine-tuning follows injection. Initially, the video-generation backbone is generally frozen and only the action-injection head is tuned; some models later undergo full fine-tuning.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-learning-an-action-space-latent-action-models}{%
+\subsection{III. Learning an Action Space: Latent Action Models}\label{iii.-learning-an-action-space-latent-action-models}}
+
+The core expression of a world model is s\_t+1=f(s\_t,a\_t). In vast quantities of video data, s\_t and s\_t+1 are easy to obtain, but explicit action data a\_t is unavailable. This may affect learning of the consequences of specific interventions, particularly in interactive or embodied settings. If actions are regarded as a modality, we may need a corresponding ``vocabulary,'' namely an action space. Latent action models learn such an action space from videos through self-supervision.
+
+\Needspace{5\baselineskip}
+\hypertarget{core-components}{%
+\subsubsection{(1) Core Components}\label{core-components}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Inverse dynamics model: Infer a latent representation of action a\_t from preceding and subsequent states s\_t and s\_t+1, using an information bottleneck to encourage a\_t to encode the most important motion information.
+\item
+  Forward dynamics model: Use the current state s\_t and action a\_t to predict the next state s\_t+1.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{abstraction-requirements}{%
+\subsubsection{(2) Abstraction Requirements}\label{abstraction-requirements}}
+
+If action a\_t is allowed to retain too much information to improve generation quality, content such as colors, textures, and backgrounds can easily enter the representation, making actions insufficiently abstract and difficult to transfer. To ensure transferable and abstract action representations, models typically impose a strong prediction bottleneck, such as vector quantization or a variational bottleneck.
+
+However, sufficiently abstract compression undeniably makes transfer easier while potentially departing from the action space's intrinsic manifold structure, sacrificing next-state prediction accuracy and the details required for generation.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-155}{%
+\subsection{References}\label{references-155}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML. (PlaNet; the paper introduces RSSM)
+\item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/rtfm}{RTFM: A Real-Time Frame Model}. Official research article.
+\item
+  Wu, F., Wei, J., Li, R., et al.~(2025). \href{https://arxiv.org/abs/2512.02793}{IC-World: In-Context Generation for Shared World Modeling}. arXiv:2512.02793.
+\item
+  Kipf, T., van der Pol, E., \& Welling, M. (2019). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. arXiv:1911.12247.
+\item
+  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2023). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR 2023.
+\item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. Official research article.
+\item
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471. (V-JEPA)
+\item
+  Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
+\item
+  Garrido, Q., Nagarajan, T., Terver, B., Ballas, N., LeCun, Y., \& Rabbat, M. (2026). \href{https://arxiv.org/abs/2601.05230}{Learning Latent Action World Models In The Wild}. arXiv:2601.05230.
+\end{itemize}
+
+\clearpage

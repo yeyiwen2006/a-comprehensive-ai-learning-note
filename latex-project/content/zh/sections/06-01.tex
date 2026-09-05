@@ -1,0 +1,72 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5bf9ux6bd4ux5b66ux4e60}{%
+\section{对比学习}\label{ux5bf9ux6bd4ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux5bf9ux6bd4ux5b66ux4e60}{%
+\subsection{一、对比学习}\label{ux4e00ux5bf9ux6bd4ux5b66ux4e60}}
+
+学习一个特征空间，在其中相似的数据点（称为~``正样本对''）应该靠得很近，不相似的数据点（称为~``负样本对''）应该离得很远。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  样本对的构建
+\end{enumerate}
+
+通过对同一个数据点。施加不同的数据增强，创造看起来不同但语义完全一致的正样本对。例如，对原图片进行随机裁剪、随机颜色扰动、高斯模糊、旋转、翻转，对原语段进行摘要等。不同来源的样本则视为负样本对。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  损失函数
+\end{enumerate}
+
+我们把特征空间中向量的余弦值作为相似度，对于一个样本，计算它和源于自身的样本之间（正样本对）的相似度，以及与其他样本（负样本对）之间的所有相似度，用Softmax函数得到一个分数，我们希望这个分数越大越好。
+
+假设我们有一个查询 \(q\)（Query）和一个相关的文档 \(d^+\)（Positive Document），以及 \(N\) 个不相关的文档 \(d^-\)（Negative Documents）。
+
+\Needspace{5\baselineskip}
+我们使用 InfoNCE Loss（Information Noise Contrastive Estimation）作为损失函数。这是目前训练 Embedding 最主流的公式：
+
+\[
+\mathcal{L} = -\log \frac{\exp(\mathrm{sim}(q,d^+)/\tau)}{\sum_{i=0}^{N}\exp(\mathrm{sim}(q,d_i)/\tau)}
+\]
+
+\Needspace{5\baselineskip}
+其中：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\mathrm{sim}(u,v)\) 是两个向量的余弦相似度：\(\mathrm{sim}(u,v)=\frac{u^Tv}{\lVert u\rVert\lVert v\rVert}\)。
+\item
+  \(d^+\) 是正样本。
+\item
+  \(d_i\) 包含 \(1\) 个正样本和 \(N\) 个负样本。
+\item
+  \(\tau\) 是温度系数（Temperature），用于控制模型对困难样本的敏感度。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-32}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-32}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Oord, A. van den, Li, Y., \& Vinyals, O. (2018). \href{https://arxiv.org/abs/1807.03748}{Representation Learning with Contrastive Predictive Coding}. arXiv:1807.03748.
+\item
+  Chen, T., Kornblith, S., Norouzi, M., \& Hinton, G. (2020). \href{https://proceedings.mlr.press/v119/chen20j.html}{A Simple Framework for Contrastive Learning of Visual Representations}. ICML 2020.
+\end{itemize}
+
+\clearpage

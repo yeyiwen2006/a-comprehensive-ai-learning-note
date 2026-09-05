@@ -1,0 +1,189 @@
+\hypertarget{ux66f4ux65b0ux8bb0ux5f55}{%
+\chapter{更新记录}\label{ux66f4ux65b0ux8bb0ux5f55}}
+
+\Needspace{5\baselineskip}
+\hypertarget{section}{%
+\section{2026-09-05}\label{section}}
+
+\begin{itemize}
+\tightlist
+\item
+  Gitee 自动同步在推送后回读目标分支，确认其提交与 GitHub 本次构建一致；该检查只核对 Git 提交引用，不计算文件哈希。
+\item
+  新增严格对应中文的英文 Markdown 和 LaTeX 版本，英文作者署名统一为 Yiwen Ye；中文 README 仍为默认入口，提供中英文切换按钮，同步英文目录、学习路径、免责声明、贡献说明和更新记录。
+\item
+  逐张检查64个既有公开视觉资源，保留中文原图并新增11张英文标注变体；英文图片仅翻译说明文字，保留图形、数据、公式符号和示例 token。补充双语目录生成与可复现统计工具，英文正文约18.7万词，中文正文仍约37.4万字。
+\item
+  将 LaTeX 正文拆分为共享节级文件，使总书和单节入口引用同一份正文；新增双语总书及336个单节 PDF 的统一构建、独立任务目录、三遍编译、失败保护、元数据检查、相对链接索引与构建报告。两本总 PDF 保留在原 \texttt{latex-project/build/} 并同名复制到 \texttt{output/pdf/complete-books/}，单节按语言和部分/章节集中到 \texttt{chinese-sections/}、\texttt{english-sections/}，索引和报告分别为 \texttt{PDF-INDEX.md}、\texttt{build-reports/}；PDF 和临时产物不上传。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-1}{%
+\section{2026-09-03}\label{section-1}}
+
+\begin{itemize}
+\tightlist
+\item
+  按正文（不含参考文献，以中文字符与英文/数字词计）的统一口径统计六个部分的字数，并在 README``内容范围''中按一位小数四舍五入分别补充约7.8万、5.4万、9.8万、2.9万、6.7万和4.8万字；六部分合计仍为约37.4万字。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-2}{%
+\section{2026-09-02}\label{section-2}}
+
+\begin{itemize}
+\item
+  按最新 Word 原稿同步 \texttt{34.1\ 具身智能训练数据概述} 和 \texttt{34.2\ UMI数据} 的文字修改：\texttt{34.1} 将 UMI 数据扩展为``UMI及可穿戴设备采集数据''并加入外骨骼采集概述，\texttt{34.2} 新增通过可穿戴外骨骼采集灵巧操作数据的第四节，介绍 DexUMI 与 TwinDEX。补入 DexUMI 论文和 TwinDEX 官方项目页两项可核验来源；复核 \texttt{34.1} 的1处 DrawingML 裁剪及两篇共5张图后确认图片内容未变，继续沿用既有公开资源。同步重建 LaTeX 版本，README 正文统计更新为约37.4万字。
+\item
+  重绘 \texttt{1.3\ 梯度下降与反向传播} 中的两张手写示意图：梯度几何图统一了坐标轴、截点和垂足关系，使 \(O\)、\(P\) 与 \(\theta_1\) 轴共线、\(P\)、\(H\)、\(Q\) 共线，并准确标出 \(AO=2\)、\(OP=1\)、\(OQ=2\)；学习率图保留已审核的新版式。同步改写正文和 LaTeX 版，将局部切平面明确为 \(L=2-2\theta_1-\theta_2\)，更正两个偏导数与负梯度为 \(\frac{\partial L}{\partial\theta_1}=-2\)、\(\frac{\partial L}{\partial\theta_2}=-1\)和 \(-\nabla L=(2,1)\)，并补充 \(OH\perp PQ\) 及其与负梯度同向的几何说明。
+\item
+  固定 LaTeX 项目的 PDF 构建产物名称：三遍 XeLaTeX 命令统一使用 \texttt{a-comprehensive-ai-learning-note（位于github同名仓库）} 作为 job name，最终生成 \texttt{latex-project/build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf}；三遍编译可使干净构建环境中的目录页码与交叉引用稳定，并将该规则写入生成器维护的构建说明，避免重新生成项目后退回 \texttt{main.pdf}。
+\item
+  将 GitHub 到 Gitee 自动同步工作流使用的 \texttt{actions/checkout} 从 \texttt{v4} 升级到采用 Node.js 24 运行时的 \texttt{v6}，消除 Node.js 20 弃用警告，并保持完整历史与标签同步行为不变；同时将 README 中 v1.1、v2.0 的版本发布日期与``更新内容''分行展示，并同步更新 LaTeX 版本说明。
+\item
+  由多个独立分片对全部168篇公开 Markdown 的参考文献进行逐篇人工核查，并由只读 reviewer 复核合并差异；修订94篇正文中的来源遗漏、作者顺序、正式题名、年份、出处、失效或不稳定链接及正文事实错配，参考文献条目由493条增至592条。重点补全经典算法与具名前沿方法的原始来源，统一《动手学深度学习》《动手学大模型智能体》等书目，纠正 Kimi K2.5、RoFormer、Engram、mHC、VAPO、LingBot-VA 2.0、V-JEPA、LeWorldModel、Matrix-Game 3.0 等作者或题名，并对 RMSProp、MuonClip、VQ-VAE、VIME、EWC、Ring Attention、MCP、KV Cache、Codex compaction、LATS、GRPO 等证据不足或错配的正文表述作保守校正。删除无法直达正文的 UMI 二手归档条目及未由权威元数据确认的会议归属，清理引用链接中的追踪参数；同步重建 LaTeX 版本，并按不含参考文献的统一统计口径将 README 正文字数更新为约37.3万字。
+\item
+  全量复核 168 篇公开 Markdown 的 GitHub 数学与段落格式，修复 76 篇正文中的数学或段落格式问题；其中将分布在 63 篇正文及 README 中的 409 处有序列表标记改为 CommonMark 可识别的写法，并补齐标题、列表、正文和公式块之间缺失的空行。修正 \texttt{23.2\ 基于搜索的方法} 中与正文粘连的块公式定界符；修正 \texttt{15.6\ 注意力机制与梯度下降的等价性}、\texttt{21.5\ 强化微调前沿研究} 中矩阵与对齐环境中过量的反斜杠，以及 \texttt{25.2\ 模型的记忆} 中被隐藏制表符破坏的 \texttt{\textbackslash{}to}；同时处理会被 Markdown 误判为链接、强调、HTML 或正文的裸数学表达式、代码、伪代码与伪标签。增强上传前校验，使同行夹带正文的 \texttt{\$\$} 直接报错；章节数、文件数、正文字数和图片统计均未因这些格式修复而变化。
+\item
+  为 \texttt{20.3\ 流形假设与超连接} 补入正文开头提及的 Bengio、Courville 与 Vincent 表征学习综述论文。
+\item
+  修复 LaTeX 版本的数学与段落排版：为 Pandoc 生成的无界宽表格设置可换行列宽并校正超出正文宽度的比例表格；重排 HMM 后向递归、GRPO、序列级 KL、NF4 向量和 Diffusion Forcing ELBO 等过长公式；恢复 KV Cache 小节被误解析的复杂度记号，并消除图片前的段首缩进。重新生成 35 章内容并完成两遍 XeLaTeX 编译，609 页 A4 PDF 无越界、缺字、未定义命令及交叉引用待更新警告。
+\item
+  将 README 与 PDF 封面标题更新为 \texttt{A\ Comprehensive\ AI\ Learning\ Note（v2.0）}，并通过固定宽度缩放使 PDF 标题保持在一行；同时把 PDF 封面落款日期更新为 \texttt{2026年9月2日}。删除 \texttt{35.1}、\texttt{35.2} 中 Jim Fan 演讲参考文献末尾的中文说明，仅保留正式的 \texttt{{[}Video{]}} 文献条目。
+\item
+  按最新 Word 原稿同步 \texttt{30.1\ 具身智能模型的架构路线}：更新传统模块化、分层模型、VLA 与 WAM 四类路线的表述，补充世界模型规划作用；重写 OpenVLA、\(\pi_0\) 与 LingBot-VA 2.0 的动作空间说明，并新增从中间动作表示经 IK、运动学和传统控制模块转换到底层电机指令，以及策略层本体适配与控制层转换的区别。逐张确认原稿5张图片均无 DrawingML 裁剪且全部属于文字/公式截图，继续以 Markdown/LaTeX 转写而不新增公开图片；依据正文增补 YOLO、SLAM、SayCan、Code as Policies、PaLM-E、RT-2、WAM 综述、CrossFormer、URDF、逆运动学、阻抗控制、MPC 与 PID 等13条可核验来源。README 同步标明当前为 v2.0，完善第4至第6部分的重构说明，并将正文统计更新为约37.2万字。
+\item
+  按最新 Word 原稿补全 \texttt{34.4\ 数据的处理与对齐}：将第二节标题更新为``Qwen-RoboManip：数据的对齐''，新增跨机器人的80维动作/状态格式、0-1掩码、坐标系统一、上下文本体特征、模态两两对齐，以及日志与运动学正确性检查等内容；原稿不含图片，保留既有三条参考文献并同步 LaTeX/PDF 版本，同时将 README 正文字数统计更新为约37.1万字。
+\item
+  按最新 Word 原稿同步 \texttt{34.3\ 人类第一视角数据} 的文字更新：在视觉外观改写方法中加入 Qwen-RobotManip，并补充由人手轨迹经物理仿真计算机器人运动、再叠加虚拟机器人的处理过程，同时统一 IK 前后的空格；复核8处图片位置及4处 DrawingML 裁剪后确认可见图像内容未变，继续沿用既有公开资源。参考文献增补 Qwen-RobotManip 技术报告，并同步 LaTeX/PDF 版本。
+\item
+  将 \texttt{30.1\ 具身智能模型的架构路线} 的参考文献替换为用户指定的13条来源，补充 OpenPI、动作归一化文档、LingBot-VA 文档、Dyna-2、GEN-1/GEN-1.5 及操作空间与分层二次规划经典论文，并把参考文献中的 \(\pi_0\) 移出链接文字以保证 GitHub 正常渲染；同时为 \texttt{34.4\ 数据的处理与对齐} 增补具身纪元《预训练的秘密，不只在规模和多样性》，同步 LaTeX/PDF 版本。
+\item
+  按最新 Word 原稿完整重建 \texttt{34.3\ 人类第一视角数据}：同步人类第一视角视频的表征/世界模型信号、四类跨本体迁移方法以及 Dyna-2 百万小时 Scaling Law 实验；逐张检查8处 Word 可见图片及4处 DrawingML 裁剪，保留 EgoScale/LAPA 流程图、EgoMimic 遮罩对比和 Dyna-2 实验曲线为裁剪后公开资源，未使用自动 OCR。补全正文所有点名模型、数据集与基础方法的论文/技术报告，增补具身纪元《硅谷大火的ego数据，正改写具身数据新规则》和《我们之前利用人类视频数据的方法，可能都走错了方向》，并同步 LaTeX/PDF 与公开统计。
+\item
+  按最新 Word 原稿同步 \texttt{34.1\ 具身智能训练数据概述} 的文字更新：将动捕并入真机遥操作的四类示例，删除独立的动捕数据小节并重排后续编号，同时更新世界模型生成数据的局限性表述；经核对，原稿唯一图片仍沿用既有裁剪范围，未修改公开图片。另为 \texttt{33.4} 增补具身纪元《触觉需要自己的基础模型和Open-X Embodiment》，为 \texttt{34.2} 增补具身纪元《UMI是革命性具身数采新范式，但这仅仅是个开始》，并同步 LaTeX/PDF 版本；调整 LaTeX 生成器中参考文献标题与列表的间距，避免标题与首条引用在 PDF 中过于拥挤。
+\item
+  将根目录 \texttt{学习路径.md} 重命名为 \texttt{初学者学习路径.md}，删除原有按主题划分的多条路线，改为24节初学者建议阅读顺序，并在 README 新增 v1.0、v1.1、v2.0 版本说明；同时调整 README 与免责声明中的前沿研究说明，补充仓库包含对应 LaTeX 版本的说明，修复 PDF 目录中``第x部分''与部分标题之间缺少可见空格及标题后首段不缩进的问题，将 PDF 强调色调整为由天蓝到蓝的统一色阶，并同步更新入口链接、转换与校验脚本及 LaTeX 版本。
+\item
+  修复 \texttt{31.2\ VLA模型的强化学习} 在 GitHub 上仍存在的数学公式渲染问题：消除被误识别为 Markdown 一级标题的独立等号行，修正紧邻中文标点、星号上标及参考文献链接文字中的未渲染公式；并按 Word 可见原稿补回噪声转移的步长因子，校正 Flow-Noise 内部状态、噪声网络及 Policy Agnostic RL 的参数符号。
+\item
+  修复 \texttt{32.3\ 状态空间模型}、\texttt{33.1\ 世界-动作模型概述}、\texttt{33.2\ 世界-动作统一生成模型} 和 \texttt{33.3\ 推理时不生成视频的世界-动作模型} 的 GitHub 数学公式渲染问题：消除独立等号造成的 Setext 标题误判，修正行内公式边界、集合定界符及小于号的转义，并按 Word 可见内容逐式核对；同时让 LaTeX 生成器兼容 GitHub 的反引号行内数学语法，并据此清理 \texttt{15.6}、\texttt{21.5} 既有 LaTeX 输出中的反引号。
+\item
+  补全第31至35章中正文点名成果的来源：\texttt{31.1} 增补 LAPA、UniVLA 与 Moto，\texttt{32.2} 增补 RSSM、RTFM、IC-World、C-SWM、Marble 与 LeWorldModel，\texttt{32.3} 明确 PlaNet/RSSM、Dreamer 3、Dreamer 4 的对应文献，\texttt{33.2} 增补 LingBot-VA、LingBot-VA 2.0、PAR、PhysGen 与 DreamDojo，\texttt{33.4} 增补 CraftNet、Tactile-VLA 与 ForceVLA2，\texttt{34.1} 增补 GigaWorld-Policy，\texttt{35.1} 与 \texttt{35.2} 增补 Jim Fan 在 AI Ascent 2026 的``Robotics' End Game''演讲。
+\item
+  从用户提供的候选文献中，为 \texttt{34.2\ UMI数据} 选入与正文四项主题直接对应的 MV-UMI（多视角）、ViTaMIn（视触觉）、DexUMI（灵巧手）和机器人模仿学习数据缩放定律研究；未收录与本节现有论述对应关系较弱的候选项。
+\item
+  同步当前 Word 对 \texttt{32.4} 的更新，将标题改为``联合嵌入预测架构（JEPA）''，并按原稿调整正文首句；保留原有38处图片内容的人工转写结果及11处裁剪对应关系，不重新处理图片，同时更新目录与 LaTeX 版本。
+\item
+  删除原公开版第4、5部分（原第22至39章），按当前 Word 版本重新建立第4部分``大模型智能体''、第5部分``扩散模型与多模态生成''和第6部分``具身智能与世界模型''，公开范围调整为第22至35章、54节；Word 原稿未作修改。
+\item
+  逐张检查新第4至第6部分的470个 Word 图片位置及其中142处 DrawingML 裁剪：448处纯文字、公式、表格或说明性截图人工转写为 Markdown/LaTeX，22张确需保留视觉布局的信息作为裁剪后公开图片资源；未使用自动 OCR，也未保留图片重建占位。
+\item
+  将第3部分 \texttt{19.9\ Delta\ Attention} 仍在引用的 Kimi Delta Attention 架构图迁入第3部分资源目录，避免删除旧第4部分资源后产生断链。
+\item
+  按 \texttt{第4-6部分参考文献.md} 补入相应参考文献与补充说明，并对新增引用进行逐项核验；同步更新完整目录、学习路径、README、引用元数据、转换配置及 LaTeX 版本。
+\item
+  新增 \texttt{15.6\ 注意力机制与梯度下降的等价性}，按本地 Word 实际可见内容人工转写文字与公式，并将动态权重更新和固定 Transformer 层的等价关系保留为 1 张公开流程图；补充上下文梯度下降、线性注意力和归纳头相关参考文献。
+\item
+  删除 \texttt{18.4\ 高维向量的量化（论文）}；将原 \texttt{27.2\ Delta\ Attention} 迁移为 \texttt{19.9}，将原 \texttt{19.9\ 门控注意力（Gated\ Attention）（论文）} 顺延为 \texttt{19.10\ 门控注意力（Gated\ Attention）}，并按当前 Word 标题去掉 \texttt{20.2\ Engram模块}、\texttt{20.4\ Attention\ Residuals} 及 \texttt{21.1} 至 \texttt{21.4} 标题中的``（论文）''，同时修正 \texttt{20.2}、\texttt{20.4} 及 \texttt{21.1} 至 \texttt{21.4} 的公开 Markdown 文件名。
+\item
+  删除原 \texttt{21.5} 至 \texttt{21.8}，新增合并后的 \texttt{21.5\ 强化微调前沿研究}，按本地 Word 人工转写 MaxRL、ExGRPO 和结合自蒸馏的经验反思强化学习内容，并补充对应三篇参考文献；同步更新目录、公开范围统计与 LaTeX 版本。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-3}{%
+\section{2026-05-22}\label{section-3}}
+
+\begin{itemize}
+\tightlist
+\item
+  同步本地 Word 对 \texttt{16.1\ GPT与预训练} 的文字修改到 Markdown 与 LaTeX，新增 Scaling Law 小节，并补充预训练缩放、Chinchilla、后训练 RL 和推理时计算缩放相关参考文献。
+\item
+  同步本地 Word 对 \texttt{38.2\ 多模态统一理解-生成模型的输入编码（论文）} 和 \texttt{38.3\ 多模态统一理解-生成模型的主干架构与训练（论文）} 的文字修改到 Markdown 与 LaTeX，补入 SenseNova-U1 相关输入编码、位置编码和训练流程说明，补充 SenseNova-U1 与 DMD 参考文献，并更新 README 总字数统计。
+\item
+  同步本地 Word 对 \texttt{32.2\ 世界模型的主要技术路线} 的文字修改到 Markdown 与 LaTeX，补入 \texttt{Gemini\ Omni}，并按正文中提到的世界模型成果系统补全已核验参考文献。
+\item
+  同步本地 Word 对 \texttt{32.1\ 世界模型概况} 和 \texttt{39.4\ 世界-策略统一架构的具身智能（论文）} 的修改到 Markdown 与 LaTeX：\texttt{32.1} 补入物理世界推理说明并转写两张纯文字示例图，\texttt{39.4} 新增 \texttt{Pelican-Unified\ 1.0} 小节并补充对应 arXiv 参考文献。
+\item
+  将本地 Word 中原 \texttt{29.7\ 自主学习的智能系统展望（论文）} 迁移为 \texttt{32.4\ 结合世界模型的自主学习智能系统展望（论文）}，同步图文修改到 Markdown 与 LaTeX，按 Word 可见图片分类转写文字/公式并保留必要架构图，参考文献保持不变。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-4}{%
+\section{2026-05-13}\label{section-4}}
+
+\begin{itemize}
+\tightlist
+\item
+  同步本地 Word 对 \texttt{32.1\ 世界模型概况} 中世界模型落地方向表述的文字修改到 Markdown 与 LaTeX。
+\item
+  同步本地 Word 对 \texttt{37.3\ LeWorldModel（论文）} 中动作向量说明、预测器上下文说明和动作数据依赖局限性的文字修改到 Markdown 与 LaTeX，并按 Word 可见裁剪范围校正第二张图片转写内容。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-5}{%
+\section{2026-05-11}\label{section-5}}
+
+\begin{itemize}
+\tightlist
+\item
+  加入The bitter lesson：新增 \texttt{1.6\ The\ Bitter\ Lesson}，同步本地 Word 纯文本内容到 Markdown 和 LaTeX，并更新目录与公开范围统计。
+\item
+  对已完成图片重建的章节进行 Word 可见裁剪图复核，按裁剪后的实际可见区域校正公开图片资源，避免上传未裁剪原图中的无关内容。
+\item
+  修正 \texttt{01-05}、\texttt{08-01}、\texttt{14-02}、\texttt{17-06}、\texttt{19-04}、\texttt{26-03}、\texttt{27-01}、\texttt{29-02}、\texttt{29-03}、\texttt{30-01}、\texttt{30-07}、\texttt{36-02}、\texttt{36-05} 中与 Word 原稿不一致的公式、正文表述或推导片段。
+\item
+  为 \texttt{04-07} 补入 Word 原稿中第二张 HMM 结构图的裁剪后公开图片，并补充相应参考文献。
+\item
+  将 \texttt{01-02}、\texttt{15-03}、\texttt{16-03}、\texttt{20-01}、\texttt{20-03} 中若干公开图片替换为 Word 实际可见裁剪版本。
+\item
+  修正 \texttt{38-08} 中 Å 单位的 Markdown 与 LaTeX 写法，避免 LaTeX 编译时出现缺字警告。
+\item
+  基于更新后的 Markdown 和公开 assets 重新生成 LaTeX 项目内容、图片映射和资源清单。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-6}{%
+\section{2026-05-09}\label{section-6}}
+
+\begin{itemize}
+\tightlist
+\item
+  完成剩余 300 个公开图片重建占位：重建 \texttt{34-04}、\texttt{34-05}、\texttt{34-07}、\texttt{38-02}、\texttt{38-03}、\texttt{38-04}、\texttt{38-05}、\texttt{39-02}、\texttt{39-04}、\texttt{39-05}，按 Word 可见裁剪图转写文字、公式和表格，并仅新增 1 张必要的公开流程图。
+\item
+  将 \texttt{20-02\ Engram模块} 归为论文阅读笔记，更新文件名、正文标题和目录链接。
+\item
+  同步本地 Word 对 \texttt{33-01} 和 \texttt{39-01} 的文字/图片调整，并为 \texttt{39-03} 补充已核验参考文献。
+\item
+  新增 \texttt{33.5\ 具身智能的未来展望}，同步本地 Word 正文并补充已核验参考文献。
+\item
+  重建 \texttt{34-06}、\texttt{37-01}、\texttt{37-02}、\texttt{37-03}、\texttt{38-06}、\texttt{38-07}、\texttt{38-08}、\texttt{39-01}、\texttt{39-03} 的下一批图片占位，按 Word 可见裁剪图转写文字/公式，并新增 3 张必要的公开视觉图。
+\item
+  修复 \texttt{29-05}、\texttt{30-05}、\texttt{30-06}、\texttt{30-07}、\texttt{30-08}、\texttt{30-10}、\texttt{31-02}、\texttt{31-03}、\texttt{31-04}、\texttt{33-02}、\texttt{33-04}、\texttt{34-03}、\texttt{37-01} 中若干 GitHub 数学公式渲染问题。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-7}{%
+\section{2026-05-04}\label{section-7}}
+
+\begin{itemize}
+\tightlist
+\item
+  初始化 GitHub 开源版资料库。
+\item
+  将本地 Word 原稿转换为 Markdown。
+\item
+  放弃普通 OCR 公式文本，图片位置改为稳定重建占位。
+\item
+  建立本地图片重建清单，后续从第 1 章开始人工重建图片内容。
+\item
+  明确图片分类处理策略：视觉图保留为图片资源，纯文字和公式转写为正文。
+\item
+  上传 \texttt{01-02} 中前 5 张视觉图，并将第 6 张公式图转写为 LaTeX。
+\item
+  新增项目内 \texttt{ai-note-image-workflow} Skill，用于后续多 agent 分片处理图片重建与 GitHub 推送。
+\item
+  按当前公开范围同步 Markdown 内容，并移除不再公开的旧章节。
+\end{itemize}
+
+\clearpage

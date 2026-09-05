@@ -1,0 +1,300 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{dapoux7b97ux6cd5}{%
+\section{DAPO算法}\label{dapoux7b97ux6cd5}}
+
+\begin{quote}
+本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
+\end{quote}
+
+DeepSeek的成功证明了GRPO范式的有效性和优越性。但是，GRPO仍然存在稳定性问题，容易导致训练崩溃。DeepSeek拥有足够多的数据，可以使其趋于稳定。但对于中小规模的强化微调，如果数据批量较小，就必须对算法本身进行改进。
+
+DAPO（Decoupled Clip and Dynamic Sampling Policy Optimization）就是其中一种改进，它基本上沿用了GRPO的算法原理，但做出了一些工程策略上的改进。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6539ux8fdbux70b9}{%
+\subsection{一、改进点}\label{ux4e00ux6539ux8fdbux70b9}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Clip-Higher 机制（解耦 Clip）
+\end{enumerate}
+
+这是 DAPO 最显著的数学改进。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{原理}：传统 PPO/GRPO 使用对称的裁剪范围 \((1-\epsilon, 1+\epsilon)\)。DAPO 将上界和下界解耦，设为 \((1-\epsilon_{\mathrm{low}}, 1+\epsilon_{\mathrm{high}})\)。
+\item
+  \textbf{目的}：训练早期，模型需要探索那些原本概率较低但可能正确的 token。
+\item
+  \textbf{操作}：通过增大 \(\epsilon_{\mathrm{high}}\) 的值（例如设置得比 \(\epsilon_{\mathrm{low}}\) 更大），允许模型在``变好''的方向上，即概率比 \(r_t(\theta)>1\) 时迈出更大的步子，而不会被过早截断。这能显著提升模型在训练早期的熵（Entropy），即探索能力。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  动态采样
+\end{enumerate}
+
+这是一个数据效率层面的改进。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{原理}：在数学推理等任务中，如果对于同一个问题 \(q\)，模型采样的 \(G\) 个答案 \(\{o_1,\ldots,o_G\}\) 全对（Reward 全为 1）或者全错（Reward 全为 0），那么这组数据提供的梯度信息非常有限，甚至无效，因为没有对比。
+\item
+\Needspace{5\baselineskip}
+  \textbf{操作}：DAPO 引入过滤条件：
+\end{itemize}
+
+\[
+0 < \left|\{o_i \mid \mathrm{isEquivalent}(a,o_i)\}\right| < G
+\]
+
+只有当一组样本中既有正样本又有负样本时，才进行训练。这意味着它会自动过滤掉那些``太简单''或``太难''的 prompt，只保留有``有效梯度''的样本。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Token级策略梯度损失（为什么这样更公平的原因见后）
+\end{enumerate}
+
+这是对损失函数聚合方式的改进。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{原理}：标准实现通常先计算每个样本的 Loss，然后对 Batch Size 取平均。但这忽略了样本长度差异。长序列包含更多 token，如果简单对样本取平均，长序列中每个 token 的贡献会被稀释。
+\item
+\Needspace{5\baselineskip}
+  \textbf{操作}：DAPO 对 Batch 内的所有 token 一起求和并取平均，即除以总 token 数：
+\end{itemize}
+
+\[
+\mathcal{L}
+=
+\frac{1}{\sum_i |o_i|}
+\sum_i \sum_t \mathcal{L}_{i,t}.
+\]
+
+这保证了无论回复长短，每个 token 对梯度的贡献都是公平的。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  超长奖励调整
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{原理}：为了防止模型为了``刷分''而生成无限长的废话，这是 Reward Hacking 的一种。
+\item
+  \textbf{操作}：定义一个最大长度阈值，超过该阈值后施加``Soft 惩罚''，越长罚得越重。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5de5ux4f5cux6d41ux5bf9ux6bd4}{%
+\subsubsection{（二）工作流对比}\label{ux4e8cux5de5ux4f5cux6d41ux5bf9ux6bd4}}
+
+\Needspace{5\baselineskip}
+GRPO：
+
+\Needspace{5\baselineskip}
+GRPO 标准工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{采样（Rollout）}：对于每个问题 \(q\)，从旧策略 \(\pi_{\theta_{\mathrm{old}}}\) 采样一组 \(G\) 个输出 \(\{o_1,o_2,\ldots,o_G\}\)。
+\item
+  \textbf{奖励计算（Evaluation）}：计算每个输出的奖励 \(\{r_1,r_2,\ldots,r_G\}\)。
+\item
+\Needspace{5\baselineskip}
+  \textbf{优势估计（Advantage）}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    计算组内奖励的均值和标准差。
+  \item
+\Needspace{5\baselineskip}
+    标准化优势：
+  \end{itemize}
+\end{enumerate}
+
+\[
+A_i
+=
+\frac{r_i-\mathrm{mean}(r)}
+{\mathrm{std}(r)+\epsilon}.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{损失计算（Loss）}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    计算每个样本的 PPO 损失。
+  \item
+\Needspace{5\baselineskip}
+    聚合方式是对 \(G\) 个样本的损失取平均：
+  \end{itemize}
+\end{enumerate}
+
+\[
+\frac{1}{G}\sum_i \mathcal{L}_i.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  \textbf{反向传播}：更新模型参数。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+DAPO：
+
+\Needspace{5\baselineskip}
+DAPO 的工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{过采样（Over-Sampling）}：对于每个问题 \(q\)，先进行采样，可能采样多于 \(G\) 个，或者采样 \(G\) 个后再进行筛选。
+\item
+  \textbf{奖励计算（Evaluation）}：计算奖励，判断每个答案是否正确（Reward 为 1 或 0）。
+\item
+\Needspace{5\baselineskip}
+  \textbf{动态采样筛选（Dynamic Sampling）}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    检查这一组样本的奖励分布。
+  \item
+    如果这一组答案全部正确（Reward 全为 1）或全部错误（Reward 全为 0），则直接丢弃整组数据，不进行训练。
+  \item
+    原理是全对或全错意味着没有``相对优势''差异，产生的梯度无效或噪声大。DAPO 只训练那些模型处于``懂与不懂之间''的边界样本。
+  \end{itemize}
+\item
+  \textbf{优势估计（Advantage）}：对保留下来的有效组，计算组内相对优势 \(\hat{A}_{i,t}\)。
+\item
+\Needspace{5\baselineskip}
+  \textbf{解耦损失计算（Decoupled Loss）}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    计算 token 级别的概率比 \(r_{i,t}(\theta)\)。
+  \item
+    \textbf{Clip-Higher}：使用非对称截断范围 \([1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}]\) 计算损失。
+  \item
+\Needspace{5\baselineskip}
+    \textbf{聚合方式}：不对样本取平均，而是对所有 token 求和，最后除以总 token 数：
+  \end{itemize}
+\end{enumerate}
+
+\[
+\frac{1}{\sum_i |o_i|}
+\sum_i \sum_t \mathcal{L}_{i,t}.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  \textbf{反向传播}：更新模型参数。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e3aux4ec0ux4e48ux76eeux6807ux51fdux6570ux6309tokenux5e73ux5747}{%
+\subsubsection{（三）为什么目标函数按token平均？}\label{ux4e09ux4e3aux4ec0ux4e48ux76eeux6807ux51fdux6570ux6309tokenux5e73ux5747}}
+
+这里需要区分两个概念：``样本权重''和``决策权重（token 权重）''。
+
+在大模型中，每一个 token 的生成都是一次独立的决策（Action）。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{短样本（10 tokens）}：模型做了 10 次决策。
+\item
+  \textbf{长样本（1000 tokens）}：模型做了 1000 次决策。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+如果使用 GRPO/PPO 的标准平均（Sample-level Averaging）：
+
+\[
+\mathcal{L}
+=
+\frac{1}{\mathrm{BatchSize}}
+\sum_i \mathcal{L}_{\mathrm{sample},i}
+\]
+
+这相当于``做 10 次决策的考试''和``做 1000 次决策的考试''权重一样。
+
+\begin{itemize}
+\tightlist
+\item
+  短样本中，每一个 token（每一次决策）的梯度权重是 \(\frac{1}{10}\)。
+\item
+  长样本中，每一个 token（每一次决策）的梯度权重是 \(\frac{1}{1000}\)。
+\end{itemize}
+
+结论是，GRPO 的这种做法实际上会极度偏袒短样本。它认为短样本中的每一个字比长样本中的每一个字重要 100 倍，导致模型倾向于走捷径，因为长推理链条中间的错误修正被稀释了。
+
+\Needspace{5\baselineskip}
+如果使用 DAPO 的求和平均（Token-level Averaging）：
+
+\[
+\mathcal{L}
+=
+\frac{1}{\mathrm{TotalTokens}}
+\sum_i \sum_t \mathcal{L}_{i,t}
+\]
+
+这相当于说：每一个决策（token）都是平等的。无论是在短句子里，还是在长篇大论里，每一个 token 贡献的梯度权重都是 \(\frac{1}{\mathrm{TotalTokens}}\)。
+
+总结与应用：GRPO更能保证模型对每一个样本训练充分，DAPO则避免二值奖励中长链推理样本的关键逻辑步骤梯度过小，更适合提高复杂推理的收敛效率和逻辑密度。可以根据不同需要，选择合适的训练方法。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-109}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-109}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Yu, Q., Zhang, Z., Zhu, R., et al.~(2025). \href{https://arxiv.org/abs/2503.14476}{DAPO: An Open-Source LLM Reinforcement Learning System at Scale}. arXiv:2503.14476.
+\end{itemize}
+
+\clearpage

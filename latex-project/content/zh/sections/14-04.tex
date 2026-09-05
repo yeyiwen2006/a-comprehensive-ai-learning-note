@@ -1,0 +1,267 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux667aux80fdux4f53ux5f3aux5316ux5b66ux4e60}{%
+\section{多智能体强化学习}\label{ux591aux667aux80fdux4f53ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76eeux6807ux548cux57faux672cux65b9ux6cd5}{%
+\subsection{一、目标和基本方法}\label{ux4e00ux76eeux6807ux548cux57faux672cux65b9ux6cd5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76eeux6807ux4e3aux6bcfux4e2aux667aux80fdux4f53ux5b66ux4e60ux4e00ux4e2aux7b56ux7565-pi_iux4ee5ux6700ux5927ux5316ux5176ux81eaux8eabux7684ux671fux671bux7d2fux79efux5956ux52b1}{%
+\subsubsection{\texorpdfstring{（一）目标：为每个智能体学习一个策略 \(\pi_i\)，以最大化其自身的期望累积奖励。}{（一）目标：为每个智能体学习一个策略 \textbackslash pi\_i，以最大化其自身的期望累积奖励。}}\label{ux4e00ux76eeux6807ux4e3aux6bcfux4e2aux667aux80fdux4f53ux5b66ux4e60ux4e00ux4e2aux7b56ux7565-pi_iux4ee5ux6700ux5927ux5316ux5176ux81eaux8eabux7684ux671fux671bux7d2fux79efux5956ux52b1}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux57faux672cux65b9ux6cd5}{%
+\subsubsection{（二）基本方法}\label{ux4e8cux57faux672cux65b9ux6cd5}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+范式 & 完全中心化（Fully Centralized） & 完全去中心化（Fully Decentralized） \\
+\midrule
+\endhead
+原理 & 将所有智能体视为一个``超级智能体''。输入是联合状态，输出是联合动作。 & 假设每个智能体独立，将其他智能体视为环境的一部分。 \\
+优点 & 环境变为静态，理论收敛性好。 & 扩展性强，不受智能体数量限制，避免维度灾难。 \\
+缺点 & 维度爆炸：状态/动作空间随智能体数量指数增长，难以训练。 & 非稳态问题：由于忽略其他智能体的策略变化，收敛性无法保证。 \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cippo-ux7b97ux6cd5independent-ppo}{%
+\subsection{二、IPPO 算法（Independent PPO）}\label{ux4e8cippo-ux7b97ux6cd5independent-ppo}}
+
+IPPO 属于完全去中心化方法。它直接对每个智能体使用智能体自己的 PPO（Proximal Policy Optimization）算法进行训练。尽管理论上不能保证收敛，但在实践中效果往往不错，并且具有良好的扩展性。
+
+\Needspace{5\baselineskip}
+IPPO 算法工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化：为 \(N\) 个智能体分别初始化各自的策略网络 \(\pi_i\) 和价值网络 \(V_i\)。
+\item
+\Needspace{5\baselineskip}
+  循环训练（For 训练轮数 do）：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    数据采集：所有智能体在环境中同时运行，各自收集一条轨迹数据（Trajectory）。
+  \item
+    优势估计：对每个智能体 \(i\)，利用其价值网络 \(V_i\) 和广义优势估计（GAE）计算优势函数 \(\hat{A}_i\)。
+  \item
+    策略更新：对每个智能体 \(i\)，最大化 PPO-Clip 目标函数来更新策略 \(\pi_i\)。
+  \item
+    价值更新：对每个智能体 \(i\)，通过最小化均方误差来更新价值网络 \(V_i\)。
+  \end{itemize}
+\item
+  结束循环。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09maddpgux7b97ux6cd5openai2017}{%
+\subsection{三、MADDPG算法（OpenAI，2017）}\label{ux4e09maddpgux7b97ux6cd5openai2017}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ctdeux8303ux5f0f}{%
+\subsubsection{（一）CTDE范式}\label{ux4e00ctdeux8303ux5f0f}}
+
+为了平衡环境非稳态和可扩展性的矛盾，学术界提出了CTDE（Centralized Training with Decentralized Execution，中心化训练去中心化执行）范式。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  训练阶段：允许使用全局信息（所有智能体的状态、动作、奖励）。就像足球队的教练，拥有上帝视角，指导球员如何配合。
+\item
+  执行阶段：智能体仅根据自己的局部观测进行决策。就像球员上场后，只能根据自己看到的局部情况踢球，不再依赖教练的实时指令。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6a21ux578bux67b6ux6784}{%
+\subsubsection{（二）模型架构}\label{ux4e8cux6a21ux578bux67b6ux6784}}
+
+MADDPG（Multi-Agent DDPG）是 CTDE 范式下的代表算法，基于 Actor-Critic 架构。
+
+\begin{itemize}
+\tightlist
+\item
+  Actor（策略网络）：仅输入局部观测 \(o_i\)，输出动作 \(a_i\)。用于执行阶段。
+\item
+  Critic（价值网络）：输入全局信息 \(x\)（包含所有观测 \(o_1,\ldots,o_N\)）和所有动作 \(a_1,\ldots,a_N\)。仅用于训练阶段。
+\end{itemize}
+
+数学指导与梯度公式如下。
+
+我们定义全局状态信息为 \(x\)，所有智能体的动作集合为 \(a=(a_1,\ldots,a_N)\)。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Critic 更新（中心化部分）：每个智能体 \(i\) 的 Critic 网络 \(Q_i^{\mu}(x,a_1,\ldots,a_N)\) 旨在评估在全局状态下采取联合动作的价值。损失函数定义为均方误差：
+\end{enumerate}
+
+\[
+L(\theta_i)
+=
+\mathbb{E}_{x,a,r,x'}
+\bigl[
+\bigl(
+Q_i^{\mu}(x,a_1,\ldots,a_N)-y
+\bigr)^{2}
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+其中，目标值 \(y\) 使用目标网络计算：
+
+\[
+y
+=
+r_i
++
+\gamma
+Q_i^{\mu'}\bigl(
+x',
+a_1',
+\ldots,
+a_N'
+\bigr)
+\quad
+\text{where }
+a_j'=\mu_j'(o_j')
+\]
+
+注意：这里 \(Q_i^{\mu'}\) 是目标 Critic 网络，\(\mu_j'\) 是目标 Actor 网络。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Actor 更新（去中心化执行的基础）：对于确定性策略 \(\mu_{\theta_i}\)，我们通过最大化 \(Q\) 值来更新策略。由于 \(Q\) 是中心化的，它能告诉 Actor：考虑到其他队友的动作，你这样做好不好。确定性策略梯度公式为：
+\end{enumerate}
+
+\[
+\nabla_{\theta_i}J(\mu_i)
+=
+\mathbb{E}_{x,a\sim\mathcal{D}}
+\bigl[
+\nabla_{\theta_i}\mu_i(o_i)
+\cdot
+\nabla_{a_i}Q_i^{\mu}(x,a_1,\ldots,a_N)
+\big|_{a_i=\mu_i(o_i)}
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+解释：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\nabla_{\theta_i}\mu_i(o_i)\)：Actor 怎么改变参数能让输出的动作变化。
+\item
+  \(\nabla_{a_i}Q_i^{\mu}(\cdots)\)：Critic 告诉 Actor，动作往哪个方向变动能让 \(Q\) 值，也就是全局收益，变大。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux8badux7ec3ux5de5ux4f5cux6d41}{%
+\subsubsection{（三）训练工作流}\label{ux4e09ux8badux7ec3ux5de5ux4f5cux6d41}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  初始化：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    为每个智能体 \(i\) 初始化 Actor 网络 \(\mu_i\) 和 Critic 网络 \(Q_i\)。
+  \item
+    初始化对应的目标网络 \(\mu_i'\) 和 \(Q_i'\)。
+  \item
+    初始化经验回放池 \(\mathcal{D}\)。
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  主循环（For 序列 \(1\) to \(M\) do）：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    初始化环境状态（用于采集数据），并初始化随机噪声过程 \(\mathcal{N}\)。
+  \item
+\Needspace{5\baselineskip}
+    步数循环（For \(t=1\) to \(\mathrm{max\_steps}\) do）：
+
+    \begin{enumerate}
+    \def\labelenumii{\arabic{enumii}.}
+    \tightlist
+    \item
+      决策：每个智能体 \(i\) 根据局部观测 \(o_i\) 选择动作：\(a_i=\mu_i(o_i)+\mathcal{N}_t\)。
+    \item
+      交互：执行联合动作 \(a=(a_1,\ldots,a_N)\)，环境返回奖励和新观测 \(x'\)。
+    \item
+      存储：将转移元组 \((x,a,r,x')\) 存入经验回放池 \(\mathcal{D}\)。
+    \item
+      训练：当池子足够大时，从 \(\mathcal{D}\) 中随机采样一批数据（Batch）。
+    \item
+      更新 Critic：计算目标值 \(y\)，最小化 Loss 更新每个智能体的 \(Q_i\)。这里因为 Critic 输入的是所有智能体的动作，所以是中心化训练。
+    \item
+      更新 Actor：使用梯度上升法更新每个智能体的 \(\mu_i\)。Actor 根据局部观测输出动作，但梯度方向由中心化的 Critic 提供指导。
+    \item
+      软更新：使用 \(\tau\) 参数更新目标网络，然后将新观测转为下一时刻状态并继续采样。
+    \end{enumerate}
+  \end{itemize}
+\item
+  结束主循环。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+其中，目标网络的软更新公式为：
+
+\[
+\theta'
+\leftarrow
+\tau\theta+(1-\tau)\theta'
+\]
+
+和其他Actor-Critic算法一样，训练完毕后，Critic即舍弃，留下Actor根据训练后``冻结''的策略进行前向推理。因此，训练完毕后，推理就完全去中心化。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux591aux667aux80fdux4f53ux7f16ux6392ux5668}{%
+\subsection{四、多智能体+编排器}\label{ux56dbux591aux667aux80fdux4f53ux7f16ux6392ux5668}}
+
+以Kimi K2.5 Agent Swarm为例，推理过程中，当输入一个任务时，一个编排器负责确定输入任务需要子智能体的数量及角色（以上下文形式提供给智能体）、分配任务、调度智能体；每个子智能体都是同一个大模型的``分身''，权重完全相同。
+
+训练方法：先训练子智能体（大模型）；在子智能体训练完毕后，冻结子智能体的参数，用端到端的强化学习方法训练编排器（刚开始先用小模型充当子智能体，后续再换为大模型）。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-65}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-65}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Lowe, R., Wu, Y., Tamar, A., Harb, J., Abbeel, P., \& Mordatch, I. (2017). \href{https://arxiv.org/abs/1706.02275}{Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments}. NeurIPS 2017.
+\item
+  de Witt, C. S., Gupta, T., Makoviichuk, D., et al.~(2020). \href{https://arxiv.org/abs/2011.09533}{Is Independent Learning All You Need in the StarCraft Multi-Agent Challenge?}. arXiv:2011.09533.
+\item
+  Kimi Team. (2026). \href{https://arxiv.org/abs/2602.02276}{Kimi K2.5: Visual Agentic Intelligence}. arXiv:2602.02276.
+\end{itemize}
+
+\clearpage

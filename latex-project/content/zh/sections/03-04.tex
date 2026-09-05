@@ -1,0 +1,130 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6b8bux5deeux7f51ux7edcresnet}{%
+\section{残差网络（ResNet）}\label{ux6b8bux5deeux7f51ux7edcresnet}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3ux8ba9ux7f51ux7edcux5b66ux4e60ux6b8bux5deeux800cux975eux539fux59cbux6620ux5c04}{%
+\subsection{一、核心思想：让网络学习``残差''而非``原始映射''}\label{ux4e00ux6838ux5fc3ux601dux60f3ux8ba9ux7f51ux7edcux5b66ux4e60ux6b8bux5deeux800cux975eux539fux59cbux6620ux5c04}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  问题：深度网络的困境
+\end{enumerate}
+
+在ResNet之前，人们发现一个反直觉的现象：单纯地增加网络深度，反而会导致性能下降。这不仅是测试集上的过拟合，训练误差也会随之增大。这意味着，更深的网络甚至更难优化（harder to train）。这个问题被称为网络退化（Degradation Problem）。
+
+梯度消失/爆炸：~虽然通过Batch Normalization等技术可以很大程度上缓解，但并非完全根除。
+
+网络退化：~即使解决了梯度问题，56层的网络性能反而比20层的网络更差。这表明，深网络并非天生就难以训练，而是现有的优化算法难以找到那些理论上应该存在的、更优的解。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  解决方案：跳跃连接（Skip Connection / Shortcut）
+\end{enumerate}
+
+ResNet的解决方案非常简洁而有力：如果深层网络难以学习到理想的映射~H(x)，那么我们就让它去学习这个映射与输入~x~之间的残差（Residual）F(x) = H(x) - x。
+
+原始映射：~H(x) = x~（恒等映射）
+残差映射：~F(x) = H(x) - x
+目标映射重构：~H(x) = F(x) + x
+
+为什么学习原始映射比残差映射更难：残差映射总体接近0，目标映射总体接近x。我们知道，让一个充满各种求和以及激活函数的神经网络去拟合y=x并不容易，但拟合y=0只需要所有参数都趋近0即可。
+
+概率论角度：ResNet为网络提供了一个``恒等映射''的先验（默认捷径）。这时候，学习一个相对于恒等映射的``小扰动''或``小修正''~F(x)，远比学习一个全新的复杂映射~H(x)~要容易得多。
+
+最坏情况：学不到残差分布，直接变成H(x) = x，也就是残差块输出=残差块输入（注意残差块不代表整个神经网络），比如一个两层神经网络，残差块在第二层，最差的结果是相当于这层什么也不做，直接退化为一层。但如果不用残差网络，可能出现连H(x) ≈x的主要特征都学不到，性能还不如只有一层的情况。
+
+\Needspace{5\baselineskip}
+通俗比喻：
+假设你要学习从北京到上海的路线（映射~H(x)）。
+
+传统网络：~需要从头开始学习整个路线，容易迷路或走错。
+
+ResNet：~你 already know 一条主线高速公路（即输入~x）。你只需要学习从主线上的一些匝道出去，去探索一些新的小路，然后再回到主线上。你的任务是学习这些``匝道和小路''的修正量（即残差~F(x)）。即使你探索的小路是死胡同（F(x) = 0），你依然可以退回到主线高速上（H(x) = x），保证性能不会比原来的主线更差。这大大降低了学习的风险和难度。
+
+在网络上，这个``回到主线''的操作就是通过跳跃连接（Shortcut Connection）~实现的，它直接将输入~x~跳过多层，加到这几层的输出~F(x)~上。
+
+从函数类的角度看，ResNet 的关键优势在于让更深网络的函数类尽量形成``嵌套''关系。
+
+\begin{itemize}
+\tightlist
+\item
+  嵌套函数类（Nested Function Classes）：例如 \(\mathcal{F}_1\)（1 层网络）\(\subseteq \mathcal{F}_2\)（2 层网络）\(\subseteq \cdots \subseteq \mathcal{F}_6\)（6 层网络）。这意味着 2 层网络完全可以模拟 1 层网络的行为，只需要让第二层什么都不做即可。
+\item
+  非嵌套函数类（Non-Nested Function Classes）：如果更复杂的网络结构不能包含简单结构，例如 \(\mathcal{F}_6\) 是一种与 \(\mathcal{F}_1\) 完全不同的架构，那么就没有任何保证。更复杂的网络可能反而学得更差，因为它可能根本学不到简单网络已经找到的好解。
+\end{itemize}
+
+通俗比喻：想象你要造更快的车。
+
+\begin{itemize}
+\tightlist
+\item
+  嵌套：新款赛车（\(\mathcal{F}_2\)）是在旧款赛车（\(\mathcal{F}_1\)）的基础上改装升级引擎。它至少和旧款一样快，甚至更快。
+\item
+  非嵌套：新款赛车（\(\mathcal{F}_6\)）被设计成了一艘船。它可能在水里更快，但在陆地上（图像分类任务上）反而比旧款赛车慢得多。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6b8bux5deeux5757ux67b6ux6784}{%
+\subsection{二、残差块架构}\label{ux4e8cux6b8bux5deeux5757ux67b6ux6784}}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0007.png}
+\caption{ResNet 残差块结构}
+\end{figure}
+
+注意：F(x) + x~是逐元素相加（Element-wise Addition），意味着~F(x)~的输出必须与~x~的维度完全相同。这要求残差块内的最后一层卷积必须将通道数调整到与~x~一致。
+
+ResNet通过堆叠上述残差块构建了不同深度的网络。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6b8bux5deeux7f51ux7edcux4e3aux4f55ux5982ux6b64ux6709ux6548}{%
+\subsection{三、残差网络为何如此有效？}\label{ux4e09ux6b8bux5deeux7f51ux7edcux4e3aux4f55ux5982ux6b64ux6709ux6548}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  解决梯度消失问题：~跳跃连接提供了一条``高速公路''，使得梯度可以从深层几乎无损耗地、直接地反向传播到浅层。这使得超深度网络的训练成为可能。
+\item
+  简化学习目标：~学习残差~F(x) = H(x) - x~通常比学习完整的映射~H(x)~更容易。特别是，当``恒等映射''已经是最优或接近最优时，将残差~F(x)~推近0比用一堆非线性层去拟合一个恒等映射要容易得多。
+\item
+  隐式的模型集成：~有理论认为，ResNet的行为类似于一个众多浅层网络的集成。由于跳跃连接的存在，数据可以沿不同深度的路径流动，使得网络同时具有浅层和深层的特性。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux53d8ux4f53}{%
+\subsection{四、变体}\label{ux56dbux53d8ux4f53}}
+
+瓶颈结构（Bottleneck）：~为了在更深的网络（如ResNet-50/101/152）中减少计算量，每个残差块内采用了``瓶颈''设计：1x1卷积（降维） -\textgreater{} 3x3卷积 -\textgreater{} 1x1卷积（升维）。这大大减少了3x3卷积的计算开销。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux73b0ux4ee3ux5927ux6a21ux578bux4e2dux6b8bux5deeux7684ux5e94ux7528}{%
+\subsection{五、现代大模型中残差的应用}\label{ux4e94ux73b0ux4ee3ux5927ux6a21ux578bux4e2dux6b8bux5deeux7684ux5e94ux7528}}
+
+现代大模型中，不是用一个从输入直接连到输出的残差一般在每个块或层中，都会加一个残差结构，以让梯度和信息顺畅流过该块或层，使信息流动更灵活，如 Transformer 架构里的多处 Add。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-14}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-14}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  He, K., Zhang, X., Ren, S., \& Sun, J. (2016). \href{https://arxiv.org/abs/1512.03385}{Deep Residual Learning for Image Recognition}. CVPR 2016.
+\item
+  Veit, A., Wilber, M. J., \& Belongie, S. (2016). \href{https://proceedings.neurips.cc/paper_files/paper/2016/hash/37bc2f75bf1bcfe8450a1a41c200364c-Abstract.html}{Residual Networks Behave Like Ensembles of Relatively Shallow Networks}. NeurIPS 2016.
+\end{itemize}
+
+\clearpage

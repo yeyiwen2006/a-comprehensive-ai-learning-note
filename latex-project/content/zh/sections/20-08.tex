@@ -1,0 +1,203 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56f0ux60d1ux5ea6}{%
+\section{困惑度}\label{ux56f0ux60d1ux5ea6}}
+
+困惑度（Perplexity, PPL）是评估语言模型好坏的黄金指标。它的核心思想是：一个好的模型，应该对真实的下一个词赋予很高的预测概率。模型越感到``困惑''，它的预测就越不准，困惑度的值就越高。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76f4ux89c2ux7406ux89e3}{%
+\subsection{一、直观理解}\label{ux4e00ux76f4ux89c2ux7406ux89e3}}
+
+假设一个完美的语言模型，它总是能 100\% 确定下一个词是什么（即预测概率为 \(1\)）。那么它的困惑度是 \(\exp(0)=1\)。这意味着模型毫不困惑，等价于它每次只有 1 个词的选择（就是那个正确的词）。
+
+一个非常差的模型，比如它总是认为词表中的所有 10 万个词都是等可能的（每个词概率为 \(1/100000\)）。那么它的困惑度就是 100000。这意味着模型非常困惑，等价于它每次都要在 10 万个词里做选择。
+
+一个好的模型的困惑度应该介于 1 和词表大小之间。例如，在 WikiText-2 数据集上，现代模型的困惑度可以降到 20 左右。这意味着每次模型平均是从 20 个词中选一个，比较``确定''接下来会发生什么。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6570ux5b66ux8868ux8fbeux4e0eux63a8ux5bfc}{%
+\subsection{二、数学表达与推导}\label{ux4e8cux6570ux5b66ux8868ux8fbeux4e0eux63a8ux5bfc}}
+
+困惑度与信息论中的交叉熵（Cross-Entropy）~紧密相关。交叉熵衡量的是模型预测的概率分布与真实的概率分布（这里其实是one-hot分布，即真实词的概率为1，其他为0）之间的差异。事实上，交叉熵损失函数取指数后，就可以视为整个序列的困惑度（``生成该序列时，每次平均从几个token里选一个''）。困惑度的n次方的倒数就是生成该序列的联合概率，最小化困惑度（PPL）在数学上完全等价于最大化模型分配给整个序列的联合概率。
+
+\Needspace{5\baselineskip}
+数学推导：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  起点：序列概率
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+语言模型的目标是给真实序列 \(W=(w_1,w_2,\ldots,w_N)\) 赋予高概率。根据链式法则，这个概率是所有条件概率的乘积：
+
+\[
+P(W)=P(w_1)\prod_{t=2}^{N}P(w_t\mid w_1,\ldots,w_{t-1})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  取对数（为了将连乘变为求和）
+\end{enumerate}
+
+直接优化乘积在数学上很麻烦（可能下溢），我们取对数，转化为对数似然（Log-Likelihood）。因为对数函数是单调的，最大化概率乘积等价于最大化对数似然和。
+
+\[
+\log P(W)=\log P(w_1)+\sum_{t=2}^{N}\log P(w_t\mid w_1,\ldots,w_{t-1})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  取平均（为了消除长度影响）
+\end{enumerate}
+
+为了比较不同长度序列的性能，我们取平均值，得到平均对数似然。
+
+\[
+\frac{1}{N}\log P(W)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  取负号（为了得到损失）
+\end{enumerate}
+
+我们习惯最小化一个``损失''函数，而不是最大化一个``得分''函数。因此我们取负值，得到平均负对数似然。这个值越低越好。
+
+\[
+L=-\frac{1}{N}\log P(W)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  困惑度的定义
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+困惑度被定义为这个平均负对数似然的指数：
+
+\[
+\mathrm{PPL}=\exp(L)=\exp\left(-\frac{1}{N}\log P(W)\right)
+\]
+
+\Needspace{5\baselineskip}
+根据指数法则，上式可以重写为：
+
+\[
+\mathrm{PPL}=P(W)^{-1/N}
+=\left[P(w_1)\prod_{t=2}^{N}P(w_t\mid w_1,\ldots,w_{t-1})\right]^{-1/N}
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  与概率的关系
+\end{enumerate}
+
+让 \(P(W)^{1/N}\) 变大，就是让序列的平均几何概率变大。因此，最小化困惑度（PPL）在数学上严格等价于最大化整个序列的联合概率 \(P(W)\)。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4fe1ux606fux8bbaux89e3ux91ca}{%
+\subsection{三、信息论解释}\label{ux4e09ux4fe1ux606fux8bbaux89e3ux91ca}}
+
+第一步：理解``取对数''的意义------衡量惊讶度
+
+在信息论中，\(-\log_2 P(\mathrm{event})\) 衡量的是事件的``惊讶度（Surprisal）''或``信息量''。
+
+如果一个事件必然发生（概率 \(P=1\)），它的惊讶度为 \(-\log_2 1=0\) 比特。你毫不惊讶。
+
+如果一个事件非常罕见（概率 \(P\to 0\)），它的惊讶度趋近于无穷大。你极度惊讶。
+
+如果一个事件有 50\% 的概率发生（\(P=0.5\)），它的惊讶度是 \(-\log_2 0.5=1\) 比特。
+
+在语言模型中，\(-\log P(w_t\mid \mathrm{context})\) 衡量的是：当真实的下一个词 \(w_t\) 出现时，模型感到有多``惊讶''。概率越低，惊讶度越高。
+
+\Needspace{5\baselineskip}
+所以，平均负对数似然~L：
+
+\[
+L=\frac{1}{N}\sum_{t=1}^{N}-\log P(w_t\mid w_{<t})
+\]
+
+它的物理意义是：模型在预测序列中每个词时，平均的``惊讶程度''（单位：比特/词）。
+
+第二步：理解``取指数''的意义------回到选择空间
+我们现在有了一个``平均惊讶度''（比如 6.5 比特/词）。但这个数字对我们来说不够直观。6.5 比特的惊讶到底有多惊讶？
+
+若 \(L\) 使用自然对数，则 \(\exp(L)\) 操作的核心作用是将``惊讶度''重新转换回``概率空间''；若 \(L\) 使用以 2 为底的对数，则对应的转换是 \(2^L\)。更具体地说，它把平均惊讶度转换回一个等价的均匀分布选择问题。
+
+\Needspace{5\baselineskip}
+让我们看一个例子：
+
+假设有一个非常差劲的模型，它对下一个词的预测完全随机，词表 \(|V|\) 有 1024 个词。那么它对每个词的预测概率都是 \(1/1024\)。
+
+\Needspace{5\baselineskip}
+每个词的惊讶度：
+
+\[
+-\log_2(1/1024)=\log_2(1024)=10
+\]
+
+平均惊讶度 \(L\) 也是 10 比特/词。
+
+\Needspace{5\baselineskip}
+计算困惑度：
+
+\[
+\mathrm{PPL}=2^L=2^{10}=1024
+\]
+
+这里有一个关键点：信息论中 \(\log\) 底数常取 2，但数学计算中常用自然对数（底数为 \(e\)）。二者只差一个常数因子，只要前后一致即可。这个最差模型的困惑度正好等于词表大小 1024。
+
+这可以解释为：这个模型在预测每个词时，其表现就好像它在一个均匀分布的、包含1024个候选词的词表中进行盲猜一样。~它的不确定性等同于做1024选1的选择。
+
+再举一个例子：假设一个好模型用自然对数计算出的平均负对数似然是 \(L=\log 64\)（约等于 4.16）。
+
+\Needspace{5\baselineskip}
+计算困惑度：
+
+\[
+\mathrm{PPL}=\exp(L)=\exp(\log 64)=64
+\]
+
+这可以解释为：虽然真实的词表可能有成千上万个词，但这个模型的能力非常强，它在预测每个词时，其不确定性平均只相当于在一个仅有64个候选词的小集合里做选择。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-108}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-108}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jurafsky, D., \& Martin, J. H. (2026). \href{https://web.stanford.edu/~jurafsky/slp3/3.pdf}{Speech and Language Processing, Chapter 3: N-gram Language Models}. Draft of August 19, 2026.
+\item
+  Brown, P. F., Della Pietra, V. J., deSouza, P. V., Lai, J. C., \& Mercer, R. L. (1992). \href{https://aclanthology.org/J92-4003/}{Class-Based n-gram Models of Natural Language}. Computational Linguistics, 18(4), 467-480.
+\end{itemize}
+
+\clearpage

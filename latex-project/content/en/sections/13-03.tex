@@ -1,0 +1,463 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ppo-and-gae}{%
+\section{PPO and GAE}\label{ppo-and-gae}}
+
+PPO derives from TRPO. TRPO introduced importance sampling and restricted update regions, but solving its constrained optimization problem is complex. It is ``precise but expensive'' and impractical for large models. Constraints can instead be incorporated directly into the objective. Two ways to do this produce two PPO variants.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-ppo-penalty}{%
+\subsection{I. PPO-Penalty}\label{i.-ppo-penalty}}
+
+\Needspace{5\baselineskip}
+The objective is:
+
+\[
+\begin{aligned}
+J^{\mathrm{PEN}}(\theta)
+&=
+\mathbb{E}_t\left[
+\frac{\pi_\theta(a_t\mid s_t)}
+{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
+A_t
+-
+\beta\cdot
+D_{\mathrm{KL}}\left(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s_t)
+\Vert
+\pi_\theta(\cdot\mid s_t)
+\right)
+\right]
+\end{aligned}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  First term: TRPO's surrogate objective, Ratio \(\times\) Advantage, improving the policy.
+\item
+  Second term: a KL penalty, with \(D_{\mathrm{KL}}\) measuring the difference between old and new policy distributions.
+\item
+  \(\beta\): the penalty coefficient. Larger \(\beta\) permits less dramatic policy change.
+\end{itemize}
+
+The first term is the same as TRPO's: find a new policy maximizing expected reward under that policy. The forward KL term chiefly ensures that regions with high old-policy probability \(\pi_{\mathrm{old}}\), such as common human language patterns and basic world knowledge learned in pretraining, retain high probability under \(\pi_{\mathrm{new}}\). This prevents discarding pretrained knowledge to gain reward and causing ``mode collapse.'' Meanwhile, increasing probabilities of difficult solutions that had low old-policy probability incurs no excessive penalty. This ensures updates remain within a credible ``trust region.''
+
+\Needspace{5\baselineskip}
+PPO-Penalty's essence is dynamically adjusting \(\beta\) from actual KL after each update rather than fixing it. Let:
+
+\[
+d = D_{\mathrm{KL}}(\pi_{\mathrm{old}},\pi_{\mathrm{new}})
+\]
+
+\Needspace{5\baselineskip}
+Set target KL \(d_{\mathrm{targ}}\), such as \(0.01\):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  If \(d < d_{\mathrm{targ}}/1.5\), the change is too small and conservative, so reduce \(\beta\), for example:
+\end{enumerate}
+
+\[
+\beta \leftarrow \beta/2
+\]
+
+This allows a larger next step.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  If \(d > d_{\mathrm{targ}}\times 1.5\), the change is too large and aggressive, so increase \(\beta\), for example:
+\end{enumerate}
+
+\[
+\beta \leftarrow 2\beta
+\]
+
+This penalizes the next update more heavily.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-ppo-clip-mainstream}{%
+\subsection{II. PPO-Clip (Mainstream)}\label{ii.-ppo-clip-mainstream}}
+
+\[
+r_t(\theta)=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
+\]
+
+\[
+\begin{aligned}
+J^{\mathrm{CLIP}}(\theta)
+&=
+\mathbb{E}_t\left[
+\min\left(
+r_t(\theta)A_t,\,
+\mathrm{clip}(r_t(\theta),1-\epsilon,1+\epsilon)A_t
+\right)
+\right]
+\end{aligned}
+\]
+
+\(A_t\) is the action's relative value (discussed below). We seek a new policy maximizing expected value; importance sampling yields the expression above. The derivative of \(J\) with respect to \(\theta\) is the parameter-network update gradient. When \(A_t\) is greater than \(0\), we want larger \(\pi_\theta\), equivalently larger \(r_t\). \(E_t\) denotes data sampled under the old policy.
+
+In practice, first run several steps under \(\pi_{\mathrm{old}}\), then perform several updates. Throughout each round, keep \(\pi_{\mathrm{old}}\) fixed as the data-collection policy (implemented as a direct arithmetic average over past samples), repeating:
+
+\Needspace{5\baselineskip}
+When \(A_t>0\), the action is good:
+
+\begin{itemize}
+\tightlist
+\item
+  Originally, larger \(r_t\) is preferred, increasing the action probability.
+\item
+  Clipping: once \(r_t>1+\epsilon\), this term becomes constant \((1+\epsilon)A_t\), with derivative \(0\).
+\item
+  Result: policy updating stops, preventing an accidentally high score from raising the action probability without limit.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+When \(A_t<0\), the action is bad:
+
+\begin{itemize}
+\tightlist
+\item
+  Originally, smaller \(r_t\) is preferred, reducing the action probability.
+\item
+  Clipping: once \(r_t<1-\epsilon\), the term becomes \((1-\epsilon)A_t\), with derivative \(0\).
+\item
+  Result: policy updating stops, preventing one negatively rewarded action from excessively disrupting policy structure.
+\end{itemize}
+
+Once outside the range, \(J\) is ``flattened,'' and the current update seeking to maximize it ``loses motivation'' and naturally stops.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-why-does-ppo-clip-perform-better}{%
+\subsection{III. Why Does PPO-Clip Perform Better?}\label{iii.-why-does-ppo-clip-perform-better}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Stability: although PPO-Penalty adjusts \(\beta\) dynamically, delayed adjustments or oscillation can destabilize training. PPO-Clip applies hard clipping to individual samples and is extremely robust.
+\item
+  Computation: PPO-Penalty calculates KL between \(\pi_{\mathrm{new}}\) and \(\pi_{\mathrm{old}}\) (simpler than TRPO's second derivatives but still requiring log-probability differences). Both probabilities change, making computation expensive. PPO-Clip needs only multiplication and comparisons (min, clamp), reducing cost.
+\item
+  Hyperparameters: fixing PPO-Clip's \(\epsilon\) at \(0.2\) usually suits most environments (Atari, MuJoCo, robots), whereas PPO-Penalty is more sensitive to \(d_{\mathrm{targ}}\) and initial \(\beta\).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-loss-function}{%
+\subsection{IV. Loss Function}\label{iv.-loss-function}}
+
+\[
+L_{\mathrm{total}}=-\underbrace{L^{\mathrm{CLIP}}}_{\text{Actor loss}}+c_1\underbrace{L^{\mathrm{VF}}}_{\text{Critic loss}}-c_2\underbrace{S}_{\text{Entropy}}
+\]
+
+Note the subtle signs: the optimizer is assumed to perform gradient descent, minimizing the objective.
+
+\begin{itemize}
+\tightlist
+\item
+  \(L^{\mathrm{CLIP}}\): reward should be maximized, so gradient descent requires the negative, \(-L^{\mathrm{CLIP}}\).
+\item
+  \(L^{\mathrm{VF}}\): prediction error (MSE) should be minimized, so use \(+L^{\mathrm{VF}}\) directly.
+\item
+  \(S\): entropy should be maximized to encourage exploration, so use \(-S\) for gradient descent.
+\end{itemize}
+
+Adding them lets a PyTorch/TensorFlow optimizer optimize all objectives together.
+
+\Needspace{5\baselineskip}
+During backpropagation, different loss terms send gradients to corresponding variables in different modules:
+
+\Needspace{10\baselineskip}
+\begin{verbatim}
+Input image --> [Shared CNN layers] --> Extracted feature vector
+                                  |
+                                  +-----------------------------+
+                                  |                             |
+                             [Actor head]                  [Critic head]
+                         Action probabilities               Value V
+\end{verbatim}
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-advantage-a_t-generalized-advantage-estimation-gae}{%
+\subsection{\texorpdfstring{V. Advantage \(A_t\): Generalized Advantage Estimation (GAE)}{V. Advantage A\_t: Generalized Advantage Estimation (GAE)}}\label{v.-advantage-a_t-generalized-advantage-estimation-gae}}
+
+\Needspace{5\baselineskip}
+Advantage \(A_t\) measures how much better action \(a_t\) is than ``average performance'' in that state. The theoretical definition is:
+
+\[
+A_t=Q(s_t,a_t)-V(s_t)
+\]
+
+In practice, \(Q\) is unknown and must be estimated from samples.
+
+Case 1: one-step estimation
+
+\Needspace{5\baselineskip}
+Looking only one step ahead, action \(a_t\)'s \(Q\) value is estimated by:
+
+\[
+r_t+\gamma V(s_{t+1})
+\]
+
+\Needspace{5\baselineskip}
+The estimated \(A_t\) then equals TD error:
+
+\[
+\hat{A}_t^{(1)}=\underbrace{r_t+\gamma V(s_{t+1})}_{\approx Q(s_t,a_t)}-V(s_t)=\delta_t
+\]
+
+\Needspace{5\baselineskip}
+PPO uses GAE by default to estimate advantages. This ingenious design takes an exponentially weighted moving average of TD errors:
+
+\[
+\hat{A}_t^{\mathrm{GAE}}
+=
+\delta_t+(\gamma\lambda)\delta_{t+1}+(\gamma\lambda)^{2}\delta_{t+2}+\cdots
+\]
+
+Here \(\lambda\) is a hyperparameter in \([0,1]\).
+
+\Needspace{5\baselineskip}
+\(\lambda\) controls the influence of TD errors:
+
+\Needspace{5\baselineskip}
+For \(\lambda=0\), bias is high and variance low:
+
+\[
+\hat{A}_t=\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)
+\]
+
+\(A_t\) is exactly the current one-step TD error.
+
+\begin{itemize}
+\tightlist
+\item
+  Advantage: low variance, depending only on one random reward \(r_t\).
+\item
+  Disadvantage: high bias, heavily dependent on critic accuracy \(V(s_{t+1})\). A poorly trained critic gives incorrect estimates.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+For \(\lambda=1\), there is no bias but high variance:
+
+\[
+\hat{A}_t=\sum_{l=0}^{\infty}\gamma^{l}\delta_{t+l}=\left(\sum_{l=0}^{\infty}\gamma^{l}r_{t+l}\right)-V(s_t)
+\]
+
+Expanding cancels intermediate \(V\) terms, leaving Monte Carlo returns (actual returns) minus the baseline.
+
+\begin{itemize}
+\tightlist
+\item
+  Advantage: low bias; actual return is the most accurate ``fact.''
+\item
+  Disadvantage: extremely high variance from accumulating environmental randomness at every step.
+\end{itemize}
+
+Which actions produce \(A_t\)? As discussed later, PPO first runs several steps under the old policy, computes advantages for all visited times \(t\), and then updates. Thus \(A_t\) is computed from the actions actually taken during those steps.
+
+\Needspace{5\baselineskip}
+\hypertarget{vi.-practical-workflow-such-as-openai-baselines-or-stable-baselines3}{%
+\subsection{VI. Practical Workflow (Such as OpenAI Baselines or Stable Baselines3)}\label{vi.-practical-workflow-such-as-openai-baselines-or-stable-baselines3}}
+
+Updating after each step means serial computation and extremely low GPU utilization. Since importance sampling ensures data reuse, we usually work in a ``large loop'': run several steps at once (such as 2048), collect a batch, train and update the policy on it, then discard it.
+
+Initialization: initialize actor \(\pi_\theta\) and critic \(V_\phi\).
+
+\Needspace{5\baselineskip}
+Each iteration has four phases:
+
+\textbf{1. Data collection through interaction}
+
+\begin{itemize}
+\tightlist
+\item
+  Run current policy \(\pi_{\theta_{\mathrm{old}}}\) in the environment for \(T\) steps, such as 2048.
+\item
+\Needspace{5\baselineskip}
+  Collect trajectory data:
+\end{itemize}
+
+\[
+\{s_t,a_t,r_t,s_{t+1},\log\pi_{\mathrm{old}}(a_t\mid s_t)\}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Use the critic to compute state values \(V(s_t)\).
+\end{itemize}
+
+\textbf{2. Advantage computation}
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Compute TD errors:
+\end{itemize}
+
+\[
+\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Compute GAE \(\hat{A}_t\), a recursive formula balancing bias and variance.
+\end{itemize}
+
+Note: values \(V(s_t)\) are usually computed during collection because PPO actors and critics often share lower network layers (CNN/MLP). Choosing \(a_t\) already requires feeding \(s_t\) through the network, so obtaining the critic's \(V(s_t)\) costs almost nothing extra. Without storing it, training would need another pass of \(s_t\) to obtain \(V(s_t)\) for calculating advantages, duplicating computation and wasting GPU resources.
+
+Note: advantages are computed together after the action steps and before policy-gradient updates. GAE weights TD errors and accumulates them from t through 2048.
+
+\textbf{3. Optimization}
+
+\begin{itemize}
+\tightlist
+\item
+  Important: \(\pi_{\theta_{\mathrm{old}}}\) is fixed as the denominator; new \(\pi_\theta\), the numerator, is optimized.
+\item
+  Shuffle the \(T\) collected samples into minibatches, such as 64 samples each.
+\item
+  Repeat the epoch loop, for example 10 times.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+For each minibatch:
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Compute the new probability ratio:
+\end{itemize}
+
+\[
+r_t(\theta)=\frac{\pi_\theta(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Compute clipped loss \(L^{\mathrm{CLIP}}\).
+\item
+\Needspace{5\baselineskip}
+  Compute critic value loss:
+\end{itemize}
+
+\[
+L^{\mathrm{VF}}=\left(V_\phi(s_t)-V_{\mathrm{target}}\right)^{2}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Compute entropy regularizer \(S\) to encourage exploration.
+\item
+\Needspace{5\baselineskip}
+  Compute total loss:
+\end{itemize}
+
+\[
+L=-L^{\mathrm{CLIP}}+c_1L^{\mathrm{VF}}-c_2S
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Backpropagate and update \(\theta\) and \(\phi\).
+\end{itemize}
+
+\textbf{4. Synchronize the policy}
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  After this round, set:
+\end{itemize}
+
+\[
+\pi_{\theta_{\mathrm{old}}}\leftarrow\pi_\theta
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Clear the data buffer and start the next large loop.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Suppose parameters are:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{n\_steps}, buffer size: \(2048\).
+\item
+  \texttt{batch\_size}, minibatch size: \(64\).
+\item
+  \texttt{n\_epochs}, reuse count: \(10\).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+The number of backpropagations per ``large loop'' is:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Batching: split 2048 samples into:
+\end{enumerate}
+
+\[
+2048/64=32
+\]
+
+minibatches.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  One pass: sequentially feed these 32 minibatches to the GPU, producing 32 backpropagations.
+\item
+  Repeated reuse: run 10 epochs.
+\item
+\Needspace{5\baselineskip}
+  Total:
+\end{enumerate}
+
+\[
+32\times 10=320
+\]
+
+Thus each large loop produces 320 backpropagations.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-58}{%
+\subsection{References}\label{references-58}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schulman, J., Wolski, F., Dhariwal, P., Radford, A., \& Klimov, O. (2017). \href{https://arxiv.org/abs/1707.06347}{Proximal Policy Optimization Algorithms}. arXiv:1707.06347.
+\item
+  Schulman, J., Moritz, P., Levine, S., Jordan, M., \& Abbeel, P. (2016). \href{https://arxiv.org/abs/1506.02438}{High-Dimensional Continuous Control Using Generalized Advantage Estimation}. ICLR 2016.
+\end{itemize}
+
+\clearpage

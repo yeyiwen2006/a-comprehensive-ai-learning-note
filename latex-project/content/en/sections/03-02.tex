@@ -1,0 +1,123 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{nin}{%
+\section{NiN}\label{nin}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-enhancing-feature-abstraction-with-micro-networks}{%
+\subsection{I. Core Idea: Enhancing Feature Abstraction with ``Micro-Networks''}\label{i.-core-idea-enhancing-feature-abstraction-with-micro-networks}}
+
+Convolution in a conventional CNN is essentially a dot product, which is linear. After each convolution, a high-level feature has a linear correlation coefficient with each low-level feature (plus an activation function, although a single activation does not greatly affect this relationship). If the relationship between high-level and low-level features deviates substantially from this form, a large bias can result.
+
+NiN adds a fully connected network with relatively few parameters (a multilayer perceptron, MLP) after each convolution. This introduces multiple activations, so the relationship between the fully connected network's outputs (high-level features) and inputs (low-level features) is no longer linear with only one parameter (a kernel parameter). The overall ability to handle nonlinear relationships is stronger.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-core-components-1}{%
+\subsection{II. Core Components}\label{ii.-core-components-1}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  MLP convolutional layer
+\end{enumerate}
+
+Structure: an MLP convolutional layer introduces multiple (usually about two) 1x1 convolutional layers after a conventional convolution.
+
+A 1x1 convolution does not integrate information over the height-by-width spatial area (because its spatial size is 1x1). Instead, it restructures the channels and ``changes the channel count.'' Specifically, a convolutional layer has channelwise inputs (color channels or low-level features) and outputs (high-level features), with connections between every input and output channel. More precisely, an output channel's value is a weighted combination of values from the input channels. A 1x1 convolution is therefore equivalent to a fully connected layer between input and output channels at each pixel.
+
+Each 1x1 convolution is followed by a nonlinear activation, such as ReLU.
+
+\Needspace{5\baselineskip}
+Mathematical expression (a conventional convolution followed by one additional 1x1 convolution):
+
+For a local input patch x (such as a 3x3xc region), a conventional convolution outputs y = σ(w · x + b), where σ is an activation such as ReLU.
+
+A two-layer MLP convolution instead outputs y =σ₂( W₂·(σ₁( W₁·x + b₁)) + b₂), where W₁ and W₂ are learnable weight matrices (the 1x1 kernels), and b₁ and b₂ are biases. Adding a matrix clearly makes this a more complex nonlinear function that can handle more complex nonlinear feature relationships.
+
+Parameter efficiency: even several stacked 1x1 convolutions use far fewer parameters than large kernels.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Global average pooling (GAP)
+\end{enumerate}
+
+This is another highly influential contribution of NiN, intended to replace conventional fully connected layers.
+
+The problem with conventional CNNs: before NiN, CNNs generally ended with one or more fully connected layers for classification. These FC layers had enormous parameter counts (more than 90\% of the network's total), were highly prone to overfitting, and disrupted feature maps' spatial structure. NiN's solution, GAP, modifies pooling to directly replace these parameter-heavy fully connected layers.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Suppose the feature-map dimensions output by NiN's final MLP convolutional layer are. Here, c can be set directly to ``the number of target classes'' (for example, ImageNet has 1,000 classes, so c=1000).
+\item
+  For every channel of this feature map, compute the average of all its pixels.
+\item
+  Each channel then produces one scalar, and c channels produce a c-dimensional vector. Passing this vector directly to Softmax gives the probability distribution over classes.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Advantages:
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Greatly fewer parameters and less overfitting: GAP has no learnable parameters, making the model smaller and less prone to overfitting.
+\item
+  More consistent with convolution: the entire network remains convolutional, accepting arbitrary input sizes (because GAP imposes no input-size requirement).
+\item
+  Explicit feature-map semantics: each final feature-map channel can be interpreted intuitively as a ``confidence map for a particular class.'' Its global average represents ``the average confidence for that class.''
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  A typical NiN architecture (such as NiN for CIFAR-10) is:
+\end{enumerate}
+
+Input -\textgreater{}
+
+{[}MLPConv Layer (e.g., 192x5x5 -\textgreater{} 160x1x1 -\textgreater{} 96x1x1){]} -\textgreater{} Max Pooling -\textgreater{}
+
+{[}MLPConv Layer (e.g., 192x5x5 -\textgreater{} 192x1x1 -\textgreater{} 192x1x1){]} -\textgreater{} Max Pooling -\textgreater{}
+
+{[}MLPConv Layer (e.g., 192x3x3 -\textgreater{} 192x1x1 -\textgreater{} 10x1x1){]} -\textgreater{}
+
+Global Average Pooling (to 10x1x1) -\textgreater{}
+
+Softmax
+
+Notes: (1) MLP convolutional layers and max-pooling layers are stacked alternately.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\item
+  Later layers have smaller spatial feature-map sizes and more channels.
+\item
+  The final MLPConv layer's output-channel count is set directly to the class count (such as 10). Classification is ultimately obtained through global average pooling.
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-12}{%
+\subsection{References}\label{references-12}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Lin, M., Chen, Q., \& Yan, S. (2013). \href{https://arxiv.org/abs/1312.4400}{Network In Network}. arXiv:1312.4400.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,229 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux95e8ux63a7ux8bb0ux5fc6ux5355ux5143gru}{%
+\section{门控记忆单元（GRU）}\label{ux95e8ux63a7ux8bb0ux5fc6ux5355ux5143gru}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux57faux672cux539fux7406}{%
+\subsection{一、基本原理}\label{ux4e00ux57faux672cux539fux7406}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  重置门~R\_t：控制``可能还想记住''的过去状态的数量。它决定了有多少过去的信息需要被``忘记''（如网页中html码等无用信息，我们不希望其参与候选状态计算），以便与新输入结合形成新的候选状态。
+\end{enumerate}
+
+重置门有助于捕获序列中的短期依赖关系。它通过控制有多少过去信息参与新候选状态的计算，来影响当前时刻的即时反应。这对于理解紧邻词元之间的关系（短期模式）非常有效。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  更新门~Z\_t：控制新状态中旧状态和候选状态的比例。它决定了有多少过去的信息会被直接保留到新的状态中（如一些必须原样保留的信息）。
+\end{enumerate}
+
+更新门~有助于捕获序列中的长期依赖关系。它通过控制信息传递的路径，让网络能够直接复制过去的状态。如果模型学到让更新门在很长一段时间内都保持接近1，那么很久以前的信息就可以几乎无损地传递到未来，从而完美地解决了梯度消失问题，擅长捕捉长期模式。
+
+接下来，GRU 不是直接计算新的隐状态，而是先计算一个候选隐状态（Candidate Hidden State）\(\tilde{H}_t\)。这个候选状态表示在当前输入和经过筛选的过去信息共同作用下可能形成的新状态。
+
+重置门 \(R_t\) 在这里起到关键作用：它通过与前一状态 \(H_{t-1}\) 进行按元素乘法（Hadamard 积）来``重置''或``过滤''过去的信息。
+
+\begin{itemize}
+\tightlist
+\item
+  如果重置门 \(R_t\) 的某个元素接近 1，则表示允许对应的过去信息通过，公式退化为类似传统 RNN 的更新方式 \(\tanh(X_t W_{xh} + H_{t-1}W_{hh} + b_h)\)。
+\item
+  如果重置门 \(R_t\) 的某个元素接近 0，则会``屏蔽''或``忘记''对应的过去信息。此时，候选状态仅由当前输入 \(X_t\) 决定（类似于一个简单的 MLP），这有助于忽略无关信息。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+公式为：
+
+\[
+\tilde{H}_t = \tanh(X_t W_{xh} + (R_t \odot H_{t-1})W_{hh} + b_h)
+\]
+
+其中，\(\odot\) 表示 Hadamard 积（按元素相乘），\(\tanh\) 激活函数确保候选状态的值在 \((-1, 1)\) 之间。
+
+最后，新的隐状态 \(H_t\) 是旧状态 \(H_{t-1}\) 和候选状态 \(\tilde{H}_t\) 之间的凸组合，这个组合的比例由更新门 \(Z_t\) 控制。
+
+\begin{itemize}
+\tightlist
+\item
+  如果更新门 \(Z_t\) 的某个元素接近 1，则新状态会大量保留旧状态的信息，几乎忽略掉候选状态（即当前输入的影响很小）。这使得网络能够跳过不重要的时间步，从而有效地将很久以前的信息传递下去，解决长期依赖问题。
+\item
+  如果更新门 \(Z_t\) 的某个元素接近 0，则新状态会更倾向于采用候选状态，即更多地关注当前输入。
+\end{itemize}
+
+这种机制使得 GRU 可以灵活地选择是``记住''长期信息还是``关注''短期输入。
+
+\Needspace{5\baselineskip}
+公式为：
+
+\[
+H_t = Z_t \odot H_{t-1} + (1 - Z_t) \odot \tilde{H}_t
+\]
+
+\Needspace{5\baselineskip}
+形象理解：
+
+\Needspace{5\baselineskip}
+GRU~像一个高效的现代工作站：
+
+重置门：在思考新方案(\textasciitilde h\_t)前，先清空一下白板上不相关的内容。
+
+更新门：决定最终的白板(h\_t)上，要擦掉多少旧内容，又要把新方案写上去多少。
+
+\Needspace{5\baselineskip}
+两个思考的问题：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  为什么这里要单独用门，而不是直接调控权重？
+\end{enumerate}
+
+因为门有一个重要的特性：``按元素乘''
+
+在传统矩阵乘法中，调一个权重必然涉及到与之相乘的所有元素，因而想通过这一方式保留或抹去特定位置的信息是很难的。门中的元素则和神经元一一对应。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  为什么两个门不能相互替代？
+\end{enumerate}
+
+如果只有重置门，没有更新门，候选隐状态计算函数很难直接拟合恒等变换y=x，无法保证信息原样传递；如果只有更新门，没有重置门，个别元素上的无关信息就会影响候选状态（因为前面讲过的原因，不能把对应权重直接设为0）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux91cdux7f6eux95e8ux4e0eux66f4ux65b0ux95e8ux7684ux8ba1ux7b97}{%
+\subsection{二、重置门与更新门的计算}\label{ux4e8cux91cdux7f6eux95e8ux4e0eux66f4ux65b0ux95e8ux7684ux8ba1ux7b97}}
+
+\Needspace{5\baselineskip}
+对于给定的时间步 \(t\)：
+
+\[
+R_t = \sigma(X_t W_{xr} + H_{t-1}W_{hr} + b_r)
+\]
+
+\[
+Z_t = \sigma(X_t W_{xz} + H_{t-1}W_{hz} + b_z)
+\]
+
+\Needspace{5\baselineskip}
+其中：
+
+\begin{itemize}
+\tightlist
+\item
+  \(\sigma\) 是 sigmoid 激活函数。
+\item
+  \(W_{xr}, W_{xz}\) 是与输入 \(X_t\) 相乘的权重矩阵。
+\item
+  \(W_{hr}, W_{hz}\) 是与前一隐状态 \(H_{t-1}\) 相乘的权重矩阵。
+\item
+  \(b_r, b_z\) 是偏置参数。
+\end{itemize}
+
+那么，重置门和更新门为什么要由当前时间步的输入 X\_t 和前一个时间步的隐状态 H\_\{t-1\} 通过一个全连接层，再经过 sigmoid 激活函数计算得到？
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  目的：门控需要成为``情境感知''的决策器
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+这两个门在每个时刻都要做两个关键决策：
+
+重置门：为了处理好眼前这个新输入，我该忘掉多少刚才还记得的背景信息？
+
+更新门：我是应该 mostly 记住旧的，还是应该~mostly 相信新的？
+
+这些决策绝不能是死板的规则，必须根据当前具体遇到什么词、处在什么上下文环境中来灵活决定。
+
+\Needspace{5\baselineskip}
+举个例子（情感分析）：
+句子是：``This movie is not good at all, it is actually terribly boring.''
+
+\Needspace{5\baselineskip}
+当模型读到~``not''~这个词时：
+
+重置门应该意识到：下一个词~``good''~的意思要反转了！必须弱化/重置掉之前~``is''~带来的正面预感，准备好接收一个被否定后的信息。
+
+更新门应该意识到：``not''~是个超级重要的信号！必须牢牢记住这个状态，把它强有力地传递下去，影响后面所有词的判断。
+
+如果门控是固定的或者只由当前词决定，它就无法根据整个句子的上下文（由过去的隐藏状态编码）来做出如此精细和关键的决策。
+
+\Needspace{5\baselineskip}
+所以，门控的决策必须基于两大信息源：
+
+当前观测 (X\_t)：我现在看到了什么词？
+
+历史上下文 (H\_\{t-1\})：我之前读到过什么，正处于什么样的理解背景下？
+
+只有把这两者结合起来，门控才能做出最明智的、懂场景的（Context-Aware）~决策。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  结构：让模型自己学会权衡
+\end{enumerate}
+
+将当前输入和过去状态分别乘以权重再加起来，这个结构（称为``仿射变换''）是在让模型自己通过训练数据学习：在面对什么样的情况下，应该更相信当前输入；在什么样的情况下，应该更依赖历史记忆。
+
+对于能颠覆语义的词（如~``not'',~``but''），模型会学会让当前输入的权重很大，从而让当前词主导门的开关。
+
+对于不重要的词（如~``the'',~``a''），模型会学会让历史状态的权重占主导，从而命令门控：``忽略它，保持原状！''
+
+这种设计给了模型极大的灵活性。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  激活函数：Sigmoid------完美的``比例调节器''
+\end{enumerate}
+
+Sigmoid函数是一个神奇的``压缩器''，它能把任何大小的数字都变成一个介于0和1之间的值。
+
+完美的解释性：输出是0到1之间，可以天然地理解为~``开度的百分比''。比如：0是``全关''，1是``全开''，0.7是``开七成''。
+
+可训练性：这个函数是光滑的，这对于使用反向传播算法来训练模型至关重要，误差可以顺利地通过它传回去调整权重。
+
+清晰的决策：虽然它在极端情况下会饱和（导致梯度消失），但在门控这里这反而是个优点。它允许门的输出无限接近0或1，从而实现非常坚决的``开''或``关''的决策，形成稳定的记忆流。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux603bux7ed3}{%
+\subsection{三、总结}\label{ux4e09ux603bux7ed3}}
+
+通过重置门和更新门的协同工作，GRU能够动态地、有选择地管理记忆，从而在各种序列建模任务中取得优异的效果。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-20}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-20}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Cho, K., van Merrienboer, B., Gulcehre, C., et al.~(2014). \href{https://arxiv.org/abs/1406.1078}{Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation}. EMNLP 2014.
+\end{itemize}
+
+\clearpage

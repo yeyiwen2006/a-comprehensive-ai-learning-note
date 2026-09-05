@@ -1,0 +1,97 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{reinforcement-learning-from-verifiable-rewards}{%
+\section{Reinforcement Learning from Verifiable Rewards}\label{reinforcement-learning-from-verifiable-rewards}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-6}{%
+\subsection{I. Core Idea}\label{i.-core-idea-6}}
+
+Reinforcement learning from verifiable rewards (RLVR) is an important reinforcement fine-tuning paradigm that has brought a major advance in large-model reasoning. For a pretrained model, rewards based on correctness or automatically verifiable scores---such as mathematical answers or programming outputs---can elicit logical reasoning, allowing it to independently explore strategies for obtaining correct answers.
+
+In principle, LLM scoring is not introduced here, to avoid reward hacking.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-extracting-answers}{%
+\subsection{II. Extracting Answers}\label{ii.-extracting-answers}}
+
+Model outputs generally contain a long chain of thought, with reasoning inside \texttt{\textless{}think\textgreater{}...\textless{}/think\textgreater{}} tags and the final result inside \texttt{\textless{}answer\textgreater{}...\textless{}/answer\textgreater{}} tags. By default, the answer is taken to be the final LaTeX string in the final result. If the model fails to follow the format early in RL training (for example, omitting \texttt{\textless{}answer\textgreater{}} tags), the system marks it wrong (Reward=0) or gives a very small penalty. To receive rewards, the model must therefore learn to obey the format before learning to solve the problem correctly.
+
+For mathematical problems with multiple answer forms, symbolic formula-verification tools can judge equivalence. For programming, code can be executed and rewarded according to its results. Semi-open questions such as ``write a molecular formula satisfying these conditions'' may have infinitely many answers and can use a dedicated checker script.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-improving-readability}{%
+\subsection{III. Improving Readability}\label{iii.-improving-readability}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Quantification through hard rules: readability first requires format compliance.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Structural completeness: are \texttt{\textless{}think\textgreater{}} and \texttt{\textless{}answer\textgreater{}} tags present and closed? Do they contain content?
+\item
+  Repetition: measure n-gram repetition rates. Pure RL models can easily enter loops when stuck, repeatedly producing text such as ``therefore\ldots therefore\ldots therefore\ldots.'' The system detects n-gram repetition frequency and gives a large negative reward above a threshold.
+\item
+  Language consistency: use confidence from a language detector such as fastText. If the prompt is Chinese but the chain of thought suddenly switches to English or gibberish (mixed Chinese and English often appeared early in DeepSeek-R1-Zero), readability is considered poor. The system calculates the proportion of tokens in the target language; a lower proportion incurs a larger penalty.
+\item
+  Length: count tokens to prevent verbose nonsense produced to pad the response or over-elaborate a derivation. A soft length range is usually imposed, with a small negative reward for exceeding it.
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Model-based quantification: a reward model (RM)
+\end{enumerate}
+
+Higher-level readability---logical flow, attractive formatting, and a human-like tone---cannot readily be captured by rules, so another model scores it. This follows the idea of RLHF.
+
+During early training of pure reasoning models such as o1 or R1, this component has little or no weight. Excessive emphasis on readability can harm reasoning ability, as the model may simplify complex reasoning to please humans. It becomes more important later.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  The most important method: an SFT ``cold start'' followed by a KL-divergence constraint
+\end{enumerate}
+
+Although counterintuitive, most RLVR models inherit their readability from supervised fine-tuning (SFT), rather than learning it during RL. Before RL begins, they are fine-tuned on a small amount of high-quality ``ideal reasoning'' written by humans or strong models, with excellent formatting, clear logic, and polished language. During RL, the system computes KL divergence between the current policy model and the SFT reference model.
+
+If the model begins speaking incoherently to solve a problem, reducing readability, KL divergence rises sharply and lowers the total reward. Readability is thus implicitly quantified as similarity to human writing conventions.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Real-world example: the lesson of DeepSeek-R1-Zero
+\end{enumerate}
+
+DeepSeek's paper provides a striking counterexample showing that RL can destroy readability without dedicated constraints. DeepSeek-R1-Zero had neither an SFT cold start nor a readability reward. Pure RL made it more capable and sharply improved problem-solving accuracy, but its outputs became extremely difficult to read.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-82}{%
+\subsection{References}\label{references-82}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2501.12948}{DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning}. arXiv:2501.12948.
+\item
+  温睦宁、林江浩、张伟楠、俞勇 (2025). \href{https://haa.boyuai.com/}{\emph{Hands-on Learning of Large-Model Agents} (translated title; in Chinese)}. Posts \& Telecom Press. ISBN 978-7-115-68638-1.
+\end{itemize}
+
+\clearpage

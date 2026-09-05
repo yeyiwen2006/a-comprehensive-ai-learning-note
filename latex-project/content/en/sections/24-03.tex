@@ -1,0 +1,50 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{skills}{%
+\section{Skills}\label{skills}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-basic-idea-1}{%
+\subsection{I. The Basic Idea}\label{i.-the-basic-idea-1}}
+
+An agent's skills can be understood as its ``specialized capability packages'': reusable local instructions, workflows, and references, with scripts, templates, or tool constraints when necessary. By invoking an appropriate skill for a task, the agent need not reason from scratch every time and can follow an established, stable workflow.
+
+\Needspace{5\baselineskip}
+Core value:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Preserve experience, such as fixed steps, common pitfalls, and validation methods, ensuring consistent repeated execution.
+\item
+  Reduce errors: skills often explicitly specify which files to read, what order to follow, and when to stop for confirmation, making them more reliable than improvisation.
+\item
+  Improve efficiency: for complex tasks, agents need not reorganize the entire workflow. They apply an appropriate skill and spend time on the parts genuinely requiring judgment and creativity.
+\end{enumerate}
+
+A good skill explains not only ``what to do'' but also ``why to do it this way, how far to go, and how to verify the results.'' Agent capabilities become explainable, inspectable, and continually improvable rather than vague.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-encapsulating-tool-interfaces-with-skills}{%
+\subsection{II. Encapsulating Tool Interfaces with Skills}\label{ii.-encapsulating-tool-interfaces-with-skills}}
+
+Storing tool information and tool results directly in a model's context window fills it and reduces efficiency. Moreover, model tool calls through MCP sometimes still produce mismatched output formats.
+
+Skills can encapsulate tool interfaces. Specifically, the model calls tools by running code packaged in skills, adding scripts itself when needed. Tool results are not injected directly into context but processed in a sandbox by the packaged code or model-written code.
+
+This uses the model's strong programming abilities to improve success rates and lets it control data indirectly through code rather than directly, avoiding unnecessary injection of large numbers of tokens into context and improving efficiency.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-124}{%
+\subsection{References}\label{references-124}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Anthropic. (n.d.). \href{https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview}{Agent Skills}. Claude API Docs. Accessed 2026-09-02.
+\end{itemize}
+
+\clearpage

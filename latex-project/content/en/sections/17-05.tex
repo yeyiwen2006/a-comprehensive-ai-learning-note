@@ -1,0 +1,352 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{improving-reward-functions}{%
+\section{Improving Reward Functions}\label{improving-reward-functions}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-addressing-sparse-rewards}{%
+\subsection{I. Addressing Sparse Rewards}\label{i.-addressing-sparse-rewards}}
+
+RLVR relies on verifiable reward signals, such as mathematical answers or programming outputs, which are very sparse. An agent receives a nonzero score only when its generated code runs perfectly from beginning to end: loading data, training, predicting, and producing a submission file. A program failing at data loading and one almost succeeding but failing only when saving the final file both receive zero reward (or the same fixed negative failure value). This makes useful gradients difficult to obtain, especially on hard tasks. The agent cannot readily distinguish ``completely wrong'' from ``nearly correct,'' reducing learning efficiency. Possible improvements include:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Combining step decomposition with dense feedback
+\end{enumerate}
+
+The core idea is to give each AI operation a ``progress indicator'' and have it output intermediate variables, allowing denser rewards so that early training is not entirely without gradients.
+
+Note, however, that once accuracy reaches a certain level, training generally switches back to pure outcome rewards so the AI explores fully correct answers rather than stopping at local optima.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Intermediate-step outputs (hard scoring)
+\end{enumerate}
+
+Automatic code injection: before running agent-generated code, use an independent, fixed language model to insert intermediate print statements such as print(``loaded data'') and print(``trained model'').
+
+Parse outputs for scoring: after execution, scan terminal logs with regular expressions to detect successfully printed intermediate variables.
+
+Graded rewards: each correctly output intermediate variable earns a small reward, such as +0.1.
+
+Advantage: even if the program ultimately fails, the agent receives informative feedback, gradually learning data loading, then model construction, and ultimately task completion. These rewards are also generally objective and verifiable.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Scoring the reasoning process (LLM scoring)
+\end{enumerate}
+
+Do not rely exclusively on outcomes; consider the reasoning. A sound chain of thought with a calculation error can still receive partial credit. This resembles grading extended mathematics problems in China's college entrance examination: a wrong answer can still earn most points if the reasoning is correct, while a bare answer without reasoning cannot.
+
+Process scoring can include structural checks: mathematics tasks can be checked for key intermediate variables and reconstruction steps, while programming tasks can be checked for required function and variable names.
+
+This should nevertheless be used cautiously, because it is not RLVR with an unambiguous standard. LLM generalization is not unlimited. When evaluation is subjective or flexible, such as scoring reasoning rather than answers alone, an RL agent is likely to discover reward hacking, and not every vulnerability to adversarial examples can be perfectly eliminated.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Why process rewards require caution, such as use only early in training
+\end{enumerate}
+
+Although the preceding methods ease training, reward sparsity is intrinsic to many real-world problems and environments (biological evolution, for example, rewards surviving population counts). Artificially making rewards denser cannot fundamentally avoid changing the optimization objective. An excellent method humans do not understand, such as AlphaGo's Move 37, might even be incorrectly penalized.
+
+Overly dense rewards can also encourage excessive attention to immediate reward and local optima, weakening performance on tasks requiring long-term planning and consistency. Similarly, evaluating researchers too frequently can favor quick, short-term studies and reduce the chance of major discoveries. Some reward sparsity is inherently more fundamental.
+
+Thus, process rewards are generally used only early to address sparsity. Once reward reaches a threshold, training switches to pure outcome rewards.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Supervised reinforcement learning (SRL) (Google, 2025)
+\end{enumerate}
+
+For a less capable model, forcing rote memorization of high-quality answers through SFT can make it less capable. Instead, like a patient tutor, a system can break a difficult problem into small steps and assign a similarity score against the reference answer after every step. This combination of guidance and encouragement can teach small models complex reasoning they otherwise could not master.
+
+SRL decomposes a complete solution into key actions instead of treating it as one unit. Before each action, the model generates an ``inner monologue'' inside \texttt{\textless{}think\textgreater{}} tags. This separates flexible reasoning from the structured execution steps being evaluated.
+
+After each action, the system compares it textually with the corresponding expert-demonstration action, producing a reward between 0 and 1. An imperfect step can still earn positive feedback if broadly headed in the right direction. This ``close enough'' similarity reward provides a smooth, continuous learning signal through a complex exploration space.
+
+To improve efficiency, SRL filters training examples for which almost all attempts have similar similarity scores and therefore weak learning signals.
+
+This method is generally used early in reinforcement fine-tuning or when training small models with large models. Later RL stages for large models still use RLVR to elicit more potential and discover new methods.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Goal-oriented reinforcement learning
+\end{enumerate}
+
+The goal-oriented reinforcement learning section provides details. Here are examples in reinforcement fine-tuning.
+
+\Needspace{5\baselineskip}
+Mathematical problem solving:
+
+\begin{itemize}
+\tightlist
+\item
+  Original goal \(g\): calculate \(\int x^2 dx\).
+\item
+  Model behavior: incorrectly obtains \(\frac{1}{2}x^2\), perhaps forgetting coefficient \(\frac{1}{3}\) or differentiating with respect to \(x\).
+\item
+  Traditional approach: mark it wrong, reward 0.
+\item
+\Needspace{5\baselineskip}
+  Goal-oriented approach:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Analyze the output \(\frac{1}{2}x^2\).
+  \item
+    Reverse reasoning or relabeling: it is the correct answer to ``calculate \(\int x dx\),'' or ``differentiate \(\frac{1}{6}x^3\).''
+  \item
+    Update: tell the model that its derivation was perfect for solving \(\int x dx\).
+  \item
+    Effect: it learns correct integration logic, which it had initially applied in the wrong place.
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Code generation:
+
+\begin{itemize}
+\tightlist
+\item
+  Original goal \(g\): load data and train a model.
+\item
+  Model behavior: loads data successfully but crashes during training.
+\item
+  Relabeled goal \(g'\): ``write a data-loading script.''
+\item
+  Result: the new trajectory receives full reward, strengthening correct data loading.
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Starting reasoning from intermediate states
+\end{enumerate}
+
+During RLVR training, models often produce groups of reasoning attempts close to success. HiPO extracts intermediate states from successful trajectories within these near-miss groups as hints, letting some new trajectories continue conditioned on the original problem and hint. This aims to increase within-group outcome diversity and alleviate zero relative advantages when every sample fails. It can increase the opportunity for nonzero learning signals, but does not guarantee that each hint improves the final policy.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Improving RL algorithms
+\end{enumerate}
+
+Better RL algorithms can propagate sparse rewards more effectively. GRPO, for example, outperforms PPO in this respect, since PPO's critic may train very unstably under sparse rewards. Such improvements help models adapt to the intrinsically sparse rewards common in the real world.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-adjusting-answer-format}{%
+\subsection{II. Adjusting Answer Format}\label{ii.-adjusting-answer-format}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  HERO: combining outcome and format rewards (Meta FAIR, 2025)
+\end{enumerate}
+
+First determine correctness: a binary 0--1 verifier splits answers into correct and incorrect groups. Hierarchical normalization groups all outputs by correctness and keeps reward scores within their boundaries. Then quantify quality: a reward model finely ranks answers within each group, assigning more granular quality scores. Variance-aware weighting focuses training on the most informative difficult problems. A poorly formatted correct answer therefore scores above a well-formatted incorrect answer, keeping training pointed in the correct direction.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-analyzing-output-equivalence}{%
+\subsection{III. Analyzing Output Equivalence}\label{iii.-analyzing-output-equivalence}}
+
+For mathematical derivations, especially expression simplification or problems with nonunique solution processes, string matching alone is insufficient. Rewards should reflect mathematical substance. Symbolic equivalence uses symbolic-computation tools such as Python's SymPy to determine whether two expressions are mathematically equivalent. Compared with exact matching against a reference answer, it generalizes better and more accurately reflects mathematical reasoning.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-preventing-cheating-and-answer-guessing}{%
+\subsection{IV. Preventing Cheating and Answer Guessing}\label{iv.-preventing-cheating-and-answer-guessing}}
+
+Add appropriate process checks. In code-execution environments, prohibit importing certain dangerous functions such as eval and prohibit directly printing the answer.
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-redundant-outputs}{%
+\subsection{V. Redundant Outputs}\label{v.-redundant-outputs}}
+
+Models often ``overthink,'' producing many redundant tokens for simple conclusions, repeatedly switching among incorrect paths, or constantly backtracking. This wastes valuable compute and increases inference latency.
+
+\Needspace{5\baselineskip}
+Possible solutions:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Directly modifying the RL objective
+\end{enumerate}
+
+Redundant tokens can be related to rewards, loss aggregation, and length normalization. An objective normalized by sequence length \(T\) changes the gradient weights of samples of different lengths, so adjusting loss aggregation or length penalties may alleviate redundancy. However, the public DeepSeek-V3.2 report does not justify attributing redundant tokens solely to GRPO's \(1/T\) normalization. Training data, sampling, decoding settings, and other factors also affect results, requiring specific ablations.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  RePro (Shanghai AI Lab, 2025)
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Core observation: reasoning as optimization
+\end{enumerate}
+
+RePro views a model's reasoning trajectory as a path searching a loss surface for an optimum.
+
+Each reasoning step corresponds to a gradient update. The objective is to maximize the probability of generating the correct ground-truth answer. Good reasoning should substantially increase confidence in the correct answer at every step (decreasing loss), follow a firm direction, and avoid repeated switching or oscillation. Overthinking corresponds to saddle points, where many tokens barely improve answer probability, or gradient oscillation, where confused reasoning makes confidence fluctuate.
+
+From this perspective, RePro designs process rewards embedded directly in RLVR procedures such as PPO and GRPO.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Surrogate objective
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+RePro quantifies current confidence through the average log probability of the correct answer's tokens under the current reasoning context, similar to classification loss in supervised learning:
+
+\[
+\tilde{J}(\pi_\theta, q, \tau_{\le t}, a)
+\triangleq
+\frac{1}{|a|}\sum_{i=1}^{|a|}
+\log \pi_\theta(a_{(i)} \mid q, \tau_{\le t})
+\]
+
+Before reasoning begins, directly guessing the answer has low probability and J̃ is small. As reasoning eliminates incorrect options and establishes the logical chain, confidence should increase and J̃ should rise. It should peak when reasoning reaches the conclusion. A higher value indicates greater confidence that the answer is correct, making it a reasonable optimization metric.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Two scores derived from the J sequence
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Compared with traditional RL's sparse outcome-only feedback, RePro introduces process-aware trajectory optimization. It separates changes in J̃ into two dimensions:
+
+The magnitude score measures objective change: ``How much closer did this reasoning segment bring the model to the answer?'' In optimization, gradient magnitude determines descent speed. In reasoning, an effective chain of thought should markedly increase answer confidence. RePro measures this gain by comparing the post-step J̃ with baseline J̅, the confidence from answering directly without reasoning.
+
+\[
+\Delta(\pi_\theta, q, \tau_{\le t}, a)
+=
+\frac{
+\tilde{J}(\pi_\theta, q, \tau_{\le t}, a) - \bar{J}_b(q)
+}{
+\bar{J}_b(q)
+}
+\]
+
+\[
+S_{\mathrm{magn},(t)}
+\triangleq
+\tanh\left(\Delta(\pi_\theta, q, \tau_{\le t}, a) + 1\right) + 1
+\]
+
+The tanh function normalizes scores to (0,1{]}. In practice, some steps can increase confidence exponentially, such as finally computing a crucial intermediate variable. Without a bound, the huge reward might cause exploding gradients or unstable training.
+
+The stability score measures whether J rises smoothly. If J̃ is plotted as a curve, ideal reasoning rises monotonically. Fluctuations indicate self-doubt or logical confusion. RePro quantifies these fluctuations using Kendall's tau correlation:
+
+\[
+S_{\mathrm{stab},(t)}
+=
+\frac{
+\sum_{i < j}
+\mathrm{sign}(\tilde{J}_i - \tilde{J}_j)\cdot \mathrm{sign}(i - j)
+}{
+|\tau|(|\tau| - 1)
+}
++
+\frac{1}{2}
+\]
+
+This computes rank correlation between the J̃ sequence and time-step sequence \{1,\ldots,t\}. High stability near 1 means each J̃ exceeds the previous value: progress at every step without retreat, corresponding to smooth movement along steepest descent. Low stability near 0 or negative values means a disordered sequence, taking two steps forward and one back or even showing severe logical regression. This corresponds to random movement around a saddle point, consuming steps (tokens) without substantive progress.
+
+Weighted magnitude and stability scores form the final process score S, used to decide whether a reasoning path should be reinforced or penalized.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Process-level rewards
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+RePro uses entropy-based selection:
+
+Segmentation: split the reasoning chain into logical paragraphs \{c1, c2,\ldots, cN\}, for example using blank lines \n\n.
+
+Entropy calculation: calculate the entropy of each paragraph's first token, \(\mathcal{H}(c_i^{(0)})\).
+
+Top-k selection: compute RePro rewards only for the \(k\) highest-entropy segments.
+
+This substantially reduces cost, replacing whole-sequence calculation with \(k\) points. It also concentrates guidance where the model is most uncertain and decisions most critical, remaining silent in confident, fluent low-entropy regions to avoid excessive intervention.
+
+Then the process-score improvement \(\Delta S\) serves as the segment's process-level reward. Combined with final correctness, it becomes input to RL advantage computation.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-83}{%
+\subsection{References}\label{references-83}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  温睦宁、林江浩、张伟楠、俞勇 (2025). \href{https://haa.boyuai.com/}{\emph{Hands-on Learning of Large-Model Agents} (translated title; in Chinese)}. Posts \& Telecom Press. ISBN 978-7-115-68638-1.
+\item
+  Andrychowicz, M., Wolski, F., Ray, A., et al.~(2017). \href{https://arxiv.org/abs/1707.01495}{Hindsight Experience Replay}. NeurIPS 2017.
+\item
+  Deng, Q., Chen, K., Zhang, M., \& Xu, Z. (2026). \href{https://openreview.net/forum?id=rcb20pHmT1}{HiPO: Self-Hint Policy Optimization for RLVR}. ICLR 2026.
+\item
+  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2512.02556}{DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models}. arXiv:2512.02556.
+\item
+  Deng, Y., Hsu, I.-H., Yan, J., et al.~(2025). \href{https://arxiv.org/abs/2510.25992}{Supervised Reinforcement Learning: From Expert Trajectories to Step-wise Reasoning}. arXiv:2510.25992.
+\item
+  Tao, L., Kulikov, I., Saha, S., et al.~(2025). \href{https://arxiv.org/abs/2510.07242}{Hybrid Reinforcement: When Reward Is Sparse, It's Better to Be Dense}. arXiv:2510.07242.
+\item
+  Liu, J., Liu, H., Zhang, S., \& Chen, K. (2025). \href{https://arxiv.org/abs/2512.01925}{Rectifying LLM Thought from Lens of Optimization}. arXiv:2512.01925.
+\end{itemize}
+
+\clearpage

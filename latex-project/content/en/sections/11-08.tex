@@ -1,0 +1,166 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{model-based-dqn}{%
+\section{Model-Based DQN}\label{model-based-dqn}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-experience-replay-cannot-solve-slow-gradient-propagation}{%
+\subsection{I. Experience Replay Cannot Solve Slow Gradient Propagation}\label{i.-experience-replay-cannot-solve-slow-gradient-propagation}}
+
+\Needspace{5\baselineskip}
+In standard Q-Learning and DQN, the update target is:
+
+\[
+y=r+\gamma \max_{a'}Q(s',a')
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  This is called TD(0).
+\item
+  Updating \(Q(s,a)\) uses only the next step's real reward \(r\) and next-time estimate \(Q(s',a')\).
+\item
+  Consequence: suppose a maze provides reward only at the goal.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    First success: only the final pre-goal state's Q value updates.
+  \item
+    Second success: the second-to-last state's value updates through the final state's Q value.
+  \item
+    \ldots{}
+  \end{itemize}
+\end{itemize}
+
+For example, if we obtain only the final step's environment data, without the second-to-last reward, that earlier step will not appear in experience replay either, so gradients still cannot propagate backward along this path.
+
+\Needspace{5\baselineskip}
+Experience replay resembles ``rereading a diary'':
+
+\begin{itemize}
+\tightlist
+\item
+  Essence: it stores events that actually occurred.
+\item
+  Mechanism: a buffer database records exactly what you did at a past moment and what feedback the environment provided.
+\item
+  Data source: the real physical world.
+\item
+  Reliability: entirely real ground truth. Unless the environment's physical rules change (such as a sudden change in friction), buffered \((s,a,r,s')\) tuples always obey physical laws.
+\item
+  Limitation: only previously observed situations can be replayed. Replay cannot explore places never visited.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Dyna-Q's environment model resembles ``mental simulation'':
+
+\begin{itemize}
+\tightlist
+\item
+  Essence: a learned function (or neural network).
+\item
+  Mechanism: real observations train a model \(M(s,a)\to(r,s')\). Once trained, it computes a predicted \((r,s')\) for a supplied \((s,a)\).
+\item
+  Data source: model-generated predictions or imagined outcomes.
+\item
+  Reliability: subject to model bias. A poorly learned model may predict incorrectly; for example, it may believe ``hitting a wall incurs no penalty,'' leading to incorrect policies trained on that model.
+\item
+  Advantage: generalization. A neural model can theoretically predict outcomes for states never reached exactly but similar to known states.
+\end{itemize}
+
+Why call experience replay a ``nonparametric model''?
+
+In statistics, nonparametric methods do not assume a particular data distribution, instead using the data directly.
+
+\begin{itemize}
+\tightlist
+\item
+  Dyna-Q tries to learn parameters of \(P(s'|s,a)\) (parametric).
+\item
+  Experience replay learns no parameters and represents the distribution directly with samples (nonparametric). From this perspective, it is a huge environment model requiring no training and producing no predictive bias.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-n-step-td-learning-accelerating-propagation-of-available-gradient-data}{%
+\subsection{II. N-Step TD Learning: Accelerating Propagation of Available Gradient Data}\label{ii.-n-step-td-learning-accelerating-propagation-of-available-gradient-data}}
+
+\Needspace{5\baselineskip}
+Without an environment model, change the objective's horizon. DQN readily extends to N-step DQN: look \(n\) steps ahead instead of one:
+
+\[
+y=r_t+\gamma r_{t+1}+\cdots+\gamma^{n}\max_{a'}Q(s_{t+n},a')
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Effect: one update propagates the reward signal directly backward \(n\) steps.
+\item
+  Trade-off: faster than one-step updates, but excessively large \(n\) increases variance.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-model-based-deep-rl-dyna-qs-true-successor}{%
+\subsection{III. Model-Based Deep RL: Dyna-Q's True Successor}\label{iii.-model-based-deep-rl-dyna-qs-true-successor}}
+
+\Needspace{5\baselineskip}
+These methods truly correspond to the Dyna-Q idea you mentioned. They train a world model, usually including:
+
+\begin{itemize}
+\tightlist
+\item
+  A dynamics model predicting \(s_{t+1}=f(s_t,a_t)\).
+\item
+  A reward model predicting \(r_t=R(s_t,a_t)\).
+\end{itemize}
+
+DQN uses experience replay because for high-dimensional inputs (such as images), ``remembering the past'' is much easier and more accurate than ``predicting the future.'' Training a video-generation model based on a world model to produce realistic game frames is much harder than training a game-playing Q network. Model-based methods (such as Dyna-Q) are therefore used only in low-dimensional or simple environments. Yet learning environmental regularities offers unparalleled generalization advantages. With growing compute and generative AI, models are beginning to ``imagine'' the future accurately. World-model-based RL (such as Dreamer) is thus returning to the mainstream, aiming to replace or enhance methods relying only on ``memories'' through experience replay.
+
+\Needspace{5\baselineskip}
+Dyna-style deep RL (such as Model-Based Policy Optimization, MBPO):
+
+\begin{itemize}
+\tightlist
+\item
+  Train a neural network to simulate environmental dynamics.
+\item
+  Train the Q network (or policy network) using not only real environmental samples from experience replay but also virtual data generated by the model.
+\item
+  Effect: this fully reproduces Dyna-Q's logic and greatly improves sample efficiency. On control tasks such as MuJoCo, MBPO achieves good results with very few real interactions.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Latent dynamics models (such as Dreamer and MuZero):
+
+\begin{itemize}
+\tightlist
+\item
+  Dreamer: for image-input tasks, first encode images into latent states and learn a world model in latent space. Then train an actor--critic in ``dreams'' (simulated latent sequences).
+\item
+  MuZero: DeepMind's algorithm plans directly in latent space without reconstructing pixels, combining Monte Carlo tree search (MCTS) with model learning.
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-53}{%
+\subsection{References}\label{references-53}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Mnih, V., Kavukcuoglu, K., Silver, D., et al.~(2015). \href{https://doi.org/10.1038/nature14236}{Human-level control through deep reinforcement learning}. Nature.
+\item
+  Sutton, R. S. (1990). \href{https://doi.org/10.1016/B978-1-55860-141-3.50030-4}{Integrated Architectures for Learning, Planning, and Reacting Based on Approximating Dynamic Programming}. ICML 1990.
+\item
+  Janner, M., Fu, J., Zhang, M., \& Levine, S. (2019). \href{https://arxiv.org/abs/1906.08253}{When to Trust Your Model: Model-Based Policy Optimization}. NeurIPS 2019.
+\item
+  Hafner, D., Lillicrap, T., Ba, J., \& Norouzi, M. (2020). \href{https://openreview.net/forum?id=S1lOTC4tDS}{Dream to Control: Learning Behaviors by Latent Imagination}. ICLR 2020.
+\item
+  Schrittwieser, J., Antonoglou, I., Hubert, T., et al.~(2020). \href{https://doi.org/10.1038/s41586-020-03051-4}{Mastering Atari, Go, chess and shogi by planning with a learned model}. Nature.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,189 @@
+\hypertarget{changelog}{%
+\chapter{Changelog}\label{changelog}}
+
+\Needspace{5\baselineskip}
+\hypertarget{section}{%
+\section{2026-09-05}\label{section}}
+
+\begin{itemize}
+\tightlist
+\item
+  After pushing, the automatic Gitee synchronization reads the target branch back and confirms that its commit matches the current GitHub run. This check compares Git commit references only; it does not calculate file hashes.
+\item
+  Added English Markdown and LaTeX editions that strictly correspond to the Chinese edition, using Yiwen Ye consistently as the author's English name. The Chinese README remains the default entry point, with language-switch buttons and corresponding English contents, learning path, disclaimer, contribution guidelines, and changelog.
+\item
+  Individually reviewed the 64 existing public visual assets, retained the Chinese originals, and added 11 English-annotation variants. Only explanatory text is translated in the English images; graphics, data, mathematical symbols, and example tokens are preserved. Added tools for bilingual navigation and reproducible statistics: the English body text contains approximately 187,000 words, while the Chinese body text remains approximately 374,000 counting units.
+\item
+  Split the LaTeX body into shared section-level files so that books and standalone sections reference the same content. Added unified builds for bilingual books and 336 section PDFs, isolated job directories, three-pass compilation, failure protection, metadata checks, a relative-link index, and build reports. Both complete PDFs remain in the original \texttt{latex-project/build/} and are copied under the same names to \texttt{output/pdf/complete-books/}. Sections are organized by language, part, and chapter under \texttt{chinese-sections/} and \texttt{english-sections/}; the index and reports are \texttt{PDF-INDEX.md} and \texttt{build-reports/}. PDFs and temporary outputs are not uploaded.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-1}{%
+\section{2026-09-03}\label{section-1}}
+
+\begin{itemize}
+\tightlist
+\item
+  Counted the body text of all six parts using a consistent method: references are excluded, and each Chinese character and each English or numeric word counts as one unit. Added the part-level totals to the README's Coverage section, rounded to approximately 78,000, 54,000, 98,000, 29,000, 67,000, and 48,000 units, respectively. The combined total remains approximately 374,000 units.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-2}{%
+\section{2026-09-02}\label{section-2}}
+
+\begin{itemize}
+\item
+  Synchronized wording changes in \texttt{34.1\ Overview\ of\ Training\ Data\ for\ Embodied\ AI} and \texttt{34.2\ UMI\ Data} with the latest Word source. In \texttt{34.1}, expanded UMI data to data collected with UMI and wearable devices, adding an overview of exoskeleton-based collection. In \texttt{34.2}, added a fourth subsection on collecting dexterous manipulation data with wearable exoskeletons, introducing DexUMI and TwinDEX. Added two verifiable sources: the DexUMI paper and the official TwinDEX project page. Rechecked the one DrawingML crop in \texttt{34.1} and the five figures across the two sections, confirmed that their content had not changed, and retained the existing public resources. Rebuilt LaTeX and updated the README body-text count to approximately 374,000 units.
+\item
+  Redrew the two handwritten schematics in \texttt{1.3\ Gradient\ Descent\ and\ Backpropagation}. The gradient geometry diagram now has consistent axes, intercepts, and perpendicular projections: \(O\), \(P\), and the \(\theta_1\) axis are collinear, as are \(P\), \(H\), and \(Q\), and \(AO=2\), \(OP=1\), and \(OQ=2\) are marked accurately. The learning-rate diagram retains its reviewed layout. Updated the body text and LaTeX to specify the local tangent plane as \(L=2-2\theta_1-\theta_2\), correct the partial derivatives and negative gradient to \(\frac{\partial L}{\partial\theta_1}=-2\), \(\frac{\partial L}{\partial\theta_2}=-1\), and \(-\nabla L=(2,1)\), and explain \(OH\perp PQ\) and its alignment with the negative gradient.
+\item
+  Fixed the LaTeX project's PDF output name. All three XeLaTeX passes use \texttt{a-comprehensive-ai-learning-note（位于github同名仓库）} as the job name, producing \texttt{latex-project/build/a-comprehensive-ai-learning-note（位于github同名仓库）.pdf}. Three passes stabilize table-of-contents page numbers and cross-references in a clean build. Recorded this rule in the generator-maintained build instructions so regeneration does not revert to \texttt{main.pdf}.
+\item
+  Upgraded \texttt{actions/checkout} in the GitHub-to-Gitee synchronization workflow from \texttt{v4} to \texttt{v6}, which uses Node.js 24, eliminating the Node.js 20 deprecation warning while preserving full-history and tag synchronization. Also put the README's v1.1 and v2.0 release dates and changes on separate lines and synchronized the LaTeX version history.
+\item
+  Had multiple independent shards manually check the references in all 168 public Markdown sections, followed by a read-only review of the combined changes. Revised 94 sections to address missing sources, author order, official titles, years, publication details, broken or unstable links, and mismatches with body-text claims. Reference entries increased from 493 to 592. In particular, added original sources for classic algorithms and named frontier methods; standardized entries for books including \emph{Dive into Deep Learning} and \emph{Hands-on Learning of Large-Model Agents} (translated title; in Chinese); corrected authors or titles for Kimi K2.5, RoFormer, Engram, mHC, VAPO, LingBot-VA 2.0, V-JEPA, LeWorldModel, Matrix-Game 3.0, and others; and conservatively corrected insufficiently supported or mismatched statements about RMSProp, MuonClip, VQ-VAE, VIME, EWC, Ring Attention, MCP, KV Cache, Codex compaction, LATS, GRPO, and related topics. Removed a secondary UMI archive entry that did not link directly to the text and conference attributions not confirmed by authoritative metadata; removed tracking parameters from reference links. Rebuilt LaTeX and updated the README body-text count to approximately 373,000 units using the consistent method that excludes references.
+\item
+  Rechecked GitHub mathematics and paragraph formatting in all 168 public Markdown sections and fixed problems in 76. This included converting 409 ordered-list markers across 63 sections and the README to CommonMark-compatible forms and adding missing blank lines between headings, lists, text, and display equations. Fixed display delimiters joined to prose in \texttt{23.2\ Search-Based\ Methods}; excess backslashes in matrix and alignment environments in \texttt{15.6\ Equivalence\ Between\ Attention\ Mechanisms\ and\ Gradient\ Descent} and \texttt{21.5\ Frontier\ Research\ on\ Reinforcement\ Fine-Tuning}; and a hidden tab corrupting \texttt{\textbackslash{}to} in \texttt{25.2\ Model\ Memory}. Also addressed bare mathematical expressions, code, pseudocode, and pseudo-tags that Markdown could misinterpret as links, emphasis, HTML, or prose. Strengthened pre-upload validation so a \texttt{\$\$} delimiter sharing a line with prose causes a failure. Chapter, file, body-text, and image counts were unchanged by these formatting fixes.
+\item
+  Added the representation-learning survey by Bengio, Courville, and Vincent mentioned at the beginning of \texttt{20.3\ The\ Manifold\ Hypothesis\ and\ Hyper-Connections}.
+\item
+  Fixed mathematical and paragraph typesetting in LaTeX. Set wrapping column widths for unbounded wide tables generated by Pandoc and corrected proportional tables exceeding the text width. Reformatted long equations for HMM backward recursion, GRPO, sequence-level KL, NF4 vectors, and the Diffusion Forcing ELBO. Restored misparsed complexity notation in the KV Cache subsection and removed paragraph indentation before images. Regenerated all 35 chapters and completed two XeLaTeX passes; the 609-page A4 PDF had no overflowing content, missing glyphs, undefined commands, or pending cross-reference-update warnings.
+\item
+  Updated the README and PDF cover title to \texttt{A\ Comprehensive\ AI\ Learning\ Note\ (v2.0)}, using fixed-width scaling to keep the PDF title on one line, and changed the cover date to September 2, 2026. Removed the Chinese explanatory notes at the ends of the Jim Fan talk references in \texttt{35.1} and \texttt{35.2}, retaining only the formal \texttt{{[}Video{]}} entries.
+\item
+  Synchronized \texttt{30.1\ Architectural\ Approaches\ for\ Embodied\ AI\ Models} with the latest Word source. Revised the descriptions of traditional modular systems, hierarchical models, VLA, and WAM, and expanded the role of world models in planning. Rewrote the action-space descriptions for OpenVLA, \(\pi_0\), and LingBot-VA 2.0, adding how intermediate action representations are converted into low-level motor commands through IK, kinematics, and traditional control modules, and distinguishing policy-level embodiment adaptation from control-level conversion. Checked all five original images individually, confirming that none had DrawingML cropping and all were text/formula screenshots; retained Markdown/LaTeX transcriptions without adding public images. Added 13 verifiable sources corresponding to the text, covering YOLO, SLAM, SayCan, Code as Policies, PaLM-E, RT-2, a WAM survey, CrossFormer, URDF, inverse kinematics, impedance control, MPC, and PID. Marked v2.0 as the current version in the README, expanded the explanation of the reorganization of Parts 4--6, and updated the body-text count to approximately 372,000 units.
+\item
+  Completed \texttt{34.4\ Data\ Processing\ and\ Alignment} from the latest Word source. Renamed its second subsection to ``Qwen-RoboManip: Data Alignment'' and added the 80-dimensional action/state format across robots, binary masks, coordinate-system unification, contextual embodiment features, pairwise modality alignment, and checks of logs and kinematic correctness. The source contained no images. Retained the three existing references, synchronized LaTeX/PDF, and updated the README body-text count to approximately 371,000 units.
+\item
+  Synchronized wording changes in \texttt{34.3\ Human\ Egocentric\ Data} with the latest Word source. Added Qwen-RobotManip to the visual-appearance rewriting methods, described calculating robot motion from human hand trajectories through physical simulation and then overlaying a virtual robot, and standardized spacing around IK. Rechecked eight image positions and four DrawingML crops, confirmed no changes to visible content, and retained the existing public resources. Added the Qwen-RobotManip technical report and synchronized LaTeX/PDF.
+\item
+  Replaced the references in \texttt{30.1\ Architectural\ Approaches\ for\ Embodied\ AI\ Models} with the 13 sources specified by the user, adding OpenPI, action-normalization documentation, LingBot-VA documentation, Dyna-2, GEN-1/GEN-1.5, and classic papers on operational-space control and hierarchical quadratic programming. Moved \(\pi_0\) outside reference-link labels for correct GitHub rendering. Added the 具身纪元 article \emph{The Secret of Pretraining Lies in More Than Scale and Diversity} (translated title; in Chinese) to \texttt{34.4\ Data\ Processing\ and\ Alignment} and synchronized LaTeX/PDF.
+\item
+  Fully reconstructed \texttt{34.3\ Human\ Egocentric\ Data} from the latest Word source. Synchronized the representation/world-model signals from human egocentric video, four cross-embodiment transfer methods, and Dyna-2's million-hour scaling-law experiments. Checked eight Word-visible images and four DrawingML crops individually. Retained the EgoScale/LAPA workflow diagrams, EgoMimic masking comparison, and Dyna-2 experimental curves as cropped public resources; no automatic OCR was used. Completed references for all named models, datasets, and foundational methods, adding the 具身纪元 articles \emph{Egocentric Data, Booming in Silicon Valley, Is Rewriting the Rules of Embodied Data} (translated title; in Chinese) and \emph{Our Previous Approaches to Using Human Video Data May Have Taken the Wrong Direction} (translated title; in Chinese). Synchronized LaTeX/PDF and public statistics.
+\item
+  Synchronized wording changes in \texttt{34.1\ Overview\ of\ Training\ Data\ for\ Embodied\ AI} with the latest Word source. Incorporated motion capture among the four examples of real-robot teleoperation, removed the separate motion-capture subsection, renumbered subsequent subsections, and revised the limitations of world-model-generated data. Confirmed that the source's only image retained its existing crop; no public image was changed. Added the 具身纪元 article \emph{Touch Needs Its Own Foundation Model and Open-X Embodiment} (translated title; in Chinese) to \texttt{33.4} and \emph{UMI Is a Revolutionary New Paradigm for Embodied Data Collection, but This Is Only the Beginning} (translated title; in Chinese) to \texttt{34.2}, synchronizing LaTeX/PDF. Adjusted spacing between reference headings and lists in the LaTeX generator so headings and first entries are not crowded.
+\item
+  Renamed the root learning-path document from \texttt{学习路径.md} to \texttt{初学者学习路径.md}. Replaced the former topic-specific routes with a recommended 24-section reading sequence for beginners and added v1.0, v1.1, and v2.0 version history to the README. Revised the frontier-research notes in the README and disclaimer, noted the corresponding LaTeX version, fixed missing visible spaces between part numbers and titles in the PDF contents and missing indentation in the first paragraph after headings, and changed the PDF accent colors to a consistent sky-blue-to-blue range. Synchronized entry links, conversion and validation scripts, and LaTeX.
+\item
+  Fixed persistent GitHub mathematics rendering problems in \texttt{31.2\ Reinforcement\ Learning\ for\ VLA\ Models}: removed standalone equals-sign lines misidentified as Markdown headings, corrected unrendered mathematics next to Chinese punctuation, star superscripts, and mathematics inside reference-link labels. Restored the step-size factor in the noise transition from the Word-visible source and corrected the symbols for Flow-Noise internal states, the noise network, and Policy Agnostic RL.
+\item
+  Fixed GitHub mathematics rendering in \texttt{32.3\ State\ Space\ Models}, \texttt{33.1\ Overview\ of\ World-Action\ Models}, \texttt{33.2\ Unified\ World-Action\ Generative\ Models}, and \texttt{33.3\ World-Action\ Models\ Without\ Video\ Generation\ at\ Inference\ Time}. Removed Setext-heading misinterpretations caused by standalone equals signs, corrected inline-math boundaries, set delimiters, and less-than escaping, and checked each equation against Word-visible content. Also made the LaTeX generator compatible with GitHub's backtick inline-math syntax and removed the corresponding stray backticks from existing LaTeX outputs for \texttt{15.6} and \texttt{21.5}.
+\item
+  Completed sources for named work in Chapters 31--35. Added LAPA, UniVLA, and Moto to \texttt{31.1}; RSSM, RTFM, IC-World, C-SWM, Marble, and LeWorldModel to \texttt{32.2}; clarified the references corresponding to PlaNet/RSSM, Dreamer 3, and Dreamer 4 in \texttt{32.3}; added LingBot-VA, LingBot-VA 2.0, PAR, PhysGen, and DreamDojo to \texttt{33.2}; CraftNet, Tactile-VLA, and ForceVLA2 to \texttt{33.4}; GigaWorld-Policy to \texttt{34.1}; and Jim Fan's ``Robotics' End Game'' talk at AI Ascent 2026 to \texttt{35.1} and \texttt{35.2}.
+\item
+  Selected references from the user's candidates for the four topics directly covered in \texttt{34.2\ UMI\ Data}: MV-UMI (multiple views), ViTaMIn (visuotactile sensing), DexUMI (dexterous hands), and research on data scaling laws for robot imitation learning. Did not include candidates less directly related to the section's existing discussion.
+\item
+  Synchronized the current Word update to \texttt{32.4}, changing the title to ``Joint Embedding Predictive Architecture (JEPA)'' and revising the opening sentence accordingly. Retained the existing manual transcriptions of 38 image positions and the correspondence for 11 crops without reprocessing the images; updated the contents and LaTeX.
+\item
+  Removed the former public Parts 4 and 5 (former Chapters 22--39) and rebuilt Part 4, LLM Agents; Part 5, Diffusion Models and Multimodal Generation; and Part 6, Embodied AI and World Models, from the current Word version. Their public scope became Chapters 22--35, totaling 54 sections. The Word originals were not modified.
+\item
+  Checked all 470 Word image positions in the new Parts 4--6 and their 142 DrawingML crops individually. Manually transcribed 448 text, formula, table, or explanatory screenshots into Markdown/LaTeX and retained 22 images whose visual layout was necessary as cropped public resources. No automatic OCR was used, and no image-reconstruction placeholders remained.
+\item
+  Moved the Kimi Delta Attention architecture image still referenced by \texttt{19.9\ Delta\ Attention} into the Part 3 resource directory to prevent a broken link when the former Part 4 resources were removed.
+\item
+  Added the corresponding references and supplementary notes from \texttt{第4-6部分参考文献.md} and verified the new citations individually. Synchronized the full contents, learning path, README, citation metadata, conversion configuration, and LaTeX.
+\item
+  Added \texttt{15.6\ Equivalence\ Between\ Attention\ Mechanisms\ and\ Gradient\ Descent}. Manually transcribed text and formulas from the locally visible Word content and retained the equivalence between dynamic weight updates and fixed Transformer layers as one public workflow diagram. Added references on in-context gradient descent, linear attention, and induction heads.
+\item
+  Removed \texttt{18.4\ Quantization\ of\ High-Dimensional\ Vectors\ (Paper)}. Moved the former \texttt{27.2\ Delta\ Attention} to \texttt{19.9} and shifted the former \texttt{19.9\ Gated\ Attention\ (Paper)} to \texttt{19.10\ Gated\ Attention}. Following the current Word titles, removed ``(Paper)'' from \texttt{20.2\ Engram\ Module}, \texttt{20.4\ Attention\ Residuals}, and \texttt{21.1} through \texttt{21.4}, and corrected their public Markdown filenames.
+\item
+  Removed the former \texttt{21.5} through \texttt{21.8} and added the merged \texttt{21.5\ Frontier\ Research\ on\ Reinforcement\ Fine-Tuning}. Manually transcribed the local Word content on MaxRL, ExGRPO, and experience-reflection reinforcement learning with self-distillation, and added the three corresponding references. Synchronized the contents, public-scope statistics, and LaTeX.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-3}{%
+\section{2026-05-22}\label{section-3}}
+
+\begin{itemize}
+\tightlist
+\item
+  Synchronized wording changes from the local Word version of \texttt{16.1\ GPT\ and\ Pretraining} into Markdown and LaTeX. Added a Scaling Law subsection and references on pretraining scaling, Chinchilla, post-training RL, and inference-time compute scaling.
+\item
+  Synchronized text changes from the local Word versions of \texttt{38.2\ Input\ Encoding\ for\ Multimodal\ Unified\ Understanding–Generation\ Models\ (Paper)} and \texttt{38.3\ Backbone\ Architectures\ and\ Training\ for\ Multimodal\ Unified\ Understanding–Generation\ Models\ (Paper)} into Markdown and LaTeX. Added descriptions of SenseNova-U1 input encoding, positional encoding, and training, references for SenseNova-U1 and DMD, and an updated README total body-text count.
+\item
+  Synchronized text changes from the local Word version of \texttt{32.2\ Major\ Technical\ Approaches\ to\ World\ Models} into Markdown and LaTeX, adding Gemini Omni and systematically completing verified references for world-model work mentioned in the text.
+\item
+  Synchronized changes in the local Word versions of \texttt{32.1\ Overview\ of\ World\ Models} and \texttt{39.4\ Embodied\ AI\ with\ a\ Unified\ World–Policy\ Architecture\ (Paper)} into Markdown and LaTeX. Added physical-world reasoning to \texttt{32.1} and transcribed two text-only example images. Added a Pelican-Unified 1.0 subsection to \texttt{39.4} and the corresponding arXiv reference.
+\item
+  Moved the former local Word section \texttt{29.7\ Outlook\ on\ Autonomous\ Learning\ Intelligent\ Systems\ (Paper)} to \texttt{32.4\ Outlook\ on\ Autonomous\ Learning\ Intelligent\ Systems\ with\ World\ Models\ (Paper)}. Synchronized text and image changes into Markdown and LaTeX, classified Word-visible images, transcribed text/formulas, and retained necessary architecture diagrams. References were unchanged.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-4}{%
+\section{2026-05-13}\label{section-4}}
+
+\begin{itemize}
+\tightlist
+\item
+  Synchronized wording changes in the local Word version of \texttt{32.1\ Overview\ of\ World\ Models} concerning applications of world models into Markdown and LaTeX.
+\item
+  Synchronized changes in the local Word version of \texttt{37.3\ LeWorldModel\ (Paper)} concerning action vectors, predictor context, and limitations arising from dependence on action data into Markdown and LaTeX. Corrected the transcription of the second image according to its Word-visible crop.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-5}{%
+\section{2026-05-11}\label{section-5}}
+
+\begin{itemize}
+\tightlist
+\item
+  Added The Bitter Lesson as \texttt{1.6\ The\ Bitter\ Lesson}, synchronized the local Word plain text into Markdown and LaTeX, and updated the contents and public-scope statistics.
+\item
+  Rechecked Word-visible crops in chapters whose images had already been reconstructed and corrected public image resources according to the actually visible cropped regions, avoiding publication of unrelated content from uncropped originals.
+\item
+  Corrected formulas, body-text statements, or derivation fragments in \texttt{01-05}, \texttt{08-01}, \texttt{14-02}, \texttt{17-06}, \texttt{19-04}, \texttt{26-03}, \texttt{27-01}, \texttt{29-02}, \texttt{29-03}, \texttt{30-01}, \texttt{30-07}, \texttt{36-02}, and \texttt{36-05} that did not match the Word originals.
+\item
+  Added the cropped public image of the second HMM structure diagram from Word to \texttt{04-07}, together with the corresponding references.
+\item
+  Replaced several public images in \texttt{01-02}, \texttt{15-03}, \texttt{16-03}, \texttt{20-01}, and \texttt{20-03} with their Word-visible cropped versions.
+\item
+  Corrected the Markdown and LaTeX representation of the Å unit in \texttt{38-08} to avoid missing-glyph warnings during LaTeX compilation.
+\item
+  Regenerated LaTeX content, image mappings, and resource manifests from the updated Markdown and public assets.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-6}{%
+\section{2026-05-09}\label{section-6}}
+
+\begin{itemize}
+\tightlist
+\item
+  Completed the remaining 300 public image-reconstruction placeholders in \texttt{34-04}, \texttt{34-05}, \texttt{34-07}, \texttt{38-02}, \texttt{38-03}, \texttt{38-04}, \texttt{38-05}, \texttt{39-02}, \texttt{39-04}, and \texttt{39-05}. Transcribed text, formulas, and tables from Word-visible cropped images, adding only one necessary public workflow diagram.
+\item
+  Classified \texttt{20-02\ Engram\ Module} as paper-reading notes and updated the filename, body heading, and contents link.
+\item
+  Synchronized text/image adjustments from the local Word versions of \texttt{33-01} and \texttt{39-01} and added verified references to \texttt{39-03}.
+\item
+  Added \texttt{33.5\ Outlook\ for\ Embodied\ AI}, synchronized the local Word body text into Markdown and LaTeX, and added verified references.
+\item
+  Reconstructed the next batch of image placeholders in \texttt{34-06}, \texttt{37-01}, \texttt{37-02}, \texttt{37-03}, \texttt{38-06}, \texttt{38-07}, \texttt{38-08}, \texttt{39-01}, and \texttt{39-03}. Transcribed text/formulas from Word-visible cropped images and added three necessary public visual figures.
+\item
+  Fixed several GitHub mathematics rendering problems in \texttt{29-05}, \texttt{30-05}, \texttt{30-06}, \texttt{30-07}, \texttt{30-08}, \texttt{30-10}, \texttt{31-02}, \texttt{31-03}, \texttt{31-04}, \texttt{33-02}, \texttt{33-04}, \texttt{34-03}, and \texttt{37-01}.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{section-7}{%
+\section{2026-05-04}\label{section-7}}
+
+\begin{itemize}
+\tightlist
+\item
+  Initialized the GitHub open-source repository.
+\item
+  Converted the local Word originals into Markdown.
+\item
+  Discontinued ordinary OCR formula text and replaced image positions with stable reconstruction placeholders.
+\item
+  Created a local image-reconstruction inventory for subsequent manual reconstruction starting from Chapter 1.
+\item
+  Established the image-classification policy: preserve visual figures as image resources and transcribe pure text and formulas into the body.
+\item
+  Uploaded the first five visual figures in \texttt{01-02} and transcribed the sixth, a formula image, into LaTeX.
+\item
+  Added the project-local \texttt{ai-note-image-workflow} Skill for subsequent multi-agent image-reconstruction shards and GitHub pushes.
+\item
+  Synchronized Markdown with the current public scope and removed chapters no longer included in it.
+\end{itemize}
+
+\clearpage

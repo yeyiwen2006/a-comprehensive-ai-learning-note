@@ -1,0 +1,147 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux957fux77edux671fux8bb0ux5fc6ux7f51ux7edclstm}{%
+\section{长短期记忆网络（LSTM）}\label{ux957fux77edux671fux8bb0ux5fc6ux7f51ux7edclstm}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux53ccux72b6ux6001ux67b6ux6784}{%
+\subsection{一、双状态架构}\label{ux4e00ux53ccux72b6ux6001ux67b6ux6784}}
+
+记忆元（\(C_t\)）：内部的、私有的长期记忆。它像一条隐藏的传送带，主要负责长期信息的保留和传递。
+
+隐状态（\(h_t\)）：对外的、暴露的短期记忆/输出。它是当前时间步的输出，也是下一个时间步的输入的一部分。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6838ux5fc3ux6b65ux9aa4ux548cux95e8ux63a7}{%
+\subsection{二、核心步骤和门控}\label{ux4e8cux6838ux5fc3ux6b65ux9aa4ux548cux95e8ux63a7}}
+
+\Needspace{5\baselineskip}
+第一步：计算候选记忆元：
+
+\[
+\tilde{C}_t = \tanh(W_C [h_{t-1}, x_t] + b_C)
+\]
+
+\Needspace{5\baselineskip}
+第二步：更新记忆元：
+
+\[
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
+\]
+
+这里 \(f_t\) 是忘记门，与上一个记忆元状态 \(C_{t-1}\) 逐点相乘。接近 \(0\) 的值意味着``忘记这个信息''，接近 \(1\) 的值意味着``完整保留这个信息''；\(i_t\) 是输入门，决定候选神经元各点的信息被写入记忆元的程度。二者组合的效果有点类似于 GRU 中的更新门，但并不限制二者的和必须为 \(1\)，事实上缓解了梯度消失（和为 \(1\) 意味着大量零点几的权重）。
+
+\Needspace{5\baselineskip}
+第三步：计算当前隐状态（输出）：
+
+\[
+h_t = o_t \odot \tanh(C_t)
+\]
+
+\(o_t\) 为输出门，是连接记忆元和隐状态的桥梁，决定从 \(C_t\) 中读出什么到 \(h_t\)。
+
+\Needspace{5\baselineskip}
+形象表达：
+
+\Needspace{5\baselineskip}
+LSTM~像一个有严格文件管理流程的办公室：
+
+忘记门：决定档案室（\(C_t\)）里哪些旧文件要碎掉。
+
+输入门：决定今天收到的新文件（\(\tilde{C}_t\)）有多少要归档。
+
+输出门：决定从档案室拿出哪些文件给来访者看（\(h_t\)）。
+
+\Needspace{5\baselineskip}
+思考的问题：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  LSTM中没有类似GRU中重置门的结构，那 HTML 标签之类的无关信息就会影响候选记忆元的计算，对此LSTM是怎么避免它带来的问题的？
+\end{enumerate}
+
+因为当遇到 \texttt{\textless{}div\textgreater{}}、\texttt{\textless{}/p\textgreater{}} 这类 HTML 标签时，训练好的 LSTM 会让输入门对应受标签影响的几个位置的 \(i_t \approx 0\)，同时，忘记门 \(f_t\) 可以保持接近 \(1\)，完整保留之前的记忆。而且即便这里处理不好，还有输出门作为``保险''。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  为什么能有效解决传统RNN的梯度消失？
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+LSTM的记忆元更新公式：
+
+\[
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
+\]
+
+这个公式可以看作是两个部分的加权和：一部分是过去的记忆 \(C_{t-1}\)，另一部分是当前候选记忆 \(\tilde{C}_t\)。
+
+\Needspace{5\baselineskip}
+在反向传播时，我们需要计算 \(C_t\) 对 \(C_{t-1}\) 的梯度。根据求导法则，这个梯度是：
+
+\[
+\frac{\partial C_t}{\partial C_{t-1}} = f_t
+\]
+
+这里忽略掉候选记忆元对 \(C_{t-1}\) 的依赖，因为通常我们只考虑直接依赖，而且候选记忆元本身也是通过 \(C_{t-1}\) 计算的，但这里看主要路径。
+
+注意，这个梯度中有一个重要的部分：忘记门 \(f_t\)。而且，这个梯度是加在 \(C_{t-1}\) 上的，而不是通过一个压缩性的非线性函数（如 \(\tanh\)）的导数。
+
+在传统RNN中，\(h_t = \tanh(W [h_{t-1}, x_t] + b)\)，梯度会连续乘以 \(\tanh\) 的导数（该导数小于 \(1\)），导致梯度指数级缩小。而在LSTM中，记忆元的梯度直接是 \(f_t\)，而且这个 \(f_t\) 是通过 sigmoid 函数得到的，范围在 \(0\) 到 \(1\) 之间。但是，关键点在于：这个梯度不是连续乘以一个小于 \(1\) 的数，而是乘以 \(f_t\)。如果 \(f_t\) 接近 \(1\)，那么梯度就可以几乎无损地传递到上一个时间步。
+
+因此，记忆元的梯度在反向传播时，可以沿着时间步保持一个相对稳定的值，而不会指数级消失。这就像是一条``高速公路''，梯度可以沿着这条公路直接流动，从而缓解了梯度消失。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e09ux4e2aux95e8ux7684ux8ba1ux7b97}{%
+\subsection{三、三个门的计算}\label{ux4e09ux4e09ux4e2aux95e8ux7684ux8ba1ux7b97}}
+
+\Needspace{5\baselineskip}
+忘记门：
+
+\[
+f_t = \sigma(W_f [h_{t-1}, x_t] + b_f)
+\]
+
+\Needspace{5\baselineskip}
+输入门：
+
+\[
+i_t = \sigma(W_i [h_{t-1}, x_t] + b_i)
+\]
+
+\Needspace{5\baselineskip}
+输出门：
+
+\[
+o_t = \sigma(W_o [h_{t-1}, x_t] + b_o)
+\]
+
+其中 \(\sigma\) 是 sigmoid 函数，保证三者值在 \((0,1)\)。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux603bux7ed3}{%
+\subsection{四、总结}\label{ux56dbux603bux7ed3}}
+
+整体上，相对于GRU而言，LSTM参数更多，计算更复杂，通常在更复杂的数据集上表现更优，数据量不大时则相对GRU无显著优势。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-21}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-21}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Hochreiter, S., \& Schmidhuber, J. (1997). \href{https://doi.org/10.1162/neco.1997.9.8.1735}{Long Short-Term Memory}. Neural Computation.
+\end{itemize}
+
+\clearpage

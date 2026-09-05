@@ -1,0 +1,194 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5177ux8eabux667aux80fdux6a21ux578bux7684ux67b6ux6784ux8defux7ebf}{%
+\section{具身智能模型的架构路线}\label{ux5177ux8eabux667aux80fdux6a21ux578bux7684ux67b6ux6784ux8defux7ebf}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux67b6ux6784ux8defux7ebf}{%
+\subsection{一、模型架构路线}\label{ux4e00ux6a21ux578bux67b6ux6784ux8defux7ebf}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4f20ux7edfux6a21ux5757ux5316ux8defux7ebf}{%
+\subsubsection{（一）传统模块化路线}\label{ux4e00ux4f20ux7edfux6a21ux5757ux5316ux8defux7ebf}}
+
+核心逻辑：经典的``感知-决策-控制''解耦范式。
+
+工作流：视觉/传感器模块负责目标检测与建图（如YOLO、SLAM），决策模块负责全局与局部路径规划，底层的传统控制算法（如MPC、PID）负责电机驱动执行。
+
+特点：可解释性强、工程落地极其成熟，但本质上不具备智能，在跨模块传递时信息损耗大，难以应对长尾的非结构化场景，难以涌现通用泛化能力。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5206ux5c42ux6a21ux578bux8defux7ebf}{%
+\subsubsection{（二）分层模型路线}\label{ux4e8cux5206ux5c42ux6a21ux578bux8defux7ebf}}
+
+核心逻辑：引入``大脑''（Brain）与``小脑''（Cerebellum）的异构协同机制。
+
+工作流：顶层视觉语言模型（VLM/LLM）作为``大脑''，接收多模态环境输入和人类指令，进行高维度的语义推理和任务分解，输出中间表示（如Python代码、航点位置、离散的技能/Primitive指令）。底层控制策略作为``小脑''，将中间表示转化为动作。
+
+特点：平衡了LLM的泛化推理能力与RL/控制算法的底层执行精度，但并非端到端，难以闭环优化，智能水平也受到限制。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09vlavision-language-actionux8defux7ebf}{%
+\subsubsection{（三）VLA（Vision-Language-Action）路线}\label{ux4e09vlavision-language-actionux8defux7ebf}}
+
+核心逻辑：建立从多模态传感器输入到机器人动作的端到端映射。视觉-语言-动作（Vision-Language-Action, VLA）模型是该路线的主流。
+
+工作流：将图像、文本指令、本体感受器状态（如当前各关节角度）统一转换为Token，输入到基于Transformer的自回归模型或扩散模型（Diffusion）中，直接输出多自由度的连续或离散动作（Action Tokens）。
+
+特点：是目前较为主流的方法。受数据所限，目前大部分VLA主要由VLM经过微调得到，其语言预训练使其能捕获高层语义，但精细预测能力较弱。此外，VLA目前仍面临在物理环境变化时泛化性不足的问题，以及不同硬件间的迁移性问题。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbwamworld-action-modelux8defux7ebf}{%
+\subsubsection{（四）WAM（World-Action Model）路线}\label{ux56dbwamworld-action-modelux8defux7ebf}}
+
+核心逻辑：结合预测未来状态（即世界模型，目前主流的WAM大多是输出下一帧，类似于视频生成模型）和动作来进行策略规划。
+
+工作流：可以采取解耦架构，先由策略模型输出候选动作，再在世界模型中利用搜索展开优化；也可以采取顺序架构，先由世界模型预测未来状态，策略模型再根据该预测状态输出动作；还可以直接将策略模型和世界模型二合一，让一个模型同时具备双重功能。
+
+特点：是近年迅速兴起的方法，目前主流路线一般由视频生成模型微调得到。世界模型通过对状态演化的前向预测，使模型明白动作会导致物理环境发生何种形变或位移，赋予模型在现实世界中``规划''的能力。模型需要与环境互动，就需要具备规划的能力：在大模型与数字世界互动时，语言模型已经起到了预测、规划的作用；在具身智能与物理世界互动时，世界模型就起到了规划的作用。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5173ux4e8eux5177ux8eabux667aux80fdux6a21ux578bux751fux6210ux7684ux52a8ux4f5c}{%
+\subsection{二、关于具身智能模型生成的``动作''}\label{ux4e8cux5173ux4e8eux5177ux8eabux667aux80fdux6a21ux578bux751fux6210ux7684ux52a8ux4f5c}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux52a8ux4f5cux5230ux5e95ux90fdux662fux4ec0ux4e48}{%
+\subsubsection{（一）``动作''到底都是什么？}\label{ux4e00ux52a8ux4f5cux5230ux5e95ux90fdux662fux4ec0ux4e48}}
+
+\Needspace{5\baselineskip}
+以OpenVLA为例，它的动作用的是末端执行器（End-Effector，EEF）的位姿变化，共有7个维度，可以看成最典型的``6DoF末端运动+1DoF夹爪''：
+
+\[
+a_t=[\Delta x,\Delta y,\Delta z,\Delta r_x,\Delta r_y,\Delta r_z,g].
+\]
+
+OpenVLA作者明确说明：前3维是end-effector XYZ的相对变化；中间3维是末端姿态的相对变化；最后一维控制gripper。具体姿态表示和单位由对应数据集定义。
+
+这里用的是位姿变化，而不是具体关节的控制指令。这种设计的一个重要目的是尽量把任务策略和具体机器人本体解耦。同样一个``向前伸手5厘米并夹住杯子''的动作，可以由不同自由度、不同连杆长度的机械臂执行，而不要求具身大模型分别学习每台机器人的具体关节角。
+
+\Needspace{5\baselineskip}
+\(\pi_0\)在采用了类似的思想的基础上，在总维度设置上相对灵活，最大维度为32维，布局例如：
+
+\[
+\begin{aligned}
+\mathit{dim}_{0:5} &= \text{left arm joint angles},\\
+\mathit{dim}_{6} &= \text{left gripper},\\
+\mathit{dim}_{7:12} &= \text{right arm joint angles},\\
+\mathit{dim}_{13} &= \text{right gripper}.
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+移动机器人还可以使用：
+
+\[
+\mathit{dim}_{14:15}=[v_x,v_y].
+\]
+
+其余不用的维度可以是padding。对于Franka这样的7-DoF单臂机器人，官方文档也允许使用前7个维度作为关节动作，第8维作为gripper。
+
+其余维度用于兼容不同机器人本体，比如有的机器人可能要用某几个维度，有的用另外一些维度等，不用的维度可以是padding。对于一些7-DoF单臂机器人，也允许使用前7个维度作为关节动作，第8维作为gripper。
+
+这与OpenVLA的``严格7个action token''是非常不同的设计哲学。
+
+\Needspace{5\baselineskip}
+再举LingBot-VA 2.0的例子，其动作最大维度为30维，分配如下：
+
+\Needspace{5\baselineskip}
+每只手：
+
+\[
+[\underbrace{\text{6-DoF root pose}}_{6},\underbrace{\mathit{gripper}}_{1}]
+\]
+
+\Needspace{5\baselineskip}
+即可以抽象为：
+
+\[
+[\mathit{pose}^{6D}_L,g_L,\mathit{pose}^{6D}_R,g_R].
+\]
+
+与\(\pi_0\)类似，其他16个维度也用于兼容其他本体等，某台机器人不存在的维度就mask掉，相对灵活。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux52a8ux4f5cux5982ux4f55ux8f6cux5316ux4e3aux5e95ux5c42ux7535ux673aux6307ux4ee4}{%
+\subsubsection{（二）``动作''如何转化为底层电机指令？}\label{ux4e8cux52a8ux4f5cux5982ux4f55ux8f6cux5316ux4e3aux5e95ux5c42ux7535ux673aux6307ux4ee4}}
+
+前面提到，具身大模型输出的``动作''并不是可以直接发送给电机驱动器的关节力矩、关节电流等底层指令，而是一种相对通用的中间动作表示，最典型的就是末端执行器的位姿变化。因此，从具身大模型生成动作到真正驱动机器人，中间往往还存在一层甚至多层控制模块。例如，当模型输出的是末端位姿变化时，机器人首先需要根据当前位置计算目标末端位姿，然后通过逆运动学（Inverse Kinematics，IK）求解各个关节应当运动到的目标角度。如果采用速度控制，则也可以将末端速度转换成关节速度。随后，再由机器人自身的关节位置控制器、速度控制器、阻抗控制器等进一步产生电机实际执行所需的力矩、电流等指令。
+
+对于很多机械臂而言，由于机器人的URDF、连杆尺寸、关节约束和Jacobian等参数通常是已知的，因此从通用动作表示到具体关节动作、电机指令的过程并不需要额外临时训练一个神经网络，而是可以直接使用机器人已有的运动学模型和控制算法完成。
+
+但需要特别区分的是，上面提的动作转换模块不需要训练，不代表模型一定不需要针对本体进行适配性训练。对于\(\pi_0\)、LingBot-VA 2.0等支持多种机器人本体的模型，其统一动作空间只是解决了不同机器人动作维度和动作表示不一致的问题。例如模型可以规定一部分维度代表左臂末端位姿，一部分代表右臂末端位姿，一部分代表关节位置，而具体机器人只使用其中与自己相关的维度。但是，一个模型能够在维度上``容纳''某种机器人，并不意味着模型天然就知道如何控制这台机器人。如果换成一个训练过程中从未出现过的新机器人，还可能存在相机安装位置不同、机械臂运动范围不同、关节自由度不同、动作尺度不同、控制频率不同等问题。此时往往需要进行一定程度的本体适配，例如利用少量该机器人的示范数据进行微调、post-training，或者训练一个较小的action head/adapter等。
+
+因此，可以把真机部署中的适配分为两个层次。
+
+第一层是策略层适配，即让具身大模型理解这台机器人应该如何完成任务。这一层在机器人本体、观测方式或者动作空间与预训练模型存在较大差异时需要训练。例如面对一个预训练阶段没有见过的新机器人，可以使用少量真实机器人轨迹对模型进行微调，使模型适应该机器人的视觉、本体状态以及动作分布。
+
+第二层是控制层转换，即把模型输出的末端位姿、关节目标等动作转换成机器人真正能够执行的底层控制量。这一层通常不需要临时训练，而更多依靠IK、whole-body control、QP、MPC、阻抗控制等传统机器人控制方法。
+
+当然，少数简单的情况下，模型也会直接预测关节空间动作。例如对于某些7-DoF机械臂，可以直接将模型输出作为关节位置或关节增量目标发送给机器人控制器。但即便如此，模型输出一般仍然不会直接成为电机电流，通常还需要由模型输出通过传统控制方法计算实际关节力矩。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-150}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-150}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Kim, M. J., Pertsch, K., Karamcheti, S., et al.~(2024). \href{https://arxiv.org/abs/2406.09246}{OpenVLA: An Open-Source Vision-Language-Action Model}. arXiv:2406.09246.
+\item
+  Black, K., Brown, N., Driess, D., et al.~(2024). \(\pi_0\): \href{https://arxiv.org/abs/2410.24164}{A Vision-Language-Action Flow Model for General Robot Control}. arXiv:2410.24164.
+\item
+  Zhang, Q., Li, L., Zhang, L., et al.~(2026). \href{https://arxiv.org/abs/2607.08639}{Native Video-Action Pretraining for Generalizable Robot Control}. arXiv:2607.08639.（LingBot-VA 2.0）
+\item
+  Physical Intelligence. (2025). \href{https://github.com/Physical-Intelligence/openpi}{OpenPI: Open-Source Models and Packages for Robotics}. GitHub.
+\item
+  Physical Intelligence. (2025). \href{https://github.com/Physical-Intelligence/openpi/blob/main/docs/norm_stats.md}{Action Normalization Statistics and Robot-Specific Action Spaces}. OpenPI Documentation.
+\item
+  Hugging Face LeRobot. (2026). \href{https://huggingface.co/docs/lerobot/main/lingbot_va}{LingBot-VA Documentation}. LeRobot Documentation.
+\item
+  Dyna Robotics. (2026). \href{https://www.dyna.co/dyna-2}{Dyna-2: A 1-Million-Hour Scaling Law for World-Action Models}. Dyna Robotics.
+\item
+  Generalist. (2026). \href{https://generalistai.com/blog/gen-1}{GEN-1: Scaling Embodied Foundation Models to Mastery}. Generalist AI.
+\item
+  Generalist. (2026). \href{https://generalistai.com/blog/gen-1.5}{GEN-1.5: Embodied Foundation Models Are One-Shot Learners}. Generalist AI.
+\item
+  Khatib, O. (1987). A Unified Approach for Motion and Force Control of Robot Manipulators: The Operational Space Formulation. \emph{IEEE Journal on Robotics and Automation}, 3(1), 43--53.
+\item
+  Khatib, O. (1993). The Operational Space Framework. \emph{JSME International Journal Series C}, 36(3), 277--287.
+\item
+  Khatib, O., Sentis, L., Park, J., \& Warren, J. (2004). \href{https://khatib.stanford.edu/publications/pdfs/Khatib_2004_IJHR.pdf}{Whole-Body Dynamic Behavior and Control of Human-Like Robots}. \emph{International Journal of Humanoid Robotics}, 1(1), 29--43.
+\item
+  Escande, A., Mansard, N., \& Wieber, P. B. (2014). Hierarchical Quadratic Programming: Fast Online Humanoid-Robot Motion Generation. \emph{The International Journal of Robotics Research}, 33(7), 1006--1028.
+\item
+  Redmon, J., Divvala, S., Girshick, R., \& Farhadi, A. (2016). \href{https://openaccess.thecvf.com/content_cvpr_2016/html/Redmon_You_Only_Look_CVPR_2016_paper.html}{You Only Look Once: Unified, Real-Time Object Detection}. \emph{CVPR}, 779--788.
+\item
+  Cadena, C., Carlone, L., Carrillo, H., et al.~(2016). \href{https://arxiv.org/abs/1606.05830}{Past, Present, and Future of Simultaneous Localization and Mapping: Toward the Robust-Perception Age}. \emph{IEEE Transactions on Robotics}, 32(6), 1309--1332.
+\item
+  Ichter, B., Brohan, A., Chebotar, Y., et al.~(2023). \href{https://proceedings.mlr.press/v205/ichter23a.html}{Do As I Can, Not As I Say: Grounding Language in Robotic Affordances}. \emph{Conference on Robot Learning}, PMLR 205:287--318.
+\item
+  Liang, J., Huang, W., Xia, F., et al.~(2022). \href{https://arxiv.org/abs/2209.07753}{Code as Policies: Language Model Programs for Embodied Control}. arXiv:2209.07753.
+\item
+  Driess, D., Xia, F., Sajjadi, M. S. M., et al.~(2023). \href{https://proceedings.mlr.press/v202/driess23a.html}{PaLM-E: An Embodied Multimodal Language Model}. \emph{ICML}, PMLR 202:8469--8488.
+\item
+  Zitkovich, B., Yu, T., Xu, S., et al.~(2023). \href{https://proceedings.mlr.press/v229/zitkovich23a.html}{RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control}. \emph{Conference on Robot Learning}, PMLR 229:2165--2183.
+\item
+  Wang, S., Shi, J., Fu, Z., et al.~(2026). \href{https://arxiv.org/abs/2605.12090}{World Action Models: The Next Frontier in Embodied AI}. arXiv:2605.12090.
+\item
+  Doshi, R., Walke, H. R., Mees, O., Dasari, S., \& Levine, S. (2025). \href{https://proceedings.mlr.press/v270/doshi25a.html}{Scaling Cross-Embodied Learning: One Policy for Manipulation, Navigation, Locomotion and Aviation}. \emph{Conference on Robot Learning}, PMLR 270:496--512.
+\item
+  Open Robotics. (n.d.). \href{https://docs.ros.org/en/rolling/Tutorials/Intermediate/URDF/URDF-Main.html}{URDF --- ROS 2 Documentation}. ROS 2 Documentation.
+\item
+  Whitney, D. E. (1969). \href{https://ieeexplore.ieee.org/document/4081862/}{Resolved Motion Rate Control of Manipulators and Human Prostheses}. \emph{IEEE Transactions on Man-Machine Systems}, 10(2), 47--53.
+\item
+  Hogan, N. (1985). \href{https://doi.org/10.1115/1.3140702}{Impedance Control: An Approach to Manipulation, Part I---Theory}. \emph{Journal of Dynamic Systems, Measurement, and Control}, 107(1), 1--7.
+\item
+  Mayne, D. Q., Rawlings, J. B., Rao, C. V., \& Scokaert, P. O. M. (2000). \href{https://www.sciencedirect.com/science/article/pii/S0005109899002149}{Constrained Model Predictive Control: Stability and Optimality}. \emph{Automatica}, 36(6), 789--814.
+\item
+  Åström, K. J., \& Hägglund, T. (2001). \href{https://www.sciencedirect.com/science/article/pii/S0967066101000624}{The Future of PID Control}. \emph{Control Engineering Practice}, 9(11), 1163--1175.
+\end{itemize}
+
+\clearpage

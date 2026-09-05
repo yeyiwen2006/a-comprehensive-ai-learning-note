@@ -1,0 +1,40 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{model-pruning}{%
+\section{Model Pruning}\label{model-pruning}}
+
+\Needspace{5\baselineskip}
+Model pruning removes ``unimportant'' parameters (weights) or structures from a model. It is divided into two categories:
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-unstructured-pruning}{%
+\subsection{I. Unstructured Pruning}\label{i.-unstructured-pruning}}
+
+Remove individual weights (set them to 0). Because pruning can be adjusted dynamically according to the model weights, the compression ratio is high, but acceleration usually requires specialized hardware or libraries that support sparse computation.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-structured-pruning}{%
+\subsection{II. Structured Pruning}\label{ii.-structured-pruning}}
+
+Remove entire structural units, such as filters (channels), neurons, or layers. This more easily provides acceleration on general-purpose hardware, but the compression ratio may be slightly lower.
+
+The procedure usually consists of: train a large model -\textgreater{} assess parameter importance (for example, using absolute magnitudes or gradients) -\textgreater{} remove unimportant parameters -\textgreater{} fine-tune the pruned model. Modern methods often use iterative pruning.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-90}{%
+\subsection{References}\label{references-90}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Han, S., Pool, J., Tran, J., \& Dally, W. (2015). \href{https://papers.nips.cc/paper_files/paper/2015/hash/ae0eb3eed39d2bcef4622b2499a05fe6-Abstract.html}{Learning both Weights and Connections for Efficient Neural Network}. NeurIPS 2015.
+\item
+  Li, H., Kadav, A., Durdanovic, I., Samet, H., \& Graf, H. P. (2017). \href{https://openreview.net/forum?id=rJqFGTslg}{Pruning Filters for Efficient ConvNets}. ICLR 2017.
+\item
+  Frankle, J., \& Carbin, M. (2019). \href{https://openreview.net/forum?id=rJl-b3RcF7}{The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks}. ICLR 2019.
+\end{itemize}
+
+\clearpage

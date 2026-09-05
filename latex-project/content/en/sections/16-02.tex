@@ -1,0 +1,50 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{word-embeddings}{%
+\section{Word Embeddings}\label{word-embeddings}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-overall-word-embedding-pipeline}{%
+\subsection{I. The Overall Word-Embedding Pipeline}\label{i.-the-overall-word-embedding-pipeline}}
+
+A tokenizer splits a sentence into tokens, then looks up the integer ID of each token in a vocabulary. The embedding layer receives these integer IDs and converts them into floating-point vectors containing semantic information for subsequent attention layers to process.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-tokenizer}{%
+\subsection{II. Tokenizer}\label{ii.-tokenizer}}
+
+Given a raw text string such as ``The cat sat,'' the tokenizer first decomposes it into tokens, then uses a word-to-ID mapping dictionary built before training to convert each token into its corresponding integer ID. For example, {[}``the'', ``cat'', ``sat''{]} becomes {[}2, 3, 4{]}. This is not part of what is trained.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-embedding-layer}{%
+\subsection{III. Embedding Layer}\label{iii.-embedding-layer}}
+
+This is the first layer inside the neural network. It takes the tokenizer's integer-ID sequence, such as {[}2, 3, 4{]}, and outputs a matrix formed by concatenating the corresponding vectors. Mathematically, this can be represented as a linear matrix computation with no activation function. Its parameters are the embedding vectors of the tokens. For example, a vocabulary of 50,000 words with a 300-dimensional vector per word gives this layer 15,000,000 parameters. During training, the parameters are updated according to inputs and outputs. Correct parameter convergence, with each word embedding effectively expressing its semantics, produces the correct output representation for an input passage. At test time, a forward computation obtains the embedding for each token ID. For example, the 300-dimensional vector for ``the'' may be {[}0.12, -0.45, \ldots, 0.88{]}, for ``cat'' {[}0.67, 0.01, \ldots, -0.23{]}, and for ``sat'' {[}-0.11, 0.98, \ldots, 0.51{]}, producing {[}{[}0.12, \ldots{]}, {[}0.67, \ldots{]}, {[}-0.11, \ldots{]}{]}.
+
+\Needspace{5\baselineskip}
+For example, the sentence \texttt{Don\textquotesingle{}t\ you\ love\ {[}emoji{]}\ Transformers?\ We\ sure\ do.} yields different token and ID sequences with different tokenizers:
+
+\begin{itemize}
+\tightlist
+\item
+  Whitespace tokenization: \texttt{{[}"Don\textquotesingle{}t",\ "you",\ "love",\ "{[}emoji{]}",\ "Transformers?",\ "We",\ "sure",\ "do."{]}}, with corresponding IDs \texttt{{[}1347,\ 249,\ 890,\ 1310,\ 8219,\ 568,\ 909,\ 791{]}}.
+\item
+  spaCy tokenization: \texttt{{[}"Do",\ "n\textquotesingle{}t",\ "you",\ "love",\ "{[}emoji{]}",\ "Transformers",\ "?",\ "We",\ "sure",\ "do",\ "."{]}}, with corresponding IDs \texttt{{[}91,\ 8123,\ 21313,\ 3123,\ 41251,\ 151,\ 9859,\ 115,\ 1515,\ 3134,\ 4114{]}}.
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-74}{%
+\subsection{References}\label{references-74}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Vaswani, A., Shazeer, N., Parmar, N., et al.~(2017). \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need}. NeurIPS 2017.
+\item
+  Radford, A., Narasimhan, K., Salimans, T., \& Sutskever, I. (2018). \href{https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf}{Improving Language Understanding by Generative Pre-Training}. OpenAI.
+\end{itemize}
+
+\clearpage

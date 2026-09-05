@@ -1318,18 +1318,11 @@ def write_typo_report(included_files: list[Path]) -> None:
 
 
 def main() -> int:
-    PROJECT.mkdir(parents=True, exist_ok=True)
-    remove_tree(IMAGE_DIR)
-    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
-    registry = ImageRegistry()
+    # The bilingual orchestrator reuses the established Markdown and math
+    # conversion helpers above, but splits at explicit section markers.
+    from bilingual_project import main as bilingual_main
 
-    included = build_combined_markdown(registry)
-    write_manifest(included, registry)
-    write_typo_report(included)
-    write_project_readme()
-    write_main_tex()
-    run_pandoc()
-    return 0
+    return bilingual_main(sys.modules[__name__])
 
 
 if __name__ == "__main__":

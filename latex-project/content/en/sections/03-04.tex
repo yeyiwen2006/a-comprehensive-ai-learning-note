@@ -1,0 +1,130 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{residual-networks-resnet}{%
+\section{Residual Networks (ResNet)}\label{residual-networks-resnet}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-learning-a-residual-rather-than-the-original-mapping}{%
+\subsection{I. Core Idea: Learning a ``Residual'' Rather Than the ``Original Mapping''}\label{i.-core-idea-learning-a-residual-rather-than-the-original-mapping}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The problem: the predicament of deep networks
+\end{enumerate}
+
+Before ResNet, researchers observed a counterintuitive phenomenon: simply increasing network depth could decrease performance. This was not merely overfitting on the test set; training error also increased. Deeper networks were therefore even harder to optimize. This is called the degradation problem.
+
+Vanishing/exploding gradients: techniques such as Batch Normalization substantially alleviate them, but do not eliminate them entirely.
+
+Network degradation: even with gradient problems addressed, a 56-layer network could perform worse than a 20-layer one. This suggests that deep networks are not inherently difficult to train; rather, existing optimization algorithms struggle to find the better solutions that should theoretically exist.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  The solution: skip connections / shortcuts
+\end{enumerate}
+
+ResNet's solution is concise and powerful: if a deep network struggles to learn the desired mapping H(x), let it learn the residual between that mapping and input x, F(x) = H(x) - x.
+
+Original mapping: H(x) = x (identity mapping)
+Residual mapping: F(x) = H(x) - x
+Reconstructing the target mapping: H(x) = F(x) + x
+
+Why is the original mapping harder to learn than the residual? The residual is generally near 0, whereas the target mapping is generally near x. Fitting y=x with a neural network full of summations and activation functions is difficult, but fitting y=0 requires only that all parameters approach 0.
+
+Probabilistic perspective: ResNet provides an ``identity mapping'' prior (a default shortcut). Learning a ``small perturbation'' or ``small correction'' F(x) relative to the identity is much easier than learning an entirely new, complex mapping H(x).
+
+Worst case: if the residual distribution cannot be learned, the block simply becomes H(x) = x, so residual-block output = residual-block input (note that a residual block is not the entire network). For example, in a two-layer network with a residual block at the second layer, the worst result is effectively doing nothing at that layer and reducing to one layer. Without a residual network, even the main features of H(x) ≈x may not be learned, giving worse performance than a single layer.
+
+\Needspace{5\baselineskip}
+An everyday analogy:
+Suppose you want to learn the route from Beijing to Shanghai (mapping H(x)).
+
+Conventional network: learn the entire route from scratch, with the risk of getting lost or taking wrong turns.
+
+ResNet: you already know a main expressway (input x). You only need to learn how to exit via some ramps, explore new side roads, and return to the main route. Your task is to learn these ``ramps and side roads'' as corrections (residual F(x)). Even if an explored side road is a dead end (F(x) = 0), you can return to the expressway (H(x) = x), ensuring performance no worse than the original route. This greatly reduces learning risk and difficulty.
+
+In the network, ``returning to the main route'' is implemented by a shortcut connection: input x skips several layers and is added directly to their output F(x).
+
+From the perspective of function classes, a key advantage of ResNet is making the function classes of increasingly deep networks as ``nested'' as possible.
+
+\begin{itemize}
+\tightlist
+\item
+  Nested function classes: for example, \(\mathcal{F}_1\) (a 1-layer network) \(\subseteq \mathcal{F}_2\) (a 2-layer network) \(\subseteq \cdots \subseteq \mathcal{F}_6\) (a 6-layer network). A 2-layer network can therefore fully reproduce a 1-layer network's behavior simply by making the second layer do nothing.
+\item
+  Nonnested function classes: if a more complex network cannot contain a simpler one---for example, \(\mathcal{F}_6\) is an architecture entirely different from \(\mathcal{F}_1\)---there is no such guarantee. The more complex network may learn worse because it cannot learn the good solution already found by the simple network.
+\end{itemize}
+
+An everyday analogy: imagine building a faster car.
+
+\begin{itemize}
+\tightlist
+\item
+  Nested: the new racing car (\(\mathcal{F}_2\)) upgrades the engine of the old racing car (\(\mathcal{F}_1\)). It is at least as fast, and may be faster.
+\item
+  Nonnested: the new racing car (\(\mathcal{F}_6\)) is designed as a boat. It may be faster on water but much slower than the old racing car on land (the image-classification task).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-residual-block-architecture}{%
+\subsection{II. Residual Block Architecture}\label{ii.-residual-block-architecture}}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0066.png}
+\caption{ResNet residual block architecture}
+\end{figure}
+
+Note: F(x) + x is elementwise addition, so F(x) must have exactly the same dimensions as x. The final convolution within the residual block must therefore adjust its channel count to match x.
+
+ResNet builds networks of different depths by stacking these residual blocks.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-why-are-residual-networks-so-effective}{%
+\subsection{III. Why Are Residual Networks So Effective?}\label{iii.-why-are-residual-networks-so-effective}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Addressing vanishing gradients: skip connections provide a ``highway'' through which gradients propagate directly backward from deep to shallow layers with almost no loss, making extremely deep networks trainable.
+\item
+  Simplifying the learning objective: learning F(x) = H(x) - x is generally easier than learning the entire H(x). In particular, when the identity mapping is already optimal or nearly optimal, pushing F(x) toward 0 is far easier than fitting the identity with many nonlinear layers.
+\item
+  Implicit model ensembling: some theories suggest that ResNet behaves like an ensemble of many shallow networks. Skip connections let data flow along paths of different depths, giving the network both shallow and deep characteristics.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-variants}{%
+\subsection{IV. Variants}\label{iv.-variants}}
+
+Bottleneck: to reduce computation in deeper networks such as ResNet-50/101/152, each residual block uses a bottleneck design: 1x1 convolution (dimension reduction) -\textgreater{} 3x3 convolution -\textgreater{} 1x1 convolution (dimension expansion). This greatly reduces the cost of the 3x3 convolution.
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-residual-connections-in-modern-large-models}{%
+\subsection{V. Residual Connections in Modern Large Models}\label{v.-residual-connections-in-modern-large-models}}
+
+Modern large models generally do not use a single residual connection directly from the overall input to the output. Instead, residual structures are added within each block or layer so that gradients and information flow smoothly through it, providing more flexible information flow---as in the many Add operations in Transformer architectures.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-14}{%
+\subsection{References}\label{references-14}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  He, K., Zhang, X., Ren, S., \& Sun, J. (2016). \href{https://arxiv.org/abs/1512.03385}{Deep Residual Learning for Image Recognition}. CVPR 2016.
+\item
+  Veit, A., Wilber, M. J., \& Belongie, S. (2016). \href{https://proceedings.neurips.cc/paper_files/paper/2016/hash/37bc2f75bf1bcfe8450a1a41c200364c-Abstract.html}{Residual Networks Behave Like Ensembles of Relatively Shallow Networks}. NeurIPS 2016.
+\end{itemize}
+
+\clearpage

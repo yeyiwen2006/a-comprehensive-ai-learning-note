@@ -1,0 +1,150 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e16ux754cux6a21ux578bux7684ux6280ux672fux8defux7ebf}{%
+\section{世界模型的技术路线}\label{ux4e16ux754cux6a21ux578bux7684ux6280ux672fux8defux7ebf}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}{%
+\subsection{一、世界模型的主要技术路线}\label{ux4e00ux4e16ux754cux6a21ux578bux7684ux4e3bux8981ux6280ux672fux8defux7ebf}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux57faux4e8eux9690ux53d8ux91cfux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（一）基于隐变量的世界模型}\label{ux4e00ux57faux4e8eux9690ux53d8ux91cfux7684ux4e16ux754cux6a21ux578b}}
+
+基于隐变量的世界模型是世界模型最早的形式之一，如RSSM及其衍生的相关模型，即将t时刻的世界状态压缩为隐变量z\_t，结合动作a\_t等，预测下一时刻的隐变量z\_t+1。一般运用或结合下游任务的损失训练。
+
+该路线在业界单独出现不多，但它没有消失，而是融入了生成式世界模型之中。这是因为视频像素维度很高，但根据流形假设，有效的数据实际上分布在较低的维度上。故一般会先将输入压缩成隐空间中的低维隐变量处理，输出时再还原为高维。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux751fux6210ux5f0fux4e16ux754cux6a21ux578b}{%
+\subsubsection{（二）生成式世界模型}\label{ux4e8cux751fux6210ux5f0fux4e16ux754cux6a21ux578b}}
+
+生成式世界模型则是当前世界模型的主流形式，即通过生成下一时刻的视频画面等方式，让模型自行从视频等数据中学习，其训练方法大体上可参考多模态生成模型的训练。当下的生成式世界模型基本都和基于隐变量的路线相结合。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  损失函数的计算：可以直接用生成的最终高维画面计算损失函数；也可以先训练好VAE或其他自编码器并冻结，后续对隐空间内的生成模型进行预训练，损失函数直接用隐变量对应的流匹配等损失计算；还可以用其他下游任务的损失函数进行训练。
+\item
+  生成范式
+\end{enumerate}
+
+（1）自回归：继承LLM中Next token prediction的思路，预测下一个状态token。缺点是生成高维视觉时通常较慢，误差容易逐步累积。
+
+（2）扩散：从噪声开始，逐步去噪出未来视频或未来状态。这个过程中，输出不断由模糊变清晰，信息量逐步变大，也符合人对事物的认识或想象从大致轮廓到具体细节的过程。缺点是在高维情况下显存占用大，计算代价昂贵，故一般只用于生成低维空间的隐变量。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux5efaux6a21ux89c6ux89d2ux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（三）建模视角的世界模型}\label{ux4e09ux5efaux6a21ux89c6ux89d2ux7684ux4e16ux754cux6a21ux578b}}
+
+这一路线把每一帧二维图像都看成对同一个三维世界的不同观察，根据用户输入的图像及其视角，隐式地维护一个多视角的三维世界模型，通过用户的视角输出对应的二维表示。代表成果如RTFM、IC-World等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：建模三维空间和人或动物的双/多眼视角、机器人多传感器一致性等相符，可能是空间理解的关键和具身智能的重要技术基础。
+\item
+  缺点：需要处理视角，正确判断用户的视角变换关系，但训练的视频数据并不自带视角，导致模型难以在测试时建立对多视角三维同一性的认知；如果用硬编码算法给训练数据加视角估计信息，会存在误差，随着场景变复杂可能难以维持性能，难以从数据中Scaling。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux5efaux6a21ux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（四）建模对象的世界模型}\label{ux56dbux5efaux6a21ux5bf9ux8c61ux7684ux4e16ux754cux6a21ux578b}}
+
+这一路线拆分提取并显式建模空间中的各个对象（及其属性）、它们之间的关系，不是把世界看成一整张图，而是看成杯子、桌子、机械臂，它们的位置、质量、接触关系、摩擦等，模型内设有一定数量的``槽''，对象的信息竞争性地进入这些槽，以在后续生成时处理重要的的对象的信息。代表成果如C-SWM、SlotFormer、Marble等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：适合空间关系、接触、遮挡、组合泛化，可解释性强，干预简单（如添加、移动物体等），更接近真正的物理推理。
+\item
+  缺点：需要处理复杂的视觉信息，把世界拆成正确结构，这需要通过结构化数据来训练，但这样的数据极为稀缺；此外，拆分本身容易出错，且这步如果出错就会导致后续预测出错。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}{%
+\subsubsection{（五）在抽象表示空间中预测的世界模型}\label{ux4e94ux5728ux62bdux8c61ux8868ux793aux7a7aux95f4ux4e2dux9884ux6d4bux7684ux4e16ux754cux6a21ux578b}}
+
+无论是在日常生活中还是自然科学中，在每一个像素预测是不必要的。例如，在物体运动预测中，只需要抽象成质点、刚体等，没有必要在像素或者原子层面分析。基于这种思想，我们和生成式世界模型路线一样，将观测映射为隐状态，但不再用像素生成或重建等直接或间接的像素目标驱动，而是让模型直接通过自监督预测自主学习隐状态的表征，仅用正则化损失避免表征坍缩。目前的一种方法是提取观测中的所有隐状态后随机在时空上进行掩码，训练模型通过预测来补全掩码处的隐状态，最小化预测和实际隐状态在隐空间内的差距，让模型学会时空和物理表征。代表成果如V-JEPA系列、LeWorldModel等。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  优点：可自然地把视觉、触觉、传感器数据等一起编码，最符合科学推理的思考方式；不需要预测像素，节省算力，速度快。
+\item
+  缺点：抽象表示空间对人类不可见，难以直接发现是否存在问题；本质是Encoder，下游接任务需要微调。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux52a8ux4f5cux6761ux4ef6ux5982ux4f55ux6ce8ux5165ux89c6ux9891ux4e16ux754cux6a21ux578b}{%
+\subsection{二、动作条件如何注入视频世界模型？}\label{ux4e8cux52a8ux4f5cux6761ux4ef6ux5982ux4f55ux6ce8ux5165ux89c6ux9891ux4e16ux754cux6a21ux578b}}
+
+\Needspace{5\baselineskip}
+许多世界模型由视频生成模型微调得到。由于视频世界模型不是单纯的根据已有帧预测下一帧，而是根据已有帧和动作干预预测下一帧，故动作干预如何注入视频生成主干非常关键。一般会设计动作注入头，注入方法一般有：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  在DiT主干中，运用交叉注意力注入。
+\item
+  用动作注入值控制AdaLN的参数。
+\end{enumerate}
+
+注入后进行微调，一般刚开始冻结视频生成主干、只调动作注入头的参数，后期部分模型会进行全量微调。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux52a8ux4f5cux7a7aux95f4ux7684ux5b66ux4e60latent-action-models}{%
+\subsection{三、动作空间的学习：Latent Action Models}\label{ux4e09ux52a8ux4f5cux7a7aux95f4ux7684ux5b66ux4e60latent-action-models}}
+
+世界模型的核心表达式是s\_t+1=f(s\_t,a\_t)。对于海量的视频数据，s\_t和s\_t+1都是容易获取的，但我们却没有显式的动作数据a\_t，这让模型对特定干预造成何种后果的学习可能会造成影响，尤其是运用于交互式或具身等场景时。如果将动作看作一种模态，那么我们可能就需要一个对应的``词表''，即Action Space。Latent Action Models是一种从视频中自监督地学习到Action Space的方法。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux7ec4ux4ef6}{%
+\subsubsection{（一）核心组件}\label{ux4e00ux6838ux5fc3ux7ec4ux4ef6}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  反向动力学模型（Inverse Dynamics Model）：从前后状态s\_t和s\_t+1中推断动作a\_t的潜在表示，并通过信息瓶颈促使a\_t编码最关键的运动信息。
+\item
+  前向动力学模型（Forward Dynamics Model）：使用当前状态s\_t和动作a\_t预测下一状态s\_t+1。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux62bdux8c61ux8981ux6c42}{%
+\subsubsection{（二）抽象要求}\label{ux4e8cux62bdux8c61ux8981ux6c42}}
+
+如果允许动作a\_t保留太多信息以提升生成质量，又容易混入颜色、纹理、背景等内容信息，导致动作不够抽象、难以迁移。为了保证动作表示具有可迁移性和抽象性，模型通常会施加强预测瓶颈，例如向量量化或变分瓶颈。
+
+但不可否认的是，如果被压缩得足够抽象，它更容易迁移，却可能偏离动作空间内在的流形结构，丢失预测下一个状态的准确性，以及生成所需的细节。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-155}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-155}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.（PlaNet；论文提出 RSSM）
+\item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/rtfm}{RTFM: A Real-Time Frame Model}. Official research article.
+\item
+  Wu, F., Wei, J., Li, R., et al.~(2025). \href{https://arxiv.org/abs/2512.02793}{IC-World: In-Context Generation for Shared World Modeling}. arXiv:2512.02793.
+\item
+  Kipf, T., van der Pol, E., \& Welling, M. (2019). \href{https://arxiv.org/abs/1911.12247}{Contrastive Learning of Structured World Models}. arXiv:1911.12247.
+\item
+  Wu, Z., Dvornik, N., Greff, K., Kipf, T., \& Garg, A. (2023). \href{https://arxiv.org/abs/2210.05861}{SlotFormer: Unsupervised Visual Dynamics Simulation with Object-Centric Models}. ICLR 2023.
+\item
+  World Labs. (2025). \href{https://www.worldlabs.ai/blog/marble-world-model}{Marble: A Multimodal World Model}. Official research article.
+\item
+  Bardes, A., Garrido, Q., Ponce, J., et al.~(2024). \href{https://arxiv.org/abs/2404.08471}{Revisiting Feature Prediction for Learning Visual Representations from Video}. arXiv:2404.08471.（V-JEPA）
+\item
+  Maes, L., Le Lidec, Q., Scieur, D., LeCun, Y., \& Balestriero, R. (2026). \href{https://arxiv.org/abs/2603.19312}{LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels}. arXiv:2603.19312.
+\item
+  Garrido, Q., Nagarajan, T., Terver, B., Ballas, N., LeCun, Y., \& Rabbat, M. (2026). \href{https://arxiv.org/abs/2601.05230}{Learning Latent Action World Models In The Wild}. arXiv:2601.05230.
+\end{itemize}
+
+\clearpage

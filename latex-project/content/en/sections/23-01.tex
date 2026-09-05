@@ -1,0 +1,76 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{prompt-based-methods}{%
+\section{Prompt-Based Methods}\label{prompt-based-methods}}
+
+Reasoning capabilities are becoming increasingly important in large models. Currently, model reasoning takes the form of continually generating tokens (tokens are also generated when a model displays that it is thinking, but they are wrapped in special markers and are therefore also billed in API calls), explicitly advancing logic through ``self-talk.'' The following are prompt-based methods for enhancing reasoning.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-chain-of-thought}{%
+\subsection{I. Chain of Thought}\label{i.-chain-of-thought}}
+
+Ask the model to think step by step, breaking a ``large problem'' into ``small steps.'' This shortens the distance each step must ``cross'' in embedding space, enabling complete reasoning by repeatedly ``predicting the next step.''
+
+Chain of thought is the foundation of large-model reasoning techniques. Its limitations are that each generated step infers only ``forward'' from preceding content, without working backward from ``later objectives'' to ``earlier required steps''; it lacks self-correction and reflection mechanisms, allowing errors to accumulate; and it follows one path without exploration, making complex, diverse reasoning paths difficult to cover. These three limitations correspond to the three types of methods discussed later.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-task-planning}{%
+\subsection{II. Task Planning}\label{ii.-task-planning}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Plan--execute paradigm
+\end{enumerate}
+
+Explicitly separate reasoning into ``planning'' and ``execution.''
+
+Planning stage: rather than immediately calculating, the model first generates a structured plan from the original problem, listing the key steps required. This constructs an overall guiding framework.
+
+Execution stage: the model uses each plan step as a separate input, generating chains of thought and results step by step.
+
+Advantage: ``overview first, steps second'' reduces omissions and calculation errors in intermediate stages, significantly improving adaptation to unseen tasks, particularly in zero-shot settings.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Subtask decomposition
+\end{enumerate}
+
+For complex problems whose difficulty exceeds the examples, such as multistep mathematical reasoning, a least-to-most progression can be used. Decompose a complex problem into subproblems, arrange them in increasing difficulty, and solve them in sequence. When solving problem k, provide the answers to the first k-1 problems as context.
+
+This establishes explicit dependencies across steps, using preceding results to support current reasoning and prevent logical breaks.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-dynamic-adjustment-and-reflection}{%
+\subsection{III. Dynamic Adjustment and Reflection}\label{iii.-dynamic-adjustment-and-reflection}}
+
+If task planning lets the model ``look ahead,'' dynamic adjustment and reflection let it ``look back,'' reflecting on and correcting errors in past reasoning trajectories.
+
+Initially, prompts implemented this behavior. Later, models learned directly through reinforcement learning to incorporate dynamic adjustment and reflection into their reasoning trajectories.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-119}{%
+\subsection{References}\label{references-119}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Wei, J., Wang, X., Schuurmans, D., et al.~(2022). \href{https://arxiv.org/abs/2201.11903}{Chain-of-Thought Prompting Elicits Reasoning in Large Language Models}. NeurIPS 2022.
+\item
+  Wang, L., Xu, W., Lan, Y., et al.~(2023). \href{https://aclanthology.org/2023.acl-long.147/}{Plan-and-Solve Prompting: Improving Zero-Shot Chain-of-Thought Reasoning by Large Language Models}. ACL 2023. DOI: 10.18653/v1/2023.acl-long.147.
+\item
+  Zhou, D., Schärli, N., Hou, L., et al.~(2023). \href{https://openreview.net/forum?id=WZH7099tgfM}{Least-to-Most Prompting Enables Complex Reasoning in Large Language Models}. ICLR 2023.
+\item
+  Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,313 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux6a21ux6001ux5927ux8bedux8a00ux6a21ux578b}{%
+\section{多模态大语言模型}\label{ux591aux6a21ux6001ux5927ux8bedux8a00ux6a21ux578b}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4ee5ux6587ux672cux4e3aux4ecbux8d28ux7684ux591aux6a21ux6001ux611fux77e5}{%
+\subsection{一、以文本为介质的多模态感知}\label{ux4e00ux4ee5ux6587ux672cux4e3aux4ecbux8d28ux7684ux591aux6a21ux6001ux611fux77e5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux57faux672cux601dux60f3}{%
+\subsubsection{1. 基本思想}\label{ux57faux672cux601dux60f3}}
+
+这种方式先由感知模型统一将图片、音频等转为语言（视频隔一定时间采样帧，转为图片+音频）。例如，独立训练（而非在LLM整体中端到端训练）一个已经预训练好的视觉Encoder，由于视觉Encoder嵌入空间和语言模型嵌入空间不一致，输出需要经过一个适配器后，再以具有语言意义、可以直接输入纯语言模型的token流的形式交给LLM处理。
+
+这样的问题在于，一维语言难以描述高维细节，即适配器转化时存在信息损失。此外，模型整体也无法端到端优化。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux89c6ux89c9-encoderux4ee5-clip-ux4e3aux4f8b}{%
+\subsubsection{2. 视觉 Encoder：以 CLIP 为例}\label{ux89c6ux89c9-encoderux4ee5-clip-ux4e3aux4f8b}}
+
+输入图像被划分为固定大小的方格网格（通常为32×32或16×16像素），每个patch被展平为向量，转化为视觉token，经过多头自注意力层，得到图像的编码向量序列。
+
+视觉Encoder通过``对比''来学习。模型被训练来``拉近''匹配的（正）样本对，同时``推远''不匹配的（负）样本对。如模型获取（图像，文本）对，图像和它对应的文本匹配时构成一个``正样本对''，不匹配时构成``负样本对''。给定一个 batch 的图像-文本对 \((I_1,T_1),(I_2,T_2),\ldots,(I_n,T_n)\)，模型学习的目标是最大化匹配对 \((I_i,T_i)\) 的相似度得分，最小化 \(s(I_i,T_j)\) 的相似度得分（\(j\ne i\)），要区分哪些图文是配对的，哪些不是（监督信号直接来源于数据本身，\((I_i,T_i)\) 是匹配的，其他随机组合的图文对 \((I_i,T_j)\) 被认为是大概率不匹配的）。
+
+损失函数为InfoNCE。假设我们有：1 个``锚点''（Anchor）样本，记为 \(q\)（Query，查询）；1 个``正样本''（Positive），记为 \(k^+\)（Key，与 \(q\) 匹配的键）；\(N\) 个``负样本''（Negatives），记为 \(k_1^-,\ldots,k_N^-\)（与 \(q\) 不匹配的键），我们希望 \(q\) 与 \(k^+\) 的相似度远大于 \(q\) 与所有 \(k_i^-\) 的相似度。
+
+\Needspace{5\baselineskip}
+InfoNCE 损失函数（针对单个 \(q\)）的表达式如下：
+
+\[
+\mathcal{L}_q=-\log \frac{\exp(\mathrm{sim}(q,k^+)/\tau)}
+{\exp(\mathrm{sim}(q,k^+)/\tau)+\sum_{i=1}^{N}\exp(\mathrm{sim}(q,k_i^-)/\tau)}
+\]
+
+\(\mathrm{sim}(a,b)\)：相似度函数。通常使用余弦相似度或点积。
+
+\(\tau\)：温度系数。这是一个超参数，后续会解释。
+
+\Needspace{5\baselineskip}
+分式项：
+
+\[
+\frac{\exp(\mathrm{sim}(q,k^+)/\tau)}
+{\exp(\mathrm{sim}(q,k^+)/\tau)+\sum_i\exp(\mathrm{sim}(q,k_i^-)/\tau)}
+\]
+
+表示运用Softmax回归，将 \(q\) 与正样本匹配的得分除以 \(q\) 与``所有候选样本''（1 个正，\(N\) 个负）匹配的总得分，得到在给定 \(q\) 和 \(N+1\) 个候选样本的情况下，模型认为 \(k^+\) 是``正确匹配''（即正样本）的预测概率。我们的目标是让这个概率趋近于 1。
+
+\(-\log\)：交叉熵损失 (Cross-Entropy Loss)，假设我们的``真实标签''是一个one-hot编码 \([1,0,0,\ldots,0]\)（即第一个样本 \(k^+\) 是正样本，其他都是负样本），Softmax 的输出就是模型预测的概率分布（例如 \([0.9,0.05,0.03,\ldots]\)），对这个 \(N+1\) 类的分类问题取交叉熵损失，就得到了上述 InfoNCE 公式。
+
+InfoNCE 损失就是将``对比学习''问题（拉近/推远）转化为了一个 \(N+1\) 选 1 的``分类问题''，并使用标准的交叉熵损失函数来优化模型，让模型总能从一堆负样本中准确地``识别''出那一个正样本，以实现``最大化相应序列和文本之间的表示相似性，并最小化负对之间的相似性''。训练后，一张``狗''的图像的向量表示会非常接近``一只狗''的文本向量表示，而远离``一只猫''的文本向量表示。
+
+温度 \(\tau\) 控制着 Softmax 函数的锐利程度。低温时相似度的值被放大，使得 Softmax 分布变得非常``尖锐''。\(\exp(10)\) 远大于 \(\exp(5)\)。模型被迫更``用力''地推开负样本，即使是那些与锚点有一定相似度的``困难负样本''（Hard Negatives）。这有助于模型学习到更精细的特征表示。高温时Softmax 分布变得非常``平滑''。\(\exp(1)\) 和 \(\exp(0.5)\) 的差异不大。模型对负样本的惩罚相对宽松，最终呈现的嵌入结果是不会过分关注困难的负样本。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux539fux751fux591aux6a21ux6001ux611fux77e5}{%
+\subsection{二、原生多模态感知}\label{ux4e8cux539fux751fux591aux6a21ux6001ux611fux77e5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux57faux672cux601dux60f3-1}{%
+\subsubsection{1. 基本思想}\label{ux57faux672cux601dux60f3-1}}
+
+将图片/音频/视频等多模态输入编码为token，和文本token并存，视觉信息和文本信息被编码为token向量的过程都参与LLM的端到端训练，得到的嵌入空间也是同一个嵌入空间（如``苹果''一词和苹果的图片位置相近）。模型在混合了多模态的数据集上进行预训练，能够直接理解不同模态间的深层关联（例如：直接从音频中感知情绪并转化为对应的画面描述），而无须经过文本中转。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux53efux5b66ux4e60ux7684ux89c6ux89c9-embedding-ux5c42}{%
+\subsubsection{2. 可学习的视觉 embedding 层}\label{ux53efux5b66ux4e60ux7684ux89c6ux89c9-embedding-ux5c42}}
+
+和文本的给定输入图像（\(H\times W\times C\)），首先将其划分为 \(N\) 个固定大小的Patch（例如 \(14\times14\) 像素）。Patch序列 \(X_v=\{x_1,x_2,\ldots,x_N\}\) 输入到可学习的视觉embedding层中，转换为token（嵌入向量）序列。随后，视觉token与文本token一起参加混合预训练。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6df7ux5408ux9884ux8badux7ec3}{%
+\subsubsection{3. 混合预训练}\label{ux6df7ux5408ux9884ux8badux7ec3}}
+
+\Needspace{5\baselineskip}
+模型接收的不再是单纯的文本流，而是模态混合流。假设输入是``{[}图片{]} 是一只猫''，模型实际接收的 Embedding 序列 \(S\) 为：
+
+\[
+S=\mathrm{Concat}(Z_v^{(1)},\ldots,Z_v^{(N)},E_{text}^{(\mathrm{"is"})},E_{text}^{(\mathrm{"a"})},E_{text}^{(\mathrm{"cat"})})
+\]
+
+这个拼接后的长序列 \(S\) 将直接输入到Transformer的第一层。
+
+在 Transformer 的第 \(l\) 层，输入为 \(H^{(l)}\)。此时，Query (\(Q\))、Key (\(K\))和Value (\(V\))矩阵是由混合序列生成的。
+
+假设当前正在生成文本 Token（作为 Query），它需要``回顾''上下文中的图像信息。设 \(Q_{text}\) 为当前文本的查询向量，\(K_{img}\) 和 \(V_{img}\) 为图像 Patch 对应的键值对。
+
+\Needspace{5\baselineskip}
+注意力计算不再区分模态，而是统一计算：
+
+\[
+\mathrm{Attention}(Q,K,V)=\mathrm{Softmax}\left(\frac{Q\cdot [K_{text};K_{img}]^T}{\sqrt{d_k}}\right)\cdot [V_{text};V_{img}]
+\]
+
+这里 \([;]\) 表示在序列维度上的拼接。
+
+\begin{itemize}
+\tightlist
+\item
+  相关性计算（\(QK^T\)）：当模型处理单词``猫''时，\(Q_{cat}\) 会与图像中所有 Patch 的 \(K_{img}\) 计算点积。如果某个 Patch 包含``胡须''或``尖耳朵''特征，点积值会非常大。
+\item
+  信息注入（\(V\)）：通过 Softmax 加权，\(V_{img}\)（图像的视觉信息）被直接加权求和并注入到当前文本 Token 的隐状态 \(H_{cat}^{(l)}\) 中。
+\end{itemize}
+
+这意味着：在第 1 层，文本向量就``吸收''了视觉向量；在第 2 层，吸收了混合信息的文本向量再次与原始视觉向量交互，进行多步推理。
+
+训练使用Next token prediction，目前仍然只生成文本token（即多模态限于感知阶段）。梯度贯穿模型的所有架构，包括视觉embedding层。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux7ef4ux4f4dux7f6eux7f16ux7801}{%
+\subsubsection{4. 多维位置编码}\label{ux591aux7ef4ux4f4dux7f6eux7f16ux7801}}
+
+\Needspace{5\baselineskip}
+对于图像，可采用2D位置编码：
+
+为了解决图像特有的空间关系问题，Gemini 对 RoPE 进行了二维扩展。
+
+\Needspace{5\baselineskip}
+对于图像 Patch 的位置 \((x,y)\) 和特征向量 \(v\)，我们将向量分为两半 \(v=[v_1,v_2]\)。旋转操作定义为：
+
+\[
+\mathrm{RoPE}_{2D}(v,x,y)=\mathrm{Concat}(\mathrm{RoPE}_{1D}(v_1,x),\mathrm{RoPE}_{1D}(v_2,y))
+\]
+
+这样，任意两个 Patch 之间的注意力分数 \(Score_{ij}\) 将不仅取决于它们的内容，还取决于它们的相对空间距离 \(\Delta x\) 和 \(\Delta y\)。这让模型能够理解``左边''``上面''等几何概念。
+
+对于视频，则可采取 3D 位置编码 \((x,y,t)\)。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5faeux8c03}{%
+\subsubsection{5. 微调}\label{ux5faeux8c03}}
+
+监督微调阶段，由于高质量指令-回答对往往为文本形式，可以不采用多模态混合训练。RL阶段的输入往往也是多模态混合信息流，这也符合Agent在真实世界中运行时环境反馈的特点。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux56feux50cfux5904ux7406ux7684ux4f18ux5316}{%
+\subsection{三、图像处理的优化}\label{ux4e09ux56feux50cfux5904ux7406ux7684ux4f18ux5316}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux8bedux4e49ux5bf9ux9f50ux5b8cux5907ux7f16ux7801ux5668saelongcat-next}{%
+\subsubsection{（一）语义对齐完备编码器（SAE）（LongCat-Next）}\label{ux4e00ux8bedux4e49ux5bf9ux9f50ux5b8cux5907ux7f16ux7801ux5668saelongcat-next}}
+
+\hypertarget{ux6a21ux578bux67b6ux6784}{%
+\paragraph{1. 模型架构}\label{ux6a21ux578bux67b6ux6784}}
+
+在 SAE 的网络架构中，输入图像 \(I\) 并不是在同一个深度通道中``一条路走到黑''，而是采用了多层级/双分支的提取策略。
+
+\begin{itemize}
+\tightlist
+\item
+  显式语义对齐特征 \(F_{sem}\) 的提取（深层网络）：语义特征主要回答图像``是什么''（What）。SAE 利用深层的 Vision Transformer（ViT）块，通过多层的全局自注意力机制（Self-Attention），将局部像素块的特征高度抽象化。
+\end{itemize}
+
+\[
+F_{sem}=\mathrm{ViT}_{deep}(I)\in \mathbb{R}^{N\times D}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  隐式底层细节特征 \(F_{res}\) 的提取（浅层/旁路网络）：底层特征主要回答图像细节``在哪里''以及``长怎样''（Where \& How）。SAE 会从 ViT 的浅层或中间层引出旁路分支（Skip-connections），或者使用一个轻量级的卷积辅助网络。因为浅层网络尚未经历过度的全局池化，保留了完整的高频空间结构、边缘梯度和原始纹理。
+\end{itemize}
+
+\[
+F_{res}=\mathrm{ViT}_{shallow}(I)\in \mathbb{R}^{N\times D}
+\]
+
+\Needspace{5\baselineskip}
+最后动态门控融合：
+
+\Needspace{5\baselineskip}
+假设一个多层感知机（MLP）网络用于预测门控权重矩阵 \(G\in[0,1]^{N\times D}\)：
+
+\[
+G=\sigma(W_g\cdot [F_{sem},F_{res}]+b_g)
+\]
+
+\Needspace{5\baselineskip}
+其中 \(\sigma\) 为 Sigmoid 激活函数，\([\cdot,\cdot]\) 表示通道拼接。最终的融合公式为哈达玛乘积（逐元素相乘）：
+
+\[
+F_{out}=G\odot F_{sem}+(1-G)\odot F_{res}
+\]
+
+物理意义：对于图像中的``大片纯色天空''，门控机制会放大 \(F_{sem}\)（强调这里是``天空''），抑制多余的 \(F_{res}\)；而对于图像中的``密集书本文字''或``毛发''，门控机制会大幅放大 \(F_{res}\)，以确保高频纹理被送入量化器，保证后续渲染时不会模糊。
+
+\hypertarget{ux635fux5931ux51fdux6570}{%
+\paragraph{2. 损失函数}\label{ux635fux5931ux51fdux6570}}
+
+\Needspace{8\baselineskip}
+（1）独立训练对齐阶段
+
+对 \(F_{sem}\) 的监督：细粒度密集对齐（Dense Semantic Alignment）
+
+\Needspace{5\baselineskip}
+SAE 摒弃了传统的全局 CLIP 对比损失（容易丢失局部物体信息），转而采用细粒度的``区域-文本''密集对齐损失。假设 \(T^{(i)}\) 是与图像第 \(i\) 个区域对应的文本特征向量，模型通过交叉熵或对比学习最大化它们的相似度：
+
+\[
+\mathcal{L}_{sem}=-\sum_{i=1}^{M}\log
+\frac{\exp(\mathrm{sim}(F_{sem}^{(i)},T^{(i)})/\tau)}
+{\sum_{j=1}^{K}\exp(\mathrm{sim}(F_{sem}^{(i)},T^{(j)})/\tau)}
+\]
+
+这种监督使得 \(F_{sem}\) 具备了极高的语言亲和力，大语言模型（LLM）能够轻松读懂它。
+
+对 \(F_{res}\) 的监督：掩码像素级重建（Masked Pixel-level Reconstruction）
+
+\Needspace{5\baselineskip}
+为了确保 \(F_{res}\) 真正``隐式''地记住了物理世界的细节（用于未来的图像生成），SAE 对其施加了类似 MAE（Masked Autoencoder）或轻量级扩散模型的重建损失。模型必须仅凭借 \(F_{res}\) 就能还原出原始的高频像素 \(I_{target}\)：
+
+\[
+\mathcal{L}_{res}=\lVert D_{recon}(F_{res})-I_{target}\rVert_2^2
+\]
+
+在这里，数学上的均方误差（MSE）强迫 \(F_{res}\) 保留了所有光影、材质等不能用语言轻易描述的隐式特征。
+
+仅仅分开监督还不够。如果 \(F_{res}\) 偷偷包含了一部分语义信息，或者 \(F_{sem}\) 冗余地记录了位置信息，就会导致后续量化时``信息通道堵塞''。
+
+\Needspace{5\baselineskip}
+为了让这两种特征在数学空间上绝对纯粹，SAE 引入了正交惩罚项（Orthogonal Penalty）。对于任意一个图像块 \(i\)，我们希望它的语义向量与细节向量在特征空间中尽量垂直（即余弦相似度趋近于 0）：
+
+\[
+\mathcal{L}_{ortho}=\frac{1}{N}\sum_{i=1}^{N}
+\frac{|\langle F_{sem}^{(i)},F_{res}^{(i)}\rangle|}
+{\lVert F_{sem}^{(i)}\rVert_2\cdot \lVert F_{res}^{(i)}\rVert_2}
+\]
+
+在总损失函数 \(\mathcal{L}_{total}=\mathcal{L}_{sem}+\lambda_1\mathcal{L}_{res}+\lambda_2\mathcal{L}_{ortho}\) 的优化下，\(F_{sem}\) 和 \(F_{res}\) 被物理隔绝在了两个互不重叠的子空间中。
+
+\Needspace{8\baselineskip}
+（2）原生多模态融合阶段
+
+当 SAE 这双``眼睛''彻底发育成熟后，它才会被正式接入到基于 MoE 架构的 Transformer 基座中，开启真正的多模态统一训练。
+
+\begin{itemize}
+\tightlist
+\item
+  全局优化目标：阶段一的局部损失 \(\mathcal{L}_{total}\) 被完全抛弃。整个庞大系统的全局唯一优化目标，统一收敛为最纯粹的下一个 Token 预测损失（\(\mathcal{L}_{NTP}\)）。
+\item
+  SAE 的网络状态：为了保护阶段一好不容易构建出的正交特征空间不被语言模型的强大梯度``冲毁''，SAE 的绝大部分核心权重在这一阶段会被冻结（Frozen）。
+\item
+  联合微调：通常只开放 SAE 与 LLM 之间的投影层（Projector），或者赋予 SAE 极小的学习率（也可以引入 LoRA 旁路）进行极微度的联合更新。此时，算力和梯度的重点全部转移到了 LLM 基座上，让基座专心学习如何``阅读''和``排列''SAE 吐出的视觉 Token。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux52a8ux6001ux5206ux8fa8ux7387ux5904ux7406}{%
+\subsubsection{（二）动态分辨率处理}\label{ux4e8cux52a8ux6001ux5206ux8fa8ux7387ux5904ux7406}}
+
+假设输入的原生高分辨率图像为 \(I_{orig}\in\mathbb{R}^{H\times W\times 3}\)，其中 \(H\) 和 \(W\) 分别为高度和宽度。设 Vision Transformer（ViT）基础编码器能够接受的标准输入尺寸，也就是单个基础块的尺寸，为 \(S\times S\)（例如 \(336\times336\)）。为了控制计算复杂度和内存消耗，系统会设置一个最大允许的子块数量上限 \(N_{max}\)。
+
+第一步是宽高比感知与最优网格计算（Grid Optimization）。模型首先感知图像的原始宽高比 \(R=\frac{H}{W}\)，然后计算出一个最贴近该比例的二维网格排布 \((N_h,N_w)\)，其中 \(N_h\) 是行数，\(N_w\) 是列数。
+
+\Needspace{5\baselineskip}
+模型会在所有满足总块数 \(N_h\times N_w\le N_{max}\) 的整数对候选集 \(\mathcal{G}\) 中，寻找与原始比例 \(R\) 差异最小的组合。其数学优化目标可以表示为最小化对数比例差：
+
+\[
+(N_h,N_w)=\arg\min_{(h,w)\in\mathcal{G}}\left|\log\left(\frac{h}{w}\right)-\log(R)\right|
+\]
+
+通过这一步，如果输入是一张宽幅全景图，例如宽高比为 \(1:4\)，算法可能会计算出 \(1\times4\) 的网格；如果是竖版手机截图，可能会算出 \(3\times1\) 或 \(4\times2\) 的网格。这确保了后续切分时的物理网格排布与原图形状高度一致。
+
+\Needspace{5\baselineskip}
+第二步是无损比例缩放与自适应填充（Proportional Resizing \& Padding）。确定网格维度 \((N_h,N_w)\) 后，目标网格的总物理分辨率被确定为：
+
+\[
+H_{target}=N_h\times S
+\]
+
+\[
+W_{target}=N_w\times S
+\]
+
+\Needspace{5\baselineskip}
+为了将原图放入这个网格中且不产生任何拉伸形变，算法计算等比例缩放系数：
+
+\[
+\mathrm{Scale}=\min\left(\frac{H_{target}}{H},\frac{W_{target}}{W}\right)
+\]
+
+\Needspace{5\baselineskip}
+然后按此系数将原图等比例缩放为新尺寸 \((H',W')\)：
+
+\[
+H'=\mathrm{round}(H\times\mathrm{Scale})
+\]
+
+\[
+W'=\mathrm{round}(W\times\mathrm{Scale})
+\]
+
+缩放后的图像 \(I_{resized}\) 会被置于目标网格的中心或左上角。对于未能完全填满的边缘空白区域，由于 \(H'\le H_{target}\) 且 \(W'\le W_{target}\)，算法会使用背景色（如均值像素或纯黑）进行零填充（Zero-Padding），得到最终准备切分的标准图像 \(I_{padded}\in\mathbb{R}^{H_{target}\times W_{target}\times3}\)。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-78}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-78}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Radford, A., Kim, J. W., Hallacy, C., et al.~(2021). \href{https://arxiv.org/abs/2103.00020}{Learning Transferable Visual Models From Natural Language Supervision}. ICML 2021.
+\item
+  Dosovitskiy, A., Beyer, L., Kolesnikov, A., et al.~(2021). \href{https://arxiv.org/abs/2010.11929}{An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale}. ICLR 2021.
+\item
+  He, K., Chen, X., Xie, S., Li, Y., Dollár, P., \& Girshick, R. (2022). \href{https://arxiv.org/abs/2111.06377}{Masked Autoencoders Are Scalable Vision Learners}. CVPR 2022.
+\item
+  Meituan LongCat Team. (2026). \href{https://arxiv.org/abs/2603.27538}{LongCat-Next: Lexicalizing Modalities as Discrete Tokens}. arXiv:2603.27538.
+\end{itemize}
+
+\clearpage

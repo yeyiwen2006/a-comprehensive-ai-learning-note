@@ -1,0 +1,206 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{perplexity}{%
+\section{Perplexity}\label{perplexity}}
+
+Perplexity (PPL) is the gold-standard metric for evaluating language models. Its core idea is that a good model should assign a high predicted probability to the true next word. The more ``perplexed'' the model is, the less accurate its prediction and the higher its perplexity.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-intuitive-understanding}{%
+\subsection{I. Intuitive Understanding}\label{i.-intuitive-understanding}}
+
+Suppose a perfect language model is always 100\% certain of the next word (its predicted probability is \(1\)). Its perplexity is then \(\exp(0)=1\). This means the model has no uncertainty, equivalent to having only 1 word to choose from each time (the correct one).
+
+For a very poor model, such as one that always considers all 100,000 vocabulary words equally probable (each with probability \(1/100000\)), the perplexity is 100,000. This means it is highly perplexed, equivalent to choosing among 100,000 words every time.
+
+A good model's perplexity should lie between 1 and the vocabulary size. For example, modern models can reach a perplexity of around 20 on WikiText-2. This means that, on average, the model chooses one word from 20 each time and is relatively ``certain'' about what comes next.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-mathematical-formulation-and-derivation}{%
+\subsection{II. Mathematical Formulation and Derivation}\label{ii.-mathematical-formulation-and-derivation}}
+
+Perplexity is closely related to cross-entropy in information theory. Cross-entropy measures the difference between the model's predicted probability distribution and the true distribution (here, actually a one-hot distribution, with probability 1 for the true word and 0 for all others). In fact, exponentiating the cross-entropy loss gives the perplexity of the entire sequence (``the average number of tokens to choose from at each step when generating this sequence''). The reciprocal of perplexity raised to the nth power is the joint probability of generating the sequence. Minimizing perplexity is mathematically equivalent to maximizing the joint probability the model assigns to the entire sequence.
+
+\Needspace{5\baselineskip}
+Mathematical derivation:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Starting point: sequence probability
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+A language model aims to assign a high probability to the true sequence \(W=(w_1,w_2,\ldots,w_N)\). By the chain rule, this probability is the product of all conditional probabilities:
+
+\[
+P(W)=P(w_1)\prod_{t=2}^{N}P(w_t\mid w_1,\ldots,w_{t-1})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Take the logarithm (to turn products into sums)
+\end{enumerate}
+
+Directly optimizing the product is mathematically troublesome (it may underflow). We take its logarithm, converting it into a log-likelihood. Because the logarithm is monotonic, maximizing the product of probabilities is equivalent to maximizing the sum of log-likelihoods.
+
+\[
+\log P(W)=\log P(w_1)+\sum_{t=2}^{N}\log P(w_t\mid w_1,\ldots,w_{t-1})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Take the average (to remove the effect of length)
+\end{enumerate}
+
+To compare performance across sequences of different lengths, take the average to obtain the average log-likelihood.
+
+\[
+\frac{1}{N}\log P(W)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Take the negative (to obtain a loss)
+\end{enumerate}
+
+We normally minimize a ``loss'' function rather than maximize a ``score'' function. Taking the negative gives the average negative log-likelihood. Lower values are better.
+
+\[
+L=-\frac{1}{N}\log P(W)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Definition of perplexity
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Perplexity is defined as the exponential of this average negative log-likelihood:
+
+\[
+\mathrm{PPL}=\exp(L)=\exp\left(-\frac{1}{N}\log P(W)\right)
+\]
+
+\Needspace{5\baselineskip}
+By the laws of exponents, this can be rewritten as:
+
+\[
+\mathrm{PPL}=P(W)^{-1/N}
+=\left[P(w_1)\prod_{t=2}^{N}P(w_t\mid w_1,\ldots,w_{t-1})\right]^{-1/N}
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Relationship to probability
+\end{enumerate}
+
+Increasing \(P(W)^{1/N}\) increases the sequence's geometric mean probability. Therefore, minimizing perplexity is mathematically equivalent to maximizing the joint probability \(P(W)\) of the entire sequence.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-information-theoretic-explanation}{%
+\subsection{III. Information-Theoretic Explanation}\label{iii.-information-theoretic-explanation}}
+
+\Needspace{8\baselineskip}
+Step 1: understand the meaning of ``taking the logarithm''---measuring surprisal
+
+In information theory, \(-\log_2 P(\mathrm{event})\) measures an event's ``surprisal'' or ``information content.''
+
+If an event is certain to occur (probability \(P=1\)), its surprisal is \(-\log_2 1=0\) bits. You are not surprised at all.
+
+If an event is extremely rare (probability \(P\to 0\)), its surprisal approaches infinity. You are extremely surprised.
+
+If an event has a 50\% probability of occurring (\(P=0.5\)), its surprisal is \(-\log_2 0.5=1\) bit.
+
+In language models, \(-\log P(w_t\mid \mathrm{context})\) measures how ``surprised'' the model is when the true next word \(w_t\) appears. The lower the probability, the higher the surprisal.
+
+\Needspace{5\baselineskip}
+Thus, the average negative log-likelihood L is:
+
+\[
+L=\frac{1}{N}\sum_{t=1}^{N}-\log P(w_t\mid w_{<t})
+\]
+
+Its practical meaning is the model's average ``degree of surprise'' when predicting each word in the sequence (in bits per word).
+
+\Needspace{8\baselineskip}
+Step 2: understand the meaning of ``exponentiation''---returning to the choice space
+
+We now have an ``average surprisal'' (for example, 6.5 bits per word). But this number is not intuitive enough. How surprising is 6.5 bits of surprise?
+
+If \(L\) uses natural logarithms, the core role of \(\exp(L)\) is to convert ``surprisal'' back to ``probability space''; if \(L\) uses base-2 logarithms, the corresponding conversion is \(2^L\). More specifically, it converts average surprisal into an equivalent choice problem under a uniform distribution.
+
+\Needspace{5\baselineskip}
+Consider an example:
+
+Suppose a very poor model predicts the next word completely at random, with a vocabulary \(|V|\) of 1024 words. Its predicted probability for each word is \(1/1024\).
+
+\Needspace{5\baselineskip}
+The surprisal of each word is:
+
+\[
+-\log_2(1/1024)=\log_2(1024)=10
+\]
+
+The average surprisal \(L\) is also 10 bits per word.
+
+\Needspace{5\baselineskip}
+Calculate perplexity:
+
+\[
+\mathrm{PPL}=2^L=2^{10}=1024
+\]
+
+An important point is that information theory often uses 2 as the base of \(\log\), while mathematical calculations often use natural logarithms (base \(e\)). The two differ only by a constant factor; consistency is what matters. This worst model's perplexity is exactly the vocabulary size, 1024.
+
+This can be interpreted as follows: when predicting each word, the model behaves as if it were blindly guessing from a uniformly distributed vocabulary of 1024 candidate words. Its uncertainty is equivalent to choosing 1 out of 1024.
+
+As another example, suppose a good model has an average negative log-likelihood of \(L=\log 64\) (approximately 4.16), calculated using natural logarithms.
+
+\Needspace{5\baselineskip}
+Calculate perplexity:
+
+\[
+\mathrm{PPL}=\exp(L)=\exp(\log 64)=64
+\]
+
+This can be interpreted as follows: although the actual vocabulary may contain thousands or tens of thousands of words, the model is sufficiently capable that its average uncertainty when predicting each word is equivalent to choosing from a small set of only 64 candidates.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-108}{%
+\subsection{References}\label{references-108}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jurafsky, D., \& Martin, J. H. (2026). \href{https://web.stanford.edu/~jurafsky/slp3/3.pdf}{Speech and Language Processing, Chapter 3: N-gram Language Models}. Draft of August 19, 2026.
+\item
+  Brown, P. F., Della Pietra, V. J., deSouza, P. V., Lai, J. C., \& Mercer, R. L. (1992). \href{https://aclanthology.org/J92-4003/}{Class-Based n-gram Models of Natural Language}. Computational Linguistics, 18(4), 467-480.
+\end{itemize}
+
+\clearpage

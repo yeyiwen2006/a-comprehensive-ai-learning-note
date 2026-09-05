@@ -1,0 +1,619 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6df7ux5408ux4e13ux5bb6ux6a21ux5757}{%
+\section{混合专家模块}\label{ux6df7ux5408ux4e13ux5bb6ux6a21ux5757}}
+
+\Needspace{5\baselineskip}
+在经过Attention层后，不同token之间进行了充分的信息交换和融合。随后，由前馈神经网络（FFN）进行加工和处理。FFN一般为带有门控的GLU网络：
+
+\Needspace{5\baselineskip}
+常见的 SwiGLU FFN 可以写为：
+
+\[
+FFN_{\mathrm{SwiGLU}}(x) = (\sigma(xW_1) \otimes (xV))W_2
+\]
+
+\Needspace{5\baselineskip}
+其中：
+
+\begin{itemize}
+\tightlist
+\item
+  \(W_1\) 是门控分支（Gate）的权重矩阵，\(\sigma\) 是激活函数（例如 Swish 或 SiLU）。
+\item
+  \(V\) 是值分支（Value）的权重矩阵。
+\item
+  \(\otimes\) 表示逐元素相乘（Hadamard product）。
+\item
+  \(W_2\) 是最终输出投影的权重矩阵。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+算法工作流如下：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{门控分支投影（Gate Projection）}：将输入 \(x\) 乘以 \(W_1\)，映射到内部隐藏维度 \(d_{ff}'\)，并经过激活函数 \(\sigma\) 处理，生成用于控制信息流动的``门限''。
+\item
+  \textbf{值分支投影（Value Projection）}：并行地将输入 \(x\) 乘以矩阵 \(V\)，映射到相同的隐藏维度 \(d_{ff}'\)，这个分支保持线性状态（不加激活函数）。
+\item
+  \textbf{门控融合（Element-wise Multiplication）}：将步骤 1 生成的非线性门控信号与步骤 2 生成的线性值信号逐元素相乘。这一步赋予了网络动态过滤特征的能力，相当于让输入自己决定哪些特征应该被保留或放大。
+\item
+  \textbf{降维投影（Down-projection）}：将融合后的向量乘以 \(W_2\)，重新映射回原始维度 \(d_{model}\)。
+\end{enumerate}
+
+实践中，FFN往往占据了较大的参数规模。
+
+为了在扩大参数规模的同时控制每个 token 的激活计算量，DeepSeekMoE 与 Gemini 1.5 Pro 等模型采用了稀疏 MoE 架构。一般而言，模型会在部分或全部 Transformer Block 中用 MoE 子层替代稠密 FFN；具体的层数和放置方式取决于各模型公开的架构。MoE 路由器根据 token 特征只选择少数专家参与计算，而不激活全部专家参数，从而实现条件计算的稀疏性。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux5c06ux8f93ux5165ux5206ux914dux7ed9ux4e13ux5bb6}{%
+\subsection{一、将输入分配给专家}\label{ux4e00ux5c06ux8f93ux5165ux5206ux914dux7ed9ux4e13ux5bb6}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux7b26ux53f7ux5b9aux4e49notation}{%
+\subsubsection{1. 符号定义（Notation）}\label{ux7b26ux53f7ux5b9aux4e49notation}}
+
+设输入序列包含 \(T\) 个 Token（\(T=\text{Batch Size} \times \text{Sequence Length}\)），隐藏层维度为 \(d\)。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{输入张量}：\(X \in \mathbb{R}^{T \times d}\)。第 \(t\) 个 Token 表示为行向量 \(x_t\)。
+\item
+  \textbf{专家集合}：\(\mathcal{E}=\{E_1,E_2,\ldots,E_N\}\)，共有 \(N\) 个专家网络。
+\item
+  \textbf{专家函数}：\(E_i(x): \mathbb{R}^d \to \mathbb{R}^d\)，即第 \(i\) 个前馈神经网络。
+\item
+  \textbf{门控参数}：\(W_g \in \mathbb{R}^{d \times N}\)，用于计算路由分数的权重矩阵。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux95e8ux63a7ux4e0eux7a00ux758fux8defux7531gating-sparse-routing}{%
+\subsubsection{2. 门控与稀疏路由（Gating \& Sparse Routing）}\label{ux95e8ux63a7ux4e0eux7a00ux758fux8defux7531gating-sparse-routing}}
+
+这是 MoE 的决策阶段，决定每个 Token 发送给哪 \(k\) 个专家。
+
+\hypertarget{ux539fux59cbux5206ux6570ux8ba1ux7b97raw-logits}{%
+\paragraph{2.1 原始分数计算（Raw Logits）}\label{ux539fux59cbux5206ux6570ux8ba1ux7b97raw-logits}}
+
+\Needspace{5\baselineskip}
+首先计算输入 \(X\) 对应每个专家的原始匹配分数矩阵 \(H \in \mathbb{R}^{T \times N}\)：
+
+\[
+H = XW_g
+\]
+
+\hypertarget{top-k-ux7a00ux758fux5316top-k-sparsification}{%
+\paragraph{2.2 Top-k 稀疏化（Top-k Sparsification）}\label{top-k-ux7a00ux758fux5316top-k-sparsification}}
+
+为了实现稀疏计算，我们只保留每行中最大的 \(k\) 个值。定义算子 \(\mathrm{TopK}(v,k)\)，对于向量 \(v\)，保留前 \(k\) 大的元素，其余置为 \(-\infty\)。
+
+\Needspace{5\baselineskip}
+对于第 \(t\) 个 Token 的分数向量 \(h_t\)（矩阵 \(H\) 的第 \(t\) 行）：
+
+\[
+\tilde{h}_t = \mathrm{TopK}(h_t,k)
+\]
+
+\hypertarget{ux95e8ux63a7ux6743ux91cdgating-weights}{%
+\paragraph{2.3 门控权重（Gating Weights）}\label{ux95e8ux63a7ux6743ux91cdgating-weights}}
+
+\Needspace{5\baselineskip}
+对稀疏化后的分数进行 Softmax 归一化，得到最终的门控权重矩阵 \(G \in \mathbb{R}^{T \times N}\)：
+
+\[
+G = \mathrm{Softmax}(\tilde{H})
+\]
+
+注意：\(G\) 是一个行稀疏矩阵，每一行 \(G_t\) 只有 \(k\) 个非零元素。这些非零元素即为该 Token 分配给对应专家的权重。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux8c03ux5ea6ux4e0eux4e13ux5bb6ux8ba1ux7b97dispatch-expert-computation}{%
+\subsubsection{3. 调度与专家计算（Dispatch \& Expert Computation）}\label{ux8c03ux5ea6ux4e0eux4e13ux5bb6ux8ba1ux7b97dispatch-expert-computation}}
+
+在实际的矩阵并行计算中，我们不通过循环处理，而是通过索引掩码或选择矩阵来实现。
+
+\hypertarget{ux5b9aux4e49ux9009ux62e9ux77e9ux9635selection-matrix}{%
+\paragraph{3.1 定义选择矩阵（Selection Matrix）}\label{ux5b9aux4e49ux9009ux62e9ux77e9ux9635selection-matrix}}
+
+对于第 \(i\) 个专家，定义一个二值选择矩阵 \(M_i \in \{0,1\}^{C_i \times T}\)，其中 \(C_i\) 是分配给专家 \(i\) 的 Token 总数（即容量）。如果输入中的第 \(t\) 个 Token 被分配给了专家 \(i\)，则 \(M_i\) 中对应行和列的位置为 1。
+
+\hypertarget{ux4e13ux5bb6ux8f93ux5165ux6295ux5f71dispatch}{%
+\paragraph{3.2 专家输入投影（Dispatch）}\label{ux4e13ux5bb6ux8f93ux5165ux6295ux5f71dispatch}}
+
+\Needspace{5\baselineskip}
+通过矩阵乘法，将分散在 Batch 中的 Token 聚集到专家 \(i\) 的输入缓冲区 \(X_i \in \mathbb{R}^{C_i \times d}\)：
+
+\[
+X_i = M_iX
+\]
+
+这里 \(X_i\) 矩阵的第 \(m\) 行第 \(k\) 列，代表第 \(i\) 个专家输入向量第 \(m\) 个 token 的第 \(k\) 个维度（Embedding 空间是 \(d\) 维的）。由于它由 \(M_i\) 矩阵的第 \(m\) 行（第 \(i\) 个专家输入的第 \(m\) 个 token 是总序列的第 \(n\) 个 token，则该行第 \(n\) 列为 \(1\)，其他列为 \(0\)）和 \(X\) 矩阵的第 \(k\) 列（各个 token 的第 \(k\) 列数值）点乘得到，因此它实际上是``从总输入矩阵中提取本专家输入矩阵''，从而略掉不属于本专家处理的内容。
+
+\hypertarget{ux4e13ux5bb6ux5904ux7406processing}{%
+\paragraph{3.3 专家处理（Processing）}\label{ux4e13ux5bb6ux5904ux7406processing}}
+
+\Needspace{5\baselineskip}
+第 \(i\) 个专家对其专属的输入数据进行计算，得到输出 \(Z_i \in \mathbb{R}^{C_i \times d}\)：
+
+\[
+Z_i = E_i(X_i)
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux805aux5408ux4e13ux5bb6ux7684ux8f93ux51fa}{%
+\subsection{二、聚合专家的输出}\label{ux4e8cux805aux5408ux4e13ux5bb6ux7684ux8f93ux51fa}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux52a0ux6743ux805aux5408weighted-combination}{%
+\subsubsection{4. 加权聚合（Weighted Combination）}\label{ux52a0ux6743ux805aux5408weighted-combination}}
+
+最后一步是将各个专家的计算结果 \(Z_i\) 发送回原来的位置，并乘以门控权重。
+
+\hypertarget{ux6743ux91cdux5411ux91cfux5316}{%
+\paragraph{4.1 权重向量化}\label{ux6743ux91cdux5411ux91cfux5316}}
+
+\Needspace{5\baselineskip}
+对于专家 \(i\)，其对应的门控权重向量 \(g_i \in \mathbb{R}^{C_i}\) 是矩阵 \(G\) 第 \(i\) 列中所有非零值的集合：
+
+\[
+g_i = M_iG_{:,i}
+\]
+
+\Needspace{5\baselineskip}
+MoE 层的总输出 \(Y \in \mathbb{R}^{T \times d}\) 由所有专家的结果经过 \(M_i^T\)（起到 Scatter 作用）还原位置后叠加而成：
+
+\[
+Y = \sum_{i=1}^{N} M_i^T(\mathrm{diag}(g_i) \cdot Z_i)
+\]
+
+\Needspace{5\baselineskip}
+如果从单个 Token \(x\) 的角度看，这个过程等价于更直观的求和公式：
+
+\[
+y = \sum_{i \in \mathcal{T}} G(x)_iE_i(x)
+\]
+
+其中 \(\mathcal{T}\) 是被选中的 Top-k 专家索引集合。
+
+\Needspace{5\baselineskip}
+具体解释：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(g_i=M_iG_{:,i}\)：预处理步骤，将各专家的权重向量``聚合''以适配后续矩阵乘法维度
+\end{enumerate}
+
+\(M_i\) 是前面所述的二值选择矩阵，形状为 \(C_i\times T\)（\(C_i\) 是选中专家 \(i\) 的 Token 数量）。它是一个稀疏的二值矩阵（只有 \(0\) 和 \(1\)），每一行只有一个 \(1\)，代表``我选中的第 \(k\) 个 Token 在原始 Batch 的第几行''。
+
+\(G_{:,i}\) 表示 \(G\) 的第 \(i\) 列，这是一个长度为 \(T\)（序列中 Token 总数）的列向量。它代表了 Batch 中所有 Token 对专家 \(i\) 的打分（权重），这是一个稀疏的向量，里面有很多 \(0\)。在这个矩阵乘法后，就变成了长度为 \(C_i\)（选择了专家 \(i\) 的 Token），相当于把 \(0\) 全部去掉之后拼接起来。
+
+这个操作的核心目的是让权重向量能在后续矩阵乘法中维度匹配（\(Z_i\) 是 \(C_i\times d\) 矩阵）。
+
+\Needspace{5\baselineskip}
+举个例子：
+
+假设 Batch Size \(T=4\)，专家 \(i=1\)。Token 1 和 Token 3 选中了专家 1，Token 2 和 Token 4 没选中。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  全局权重列向量 \(G_{:,1}\) 记录所有 Token 对专家 1 的权重：
+\end{enumerate}
+
+\[
+G_{:,1} =
+\begin{pmatrix}
+0.9 \\
+0 \\
+0.8 \\
+0
+\end{pmatrix}
+\]
+
+其中 Token 1 的权重为 0.9（选中），Token 2 的权重为 0（没选中），Token 3 的权重为 0.8（选中），Token 4 的权重为 0（没选中）。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  选择矩阵 \(M_1\) 表示专家 1 只负责处理第 1 个和第 3 个 Token，所以 \(M_1\) 是 \(2 \times 4\) 矩阵：
+\end{enumerate}
+
+\[
+M_1 =
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  第一行 \([1,0,0,0]\)：提取原来的第 1 个元素。
+\item
+  第二行 \([0,0,1,0]\)：提取原来的第 3 个元素。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  计算结果 \(g_1\) 执行矩阵乘法 \(M_1 \times G_{:,1}\)：
+\end{enumerate}
+
+\[
+g_1 =
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+0.9 \\
+0 \\
+0.8 \\
+0
+\end{pmatrix}
+=
+\begin{pmatrix}
+0.9 \\
+0.8
+\end{pmatrix}
+\]
+
+\Needspace{5\baselineskip}
+也可以把它看作一个过滤筛查的过程：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \(G_{:,i}\) 拿着一张长长的清单，上面写着 Batch 里 1000 个 Token 对专家 \(i\) 的关注度。
+\item
+  \(M_i\) 拿着一张``准入名单''，上面只写着 50 个真正进入专家 \(i\) 房间的 Token 的 ID。
+\item
+  乘法操作：\(M_i\) 将这 50 个 Token 对应的关注度（权重）从 \(G_{:,i}\) 的长清单中抠出来，按顺序排成一个新的短向量 \(g_i\)。
+\item
+\Needspace{5\baselineskip}
+  \(\mathrm{diag}(g_i)Z_i\)：
+\end{enumerate}
+
+物理意义：专家处理完数据后，我们不能直接使用结果，必须根据门控网络（Router）的``信任程度''对结果进行缩放。如果门控网络给专家 \(i\) 的打分很高（例如 \(0.9\)），那么 \(Z_i\) 的特征就保留大部分；如果打分很低（例如 \(0.1\)），特征就被削弱。
+
+\Needspace{5\baselineskip}
+数学操作：
+
+\begin{itemize}
+\tightlist
+\item
+  \(g_i\) 是一个长度为 \(C_i\) 的向量。
+\item
+  \(\mathrm{diag}(g_i)\) 将其构造为一个 \(C_i \times C_i\) 的对角矩阵。
+\item
+  与 \(Z_i\)（\(C_i \times d\)）相乘，本质上是行与行之间的标量乘法（Broadcast multiplication），即第 \(j\) 个样本的输出向量乘以第 \(j\) 个权重标量。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  乘 \(M_i^T\)：把行数从该专家处理的 token 数散射还原到整个序列的 token 数，以便后续相加
+\end{enumerate}
+
+假设总共有 4 个 Token（\(T=4\)），专家 \(E_1\) 负责处理第 1 个和第 3 个 Token（\(C_1=2\)）。
+
+Gather 阶段（\(X_i=M_iX\)）：\(M_i\) 是一个 \(2 \times 4\) 的矩阵，它把第 1、3 行``吸''出来，变成紧凑的 \(2 \times d\) 矩阵送给专家。
+
+\[
+M_i =
+\begin{pmatrix}
+1 & 0 & 0 & 0 \\
+0 & 0 & 1 & 0
+\end{pmatrix}
+\]
+
+\Needspace{5\baselineskip}
+Scatter 阶段（\(M_i^T\)）：现在专家算完了，得到结果 \(Z_i'\)（加权后的 \(2 \times d\) 矩阵）。我们需要把它放回原来的 4 行结构中。\(M_i^T\) 是 \(M_i\) 的转置，形状为 \(4 \times 2\)：
+
+\[
+M_i^T =
+\begin{pmatrix}
+1 & 0 \\
+0 & 0 \\
+0 & 1 \\
+0 & 0
+\end{pmatrix}
+\]
+
+\Needspace{5\baselineskip}
+当我们将 \(M_i^T\) 乘以 \(2 \times d\) 的结果矩阵时：
+
+\[
+\begin{pmatrix}
+1 & 0 \\
+0 & 0 \\
+0 & 1 \\
+0 & 0
+\end{pmatrix}
+\cdot
+\begin{pmatrix}
+\mathrm{Row}_1 \\
+\mathrm{Row}_3
+\end{pmatrix}
+=
+\begin{pmatrix}
+\mathrm{Row}_1 \\
+0 \\
+\mathrm{Row}_3 \\
+0
+\end{pmatrix}
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  求和：各专家输出矩阵相加，得到最终输出
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux8d1fux8f7dux5747ux8861ux635fux5931}{%
+\subsection{三、负载均衡损失}\label{ux4e09ux8d1fux8f7dux5747ux8861ux635fux5931}}
+
+为了防止``马太效应''（即少数专家处理所有数据），我们需要在训练目标函数中加入辅助项。
+
+\Needspace{5\baselineskip}
+定义两个概率分布向量：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  重要性分布（Importance Vector，\(\Psi\)）：门控网络预测的累积概率质量，即模型``想''怎么分。
+\end{enumerate}
+
+\[
+\Psi_i = \frac{1}{T}\sum_{t=1}^{T}\mathrm{Softmax}(h_t)_i
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  负载分布（Load Vector，\(\Phi\)）：实际产生的离散分配决策，即实际怎么分。
+\end{enumerate}
+
+\[
+\Phi_i = \frac{1}{T}\sum_{t=1}^{T}\mathbf{1}\left(i \in \mathrm{Indices}(\mathrm{TopK}(h_t,k))\right)
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  损失函数：最小化这两个向量的点积，以鼓励均匀分布（Uniform Distribution）。
+\end{enumerate}
+
+\[
+\mathcal{L}_{aux} = N\sum_{i=1}^{N}\Psi_i \cdot \Phi_i
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  系数 \(N\) 是为了归一化，使得理想均匀分布下的 Loss 为 1。
+\item
+  总损失函数为：\(\mathcal{L}_{total}=\mathcal{L}_{task}+\alpha\mathcal{L}_{aux}\)。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+此外还可以在路由分数计算中引入动态偏置：
+
+\[
+\mathrm{RoutingScore}=\mathrm{Softmax}(W_{gate}\cdot x+b_{dynamic})
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbdeepseekux5bf9moeux7684ux521bux65b0}{%
+\subsection{四、DeepSeek对MoE的创新}\label{ux56dbdeepseekux5bf9moeux7684ux521bux65b0}}
+
+DeepSeek不是MoE的发明者，但做了非常重要的架构微创新（Micro-Innovation），极大地提升了MoE的效率。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  细粒度专家（Fine-Grained Experts）
+\end{enumerate}
+
+传统MoE的专家很大且数量少（比如 8 个大专家）。DeepSeek将专家切得更碎（比如 64 个小专家），每次激活更多的小专家。
+
+数学直觉：粒度越细，知识组合的灵活性越高。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  共享专家隔离
+\end{enumerate}
+
+这是DeepSeek最核心的贡献。
+
+传统MoE问题：有些知识是通用的（比如语法结构、基础逻辑）。在传统MoE中，这些通用知识被迫重复存储在每一个专家里，浪费参数。
+
+\Needspace{5\baselineskip}
+DeepSeek方案在数学表达上，输出公式变成了：
+
+\[
+y=\sum_{i\in \mathrm{TopK}}G_i(x)E_i(x)+E_{shared}(x)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \(E_{shared}(x)\)：是一个总是被激活的专家，专门负责存储通用知识。
+\item
+  \(E_i(x)\)：路由专家只负责存储``细分领域的独有知识''。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94top-kux64cdux4f5cux7684ux4e0dux53efux5bfcux6027ux53caux89e3ux51b3ux65b9ux6848}{%
+\subsection{五、Top-K操作的不可导性及解决方案}\label{ux4e94top-kux64cdux4f5cux7684ux4e0dux53efux5bfcux6027ux53caux89e3ux51b3ux65b9ux6848}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  受害者：路由网络（The Router）
+\end{enumerate}
+
+路由网络（参数为 \(W_r\)）是那个负责做``多选题''的角色。它的任务是：对于输入 \(x\)，我应该从几百个专家里选哪 \(K\) 个？
+
+为什么它是受害者？
+
+Top-K 操作本质上是一个阶跃函数（Step Function）。
+
+\begin{itemize}
+\tightlist
+\item
+  输入：路由分值（logits）。
+\item
+  输出：几个离散的索引（比如 \texttt{\{Expert\ 5,\ Expert\ 9\}}）。
+\end{itemize}
+
+问题场景：假设现在的 Loss 很高，我们希望通过梯度下降告诉 Router：``你选错了，刚才不应该选 Expert 5，应该选 Expert 7！''
+
+\Needspace{5\baselineskip}
+但是在数学上，Top-K 造成了梯度消失（Zero Gradient）：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  如果我们微小地改变一点点路由参数 \(W_r\)，路由分值会发生微小变化（例如 Expert 5 的分值从 0.8 变到 0.801，Expert 7 的分值从 0.79 变到 0.791）。
+\item
+  然而，这种微小的变化不足以改变 Top-K 的排序结果（Top-K 依然选 Expert 5）。
+\item
+  因为结果没变，Loss 也没变。
+\item
+  结论：Loss 对 \(W_r\) 的导数为 0。
+\end{enumerate}
+
+后果：如果没有补救措施（如 DeepSeek 采用的加权求和 \(g_i \cdot E_i\)），Router 根本无法学习。它会随机初始化成什么样，就永远停留在什么样，因为它感觉不到任何``改变参数能降低 Loss''的反馈。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  幸存者：专家网络（The Experts）
+\end{enumerate}
+
+专家网络（参数为 \(W_e\)）是负责干活的执行者。
+
+为什么它不受影响？
+
+\begin{itemize}
+\tightlist
+\item
+  专家本身不在乎``由于什么决策逻辑''被选中。
+\item
+  只要它被选中了，数据流就会进来。
+\item
+  只要数据流进来了，它算出的结果就会参与最终 Loss 的计算。
+\item
+  只要参与了计算，梯度就会顺着数据流反向传回来。
+\end{itemize}
+
+对于专家来说，Top-K 只是一个开关（Mask）。
+
+\begin{itemize}
+\tightlist
+\item
+  开关开了（被选中）：我就正常训练，更新参数。
+\item
+  开关没开（没被选中）：我就休息，参数不变。
+\end{itemize}
+
+Top-K 的不可导性没有阻断``Loss → 专家输出 → 专家权重''这条路径，它只是阻断了``Loss → 选择逻辑 → 路由权重''这条路径。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  DeepSeek 是如何``救活''路由网络的？
+\end{enumerate}
+
+既然 Top-K 让 Router 无法通过``改变选择''来学习，DeepSeek（以及现代 MoE）就通过\textbf{``改变幅度''}来让它学习。
+
+\Needspace{5\baselineskip}
+回顾公式：
+
+\[
+y=\sum_{i\in T}g_i\cdot E_i(x)
+\]
+
+\Needspace{5\baselineskip}
+Router 的梯度回传路径变成了：
+
+\[
+\mathrm{Loss}\rightarrow y\rightarrow g_i\;(\mathrm{Softmax\ Probability})\rightarrow \mathrm{Logits}\rightarrow W_r
+\]
+
+\Needspace{5\baselineskip}
+这个 trick 的精髓在于：模型虽然无法直接告诉 Router``这就把 Expert 5 换成 Expert 7''（这是离散跳跃），但它可以告诉 Router：
+
+``嘿，Expert 5 刚才的表现不错，请增大它的权重 \(g_5\)（让它更重要）。''或者``Expert 9 刚才搞砸了，请减小它的权重 \(g_9\)。''
+
+通过不断调整连续的权重 \(g_i\)，如果某个未被选中的专家（比如 Expert 7）的潜在分值慢慢被推高，最终超过了 Top-K 的阈值，它就会在某一时刻``突然''被选中。Router 就是通过这种``曲线救国''的方式，利用连续的权重梯度，最终实现了离散选择的优化。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-77}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-77}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jacobs, R. A., Jordan, M. I., Nowlan, S. J., \& Hinton, G. E. (1991). \href{https://doi.org/10.1162/neco.1991.3.1.79}{Adaptive Mixtures of Local Experts}. Neural Computation.
+\item
+  Shazeer, N., Mirhoseini, A., Maziarz, K., et al.~(2017). \href{https://arxiv.org/abs/1701.06538}{Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer}. arXiv:1701.06538.
+\item
+  Dai, D., Deng, C., Zhao, C., et al.~(2024). \href{https://arxiv.org/abs/2401.06066}{DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models}. arXiv:2401.06066.
+\item
+  DeepSeek-AI. (2024). \href{https://arxiv.org/abs/2412.19437}{DeepSeek-V3 Technical Report}. arXiv:2412.19437.
+\item
+  Gemini Team, Google. (2024). \href{https://arxiv.org/abs/2403.05530}{Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context}. arXiv:2403.05530.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,134 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5177ux8eabux667aux80fdux52a0ux901fux79d1ux5b66ux53d1ux73b0}{%
+\section{具身智能加速科学发现}\label{ux5177ux8eabux667aux80fdux52a0ux901fux79d1ux5b66ux53d1ux73b0}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux7269ux7406apiux4e0bux7684ux79d1ux5b66ux53d1ux73b0}{%
+\subsection{一、物理API下的科学发现}\label{ux4e00ux7269ux7406apiux4e0bux7684ux79d1ux5b66ux53d1ux73b0}}
+
+对于自然科学和医学等领域，AI for Science的核心瓶颈在于数据与实验验证。当有潜力的方法和想法可以被大量提出，实验验证就成为了瓶颈；即便可以通过构建模拟来减少对湿实验的需求，构建模拟的难点依然不在于模型，而在于大量、高质量、可复现的扰动数据。只有具身智能才能自主地进行实验验证和获取数据。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  实现探索性研究的干湿闭环，解放人类研究者，降低探索成本
+\end{enumerate}
+
+当下，基于硬编码机器人的自动化实验室适配场景范围窄、定制耗时长、成本高昂，故往往出现在最不新颖的方向，难以加速长尾区域的科学发现。具身智能能像人一样灵活地执行实验，根据样品状态等感知信息实时调整行动；也能积累那些内蕴于``感觉''而不出现在文献中的隐性知识，如怎么构建厚度恰到好处的水膜等。细胞多组学数据获取中，当前测序和成像等已自动化，但具身智能还能处理组织解离、单细胞悬液制备、原代细胞处理、iPSC/类器官培养等需根据观测情况实时判断的预处理步骤；基因编辑的核心步骤已自动化，但具身智能还能打通下游克隆扩增、表型确认的链条。此外，软组织切片、动物实验、仪器间衔接、执行新实验流程、故障排错等都将由具身智能完成。具身智能落地后，AI Scientist将像从专用处理器向通用处理器转变那样，走向``通用科学家闭环''，探索性研究将不再大量依赖人力，从而研究人员能被解放出来进行更多创造性思考，具身智能的通用性也让单次探索的成本大大降低且可以闭环优化，有望带来更多新的科学发现。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  加快非标准化实验的速度
+\end{enumerate}
+
+当下，很多实验的通量已经增长了几个数量级。但由Amdahl定律，最终起决定性作用的依然是最慢的非标准化实验。人类往往每天高效工作的时间只有几个小时，且实验失败率较高；具身智能则可以7*24小时运行，且可以不断降低实验的失败率，从而加快单个实验的速度。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  绕过人类注意力瓶颈，扩大并行规模
+\end{enumerate}
+
+计算机科学告诉我们，若单个任务时间较长，则并行能让效率更高。具身智能可以让非标准化实验也被大规模并行，且不需要在遇到堵头、析出、污染、细胞状态不对等设计者没枚举的物理事件时就停下来（如果这些都需要人处理，那可达的并行度就被人的串行效率限制了）。除了少数存在因果关联或资源限制、需要串行的实验外，大部分实验可以实现在物理世界中的大规模并行。也有一些模型训练需要通过这种并行获取数据，如虚拟细胞模型中的不同类型扰动数据，这是人类分散式生产的数据给不出的。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  提高数据质量，让复现变易、模拟可行、模型更准
+\end{enumerate}
+
+专用模型（乃至模拟）依赖于大规模、高质量的数据，特别是因果扰动数据。而很多实验在不同人做的时候结果相差明显，如平板划线法中每个人划的圈数、方式等不同将直接影响菌落密度，这样带来的不一致的数据很难训练出好的模型。具身智能可实现对软组织、动物、微生物等的操作可溯源、可统一，让湿实验可被复现（复现的边界成本趋于零），减小批次效应的影响，还能收集那些在人类研究中常缺失或被忽略的负样本，为专用模型的训练提供高质量的数据。这将带来复利效应：更高质量的数据带来更好的模型，更好的模型预测更准确的结果，更准确的结果上收集更高质量的数据，从而极大加速研究。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  捕捉``意外''中的科学发现
+\end{enumerate}
+
+很多自然科学发现来源于``意外''。依赖硬编码机器人的实验室会忽略意外情况或停止，必须等待人类处理，瞬态现象可能很快就消失了；具身智能则可以主动感知、主动获取相关数据，比如换一个角度观察和获取数据等，这可能会催生出新的科学发现。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7269ux7406ux81eaux6211ux6539ux8fdbux4e0bux7684ux79d1ux5b66ux53d1ux73b0}{%
+\subsection{二、物理自我改进下的科学发现}\label{ux4e8cux7269ux7406ux81eaux6211ux6539ux8fdbux4e0bux7684ux79d1ux5b66ux53d1ux73b0}}
+
+当具身智能可以自我改进，则意味着它实现了像人类一样开始发明工具的跃迁，它不仅可以做实验，而且能够改造自己的实验接口、创造新的测量方法和实验技术，从而不断扩大从现实世界获取信息的能力，改造具身智能自身进行科学研究的方式和能力。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  改进实验操作和设备
+\end{enumerate}
+
+具备自我改进能力的具身智能可以自主改进实验的具体操作，如实时观察微小的形态学变化，结合力学反馈精准控制每个时刻换液的速度、抓取的力度，乃至进行局部微手术等，通过微调自身模型等形式实现自适应，大幅减少实验失败重做次数。具身智能还可以改进实验设备，设计更高效率的设备，提高实验的通量和准确性等。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  在新实验方法和测量工具的探索中，加快想法验证和工程迭代的速度
+\end{enumerate}
+
+实验方法和测量工具上的突破往往能带来重要的科学发现，因为它们能让我们绕过研究对象本身固有的复杂性，让我们直接看到问题的本质。尽管未来模型可能可以批量提出关于新实验方法和测量工具的想法（work和不work的都有），但验证和工程改进会成为瓶颈，无法构成闭环。具身智能可以以显著超过人类的速度在更大的空间并行试错和迭代改进，处理硬编码机器人无法处理的流程，优化有价值的方法，快速排除效果不佳的方法，技术从想法到在真实实验环境中可用的时间极大缩短、性能显著提高。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  探索新实验路径后，设计制造对应窄域自动化设备
+\end{enumerate}
+
+具身智能和窄域自动化并非相互独立的路径。在通用具身智能具备自我改进的能力后，其将有能力设计、制造和改进窄域自动化设备。这意味着在未来实验室的分工中，具身智能不总是自己做实验，而是自己负责探索性实验，找到稳定工作流后``编译''为高通量的自动化基础设施执行后续实验，自身则继续做其他探索并适当监测。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  基于物理交互中积累的直觉，推动新技术发明甚至新理论提出
+\end{enumerate}
+
+具身智能既有着对物理世界变化规律和空间结构的认知，又可以在大量实验中积累隐性知识或直觉。对于实验科学而言，其理解实验的难点和不会写入文献的隐性知识，解决了实验科学家和工程师的沟通难题，``知道什么值得做''的创造性科学直觉也可能与浸泡在实验室中的具身经验和隐性知识有关。而即便是对于理论物理等学科，人类也是在与物理世界的反复直接交互中，才从原始数据里抽象出了力、因果性等概念框架。大语言模型无法像牛顿那样将世界万物复杂的相互作用抽象为统一的``力''，因为它们对世界的认知来源于预训练数据，只能在已有数据包含的概念和框架中插值组合，这并不会得到全新的概念或理论，强化学习也不会让模型具备概念层次的创新能力。具身智能可以与现实世界主动交互，自主从物理世界获得已有框架之外的信息，这可能是实现概念级创新的必要条件。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-167}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-167}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Szymanski, N. J., Rendy, B., Fei, Y., et al.~(2023). \href{https://www.nature.com/articles/s41586-023-06734-w}{An Autonomous Laboratory for the Accelerated Synthesis of Inorganic Materials}. Nature, 624, 86--91.
+\item
+  Lu, C., Lu, C., Lange, R. T., Foerster, J., Clune, J., \& Ha, D. (2024). \href{https://arxiv.org/abs/2408.06292}{The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery}. arXiv:2408.06292.
+\item
+  Canty, R. B., \& Abolhasani, M. (2026). \href{https://www.nature.com/articles/s41570-026-00847-2}{The Past, Present and Future of Self-Driving Laboratories}. Nature Reviews Chemistry, 10, 523--537.
+\item
+  Fan, J. (2026). \href{https://www.youtube.com/watch?v=3Y8aq_ofEVs}{Robotics' End Game: Nvidia's Jim Fan}. Sequoia Capital AI Ascent 2026 {[}Video{]}.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,173 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{other-applications-of-kl-divergence-in-rl}{%
+\section{Other Applications of KL Divergence in RL}\label{other-applications-of-kl-divergence-in-rl}}
+
+Beyond stability constraints in TRPO and PPO, KL divergence has several other ingenious applications in RL.
+
+\Needspace{5\baselineskip}
+\hypertarget{exploration-and-information-gain}{%
+\subsection{1. Exploration and Information Gain}\label{exploration-and-information-gain}}
+
+In information-gain-based exploration, KL divergence measures how much an observation changes the agent's beliefs about environmental dynamics parameters. VIME is a representative method.
+
+\begin{itemize}
+\tightlist
+\item
+  Core idea: explore states providing the most ``new information.''
+\item
+  Implementation: maintain a posterior over dynamics parameters \(\theta\) and compare parameter posteriors before and after observing a new transition.
+\item
+  If transition \((s_t,a_t,s_{t+1})\) substantially changes beliefs about dynamics parameters, it provides high information gain and earns an extra intrinsic reward.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Mathematically:
+
+\[
+r_{\mathrm{intrinsic},t}
+=
+D_{\mathrm{KL}}\bigl(
+p(\theta\mid \xi_t,a_t,s_{t+1})
+\Vert
+p(\theta\mid \xi_t)
+\bigr)
+\]
+
+Here \(\xi_t\) is interaction history through time \(t\), and \(\theta\) denotes dynamics-model parameters. The expression compares parameter posteriors before and after adding a transition, rather than directly taking KL between a continuous predictive distribution and a Dirac distribution representing one observation.
+
+This encourages actively exploring environmental regions whose outcomes cannot be predicted accurately, learning the world model more efficiently.
+
+\Needspace{5\baselineskip}
+\hypertarget{imitation-learning-and-behavior-cloning}{%
+\subsection{2. Imitation Learning and Behavior Cloning}\label{imitation-learning-and-behavior-cloning}}
+
+Imitation learning aims to make agent policy \(\pi_{\mathrm{learner}}\) as close as possible to expert policy \(\pi_{\mathrm{expert}}\).
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Direct KL minimization: define the loss as their KL divergence:
+\end{itemize}
+
+\[
+L_{\mathrm{imitation}}
+=
+\mathbb{E}_{s\sim d_{\mathrm{expert}}}
+\bigl[
+D_{\mathrm{KL}}\bigl(
+\pi_{\mathrm{expert}}(\cdot\mid s)
+\Vert
+\pi_{\mathrm{learner}}(\cdot\mid s)
+\bigr)
+\bigr]
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Interpretation: the learner's action distribution must closely match the expert's on expert-visited states. This is a direct, effective form of imitation learning.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{information-theoretic-regularization-and-maximum-entropy-rl}{%
+\subsection{3. Information-Theoretic Regularization and Maximum-Entropy RL}\label{information-theoretic-regularization-and-maximum-entropy-rl}}
+
+Maximum-entropy RL (such as SAC and Soft Q-Learning) maximizes not only cumulative reward but also policy entropy, or randomness.
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Core objective:
+\end{itemize}
+
+\[
+J(\pi)
+=
+\mathbb{E}
+\bigl[
+\sum_t \gamma^{t}
+\bigl(
+r(s_t,a_t)+\alpha\mathcal{H}(\pi(\cdot\mid s_t))
+\bigr)
+\bigr]
+\]
+
+Here \(\mathcal{H}\) is entropy and \(\alpha\) the temperature parameter.
+
+\begin{itemize}
+\tightlist
+\item
+  Connection to KL: this maximum-entropy objective is mathematically equivalent to adding a KL regularizer relative to a uniform distribution to the standard RL objective.
+\item
+  Maximizing \(\mathcal{H}(\pi)\) is equivalent to minimizing \(D_{\mathrm{KL}}(\pi\Vert\mathrm{Uniform})\), encouraging a policy close to uniform, the most random distribution.
+\item
+  In SAC: the policy-update objective includes KL minimization relative to a guiding distribution, usually the Boltzmann distribution induced by the current Q function.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{multitask-learning-and-knowledge-transfer}{%
+\subsection{4. Multitask Learning and Knowledge Transfer}\label{multitask-learning-and-knowledge-transfer}}
+
+\Needspace{5\baselineskip}
+When an agent learns related tasks, policy distillation transfers behavioral knowledge from a teacher to a student. KL directly constrains the student's action distribution to match the teacher:
+
+\[
+L_{\mathrm{distill}}
+=
+\mathbb{E}_{s\sim\mathcal{D}}
+\left[
+D_{\mathrm{KL}}\bigl(
+\pi_{\mathrm{teacher}}(\cdot\mid s)
+\Vert
+\pi_{\mathrm{student}}(\cdot\mid s)
+\bigr)
+\right]
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Knowledge transfer: minimizing this loss reproduces the teacher's action distribution on states covered by \(\mathcal{D}\).
+\item
+  Preventing forgetting: an old-task teacher policy can help preserve old behavior, but effectiveness depends on state-data coverage of the old task.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Elastic Weight Consolidation (EWC) also mitigates catastrophic forgetting, but does not directly constrain KL between old and new policies. Instead, old-task Fisher information imposes a quadratic penalty on changes to important parameters:
+
+\[
+L_{\mathrm{EWC}}
+=
+L_{\mathrm{new\_task}}
++
+\frac{\lambda}{2}
+\sum_i F_i(\theta_i-\theta_i^{*})^{2}
+\]
+
+Here \(\theta_i^{*}\) is the parameter at the end of old-task training, and \(F_i\) measures parameter \(i\)'s importance to that task.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-59}{%
+\subsection{References}\label{references-59}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Houthooft, R., Chen, X., Duan, Y., Schulman, J., De Turck, F., \& Abbeel, P. (2016). \href{https://arxiv.org/abs/1605.09674}{VIME: Variational Information Maximizing Exploration}. NeurIPS 2016.
+\item
+  Ross, S., Gordon, G. J., \& Bagnell, J. A. (2011). \href{https://proceedings.mlr.press/v15/ross11a.html}{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}. AISTATS 2011.
+\item
+  Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Rusu, A. A., Colmenarejo, S. G., Gülçehre, Ç., et al.~(2016). \href{https://arxiv.org/abs/1511.06295}{Policy Distillation}. ICLR 2016.
+\item
+  Kirkpatrick, J., Pascanu, R., Rabinowitz, N., et al.~(2017). \href{https://doi.org/10.1073/pnas.1611835114}{Overcoming catastrophic forgetting in neural networks}. Proceedings of the National Academy of Sciences, 114(13), 3521-3526.
+\end{itemize}
+
+\clearpage

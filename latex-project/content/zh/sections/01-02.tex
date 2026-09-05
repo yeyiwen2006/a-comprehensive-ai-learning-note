@@ -1,0 +1,142 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux795eux7ecfux7f51ux7edcux4e0eux6df1ux5ea6ux5b66ux4e60}{%
+\section{神经网络与深度学习}\label{ux795eux7ecfux7f51ux7edcux4e0eux6df1ux5ea6ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux795eux7ecfux7f51ux7edc}{%
+\subsection{一、神经网络}\label{ux4e00ux795eux7ecfux7f51ux7edc}}
+
+目前主流的人工智能，是运用多层神经网络（后面会讲层的定义）进行的一种机器学习方式，称为深度学习（Deep Learning）。所谓``神经网络''（Neural Network），其实就是一个复杂的函数。这个函数可能有非常多个输入、输出和参数，内部有一个个``神经元''，不同``神经元''相互联结，且两个神经元间有特定的``联结强度''（参数）。数据从特定的神经元输入，进入各个神经元，和不同参数经过一系列计算，最终从一个或多个神经元上输出，这样的架构参照了人体内神经元的相互联结，而被称为``神经网络''。
+
+而这个``神经网络''要做的事情，就是``拟合''。
+
+我们学习过泰勒展开，随着保留的项数逐渐增加，项和系数不断变多，展开式将逐渐逼近我们想要拟合的目标函数。而现实世界中的工作也可以用函数来表示（尽管我们求不出这个函数的解析式）。比如手写数字图像分类，其实就是要找到一个函数，能根据输入的图像，输出一个0-9之间的数字；让大模型写一篇作文，就是每次都把任务要求和已经写出来的上文作为输入，输出合适的下一个词，直至完篇。
+
+我们知道，给定一个输入，这个函数究竟输出什么，由``函数解析式是什么样子''和``函数参数取多少''决定。训练AI的过程，就是不断调整内部的参数，让它的计算结果和我们想要的``标准答案''越来越接近。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7ebfux6027ux56deux5f52}{%
+\subsection{二、线性回归}\label{ux4e8cux7ebfux6027ux56deux5f52}}
+
+我们先从最简单的函数y = wx + b开始。
+
+比如，假设你想调出一种``完美甜度''的可乐，x是你加的``糖浆量''，y是最终的``甜度''。你的目标是找到最佳的 w（糖浆的``甜度系数''）和 b（可乐底料的``基础甜度''）。线性回归 (Linear Regression) 就是找到最好的w 和 b，让 wx + b 算出来的 y 和你尝到的``标准甜度''最接近。
+
+需要注意的是，x不一定是一个数字。在更多情况下，输出y由很多个因素共同决定，这时x就是由许多数值构成的向量{[}x\_1,x\_2,\ldots,x\_n{]}。比如现在有10种配料，共同决定甜度，那么y=w\_1\emph{x\_1+\ldots+w\_10}x\_10+b，或者将w和x分别写成行向量和列向量的形式，仍可以用y = wx + b这一形式表达。
+
+这时候，我们就可以把线性回归看成一个单层神经网络：输出层的值 \(o_1\) 由输入层的 \(x_1,\ldots,x_d\) 共同决定。输入层的输入数（或称为特征维度）为 \(d\)，输出层的输出数是 \(1\)。这是一个单层的神经网络（计算只发生了一层），这里每个输入都与每个输出相连，称为全连接层。
+
+但线性回归这个``机器''毕竟只能处理线性关系。如果``甜度''和``配料''的关系不是线性的（比如加太多反而导致甜度下降），线性回归就不能拟合了。我们需要引入更具复杂性和灵活性的函数。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6fc0ux6d3bux51fdux6570}{%
+\subsection{三、激活函数}\label{ux4e09ux6fc0ux6d3bux51fdux6570}}
+
+我们需要一个``魔法道具''来打破这种线性，这个道具就是激活函数（Activation Function）。
+
+最著名的激活函数之一叫做 ReLU (Rectified Linear Unit，修正线性单元)。它的规则简单到极致：\(\mathrm{ReLU}(x)=\max(x,0)\)，也就是值在大于0时不变，小于0时取0.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0001.png}
+\caption{ReLU 函数图像}
+\end{figure}
+
+\Needspace{5\baselineskip}
+这时候问题来了：
+
+ReLU 看起来只是一种信息损失（把负数全变成0），为什么它能让深度神经网络从一个``傻傻的''线性网络，变成拥有各种强大功能的网络呢？
+
+答案正是：非线性 (Non-linearity) 。
+
+这个``拦住负数''的简单动作，引入了一个``折痕''或``关节''。想象一根直木棍（线性函数）。各种直线加加减减乘系数，得到的显然还是直线。但如果有了``关节''（ReLU函数），情况就完全不同了。
+
+\Needspace{5\baselineskip}
+我们现在有四个线性函数：
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0002.png}
+\caption{ReLU 变换前的线性函数}
+\end{figure}
+
+\Needspace{5\baselineskip}
+分别经过ReLU函数（图中用f表示）后如下，可以发现每个函数经过ReLU函数时的``关节位置''和``伸展方向''不同：
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0003.png}
+\caption{ReLU 变换后的分段线性函数}
+\end{figure}
+
+\Needspace{5\baselineskip}
+再相加，每一个不同的``关节''都成为了新函数的``关节''：
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0004.png}
+\caption{多个 ReLU 函数相加得到更复杂的分段线性函数}
+\end{figure}
+
+这就是通用近似定理（Universal Approximation Theorem）的通俗理解：只要你有足够多的带``关节''（非线性激活函数）的神经元，理论上你可以``拼''出（拟合）宇宙中任何一个复杂的函数。
+
+当然，``一刀切''地把负数全砍掉有时太粗暴了。万一负数信息也有用呢？于是研究者们发明了一些变种，比如 Leaky ReLU，它允许负数``泄露''一点点信息过去：f(x) = max(x, 0) + a*min(x, 0)，当a=0时，就变回了普通的ReLU。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux635fux5931ux51fdux6570}{%
+\subsection{四、损失函数}\label{ux56dbux635fux5931ux51fdux6570}}
+
+刚才我们搭建了一台由``师傅''（神经元）和``关节''（ReLU）组成的``函数机器''。它现在可以对输入x给出自己的输出y了。那么，我们怎么知道它输出的 \(y\) 是``好''还是``坏''呢？
+
+就像考试需要``评分标准''一样，AI也需要一个``评分标准''来衡量它的预测结果和``标准答案''之间的差距。这个``评分标准''就是损失函数（Loss Function）。损失函数是一个``打分器''。把AI的全部参数丢进去，它会根据输入和输出算出一个损失值（Loss）。训练AI的唯一目标，就是通过不断调整参数，最终寻找到一组参数，让这个``损失值''变得最小，也就是它的输出最接近我们期望达到的目标，完美预测时的损失为0。在线性回归中，这组参数是可以算出解析解的，但在大部分问题中并不能（后续会讲优化参数的方法）。
+
+\Needspace{5\baselineskip}
+回归问题中，最常用的损失函数是平方误差函数。当样本的预测值为 \(\hat{y}\)，其相应的真实标签为 \(y\) 时，平方误差可以定义为：
+
+\[
+Loss=\frac{1}{2}(\hat{y}-y)^2
+\]
+
+\Needspace{5\baselineskip}
+对于一个批量的 \(n\) 个样本，总损失为：
+
+\[
+Loss=\frac{1}{2}\sum_{i=1}^{n}(\hat{y}_i-y_i)^2
+\]
+
+这实际上就是最小二乘法。（常数不同没有本质差别，取1/2是为了让损失函数求导后常数系数为1，在后续计算梯度时更加方便）
+
+高中课本告诉我们均方损失是因为绝对值函数没有那么良好的性质。但是我们为什么偏偏选择``平方''呢？
+
+一方面，前面已经阐述过，它求导会得到 \(\hat{y}-y\) 这个简洁的项，可以让后续求解梯度更加方便。但是其实，均方损失的背后还有深刻的统计学含义。
+
+\Needspace{5\baselineskip}
+我们假设AI的预测是准的，但现实中总会有一些随机的误差（也就是``噪声''），使得数据集中的数据并不完全符合它本应该符合的函数分布。我们假设这些``噪声''服从高斯分布（正态分布）。假设这个完全正确的AI的参数为θ，此时根据公式，输入x的时候，输出y的概率密度（在输出值连续的情况下，可以理解为输出值介于y和y+dy之间的概率除以dy）为：
+
+\[
+p(y \mid \mathbf{x};\theta)=\frac{1}{\sqrt{2\pi\sigma^2}}\exp\left(-\frac{(y-f(\mathbf{x};\theta))^2}{2\sigma^2}\right).
+\]
+
+我们希望这个概率越大越好，这就是``极大似然估计''，这里σ是高斯分布的系数。为了让这个概率最大，只需要让指数里的那个括号里的项最小，那一项正是参数为θ下的均方损失。
+
+后续，我们还会介绍另一种损失函数------交叉熵损失函数。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-1}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-1}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Goodfellow, I., Bengio, Y., \& Courville, A. (2016). \href{https://www.deeplearningbook.org/}{Deep Learning}. MIT Press.
+\item
+  Cybenko, G. (1989). \href{https://doi.org/10.1007/BF02551274}{Approximation by superpositions of a sigmoidal function}. Mathematics of Control, Signals and Systems, 2, 303-314.
+\item
+  Glorot, X., Bordes, A., \& Bengio, Y. (2011). \href{https://proceedings.mlr.press/v15/glorot11a.html}{Deep Sparse Rectifier Neural Networks}. AISTATS 2011.
+\end{itemize}
+
+\clearpage

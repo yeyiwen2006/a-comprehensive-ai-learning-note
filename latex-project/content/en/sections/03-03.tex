@@ -1,0 +1,230 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{googlenet}{%
+\section{GoogLeNet}\label{googlenet}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-innovation-the-inception-module}{%
+\subsection{I. Core Innovation: The Inception Module}\label{i.-core-innovation-the-inception-module}}
+
+This is the essence of GoogLeNet. It is designed to process features at multiple scales simultaneously and let the network learn to choose the most suitable scale.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Naïve Inception module (the original idea)
+\end{enumerate}
+
+The initial idea was simple: instead of debating whether to use 1x1, 3x3, or 5x5 kernels, or whether to pool, let the network choose. Apply several operation types in parallel to a local region, then concatenate their results along the channel dimension to form the output.
+
+\Needspace{5\baselineskip}
+Its structure is as follows:
+\Needspace{5\baselineskip}
+One input is fed simultaneously into four parallel branches:
+
+1x1 convolution: captures highly local features and acts as a linear projection.
+
+3x3 convolution: captures features over slightly larger regions.
+
+5x5 convolution: covers a larger receptive field.
+
+3x3 max pooling: extracts the most salient features and provides spatial robustness.
+
+The output feature maps from every branch (with matching heights and widths) are stacked along the channel dimension to form the module's final output.
+
+The central problem: exploding computational requirements!
+A 5x5 convolution is already expensive, and each branch produces many output channels. Directly concatenating all branch outputs (potentially hundreds or thousands of channels) rapidly expands the channel count, imposing an enormous computational burden on the next Inception module. This ``naïve'' design is computationally infeasible.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  The actual Inception module (with dimension reduction)
+\end{enumerate}
+
+The ingenious contribution of the GoogLeNet paper is introducing ``bottleneck layers''---1x1 convolutions---into these parallel branches to reduce dimensions and substantially lower computation.
+
+\Needspace{5\baselineskip}
+The main roles of 1x1 convolution:
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Integrating information across channels and reducing dimensions: before an expensive 3x3 or 5x5 convolution, reduce the channel count using a 1x1 convolution. For example, first compressing 256 channels to 64 and then applying 3x3 convolution greatly reduces computation.
+\item
+\Needspace{5\baselineskip}
+  Adding nonlinearity: every 1x1 convolution is followed by ReLU, strengthening nonlinear representation. The improved Inception module is structured as follows:
+\end{enumerate}
+
+1x1 branch: unchanged.
+
+3x3 branch: a 1x1 convolution reduces dimensions before the 3x3 convolution.
+
+5x5 branch: a 1x1 convolution reduces dimensions before the 5x5 convolution.
+
+Pooling branch: a 1x1 convolution reduces dimensions after 3x3 max pooling. This is crucial because pooling does not change channel count. Without dimension reduction, its output would have as many channels as the input, and concatenation would still cause channel expansion.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-classic-architecture}{%
+\subsection{II. Classic Architecture}\label{ii.-classic-architecture}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Stem network
+\end{enumerate}
+
+The initial part of the network consists of conventional convolutional and max-pooling layers, responsible for basic low-level feature extraction and rapid downsampling.
+
+Role: quickly reduce input-image height and width while increasing channel count, preparing for the many subsequent Inception modules.
+
+Specific operations: the input (224x224x3) passes through a sequence of 7x7 convolution (stride 2), ReLU, max pooling, 3x3 convolution (stride 1), ReLU, and related operations, rapidly shrinking spatial dimensions while increasing channels.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Stacked Inception modules
+\end{enumerate}
+
+After the stem, the network enters successive groups of Inception modules. Max-pooling layers between groups downsample the spatial dimensions (height and width) by half, while the channel count increases.
+
+Inception (3a), (3b): after the first pooling layer, these are the shallower Inception modules.
+
+Inception (4a), (4b), (4c), (4d), (4e): after the second pooling layer, these form the core middle part. The two auxiliary classifiers attach to the outputs of 4a and 4d.
+
+Inception (5a), (5b): after the last pooling layer, these are the deepest modules, processing the most abstract features.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Auxiliary classifiers
+\end{enumerate}
+
+This is another clever GoogLeNet design, addressing vanishing gradients, particularly in such a deep network.
+
+Motivation: during deep-network training, gradients can become very small as they propagate backward to shallow layers. Their weights then update slowly, making training difficult. This is called vanishing gradients.
+
+\Needspace{5\baselineskip}
+Structure: attach two small, complete classifiers to intermediate layers (after outputs 4a and 4d):
+
+An average-pooling layer (5x5, stride 3) reduces dimensions.
+
+A 1x1 convolution (128 channels) further compresses channel count.
+
+Two fully connected layers (1,024 units).
+
+A dropout layer (70\% retained) prevents overfitting.
+
+A Softmax classification-output layer (1,000 classes).
+
+\Needspace{5\baselineskip}
+Roles:
+
+Backpropagating gradients: during training, auxiliary classifiers predict from intermediate features and compute losses. Each loss is multiplied by a small weight (such as 0.3) and propagated directly backward to shallow layers, providing ``clearer,'' stronger gradient signals. This greatly alleviates vanishing gradients and ensures that the entire network receives adequate training.
+
+Regularization: auxiliary classifiers force intermediate layers to learn discriminative features too, providing regularization and preventing overfitting to some extent.
+
+Note: auxiliary classifiers are completely discarded during testing and actual use, and do not participate in forward propagation. They therefore add no final inference time.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Classification output
+\end{enumerate}
+
+Global average pooling: after all Inception modules, GAP replaces conventional fully connected layers. It averages every channel of the final module (5b)'s 7x7x1024 feature map, directly producing a 1,024-dimensional vector. This completely removes fully connected layers and greatly reduces parameters (from millions to 1,024), effectively controlling overfitting.
+
+Dropout: after GAP, dropout (40\% drop rate) is still used for regularization.
+
+Linear layer + Softmax: finally, a simple linear layer maps the 1,024-dimensional vector to 1,000 dimensions, followed by Softmax to output a probability distribution over 1,000 classes.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Why does the stem not use Inception?
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Different tasks: low-level versus high-level features
+\end{enumerate}
+
+The stem's task: process raw input images (RGB pixels), quickly extracting the most basic and general low-level features, such as edges, corners, color patches, and textures. These features are simple and do not require complex multiscale integration to identify. A simple, relatively large kernel (such as 7x7) can capture these local patterns effectively.
+
+The Inception module's task: process feature maps that have already undergone initial processing. It combines, abstracts, and selects basic features to form higher-level, more complex ones, such as ``wheels,'' ``eyes,'' and ``texture combinations.'' This is where parallel ``multiple paths'' are needed so the network can choose whether 1x1, 3x3, or 5x5 transformations work better.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Computational efficiency: avoiding extra overhead where computation is most expensive
+\end{enumerate}
+
+The input image has the largest spatial dimensions but the fewest channels (only 3).
+
+Computational-cost analysis: convolutional computation is directly related to feature-map size (H x W) and channel count (C\_in). At the network's beginning, H and W are large (such as 224x224), but C\_in is small (3).
+
+Using Inception here would require multiple parallel convolutions followed by concatenation. This branching imposes an enormous computational burden at the beginning with little benefit (because only low-level features are being extracted).
+
+\Needspace{5\baselineskip}
+Advantages of conventional layers:
+
+A 7x7 convolution (stride 2) can efficiently perform substantial downsampling (rapidly halving image size) and low-level feature extraction in a single layer. A following max-pooling layer further shrinks spatial dimensions quickly. Just one or two layers thus rapidly reduce the data volume, removing computational obstacles for deeper, more complex Inception modules.
+
+Conclusion: keeping the most computationally expensive input stage simple is a key strategy for overall efficiency.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Information preservation: premature parallel concatenation may cause interference
+\end{enumerate}
+
+At the network's beginning, information consists of dense, unprocessed raw pixels. Introducing and concatenating multiple paths too early may mix unrelated or redundant low-level information, adding noise to subsequent processing.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-significance-and-influence-of-googlenet}{%
+\subsection{III. Significance and Influence of GoogLeNet}\label{iii.-significance-and-influence-of-googlenet}}
+
+Pioneering modular design: GoogLeNet demonstrated that a carefully designed small building block (Inception), stacked like Lego, can produce a very powerful and efficient network. Nearly all subsequent modern architectures, such as ResNet and DenseNet, adopted this idea.
+
+Exceptional efficiency: while achieving top-level accuracy, it has only about 5 million parameters (1/12 of AlexNet and 1/27 of VGG) and lower computation, demonstrating an outstanding performance-to-computation ratio.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-13}{%
+\subsection{References}\label{references-13}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Szegedy, C., Liu, W., Jia, Y., et al.~(2015). \href{https://arxiv.org/abs/1409.4842}{Going Deeper with Convolutions}. CVPR 2015.
+\end{itemize}
+
+\clearpage

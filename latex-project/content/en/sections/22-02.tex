@@ -1,0 +1,131 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{prompt-engineering}{%
+\section{Prompt Engineering}\label{prompt-engineering}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-basic-concepts}{%
+\subsection{I. Basic Concepts}\label{i.-basic-concepts}}
+
+A prompt is a language instruction provided to a large language model or agent. It specifies the task we want the model to complete and its requirements. Prompts are generally divided into two categories.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  System prompt: an initial set of instructions or background information given to the model to guide the agent's behavior and response patterns, defining its role, tone, scope of knowledge, and so on.
+\item
+  User prompt: the user's question, request, or command, intended to obtain a specific response from the model or complete a particular task. It is the direct trigger for the LLM agent's response.
+\end{enumerate}
+
+In multi-turn question answering, putting unchanged rules in the system prompt and changing rules in the user prompt is much more convenient.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-what-a-prompt-should-include}{%
+\subsection{II. What a Prompt Should Include}\label{ii.-what-a-prompt-should-include}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Task description: explicitly tell the model what task to complete.
+\item
+  Background: the current task, agent identity, or contextual environment.
+\item
+  Output constraints: output format, style, or word count.
+\item
+  Examples (optional): provide reference examples for the model to imitate.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-principles-of-prompt-design}{%
+\subsection{III. Principles of Prompt Design}\label{iii.-principles-of-prompt-design}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Clarity: avoid vague or ambiguous instructions.
+\item
+  Specificity: provide concrete, detailed constraints whose correctness is preferably easy to judge.
+\item
+  Background or role setting: for example, ``Assume you are an experienced doctor'' leads the model to provide more specialized medical judgments; ``Assume you are a senior lawyer'' makes it focus more deeply on law.
+\item
+  Moderate redundancy: particularly important requirements can be emphasized repeatedly.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-prompt-engineering-techniques}{%
+\subsection{IV. Prompt Engineering Techniques}\label{iv.-prompt-engineering-techniques}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Chain of thought
+\end{enumerate}
+
+Prompt the model to generate intermediate reasoning steps resembling human thought before producing its final answer, decomposing complex reasoning into simpler, less error-prone subtasks.
+
+Why does it work?
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Reduced cognitive load: a large language model is essentially a probability-based sequence predictor. Directly predicting the final answer (such as ``108'') is extremely difficult because the ``semantic distance'' from question to answer is very large. CoT inserts intermediate steps, turning a ``long-range dependency'' into several ``short-range dependencies.'' The model only needs to predict the next most reasonable reasoning step or symbol based on the preceding context, better matching its underlying capabilities.
+\item
+  Alignment with model strengths: models learn grammatical structures, mathematical formulas, logical relationships, and common knowledge from enormous quantities of code and text. By guiding outputs such as ``first,'' ``second,'' and ``according to formula XX,'' CoT activates strong capabilities in procedural knowledge and logical structure rather than forcing the model to ``guess'' a number.
+\item
+  Fewer compositional generalization errors: complex problems combine basic concepts such as addition, multiplication, and formulas. A model may know each basic concept but make mistakes when combining them. CoT makes the composition process explicit, letting the model apply the concepts step by step and improving accuracy.
+\item
+  Emergent capability: CoT is a typical emergent capability. Smaller models (such as those with hundreds of millions of parameters) gain only limited improvements even with CoT prompting. In large models (such as those exceeding 100 billion parameters), this capability suddenly becomes pronounced and effective.
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\item
+  In-context learning: adding examples to the input improves response quality and makes answers better match requirements. Specific prompting methods include zero-shot, one-shot, and few-shot.
+\item
+  Self-consistency: generate multiple times and choose the most frequent answer, which is often more reliable than a single response.
+\item
+  Reflection prompting
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+We use three models:
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Actor: generates text or actions from the state and observations, acts in the environment, and observes the results to obtain a trajectory. A memory component provides additional context, such as past errors.
+\item
+  Evaluator: evaluates the actor's outputs and assigns a reward based on its action trajectory.
+\item
+  Self-reflection: provides feedback and suggestions on the agent's past actions based on the trajectory and reward score, storing them in memory for future reference.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-the-evolution-of-prompt-engineering}{%
+\subsection{V. The Evolution of Prompt Engineering}\label{v.-the-evolution-of-prompt-engineering}}
+
+As model capabilities improve, some prompt-design techniques gradually lose their value. Prompt engineering is increasingly incorporated into later approaches such as context engineering and harness engineering. Clearly communicating requirements and specifying boundaries, however, remain necessary.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-115}{%
+\subsection{References}\label{references-115}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{\emph{Hands-on Learning of Large-Model Agents}} (translated title; in Chinese). Posts \& Telecom Press. ISBN 978-7-115-68638-1.
+\item
+  Wei, J., Wang, X., Schuurmans, D., et al.~(2022). \href{https://arxiv.org/abs/2201.11903}{Chain-of-Thought Prompting Elicits Reasoning in Large Language Models}. NeurIPS 2022.
+\item
+  Wang, X., Wei, J., Schuurmans, D., et al.~(2023). \href{https://openreview.net/forum?id=1PL1NIMMrw}{Self-Consistency Improves Chain of Thought Reasoning in Language Models}. ICLR 2023.
+\item
+  Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
+\end{itemize}
+
+\clearpage

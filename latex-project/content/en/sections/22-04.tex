@@ -1,0 +1,55 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{mid-training-of-large-models}{%
+\section{Mid-Training of Large Models}\label{mid-training-of-large-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-background-5}{%
+\subsection{I. Background}\label{i.-background-5}}
+
+In traditional single-turn dialogue or reasoning tasks, models need depth in one capability, such as maximizing reasoning ability or making dialogue fluent. In agent settings, however, they may need to connect retrieval, code diagnosis, testing, tool use, context management, and other capabilities into a closed loop of planning, reasoning, execution, and feedback. Some specialized domains may also require more corpora for specialized training. Current post-training mainly optimizes performance within a pretrained model's existing capability boundaries, making it difficult to create entirely unseen capabilities or train behaviors never previously learned, such as ``exception handling after tool calls.'' Mid-training can therefore be introduced before post-training to inject the required behavioral priors.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-data-types}{%
+\subsection{II. Data Types}\label{ii.-data-types}}
+
+High-quality long documents, domain corpora, code repositories (such as GitHub PRs), mathematical reasoning, agent trajectories, and long-context data. For a coding agent, for example, agents can autonomously perform different real tasks in different Docker environments while recording the complete interaction with the environment. Every action and every observation returned by the environment becomes training data.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-training-method}{%
+\subsection{III. Training Method}\label{iii.-training-method}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Mid-training uses standard next-token prediction. Its objective is to shift the model's capability distribution at the knowledge level through domain-specific data, rather than teach specific instruction-following behavior as SFT does.
+\item
+  No loss mask is used. In SFT or RL, a loss mask is needed because we optimize the model's output policy, whereas user prompts and environmental feedback cannot be optimized and should not be targets of optimization during training. A loss mask prevents them from interfering. Mid-training instead focuses on ``learning knowledge,'' not ``solving real problems.'' By predicting environmental-feedback tokens and optimizing the corresponding loss, the model learns the actual probability distribution of environmental data. It must learn not only ``how to modify code'' but also ``how to describe a bug'' and ``what a codebase usually looks like.''
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-117}{%
+\subsection{References}\label{references-117}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Chen, M., Zhang, L., Feng, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.02361}{SWE-Universe: Scale Real-World Verifiable Environments to Millions}. arXiv:2602.02361.
+\item
+  GLM-4.5 Team. (2025). \href{https://arxiv.org/abs/2508.06471}{GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models}. arXiv:2508.06471.
+\item
+  Tu, C., Zhang, X., Weng, R., et al.~(2025). \href{https://arxiv.org/abs/2510.23081}{A Survey on LLM Mid-training}. arXiv:2510.23081.
+\item
+  Zeng, J., Fu, D., Mi, T., et al.~(2026). \href{https://arxiv.org/abs/2601.18418}{daVinci-Dev: Agent-native Mid-training for Software Engineering}. arXiv:2601.18418.
+\item
+  Zhu, Q., Chen, T., Lu, S., et al.~(2026). \href{https://arxiv.org/abs/2602.07457}{Pull Requests as a Training Signal for Repo-Level Code Editing}. arXiv:2602.07457.
+\item
+  Zhang, C., Neubig, G., \& Yue, X. (2025). \href{https://arxiv.org/abs/2512.07783}{On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models}. arXiv:2512.07783.
+\item
+  Wang, Z., Zhou, F., Li, X., \& Liu, P. (2025). \href{https://arxiv.org/abs/2506.20512}{OctoThinker: Mid-training Incentivizes Reinforcement Learning Scaling}. arXiv:2506.20512.
+\end{itemize}
+
+\clearpage

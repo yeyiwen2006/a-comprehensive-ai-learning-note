@@ -1,0 +1,287 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{actor-critic}{%
+\section{Actor-Critic}\label{actor-critic}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-basic-principles-of-actor-critic}{%
+\subsection{I. Basic Principles of Actor-Critic}\label{i.-basic-principles-of-actor-critic}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Background
+\end{enumerate}
+
+Policy gradient algorithms obtain the adjustment direction for parameters θ from the policy gradient, then determine its sign and magnitude through a Monte Carlo action-value estimate G\_t. Monte Carlo requires many samples, complete trajectories before updates, and has high variance. Since G\_t itself estimates how good an action value is, we can combine the earlier value-based methods by introducing an action-value function.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Mathematical representation
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+To maximize the objective (expected Q value under the state-action distribution), the policy gradient should be:
+
+\Needspace{5\baselineskip}
+Recall the earlier conclusion: the ideal policy gradient is:
+
+\[
+\nabla_\theta J(\theta)=\mathbb{E}\left[\nabla_\theta\log\pi_\theta(a\mid s)\cdot Q^\pi(s,a)\right]
+\]
+
+\Needspace{5\baselineskip}
+To reduce variance, introduce baseline \(V^\pi(s)\) and convert \(Q\) into an advantage function:
+
+\[
+A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s)
+\]
+
+Here Q(s,a) is the value of taking a at s, V(s) the state's value, and A(s,a) action a's advantage over the average.
+
+\Needspace{5\baselineskip}
+By the Bellman equation, if a sample next reaches s', the next update assumes:
+
+\Needspace{5\baselineskip}
+According to the Bellman equation:
+
+\[
+Q(s,a)\approx r+\gamma V(s')
+\]
+
+\Needspace{5\baselineskip}
+Substitute this into the advantage formula:
+
+\[
+A(s,a)\approx \underbrace{r+\gamma V_\phi(s')-V_\phi(s)}_{\text{TD Error }\delta}
+\]
+
+Thus no Q network is needed; a V network suffices.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Network updates
+\end{enumerate}
+
+Unlike Sarsa: no ``Q table''
+
+Actor-critic usually consists of a policy network and a value network, separately optimizing policy and value functions to combine their advantages.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Actor policy-network update
+\end{enumerate}
+
+The policy network updates using the gradient above, replacing G\_t with A(s,a) under the policy. Because G\_t is unnecessary and A(s,a) stored by the value network can be used directly, updates can occur at every step. Positive A(s,a) tends to increase a's probability; negative values tend to decrease it.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Critic value-network update
+\end{enumerate}
+
+After transitioning from s to s' and receiving r, the update target for V(s) is Target=r+gamma*V(s').
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Comparison with other algorithms (Sarsa and DQN)
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Comparison with Sarsa
+\end{enumerate}
+
+Sarsa's Q both scores and decides actions (epsilon-greedy), whereas the critic's Q only scores, leaving policy control to the actor. Sarsa has an explicit Q table; the critic fits values with deep learning.
+
+\Needspace{5\baselineskip}
+Shared foundations:
+
+\begin{itemize}
+\tightlist
+\item
+  Same mathematical basis: both use the Bellman expectation equation, \(\mathrm{Value}\approx r+\gamma\cdot\mathrm{Next\_Value}\). Here \(\mathrm{Next\_Value}\) means ``value from continuing under the current policy,'' not a maximum.
+\item
+  Same policy property: both are usually on-policy. Their targets closely track actual agent behavior; if the agent becomes less capable, their value estimates fall too.
+\end{itemize}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}@{}}
+\toprule
+Dimension & Critic (usually V-based) & Sarsa (Q-based) \\
+\midrule
+\endhead
+Required data & \(S,A,R,S'\) & \(S,A,R,S',A'\) \\
+Update timing & Can update once \(S'\) is observed; only the average prospects of \(S'\) need to be estimated. & Must wait until \(A'\) is chosen; it needs the exact next route. \\
+Update target & \(Target=r+\gamma V(s')\), directly using state value and implicitly averaging over actions. & \(Target=r+\gamma Q(s',a')\), using the value of the actual next action. \\
+Randomness/variance & Lower. \(V(s')\) is a smooth network output filtering out randomness in next-action selection. & Higher. The specific next action \(a'\) matters; a good step followed by a poor one makes the target fluctuate. \\
+Core role & Supporting coach. Only scores and must work with an actor; produces no actions itself. & Sole decision-maker and doer. Both scores and selects actions directly from scores (\(\epsilon\)-greedy). \\
+\bottomrule
+\end{longtable}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Comparison with DQN
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The critic and Sarsa use Bellman expectation equations, whereas DQN uses Bellman optimality. The critic and Sarsa estimate expected values under the current policy's distribution, requiring fresh current-policy data. Specifically:
+
+\Needspace{5\baselineskip}
+Sarsa:
+
+\[
+Q(s,a)\leftarrow Q(s,a)+\alpha\left[\underbrace{r+\gamma Q(s',a')}_{\text{Target}}-Q(s,a)\right]
+\]
+
+\Needspace{5\baselineskip}
+Critic:
+
+\[
+L=\left(\underbrace{r+\gamma V(s')}_{\text{Target}}-V(s)\right)^2
+\]
+
+Although policy is not explicit, this update makes V(s) essentially a moving average of Q(s,a), namely r+gamma*V(s'), from past actions. As policy changes, action probabilities change. At the next step, a new action a must therefore be sampled under the current policy to ensure the expectation of r+V(s') is an unbiased estimate of that new policy's value. Actions sampled under other policies cannot update V, making this on-policy.
+
+DQN's update, however, is policy-independent and uses only optimal value.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.24625}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.24625}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.24625}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.24625}}@{}}
+\toprule
+Property & Critic (in AC) & Sarsa & DQN \\
+\midrule
+\endhead
+Core equation & Bellman expectation & Bellman expectation & Bellman optimality \\
+Target & \(r+\gamma V(s')\) & \(r+\gamma Q(s',a')\) & \(r+\gamma\max Q(s',a')\) \\
+View of the future & Honest (current probabilities) & Honest (actual choices) & Optimistic (optimal future assumed) \\
+Required sample & \((s,a,r,s')\) & \((s,a,r,s',a')\) & \((s,a,r,s')\) \\
+Data use & On-policy (usually not reused) & On-policy (usually not reused) & Off-policy (replay buffer reusable) \\
+Main purpose & Reduce PG variance (PPO/A2C) & Learn safe, conservative policies & Learn policies seeking the optimum \\
+\bottomrule
+\end{longtable}
+
+Scenario: a path hugs a cliff. Falling costs 100 points, while a normal step costs 1 point.
+
+Policy characteristic: current \(\pi\) is still somewhat clumsy, with a \(10\%\) chance of slipping off (\(\epsilon\)-greedy).
+
+\Needspace{5\baselineskip}
+DQN (Q-Learning) perspective:
+
+\begin{itemize}
+\tightlist
+\item
+  ``The cliff-edge route is shortest! Provided I do not slip (take max), it is optimal.''
+\item
+  Result: its learned value function encourages walking along the edge. But because you actually do slip, you keep falling.
+\item
+  Characteristic: overconfident, evaluating the ``theoretically perfect policy.''
+\end{itemize}
+
+\Needspace{5\baselineskip}
+SARSA (and the critic in AC) perspective:
+
+\begin{itemize}
+\tightlist
+\item
+  ``The cliff-edge route is shortest, but with your current clumsiness (policy \(\pi\)), you are likely to fall and die there. Its value (\(Q\) or \(V\)) is actually low!''
+\item
+  Result: its value estimate pushes the actor away from the cliff onto a safer path.
+\item
+  Characteristic: realistic, evaluating ``your current actual ability.''
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Components during training and forward inference
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+All architectures with an actor and critic, including TRPO, PPO, DDPG, and SAC introduced later, follow these principles:
+
+Training: actor and critic work together.
+
+Forward inference: discard the critic and retain only the actor.
+
+When learning to drive (training), a coach (critic) sits beside you, continually scoring and correcting your actions (updating the policy). Once licensed and driving alone (inference), the coach is absent and only you (actor) drive. You simply observe road conditions (state) and steer (action); actions no longer need correction because the policy no longer updates.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-a2c-and-a3c}{%
+\subsection{II. A2C and A3C}\label{ii.-a2c-and-a3c}}
+
+As discussed, this is on-policy and cannot use a replay buffer like SAC (see the SAC section). Every policy update requires resampling. This is ill-suited to parallel computation and creates serious data correlation: nearby times have similar states s, and visitation changes over training, violating the i.i.d. assumption. Different workers must therefore sample simultaneously and combine gradient updates. Two underlying implementations follow.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  A3C (Google DeepMind, ICML 2016)
+\end{enumerate}
+
+Each worker is an independent process containing an environment copy and a local network copy. It runs local forward propagation, computes gradients, pushes them to a global network, and retrieves the latest global parameters to overwrite its local network.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  A2C (OpenAI, 2017)
+\end{enumerate}
+
+Uses multiprocessing, known as SubprocVecEnv (subprocess-vectorized environments). Each worker process holds only an environment copy; the main process holds the sole neural network (usually on a GPU). Sixteen workers execute env.step() in parallel and return their states. The main process collects the 16 states s into a batch, computes their 16 actions in one GPU pass, and sends them back. Workers are lightweight and only simulate the physical environment.
+
+Current mainstream actor-critic algorithms, including PPO, mostly retain A2C's ``vectorized environment'' parallel architecture.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-56}{%
+\subsection{References}\label{references-56}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Mnih, V., Badia, A. P., Mirza, M., et al.~(2016). \href{https://arxiv.org/abs/1602.01783}{Asynchronous Methods for Deep Reinforcement Learning}. ICML 2016.
+\item
+  OpenAI. (2017). \href{https://openai.com/index/openai-baselines-acktr-a2c/}{OpenAI Baselines: ACKTR \& A2C}.
+\end{itemize}
+
+\clearpage

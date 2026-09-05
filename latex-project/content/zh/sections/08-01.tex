@@ -1,0 +1,735 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux751fux6210ux5bf9ux6297ux7f51ux7edcgans}{%
+\section{生成对抗网络（GANs）}\label{ux751fux6210ux5bf9ux6297ux7f51ux7edcgans}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-2}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-2}}
+
+\Needspace{5\baselineskip}
+生成对抗网络是一个非常巧妙且强大的无监督学习框架，由 Ian Goodfellow 在 2014 年提出。GANs的核心思想是设置一个``二人游戏''。想象一下，我们有两个相互竞争的神经网络：
+
+生成器 (Generator, G)：它的工作是``凭空''创造出看起来很真实的数据（比如，假的毕Z加索画作）。它试图模仿真实数据的分布。
+
+判别器 (Discriminator, D)：它的工作是当一个``鉴定专家''，判断一个输入数据是来自真实数据集（真实的毕加索画作）还是生成器伪造的（假的画作）。
+
+它们通过一种``对抗''的方式共同进化：生成器G努力地学习，试图生成越来越逼真的数据来``欺骗''判别器D；判别器D努力地学习，试图提高自己的鉴别能力，准确``识破''所有来自G的伪造品。这个过程就像一场军备竞赛，最终的理想状态是：生成器G变得非常出色，它造出的``假货''足以以假乱真，后续会证明，这将导致判别器D无法分辨，只能靠猜（即判断为真的概率为 50\%）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux76eeux6807ux51fdux6570}{%
+\subsection{二、目标函数}\label{ux4e8cux76eeux6807ux51fdux6570}}
+
+\[
+\min_G \max_D V(D, G)=\mathbb{E}_{x\sim p_{data}(x)}[\log D(x)] + \mathbb{E}_{z\sim p_z(z)}[\log(1 - D(G(z)))]
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  符号与参与者（The Players）
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \(G\)（生成器）：我们的``伪造者''。它是一个神经网络。
+\item
+  \(D\)（判别器）：我们的``鉴定专家''。它也是一个神经网络。
+\item
+  \(x\)：代表一个真实数据（比如一张真实的猫的照片）。
+\item
+  \(p_{data}(x)\)：真实数据的概率分布（理论上所有真实猫的照片的集合）。\(x \sim p_{data}(x)\) 意味着 \(x\) 是从这个真实数据集中随机抽取的一个样本。
+\item
+  \(z\)：一个随机噪声向量（通常是从一个简单分布，如高斯分布或均匀分布中采样）。\(z\) 是 \(G\) 创造``灵感''的来源。
+\item
+  \(p_z(z)\)：噪声向量 \(z\) 的分布。\(z \sim p_z(z)\) 意味着 \(z\) 是从这个噪声分布中随机抽取的一个样本。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  网络的输入与输出
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \(G(z)\)：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    输入：噪声 \(z\)。
+  \item
+    输出：一个``伪造''的数据。\(G\) 试图让 \(G(z)\) 看起来和 \(x\) 一样真实。
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  \(D(x)\)：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    输入：一个数据（可能是真实的 \(x\)，也可能是伪造的 \(G(z)\)）。
+  \item
+    输出：一个介于 0 和 1 之间的概率值。这个值表示 \(D\) 认为这个输入数据是真实的概率。
+  \item
+    \(D(x)\to 1\) 表示 \(D\) 认为 \(x\) 非常可能是真实的。
+  \item
+    \(D(x)\to 0\) 表示 \(D\) 认为 \(x\) 非常可能是伪造的。
+    这里需要说明的是，对于数据 \(x\)，\(D(x)\) 的真实值服从 0-1 分布，但 \(x\) 的概率分布并不是 0-1 分布。这里运用交叉熵损失时，函数里对应的概率分布应该是 \(D(x)\) 的分布，而不是 \(p_{data}(x)\) 这个 \(x\) 的分布。
+  \end{itemize}
+\end{itemize}
+
+\(p_{data}(x)\) 则是 \(x\) 本身的概率密度分布，它往往不一定是离散的 \(p(x=\cdots)=\cdots\) 形式，而更可能是一个理论上的、隐式的、未知的概率密度分布，是我们试图用模型去学习和模拟的``目标分布''。比如，想象宇宙中存在一个理想的、完美的函数 \(p_{data}\)，它是所有图片的概率密度函数。如果你给这个函数输入一张非常逼真的、自然的人脸图片，它会输出一个高概率密度 \(0.0001\)；输入一张很怪异的图片，它会输出一个较低的概率值 \(10^{-20}\)。这个 \(p_{data}(x)\) 理论上包含了研究范围内所有``有效''数据（例如所有人脸）的生成规律。
+
+我们虽然没有 \(p_{data}\) 概率密度函数本身，但我们有从这个函数中采样 (Sample) 得到的结果。这个``采样结果''就是你的``训练数据集''，例如，ImageNet 数据集就是 \(p_{data}(x)\)（其中 \(x\) 是``自然图像''）的一组样本。在 GAN 的目标函数中，当看到 \(\mathbb{E}_{x\sim p_{data}(x)}\) 这一项时，它的实际操作含义是：``从你的训练数据集中随机抽取一个 batch 的数据 \(x\)。''我们使用这个经验分布近似 \(p_{data}\)，而随着 GAN 的训练，所谓``逼真''其实就代表 \(G\) 生成的数据（图像）的分布越来越接近给定数据集中的分布。事实上，我们也就认为这是在用端到端的方法近似非常复杂的 \(p_{data}\) 函数。之所以需要 GAN 这样的生成模型，正是因为 \(p_{data}(x)\) 过于复杂，我们无法用传统方法（如最大似然估计）直接对其进行建模，因此只能通过这种``博弈''的方式来间接学习它。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  目标函数的逐项解析
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+现在我们来看这个函数的两大部分：
+
+\[
+V(D,G)=\mathbb{E}_{x\sim p_{data}(x)}[\log D(x)] + \mathbb{E}_{z\sim p_z(z)}[\log(1-D(G(z)))]
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  第一项：\(\mathbb{E}_{x\sim p_{data}(x)}[\log D(x)]\)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    含义：这一项衡量的是判别器 \(D\) 正确识别真实数据的能力。
+  \item
+    \(D\) 的目标（\(\max_D\)）：\(D\) 想要最大化这一项。
+
+    \begin{itemize}
+    \tightlist
+    \item
+      当输入一个真实数据 \(x\) 时，\(D\) 希望自己的输出 \(D(x)\) 尽可能接近 1（即``我确定这是真的''）。
+    \item
+      当 \(D(x)\to 1\) 时，\(\log D(x)\) 会接近 \(\log(1)=0\)。这是 \(\log\) 函数在其定义域（0 到 1）内的最大值。
+    \end{itemize}
+  \item
+    \(G\) 的目标：\(G\) 对这一项没有控制权，因为它只和真实数据 \(x\) 有关。
+  \end{itemize}
+\item
+  第二项：\(\mathbb{E}_{z\sim p_z(z)}[\log(1-D(G(z)))]\)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    含义：这一项衡量的是判别器 \(D\) 正确识别伪造数据的能力。
+  \item
+    \(D(G(z))\)：这是 \(D\) 对 \(G\) 生成的假数据 \(G(z)\) 的判断（它认为 \(G(z)\) 是真实的概率）。
+  \item
+    \(1-D(G(z))\)：这就表示 \(D\) 认为 \(G(z)\) 是伪造的概率。
+  \item
+    \(D\) 的目标（\(\max_D\)）：\(D\) 想要最大化这一项。
+
+    \begin{itemize}
+    \tightlist
+    \item
+      当输入一个伪造数据 \(G(z)\) 时，\(D\) 希望自己的输出 \(D(G(z))\) 尽可能接近 0（即``我确定这是假的''）。
+    \item
+      当 \(D(G(z))\to 0\) 时，\(1-D(G(z))\) 接近 1，因此 \(\log(1-D(G(z)))\) 接近 \(\log(1)=0\)。
+    \item
+      所以，通过让 \(\log D(x)\) 和 \(\log(1-D(G(z)))\) 都趋近于 0，\(D\) 就在最大化 \(V(D,G)\)。
+    \end{itemize}
+  \item
+    \(G\) 的目标（\(\min_G\)）：\(G\) 想要最小化这一项（因为 \(G\) 无法影响第一项）。
+
+    \begin{itemize}
+    \tightlist
+    \item
+      \(G\) 的目标是``欺骗'' \(D\)。它希望 \(D\) 在看到 \(G(z)\) 时，误以为它是真的，即 \(D(G(z))\) 尽可能接近 1。
+    \item
+      当 \(D(G(z))\to 1\) 时，\(1-D(G(z))\) 接近 0。
+    \item
+      \(\log(1-D(G(z)))\) 会趋近于 \(\log(0)=-\infty\)。
+    \item
+      这样，\(G\) 就成功地最小化了 \(V(D,G)\)。
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  总结：\(\min_G \max_D V(D,G)\)
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \(\max_D V(D,G)\)（判别器的目标）：\(D\) 试图最大化 \(V(D,G)\)。它通过训练，力求做到：
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    看到真实数据 \(x\)，输出 \(D(x)=1\)。
+  \item
+    看到伪造数据 \(G(z)\)，输出 \(D(G(z))=0\)。如果 \(D\) 是一个完美的判别器，\(V(D,G)\) 的最大值是 \(0+0=0\)。
+  \end{enumerate}
+\item
+\Needspace{5\baselineskip}
+  \(\min_G V(D,G)\)（生成器的目标）：\(G\) 试图最小化 \(V(D,G)\)。它通过训练，力求做到：
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    生成 \(G(z)\)，让 \(D\) 误判，使得 \(D(G(z))=1\)。当 \(G\) 变得更强时，第二项 \(\log(1-D(G(z)))\) 会被推向 \(-\infty\)。
+  \end{enumerate}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  目标函数相关拓展
+\end{enumerate}
+
+\Needspace{8\baselineskip}
+（1）判别器D的目标函数
+
+注意到，这个目标函数 \(V(D, G)\) 的形式与二元交叉熵损失 (Binary Cross-Entropy Loss) 非常相似。把 \(D\) 看作一个二元分类器，真实数据 \((x)\) 的标签为 \(y=1\)；伪造数据 \((G(z))\) 的标签为 \(y=0\)。\(D\) 的目标是最小化分类的交叉熵损失，这等价于最大化我们上面的 \(V(D, G)\)。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  标准的二元交叉熵（BCE）损失
+\end{enumerate}
+
+首先，我们回忆一下标准的二元交叉熵损失函数。它通常用于二元分类问题（比如判断``是''或``否''）。
+
+\Needspace{5\baselineskip}
+假设：
+
+\begin{itemize}
+\tightlist
+\item
+  \(y\) 是真实标签（\(y=1\) 表示``真''，\(y=0\) 表示``假''）。
+\item
+  \(p\) 是你的模型预测 \(y=1\) 的概率。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+那么，单个样本的 BCE 损失 \(L\) 是：
+
+\[
+L(y,p) = -[y\cdot\log(p) + (1-y)\cdot\log(1-p)]
+\]
+
+\Needspace{5\baselineskip}
+这个公式的含义是：
+
+\begin{itemize}
+\tightlist
+\item
+  如果 \(y=1\)（真实标签为``真''）：损失变为 \(L=-[1\cdot\log(p)+0]=-\log(p)\)。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    为了最小化损失 \(L\)，你需要最大化 \(\log(p)\)，也就是让 \(p\to 1\)。
+  \end{itemize}
+\item
+  如果 \(y=0\)（真实标签为``假''）：损失变为 \(L=-[0+1\cdot\log(1-p)]=-\log(1-p)\)。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    为了最小化损失 \(L\)，你需要最大化 \(\log(1-p)\)，也就是让 \(p\to 0\)。
+  \end{itemize}
+\end{itemize}
+
+这完全符合我们对分类器的期望。
+
+现在，我们把判别器 \(D\) 视为一个二元分类器。它的任务就是给输入数据贴上``真''或``假''的标签。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{输入 1：真实数据 \(x\)}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(D\) 的目标：将其分类为``真''。
+  \item
+    真实标签 \(y=1\)。
+  \item
+    \(D\) 的预测：\(p=D(x)\)。
+  \item
+    根据 BCE 公式，这部分对应的损失是：\(L_{real}=-\log(D(x))\)。
+  \end{itemize}
+\item
+  \textbf{输入 2：伪造数据 \(G(z)\)}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(D\) 的目标：将其分类为``假''。
+  \item
+    真实标签 \(y=0\)。
+  \item
+    \(D\) 的预测：\(p=D(G(z))\)。
+  \item
+    根据 BCE 公式，这部分对应的损失是：\(L_{fake}=-\log(1-D(G(z)))\)。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+于是，判别器的总损失可以写成：
+
+\[
+L_D = L_{real} + L_{fake} = \mathbb{E}[-\log D(x)] + \mathbb{E}[-\log(1-D(G(z)))]
+\]
+
+\[
+L_D = -\Bigl(\mathbb{E}[\log D(x)] + \mathbb{E}[\log(1-D(G(z)))]\Bigr)
+\]
+
+（为了简洁，我们暂时省略了期望符号 \(\mathbb{E}\) 外的 \(x\sim p_{data}\) 和 \(z\sim p_z\)）
+
+\Needspace{5\baselineskip}
+现在，我们再回头看 GANs 的目标函数 \(V(D,G)\)：
+
+\[
+V(D,G)=\mathbb{E}[\log D(x)] + \mathbb{E}[\log(1-D(G(z)))]
+\]
+
+\Needspace{5\baselineskip}
+对比一下 \(L_D\) 和 \(V(D,G)\)，我们能清楚地看到：
+
+\[
+V(D,G) = -L_D
+\]
+
+\Needspace{8\baselineskip}
+（2）生成器G的目标函数
+
+按照原公式，生成器 \(G\) 的目标是最小化 \(\mathbb{E}[\log(1-D(G(z)))]\)。这个目标函数在理论上是完美的，但在实践中，尤其是在训练初期，会引发一个严重的问题：梯度消失 (Vanishing Gradients)。
+
+\Needspace{5\baselineskip}
+我们来分析一下为什么：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  训练初期，\(G\) 很差：一开始，\(G\) 只是一个随机的神经网络，它生成的 \(G(z)\) 都是无意义的噪声（比如一堆雪花点）。
+\item
+  \(D\) 很容易``碾压'' \(G\)：判别器 \(D\) 的任务很简单：区分``真实的猫''和``一堆雪花点''。\(D\) 会很快学会，并且非常自信地将 \(G\) 生成的 \(G(z)\) 判定为假。
+\item
+  \(D\) 的输出会发生什么？
+
+  \begin{itemize}
+  \tightlist
+  \item
+    当 \(D\) 看到 \(G(z)\)（雪花点）时，它会非常确定这是假的。
+  \item
+    因此，\(D(G(z))\) 的输出会非常接近 0。
+  \end{itemize}
+\item
+  \(G\) 的损失函数出了什么问题？
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(G\) 的损失是 \(L_G=\log(1-D(G(z)))\)。
+  \item
+    如果 \(D(G(z))\) 接近 0（比如 0.001），\(L_G\) 就会是 \(\log(1-0.001)\approx \log(1)=0\)。
+  \item
+    这看起来 \(G\) 的损失很``低''（接近 0），但这只是一个假象。真正的问题在于梯度。
+  \end{itemize}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+让我们看一下 \(G\) 的损失函数 \(L_G=\log(1-p)\) 的图像，其中 \(p=D(G(z))\) 是 \(D\) 的输出：
+
+\begin{itemize}
+\tightlist
+\item
+  X 轴：\(D\) 的输出 \(p\)（从 0 到 1）
+\item
+  Y 轴：\(G\) 的损失 \(L_G\)
+\end{itemize}
+
+\Needspace{5\baselineskip}
+注意到：
+
+\begin{itemize}
+\tightlist
+\item
+  当 \(p\) 接近 0 时（也就是 \(D\) 非常自信地判定 \(G(z)\) 为假时），这条曲线非常平坦。
+\item
+  ``平坦''在微积分中意味着斜率（梯度）接近 0。
+\end{itemize}
+
+这就是灾难发生的地方：\(G\) 生成了很差的图像 \(\rightarrow\) \(D\) 自信地将其判为假（\(p\approx 0\)）\(\rightarrow\) \(G\) 得到的损失函数梯度 \(\approx 0\) \(\rightarrow\) \(G\) 无法更新参数，它完全学不到东西。
+
+这个问题被称为``饱和'' (Saturating)：\(G\) 在它最需要学习的时候（即它表现最差的时候）反而学得最慢。
+
+原始论文的作者提出了一个简单而实际的修正方法。
+
+他们建议，不要让 \(G\) 最小化 \(\log(1-D(G(z)))\)，而是让 \(G\) 最大化 \(\log(D(G(z)))\)。
+
+\begin{itemize}
+\tightlist
+\item
+  旧损失（蓝色）：\(\log(1-p)\)。当 \(p \rightarrow 0\) 时，梯度是平坦的（消失）。
+\item
+  新损失（绿色）：\(-\log(p)\)。当 \(p \rightarrow 0\) 时，梯度极其陡峭（趋向 \(-\infty\)）。
+\end{itemize}
+
+这个新的损失函数具有我们正想要的特性：它恰好在 \(G\) 表现最差时（即 \(D(G(z))\) 接近 0 时）提供了巨大而强烈的梯度信号。这使得 \(G\) 在训练一开始就能够快速学习。
+
+但此时其实仍然没有完全解决梯度消失问题。
+
+\[
+\nabla_{\theta_g} L_G = \nabla_{\theta_g}[-\log(D(G(z)))]
+\]
+
+\Needspace{5\baselineskip}
+通过链式法则，我们把它分解成三部分：
+
+\[
+\nabla_{\theta_g} L_G =
+\frac{d(-\log p)}{dp}
+\cdot
+\nabla_a D(a)\rvert_{a=G(z)}
+\cdot
+\nabla_{\theta_g} G(z)
+\]
+
+其中 \(p=D(G(z))\) 是 \(D\) 的最终输出，\(a=G(z)\) 是 \(D\) 的输入。三部分分别对应：来自 \(G\) 损失的梯度、来自 \(D\) 内部的梯度、来自 \(G\) 内部的梯度。
+
+Part 1：关注的部分
+
+\[
+\frac{d(-\log p)}{dp}=-\frac{1}{p}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  当 \(G\) 很差时，\(p=D(G(z)) \rightarrow 0\)。
+\item
+  这一项 \(-\frac{1}{p}\) 趋向无穷大。
+\item
+  也就是说，\(G\) 的损失函数本身正在``拼命地''产生一个巨大的信号。
+\end{itemize}
+
+Part 2：``真正消失''的部分
+
+\[
+\nabla_a D(a)
+\]
+
+也就是 \(\nabla_{G(z)}D(G(z))\)，它表示 \(D\) 的输出概率 \(p\) 相对于 \(D\) 的输入 \(a\) 的梯度。\(D\) 如何输出一个 0 到 1 的概率？它的最后一层是一个 Sigmoid 函数。\(D\) 的目标是把真假拉开；当它变得很强时（不重叠），它会给 \(G(z)\) 一个极低的分数。为了输出 \(p \rightarrow 0\)，Sigmoid 函数的输入（logits）必须是一个很大的负数（比如 -10、-20）。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0012.png}
+\caption{Logistic Function}
+\end{figure}
+
+在 \(x\) 很小或很大时，用于把输出转换为概率的 Sigmoid 函数的导数（梯度）趋近于 \(0\)。
+
+\Needspace{5\baselineskip}
+\(G\) 的总梯度是：
+
+\[
+\nabla_{\theta_g} L_G =
+(\mathcjk{趋向无穷大}) \cdot (\mathcjk{趋向 }0) \cdot (\mathcjk{来自 }G\mathcjk{ \mathcjk{的梯度}})
+\]
+
+第一项来自 \(\log\)，第二项来自 Sigmoid。
+在这个不定型中，Sigmoid函数往往占主导，导致梯度消失。类比就是打开了``消防栓''，但``水管''（D网络）内部被``水垢''（Sigmoid 函数）给堵住了。当D变得很强时，它内部的 Sigmoid 函数会饱和（变得平坦）。这个``平坦''的 Sigmoid 层就像一个被水垢堵住的、极窄的瓶颈（梯度趋于0）。WGAN通过修改D函数，解决了这个问题（见后）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux8badux7ec3ux7ec8ux70b9}{%
+\subsubsection{（四）训练终点}\label{ux56dbux8badux7ec3ux7ec8ux70b9}}
+
+假设我们有一个固定的生成器 \(G\)，我们想找到能最大化 \(V(D,G)\) 的最优判别器 \(D^*\)。
+
+\Needspace{5\baselineskip}
+我们的目标函数是：
+
+\[
+V(D,G)=\int_x p_{data}(x)\log(D(x))dx+\int_z p_z(z)\log(1-D(G(z)))dz
+\]
+
+\Needspace{5\baselineskip}
+为了简化，我们知道 \(G(z)\) 会形成一个伪造数据的分布 \(p_g(x)\)，所以我们可以把第二项也写成关于 \(x\) 的积分：
+
+\[
+V(D,G)=\int_x [p_{data}(x)\log(D(x))+p_g(x)\log(1-D(x))]dx
+\]
+
+要找到使这个积分最大的 \(D(x)\)，我们只需要看积分号里的函数（被积函数），并对任意一个 \(x\) 求它的最大值。
+
+\Needspace{5\baselineskip}
+令 \(a=p_{data}(x)\) 和 \(b=p_g(x)\)，我们要找 \(D\) 来最大化 \(f(D)=a\log(D)+b\log(1-D)\)。这是一个标准的求极值问题，我们对 \(D\) 求导并令其为 0：
+
+\[
+\frac{df}{dD}=\frac{a}{D}-\frac{b}{1-D}=0
+\]
+
+\Needspace{5\baselineskip}
+于是：
+
+\[
+a=(a+b)D \Rightarrow D=\frac{a}{a+b}
+\]
+
+\Needspace{5\baselineskip}
+把 \(a\) 和 \(b\) 换回来，我们就得到了最优判别器 \(D^*(x)\)：
+
+\[
+D^*(x)=\frac{p_{data}(x)}{p_{data}(x)+p_g(x)}
+\]
+
+以上推导通过对D求导，找到了使得V(D,G)最大的D，也就是最优判别器。这个公式告诉我们，一个完美的判别器，其输出概率D(x)应该等于``这个x来自真实数据的概率''除以``它来自真实数据或伪造数据的总概率''。
+
+当然，判别器的训练只是手段，最终训练终点还要看生成器的输出。容易想到，如果 \(G\) 变得完美，伪造数据完全学习了真实数据的分布，\(p_g(x)=p_{data}(x)\)，则 \(D^*(x)=1/2\)。下面我们来严格证明，当判别器 \(D\) 取 \(D^*\) 时，\(\max_D V(D,G)=V(D^*,G)\) 关于 \(G\) 最小等价于取到这种情况。
+
+\[
+C(G)=\max_D V(D,G)=V(D^*,G)
+\]
+
+\[
+C(G)=\mathbb{E}_{x\sim p_{data}}\left[\log\frac{p_{data}}{p_{data}+p_g}\right]
++\mathbb{E}_{x\sim p_g}\left[\log\frac{p_g}{p_{data}+p_g}\right]
+\]
+
+注意：这里把 \(p_{data}(x)\) 简写为 \(p_{data}\)，把 \(p_g(x)\) 简写为 \(p_g\)。
+
+\Needspace{5\baselineskip}
+经过一点数学变换，这个表达式可以被重写为：
+
+\[
+C(G)=2\cdot D_{JSD}(p_{data}\parallel p_g)-2\log 2
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \(D_{JSD}\) 代表 Jensen-Shannon Divergence（JSD，杰森-香农散度）。
+\item
+  散度（Divergence）是信息论中用来衡量两个概率分布之间差异性的数学工具。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\(G\) 的最终目标是 \(\min_G C(G)\)，也就是：
+
+\[
+\min_G [2\cdot D_{JSD}(p_{data}\parallel p_g)-2\log 2]
+\]
+
+训练生成器 \(G\) 的最终数学目标，就是最小化真实数据分布 \(p_{data}(x)\) 和伪造数据分布 \(p_g(x)\) 之间的 JSD 散度，当且仅当两个分布完全相同时，即 \(p_g(x)=p_{data}(x)\) 时，JSD 散度才为 \(0\)。总之，目标函数中 \(\min_G\) 和 \(\max_D\) 博弈的巧妙设计，使得 \(G\) 的任务变成了学习一个完美的 \(p_g\) 分布，使其与 \(p_{data}\) 一致。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09gansux7684ux5e94ux7528}{%
+\subsection{三、GANs的应用}\label{ux4e09gansux7684ux5e94ux7528}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  图像生成与艺术创作
+\end{enumerate}
+
+这是GANs最著名的应用。目标是让模型学习一个庞大数据集（比如10万张人脸照片）的``精髓''，然后能从一个随机噪声向量 \(z\) 出发，生成一张全新的、不属于数据集中任何一张，但又看起来极其逼真的人脸。可以用 StyleGAN、BigGAN 等模型生成不存在的``模特''照片、创造数字艺术、游戏角色设计。
+
+\Needspace{5\baselineskip}
+与变分自编码器（Variational Autoencoders, VAEs）相比：
+
+\textbf{GANs}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：对抗（Adversarial），一个生成器和一个判别器相互博弈。
+\item
+  训练目标：欺骗判别器，即 \(G\) 的目标是让 \(D\) 无法区分真假。
+\item
+  生成质量：高保真（Sharp）。由于 \(D\) 的存在，\(G\) 被迫生成清晰、锐利的图像边缘和纹理，否则很容易被判别为假。
+\item
+  潜空间 \(z\)：通常较纠缠（Entangled）。原始 GANs 的 \(z\) 空间较无序，改变 \(z\) 的一个维度，可能同时改变人脸的多个特征，如头发、年龄、朝向。
+\end{itemize}
+
+\textbf{VAEs}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：编码-解码（Encoding-Decoding），编码器将图像压缩成潜空间 \(z\) 中的概率分布，解码器再从 \(z\) 中采样并重建图像。
+\item
+  训练目标：最小化重建损失，让解码后的图像与原始图像尽可能接近。
+\item
+  生成质量：较模糊（Blurry）。VAEs 最小化像素级平均误差（如 \(L_2\) 损失），这会鼓励模型生成更``安全''的平均图像。
+\item
+  潜空间 \(z\)：更平滑（Smooth）。VAEs 的 \(z\) 空间被正则化为连续且平滑的结构，适合在两张人脸的 \(z\) 向量之间做插值。
+\end{itemize}
+
+VAEs 擅长学习一个平滑且有意义的潜空间（适合插值和理解数据结构），但生成结果偏模糊。GANs 擅长生成高度逼真的图像（适合追求视觉保真度），但训练更不稳定，潜空间也不如VAEs规整。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  图像到图像的转换
+\end{enumerate}
+
+这类应用的目标是：给定一张输入图像 A，将其转换为另一张具有特定风格或特征的输出图像 B。这里，输入和输出都是图像，而且往往在结构上有一定的对应关系。典型模型如 Pix2Pix（需要成对的训练数据，比如一张草图对应一张照片）、CycleGAN（不需要成对数据，通过循环一致性损失实现非配对转换）。应用如将航拍地图转换为谷歌地图样式，将黑白照片上色，将手绘草图转换为逼真照片，将白天场景转换为夜晚场，将物体从语义分割图还原为真实图像等。在这个领域，传统的神经网络架构主要依赖于编码器-解码器（Encoder-Decoder）结构，通常是卷积神经网络（CNNs），并且常常会加入跳跃连接（如 U-Net 结构）来保留细节。
+
+\Needspace{5\baselineskip}
+基于 GANs 的方法（如 Pix2Pix、CycleGAN）与基于 CNNs 的编码器-解码器（如 U-Net）相比：
+
+\textbf{基于 GANs 的方法}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：学习映射 \(G\) 和判别真假 \(D\)。生成器 \(G\) 学习从 A 域到 B 域的映射，判别器 \(D\) 判断 \(G\) 生成的 B 是否像真实的 B 域图像。
+\item
+  损失函数：对抗损失加像素级损失。除了让 \(G\) 骗过 \(D\) 的对抗损失外，还会结合 \(L_1\) 或 \(L_2\) 损失，确保生成图像与目标在像素层面相似。
+\item
+  生成质量：细节更丰富、更真实。判别器 \(D\) 的存在迫使生成器 \(G\) 生成高频细节，使图像在复杂纹理和结构上更逼真、更锐利。
+\item
+  对数据对的需求：Pix2Pix 需要成对数据；CycleGAN 不需要成对数据，而是通过循环一致性损失学习非配对转换。
+\item
+  灵活性：高度灵活，可以学习风格迁移、物体转化等非常规映射。CycleGAN 甚至能在没有直接对应样本的情况下进行域转换。
+\end{itemize}
+
+\textbf{基于 CNNs 的编码器-解码器}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：学习像素级映射。编码器逐步提取特征，解码器逐步重建图像，中间通过跳跃连接传递细节。
+\item
+  损失函数：通常使用 \(L_1\) 或 \(L_2\) 像素级损失，衡量生成图像和目标图像之间的像素差异。
+\item
+  生成质量：可能更平滑、更模糊。纯粹的像素级损失（如 \(L_2\)）会倾向于生成像素平均值，导致图像缺乏锐利细节和真实感。
+\item
+  对数据对的需求：通常需要大量输入 A 与输出 B 的成对数据。
+\item
+  灵活性：相对受限，主要用于重建、去噪、超分辨率等有明确像素级对应关系的转换。
+\end{itemize}
+
+基于 CNNs 的编码器-解码器 方法（如U-Net）在有大量成对数据且任务偏向于结构性恢复（如图像去噪、超分辨率）时表现良好，但可能缺乏真实感。GANs 通过引入判别器，能够生成更具真实感和高频细节的图像，即使在任务更具创意性或缺乏成对数据（如CycleGAN）时也能出色完成。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  数据增强与模拟
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+有时，我们的真实数据非常少或非常昂贵。如在医学影像（如CT或MRI）中，要诊断一种罕见的癌症。我们可能只有几百张（甚至几十张）带标签的``阳性''图像。如果只用这点数据去训练一个AI模型，它很难学会，而且极易``过拟合''。这时我们往往采取以下方案：
+
+（1）对已有数据进行变换：对于图像而言，就是旋转、裁剪、缩放、翻转、平移、添加噪声、改变对比度或亮度等。
+
+（2）迁移学习：利用预训练模型进行微调。
+
+（3）利用VAE（变分自编码器）：在编码-解码的过程中，一个 VAE 的编码器输出一个概率分布，解码器不是从一个``点''来重建，而是从这个``模糊区域''中随机采样一个点来进行重建。
+
+（4）利用GAN生成：我们可以训练一个基于生成器-判别器架构的GANs模型（比如一个变种的DCGAN或WGAN），判别器以这几百张真实癌症图像的分布为参考基准。一旦训练完成，这个GANs的生成器就可以从随机噪声开始，生成成千上万张看起来逼真、但又与原始图像不完全相同的``假''癌症图像。
+
+这种方法在其他领域也有很多应用。金融中，也可以用其模拟生成逼真的（但非真实的）欺诈交易数据，用于训练反欺诈系统。自动驾驶中，可以生成更多在现实中难以采集的``边缘案例''驾驶场景（如暴风雪中的行人、罕见的交通事故）。
+
+\Needspace{5\baselineskip}
+基于 GANs 的数据增强与传统数据增强相比：
+
+\textbf{基于 GANs 的数据增强}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：生成新样本（Generation）。模型学习真实数据的潜在分布 \(p_{\mathrm{data}}\)，再从这个分布中采样，创造全新的数据点。
+\item
+  具体方法：训练一个完整的生成器 \(G\) 来``伪造''数据。
+\item
+  数据多样性：理论上更高。它能生成原始数据集中不存在、但仍属于同一分布的新组合，例如一个``介于 A 和 B 之间''的新病灶。
+\item
+  解决的问题：数据稀缺和不平衡。当某一类别的数据（如罕见病）极度稀缺时，GANs 可以补充该类别样本。
+\item
+  挑战：训练不稳定，容易出现模式崩溃（Mode Collapse），即 \(G\) 只学会生成少数几种``安全''的假样本。
+\end{itemize}
+
+\textbf{传统数据增强}
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：变换旧样本（Transformation）。对已有数据进行简单的几何或颜色变换。
+\item
+  具体方法：旋转、裁剪、缩放、翻转、平移、添加噪声、改变对比度或亮度。
+\item
+  数据多样性：相对较低。生成的数据与原始数据高度相关，一张``旋转过的猫''在本质上并没有提供关于``猫''的全新信息。
+\item
+  解决的问题：缓解过拟合，通过增加训练数据的``表面''数量，使模型看到更多变化，防止它记住特定训练样本。
+\item
+  挑战：方法简单有效、成本低，但难以创造真正新的类别内变化。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-38}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-38}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Goodfellow, I., Pouget-Abadie, J., Mirza, M., et al.~(2014). \href{https://papers.nips.cc/paper/5423-generative-adversarial-nets}{Generative Adversarial Nets}. NeurIPS 2014.
+\item
+  Karras, T., Laine, S., \& Aila, T. (2019). \href{https://openaccess.thecvf.com/content_CVPR_2019/html/Karras_A_Style-Based_Generator_Architecture_for_Generative_Adversarial_Networks_CVPR_2019_paper.html}{A Style-Based Generator Architecture for Generative Adversarial Networks}. CVPR 2019.（StyleGAN）
+\item
+  Brock, A., Donahue, J., \& Simonyan, K. (2019). \href{https://arxiv.org/abs/1809.11096}{Large Scale GAN Training for High Fidelity Natural Image Synthesis}. ICLR 2019.（BigGAN）
+\item
+  Isola, P., Zhu, J.-Y., Zhou, T., \& Efros, A. A. (2017). \href{https://openaccess.thecvf.com/content_cvpr_2017/html/Isola_Image-To-Image_Translation_With_CVPR_2017_paper.html}{Image-to-Image Translation with Conditional Adversarial Networks}. CVPR 2017.（Pix2Pix）
+\item
+  Zhu, J.-Y., Park, T., Isola, P., \& Efros, A. A. (2017). \href{https://openaccess.thecvf.com/content_iccv_2017/html/Zhu_Unpaired_Image-To-Image_Translation_ICCV_2017_paper.html}{Unpaired Image-to-Image Translation Using Cycle-Consistent Adversarial Networks}. ICCV 2017.（CycleGAN）
+\item
+  Ronneberger, O., Fischer, P., \& Brox, T. (2015). \href{https://arxiv.org/abs/1505.04597}{U-Net: Convolutional Networks for Biomedical Image Segmentation}. MICCAI 2015.
+\end{itemize}
+
+\clearpage

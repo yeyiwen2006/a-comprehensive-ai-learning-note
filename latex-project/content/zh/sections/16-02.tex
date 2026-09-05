@@ -1,0 +1,50 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux8bcdux5d4cux5165embedding}{%
+\section{词嵌入（Embedding）}\label{ux8bcdux5d4cux5165embedding}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux8bcdux5d4cux5165embeddingux7684ux6574ux4f53ux6d41ux7a0b}{%
+\subsection{一、词嵌入（Embedding）的整体流程}\label{ux4e00ux8bcdux5d4cux5165embeddingux7684ux6574ux4f53ux6d41ux7a0b}}
+
+Tokenizer（分词器）把句子切分成词（Token），然后去词表里查出每个词对应的整数ID。词嵌入层（Embedding Layer）接收Tokenizer输出的整数ID，并将其转化为包含语义的浮点数向量，供后续的Attention层进行处理。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8ctokenizerux5206ux8bcdux5668}{%
+\subsection{二、Tokenizer（分词器）}\label{ux4e8ctokenizerux5206ux8bcdux5668}}
+
+输入一个原始文本字符串，如``The cat sat''。Tokenizer先将字符串分解为``词元''(Token)，再根据一个在训练前就构建好的、从``词''到``ID''的映射字典，每个 Token 转换为其对应的整数 ID。如{[}``the'', ``cat'', ``sat''{]}转化为{[}2, 3, 4{]}，不是训练的对象。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09embedding-layerux8bcdux5d4cux5165ux5c42}{%
+\subsection{三、Embedding Layer（词嵌入层）}\label{ux4e09embedding-layerux8bcdux5d4cux5165ux5c42}}
+
+它是神经网络内部的第一个层，输入是Tokenizer输出的整数ID序列，如{[}2, 3, 4{]}，输出这些ID对应的向量拼接成的矩阵。在数学上，这个过程可以用矩阵线性计算（无激活函数）表示。它的参数是每个Token的embedding向量表示，例如词汇表有 50,000 个词，每个词是一个300维向量，那这一层的参数量就是15,000,000。训练时根据输入和输出更新参数，通过参数的正确收敛（每个词嵌入向量能有效表达语义），实现对输入文段的正确输出表示。测试时，根据前向计算，得出每个Token的ID对应的嵌入向量。例如算出代表 ``the'' 的 300 维向量为{[}0.12, -0.45, \ldots, 0.88{]} ，代表 ``cat'' 的{[}0.67, 0.01, \ldots, -0.23{]}，代表 ``sat'' 的{[}-0.11, 0.98, \ldots, 0.51{]} ，输出{[}{[}0.12, \ldots{]}, {[}0.67, \ldots{]}, {[}-0.11, \ldots{]}{]}。
+
+\Needspace{5\baselineskip}
+例如句子 \texttt{Don\textquotesingle{}t\ you\ love\ {[}emoji{]}\ Transformers?\ We\ sure\ do.} 在不同分词器下会得到不同的 Token 序列和 ID 序列：
+
+\begin{itemize}
+\tightlist
+\item
+  根据空格分词：\texttt{{[}"Don\textquotesingle{}t",\ "you",\ "love",\ "{[}emoji{]}",\ "Transformers?",\ "We",\ "sure",\ "do."{]}}，对应的 ID 序列为 \texttt{{[}1347,\ 249,\ 890,\ 1310,\ 8219,\ 568,\ 909,\ 791{]}}。
+\item
+  根据 spaCy 分词器分词：\texttt{{[}"Do",\ "n\textquotesingle{}t",\ "you",\ "love",\ "{[}emoji{]}",\ "Transformers",\ "?",\ "We",\ "sure",\ "do",\ "."{]}}，对应的 ID 序列为 \texttt{{[}91,\ 8123,\ 21313,\ 3123,\ 41251,\ 151,\ 9859,\ 115,\ 1515,\ 3134,\ 4114{]}}。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-74}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-74}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Vaswani, A., Shazeer, N., Parmar, N., et al.~(2017). \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need}. NeurIPS 2017.
+\item
+  Radford, A., Narasimhan, K., Salimans, T., \& Sutskever, I. (2018). \href{https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf}{Improving Language Understanding by Generative Pre-Training}. OpenAI.
+\end{itemize}
+
+\clearpage

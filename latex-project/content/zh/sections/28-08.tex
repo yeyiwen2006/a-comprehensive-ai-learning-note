@@ -1,0 +1,128 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux89c6ux9891ux751fux6210ux6269ux6563ux8fc7ux7a0bux4e2dux9690ux542bux7684ux63a8ux7406}{%
+\section{视频生成扩散过程中隐含的推理}\label{ux89c6ux9891ux751fux6210ux6269ux6563ux8fc7ux7a0bux4e2dux9690ux542bux7684ux63a8ux7406}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6269ux6563ux8fc7ux7a0bux5b9eux73b0ux63a8ux7406ux7684ux539fux7406}{%
+\subsection{一、扩散过程实现推理的原理}\label{ux4e00ux6269ux6563ux8fc7ux7a0bux5b9eux73b0ux63a8ux7406ux7684ux539fux7406}}
+
+此前，业界普遍假设视频模型的推理遵循``帧思维链''（Chain-of-Frames, CoF），即推理是随着视频帧的播放按时间顺序展开的。然而，本研究提出并验证了\textbf{``步思维链''（Chain-of-Steps, CoS）}机制。由于扩散模型中的双向注意力机制可以覆盖整个视频序列，因此模型实际上是在每一个去噪步（Denoising Step）中，同时对所有帧进行全局推理和不断修正。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5de5ux4f5cux539fux7406ux63a8ux5bfc}{%
+\subsubsection{工作原理推导}\label{ux5de5ux4f5cux539fux7406ux63a8ux5bfc}}
+
+\Needspace{5\baselineskip}
+在扩散模型（基于流匹配机制）的数学框架下，潜变量在噪声与清晰数据之间的连续演变路径可以表示为：
+
+\[
+x_s=(1-s)x_0+s x_1
+\]
+
+\Needspace{5\baselineskip}
+其中 \(x_0\) 为干净的数据潜变量，\(x_1\) 为符合正态分布的噪声。模型在训练中学习一个速度场（Velocity Field）\(v_\theta(x_s,s,c)\)，从而在任意去噪步 \(s\) 估计出当前的清晰结果 \(\hat{x}_0\)：
+
+\[
+\hat{x}_0=x_s-\sigma_s\cdot v_\theta(x_s,s,c)
+\]
+
+通过解码不同扩散步的 \(\hat{x}_0\)，作者观察到了两种极其典型的``步思维链''探索工作流。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux8defux5f84ux63a2ux7d22}{%
+\subsubsection{1. 多路径探索}\label{ux591aux8defux5f84ux63a2ux7d22}}
+
+在早期的去噪步骤中，模型表现得如同经典的广度优先搜索（BFS）算法。它会同时在隐空间中实例化并探索多个候选的推理轨迹，例如让视频里的机器人在迷宫中同时走向两条岔路。随着去噪步骤的推进，次优的路径被逐渐``修剪''和抑制，最终在晚期步骤中收敛到唯一正确的路线。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux53e0ux52a0ux5f0fux63a2ux7d22}{%
+\subsubsection{2. 叠加式探索}\label{ux53e0ux52a0ux5f0fux63a2ux7d22}}
+
+在处理空间对齐或物体排序等任务时，模型在早期并不会早早敲定一个状态，而是将多个互斥的逻辑假设，例如同一个物体不同角度的残影，直接叠加渲染在一起。随着噪声的降低，这些重叠的阴影会逐渐坍缩为最终符合逻辑的实体。
+
+\Needspace{5\baselineskip}
+为了进一步证明 CoS 才是主导机制，作者设计了干扰实验，其结果表现出了显著的反差：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}@{}}
+\toprule
+干扰注入模式 & 操作机制 & 对基准测试性能的影响 \\
+\midrule
+\endhead
+Noise at Step & 在特定的某一个去噪步（Step），对所有帧注入强噪声。 & 严重阻断推理轨迹，导致模型在 VBVR-Bench 的得分从 0.685 断崖式下跌至 0.3 以下。 \\
+Noise at Frame & 在特定的某一帧（Frame），对所有的去噪步注入强噪声。 & 性能下降极其微小。由于模型能通过其他帧的上下文在后续步骤中自我修复，推理并未受阻。 \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux63a8ux7406ux80fdux529bux53caux5176ux5728ux67b6ux6784ux4e2dux7684ux5206ux5316}{%
+\subsection{二、推理能力及其在架构中的分化}\label{ux4e8cux63a8ux7406ux80fdux529bux53caux5176ux5728ux67b6ux6784ux4e2dux7684ux5206ux5316}}
+
+\Needspace{5\baselineskip}
+随着模型规模和数据量的扩大，例如 Wan2.2 等大规模模型，作者观察到视频生成展现出了类似大语言模型（LLM）的涌现推理特性：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{工作记忆（Working Memory）}：在遮挡或物体移出画面的任务中，早期的扩散步能够建立持久的``记忆锚点''，确保被遮挡的物体在后续帧中仍然能保持物理状态的连贯性，从而解决``客体永久性''问题。
+\item
+  \textbf{自我纠正与增强（Self-correction and Enhancement）}：模型在扩散过程中会出现``顿悟时刻''（Aha moments）。如果它在早期生成了错误的形状或不完整的弹道轨迹，模型有能力在经历几个扩散步后推翻之前的假设，并将其修正为全面、结构正确的最终答案。
+\item
+  \textbf{先感知后行动（Perception before Action）}：模型自动发展出了一套处理视频推理的通用协议。在早期的去噪步骤中，它优先做语义定位，找到 Prompt 描述的关键物体；而在后期的步骤中，才开始为其添加动作规划、运动学变化和复杂的物理交互。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+为了从底层架构寻找证据，研究提取了 DiT（Diffusion Transformer）在单次前向传播中的层级 Token 激活状态，发现网络在内部发生了高度的功能分化：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{浅层（Layers 0--9）}：主要负责感知，注意力分散在全局结构和环境背景上。
+\item
+  \textbf{中层（约 Layer 9 至 30）}：激活特征开始高度集中到语义相关的前景物体上，并爆发出大量与运动和交互相关的推理特征。作者进行了一项关键的\textbf{因果性隐空间特征替换实验（Latent Swapping）}。当把第 20 层的隐变量替换为另一个物体的表征时，最终的逻辑推理结果发生了彻底反转。这确凿地证明了中间层是逻辑推理的核心区。
+\item
+  \textbf{深层（晚期层）}：将推理完成的隐式表示加以巩固和融合，生成最终所需的像素级状态。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux63a8ux7406ux96c6ux6210ux7b97ux6cd5}{%
+\subsection{三、推理集成算法}\label{ux4e09ux63a8ux7406ux96c6ux6210ux7b97ux6cd5}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{多重初始化}：给同一个模型分配 3 个不同的随机噪声种子（Seeds），独立启动前向推理进程。
+\item
+  \textbf{锁定关键步骤}：在决定推理轨迹走向的最关键的第一个扩散步（\(s=0\)）拦截模型。
+\item
+  \textbf{提取活跃窗口}：分别提取 3 个进程中 DiT 骨干网络里的``推理活跃层''，即第 20 层到第 29 层的中间层区段，其隐式表示记为 \(U^{(i)}\)。
+\item
+  \textbf{时空集成投票}：对这三个版本的隐变量进行空间和时间维度的平均（Averaging）。这相当于在隐空间进行了一次``专家投票''，有效过滤掉了随机种子带来的特定噪音干扰。
+\item
+  \textbf{引导生成}：利用平均后的稳定潜变量继续后续的生成。实验证明，这一简单的集成策略使得模型在 VBVR-Bench 推理基准测试上的绝对得分直接提升了 2\%。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-145}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-145}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Wang, R., Cai, Z., Pu, F., et al.~(2026). \href{https://arxiv.org/abs/2603.16870}{Demystifying Video Reasoning}. arXiv:2603.16870.
+\item
+  Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
+\item
+  Wiedemer, T., Li, Y., Vicol, P., et al.~(2025). \href{https://arxiv.org/abs/2509.20328}{Video Models are Zero-Shot Learners and Reasoners}. arXiv:2509.20328.
+\item
+  Wang, M., Wang, R., Lin, J., et al.~(2026). \href{https://arxiv.org/abs/2602.20159}{A Very Big Video Reasoning Suite}. arXiv:2602.20159.
+\end{itemize}
+
+\clearpage

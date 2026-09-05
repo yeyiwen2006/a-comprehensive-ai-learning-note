@@ -1,0 +1,159 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux667aux80fdux4f53ux53caux5176ux67b6ux6784}{%
+\section{智能体及其架构}\label{ux667aux80fdux4f53ux53caux5176ux67b6ux6784}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux667aux80fdux4f53ux6982ux8ff0}{%
+\subsection{一、智能体概述}\label{ux4e00ux667aux80fdux4f53ux6982ux8ff0}}
+
+大模型智能体（LLM Agent），是以LLM为核心，搭建起的一个能与用户和外部环境互动（LLM本身不能自主与外部环境互动），自主感知、执行任务并获取反馈的智能体。它让LLM的能力不仅限于传统意义上的``对话''，而是能真正帮助人类在实际环境中完成一定的工作任务。Agent工作流以完整的程序形式呈现，程序中会有输入Prompt、调用LLM、调用工具等不同语句块，以实现整体的Agent功能，需要综合模型推理、工具调用、记忆检索等多方面。完成一次任务时，Agent输出文本思考或动作，当输出动作与环境交互后，环境反馈又会被输入Agent继续思考处理。
+
+\Needspace{5\baselineskip}
+一个完整的Agent（智能体）应包含以下模块：
+
+推理模块：大语言模型，可以生成动作指令。
+
+记忆或知识库模块：除了上下文窗口（下面会解释）外，目前记忆或知识库一般外置于模型。模型可通过检索增强生成（RAG）方法，调用记忆或知识库中的内容进行生成。
+
+工具调用模块：模型与环境互动的核心接口，模型通过工具调用，在环境中执行行动、获得反馈。
+
+\Needspace{5\baselineskip}
+上下文Agent即每次的输入。和LLM的上下文仅包括提示词和前面已经生成的内容不同，Agent的上下文还包括（可能经过压缩后的）环境反馈，如工具调用结果、检索结果，还可能有从记忆中提取的内容。因此，Agent时代的范式正在从Prompt Engineering走向Context Engineering。Agentic RL中，马尔可夫性环境中Agent所处的``状态''也包括以上所有上下文的组成部分，即对于完成同一个任务中的第t+1次输入（第t+1轮对话）：
+
+\Needspace{5\baselineskip}
+上下文注入与状态转移（Context Injection / State Transition）：将动作 \(a_t\) 和反馈 \(o_{t+1}\) 拼接（记为 \(\oplus\)）到现有上下文中，完成所谓的``瞬间转移''，形成新的决策状态：
+
+\[
+h_{t+1}=h_t\oplus a_t\oplus o_{t+1}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8creactux8303ux5f0f}{%
+\subsection{二、ReAct范式}\label{ux4e8creactux8303ux5f0f}}
+
+结合外部程序和提示词，让模型交替进行思考、行动、观察（相当于人类的思考、行动、感知）。其中行动指从外部搜索信息、输出最终回答等，可能涉及调用外部工具（大模型会生成调用该工具所需的精确指令或参数）；观察指处理本步行动后得到的信息或观察环境的变化。思考过程中，如输出特定token，则调用工具开始行动或中止循环（后来的一些改进架构中，把直接中止循环变为交给特定检查机制检查任务是否完成）。
+
+\Needspace{5\baselineskip}
+举一个例子：
+
+问题 科罗拉多造山带东部区域延伸到的区域的海拔范围是多少？
+
+思考 1 我需要搜索科罗拉多造山带，找到科罗拉多造山带东段延伸的区域，然后找到该区域的海拔范
+
+围。
+
+操作 1 搜索 {[}科罗拉多造山带{]}
+
+观察 1 科罗拉多造山带是科罗拉多及其周边地区造山运动的一段。
+
+思考 2 它没有提到东部地区。所以我需要查一下东部地区。
+
+操作 2 查找 {[}东部地区{]}
+
+观察 2 (结果 1 / 1) 东部区域延伸至高平原，称为中原造山带。
+
+思考 3 科罗拉多造山运动的东部区域延伸到高平原。所以我需要搜索高平原，找到它的海拔范围。
+
+操作 3 搜索 {[}高平原{]}
+
+观察 3 高平原指的是两个截然不同的陆地区域之一。
+
+思考 4 我需要搜索高平原（美国）
+
+操作 4 搜索 {[}高平原（美国）{]}
+
+观察 4 高平原是大平原的一个分区。从东到西，高平原的海拔从 1800 到 7000 英尺 (550 到
+
+2130 米) 不等。
+
+思考 5 高平原海拔高度从 1800 到 7000 英尺，所以答案是 1800 到 7000 英尺。
+
+操作 5 结束 {[}1800 到 7000 英尺{]}
+
+\Needspace{5\baselineskip}
+当然，以上是要求模型必须在输出前面加上``思考/操作/观察''的原始ReAct，后来也出现了基于ReAct的变体，并非都有这样的硬性要求，但这三个阶段构成循环的核心思想不变。如OpenAI Codex：
+
+假设在终端里输入：给项目的README.md加一个架构图。
+
+第一步：构建Prompt
+
+Codex先构建一个Prompt，包括System Prompt（告诉模型它是谁、能干什么）， Tools（有哪些工具可以调用），Context（环境上下文如当前在哪个目录、用的什么shell），对话或输出历史，和用户指令。
+
+第二步：模型推理（Inference）
+
+Codex把这个Prompt发给模型，模型做出决定：调用shell工具，执行catREADME.md。
+
+第三步：工具调用（ToolCall）
+
+Codex收到模型的请求，在本地执行命令，把README.md的内容读出来。
+
+第四步：结果反馈（FeedBack）
+
+终端把README.md的内容吐了出来。对于循环架构而言，这并不意味着结束。Codex把命令的输出追加到Prompt里，再发给模型。
+
+循环（Agent Loop）
+
+模型看到了README的内容，再次进行推理：可能是生成一个Mermaid图，可能是直接写一段ASCII图形\ldots\ldots 然后再调用工具写入文件。这个循环一直持续，直到模型认为任务完成了，输出一条结束信息。Agent会自己检查错误、验证结果等，真正成为可持续工作的智能体。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux5148ux8ba1ux5212ux540eux6267ux884c}{%
+\subsection{三、先计划，后执行}\label{ux4e09ux5148ux8ba1ux5212ux540eux6267ux884c}}
+
+在完成复杂的任务时，先计划后执行往往准确率更高，如Cursor、Claude Code等均有Plan Mode，用Prompt要求其先制定计划，再通过ReAct范式执行。同时，也可以动态维护计划，在每次行动后，也可以根据观察到的反馈和执行情况更新计划。
+
+这种架构依赖于合理的规划，对于复杂的任务规划难度可能较大。因此，在Claude Code等Agent中，制定计划已经不是一次性的任务，而也是一个循环：在``只读模式''下，模型构成``推理规划---阅读或向用户询问''的闭环，在阅读文件及和用户的交互中不断修改规划。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux81eaux7701ux4e0eux53cdux601d}{%
+\subsection{四、自省与反思}\label{ux56dbux81eaux7701ux4e0eux53cdux601d}}
+
+在ReAct的基础上增加反思步骤，Agent执行失败或结果不理想时会生成一段自我批评（Self-Reflection），并将这个批评作为短期记忆存储起来，在下一次尝试时提醒自己不要重蹈覆辙。这大幅提升了复杂任务的成功率，无需重新训练模型。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux81eaux4e3bux5faaux73af}{%
+\subsection{五、自主循环}\label{ux4e94ux81eaux4e3bux5faaux73af}}
+
+我们希望构建能自主循环的智能体，能根据总目标，独立设定子目标、制定计划并持续执行。它的工作流是一个可持续自主运行的循环，可以动态衡量与目标的差距、进行反思、生成新子任务、调整执行子任务的顺序等，直至完成目标。挑战在于，可能逐渐偏离原始目标，需要纠偏机制；需要设立合理的终止判断机制；持续运行成本较大；可解释性弱，甚至可能存在安全风险。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux516dralph-loop}{%
+\subsection{六、Ralph Loop}\label{ux516dralph-loop}}
+
+2025年7月，软件工程师Geoffrey Huntley把Ralph描述为一种极简的循环式编程智能体工作流，其纯粹形式是一行Bash命令：\texttt{while\ :;\ do\ cat\ PROMPT.md\ \textbar{}\ claude-code\ ;\ done}。每一轮都会重新读取同一份任务提示并启动一次新的智能体进程；代码改动、测试结果和Git历史等外部状态可以保留，但上一轮的完整对话上下文不会自动延续。原始Ralph循环本身不包含``完成标志''或Stop Hook。后来的一些工具在这一思想上增加了可编程完成条件和Stop Hook：若测试未通过或未检测到完成条件，Hook会阻止流程结束并触发下一轮。介绍时应把这种后续封装与Huntley提出的一行循环区分开。
+
+\Needspace{5\baselineskip}
+Ralph Loop可以让我们解决许多普通AI工具会崩溃的痛点。大多数人使用AI编程工具时，只有一个想法，但任务太大了，AI在上下文窗口内无法一次性解决。而Ralph不强求一次性解决问题，就意味着我们可以让AI先制定计划，然后在一个循环中，把所有事情拆到``AI一次就能做完、一次就能判断对错''的最小颗粒度。具体而言，可以分为以下步骤：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  输入明确的指令。
+\item
+  让AI拆解任务，转化为需求清单，每个任务都需要一个明确的检查方式来判断是否成功。如：``增加一个优先级列，默认为中等。''``下拉菜单显示选项：全部、高、中、低''，而不是用``好看''这种模糊的表述。需求的描述直接决定输出结果的好坏。
+\item
+  运行Ralph循环。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-114}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-114}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{《动手学大模型智能体》}. 人民邮电出版社. ISBN 978-7-115-68638-1.
+\item
+  Yao, S., Zhao, J., Yu, D., et al.~(2023). \href{https://arxiv.org/abs/2210.03629}{ReAct: Synergizing Reasoning and Acting in Language Models}. ICLR 2023.
+\item
+  Shinn, N., Cassano, F., Gopinath, A., Narasimhan, K., \& Yao, S. (2023). \href{https://arxiv.org/abs/2303.11366}{Reflexion: Language Agents with Verbal Reinforcement Learning}. NeurIPS 2023.
+\item
+  Huntley, G. (2025). \href{https://ghuntley.com/ralph/}{Ralph Wiggum as a ``software engineer''}.
+\item
+  Bolin, M. (2026). \href{https://openai.com/index/unrolling-the-codex-agent-loop/}{Unrolling the Codex agent loop}. OpenAI.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,145 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{double-dqn}{%
+\section{Double DQN}\label{double-dqn}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-dqn-overestimates-q-values}{%
+\subsection{I. DQN Overestimates Q Values}\label{i.-dqn-overestimates-q-values}}
+
+\Needspace{5\baselineskip}
+DQN commonly overestimates Q values because its update target is:
+
+\[
+y=r+\gamma\max_{a'}Q(s',a';w^{-})
+\]
+
+Network outputs Q(s',a') always contain noise (estimation error). Taking max tends to retain overestimates, which propagate backward through Bellman iterations, inflating Q values throughout the system. Assuming uniformly distributed error epsilon, we can derive the expected difference between the maximum estimate and maximum true value:
+
+\Needspace{5\baselineskip}
+The derivation makes simplifying assumptions for mathematical tractability, but these do not affect the conclusion's generality:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Equal true values}: at state \(s\), all actions \(a\) have the same true expected return \(Q^{*}(s,a)\), denoted \(V^{*}(s)\).
+\item
+  \textbf{Reason for this assumption}: if true values differ, selecting the largest by \(\max\) is natural. The aim is to show that even with equal true values, noise alone makes \(\max\) overestimate.
+\item
+  \textbf{Noise distribution}: estimation errors \(\epsilon_a=Q_{w^{-}}(s,a)-V^{*}(s)\) are uniform on \([-1,1]\), with \(\mathbb{E}[\epsilon_a]=0\).
+\item
+  \textbf{Independence}: errors for different actions are independent.
+\item
+  \textbf{Number of actions}: the action space has size \(m\).
+\end{itemize}
+
+We seek how much the network's maximum estimate \(\max_a Q_{w^{-}}(s,a)\) exceeds true value \(V^{*}(s)\), namely \(\mathbb{E}[\max_a\epsilon_a]\).
+
+\Needspace{5\baselineskip}
+Because \(\epsilon_a\) is uniform on \([-1,1]\), its distribution function is:
+
+\[
+P(\epsilon_a\le x)=
+\begin{cases}
+0, & x\le -1\\
+\frac{1+x}{2}, & x\in(-1,1)\\
+1, & x\ge 1
+\end{cases}
+\]
+
+Now find the distribution of the maximum of \(m\) errors, \(\max_a\epsilon_a\). If the maximum of \(m\) numbers is at most \(x\), every one of the \(m\) numbers must be at most \(x\). Independence makes the joint probability the product of their probabilities:
+
+\[
+P(\max_a\epsilon_a\le x)
+=\prod_{a=1}^{m}P(\epsilon_a\le x)
+=(\frac{1+x}{2})^{m}
+\]
+
+\Needspace{5\baselineskip}
+Finally, calculate the expectation of this ``maximum error.'' By definition, \(\mathbb{E}[X]=\int x\cdot p(x)dx\), where \(p(x)\) is the density, the derivative of the distribution function. The integral is:
+
+\[
+\mathbb{E}[\max_a\epsilon_a]
+=\int_{-1}^{1}x\cdot\frac{d}{dx}P(\max_a\epsilon_a\le x)dx
+\]
+
+\Needspace{5\baselineskip}
+Integration gives:
+
+\[
+=[(\frac{x+1}{2})^{m}\frac{mx-1}{m+1}]_{-1}^{1}
+\]
+
+\Needspace{5\baselineskip}
+The final result is:
+
+\[
+\mathbb{E}[\max_a Q_{w^{-}}(s,a)-\max_{a'}Q^{*}(s,a')]=\frac{m-1}{m+1}
+\]
+
+\Needspace{5\baselineskip}
+If only one action is available, there is no max operation. With each sample:
+
+\Needspace{5\baselineskip}
+Suppose the only action is \(a_1\):
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Truth}: its value is \(0\).
+\item
+  \textbf{Noise}: uniform on \([-1,1]\). It may be estimated as \(0.8\) (overestimated) or \(-0.9\) (underestimated).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Individual errors occur, but averaging many trials gives:
+
+\[
+\text{average error}=\frac{(+0.8)+(-0.9)+(+0.1)+(-0.5)+\cdots}{N}\approx 0
+\]
+
+Conclusion: symmetric noise makes positive and negative errors cancel, so there is neither overestimation nor underestimation on average. This is unbiased estimation.
+
+\Needspace{5\baselineskip}
+If two actions \(a_1\) and \(a_2\) both have true value \(0\), Q-Learning's \(\max\) forces the system to select the highest estimate. For example:
+
+\begin{itemize}
+\tightlist
+\item
+  Trial 1: \(a_1\) has noise \(-0.5\), \(a_2\) has noise \(+0.8\); \(\max\) selects \(+0.8\), overestimating by \(+0.8\).
+\item
+  Trial 2: \(a_1\) has noise \(+0.3\), \(a_2\) has noise \(-0.9\); \(\max\) selects \(+0.3\), overestimating by \(+0.3\).
+\end{itemize}
+
+As the number of actions grows, overestimation approaches the noise's upper bound (1 here). More actions make it easier to get ``lucky'' with a large positive error each time, and max always selects it.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-double-dqn}{%
+\subsection{II. Double DQN}\label{ii.-double-dqn}}
+
+As noted earlier, DQN overestimates Q values. Ultimately, this arises from using the same network (the target network) for two tasks when computing targets: selecting the best action and evaluating its value. Each selection favors an overestimated sample (chosen because it is overestimated), and each update directly uses that selected action's estimate (used because it was chosen), writing an overestimated value every time.
+
+\Needspace{5\baselineskip}
+Double DQN breaks this chain: training network w selects the best action because it updates most promptly and reflects the latest policy; target network w- evaluates that action. The update target becomes:
+
+\[
+y_{DDQN}=r+\gamma Q(s',\arg\max_{a'}Q(s',a';w);w^{-})
+\]
+
+Here \(\arg\max_{a'}Q(s',a';w)\) means the training network selects the action.
+If noise makes training network w mistakenly consider an action best (overestimate it), target network w- evaluates it. Because the networks have different parameters, w- is very unlikely to overestimate the same action simultaneously. This offsets most overestimation bias.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-51}{%
+\subsection{References}\label{references-51}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  van Hasselt, H., Guez, A., \& Silver, D. (2016). \href{https://arxiv.org/abs/1509.06461}{Deep Reinforcement Learning with Double Q-learning}. AAAI 2016.
+\end{itemize}
+
+\clearpage

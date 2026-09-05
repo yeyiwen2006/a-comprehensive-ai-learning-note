@@ -1,0 +1,273 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{cross-entropy-loss-ce-and-softmax-regression}{%
+\section{Cross-Entropy Loss (CE) and Softmax Regression}\label{cross-entropy-loss-ce-and-softmax-regression}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-cross-entropy-loss-function-ce}{%
+\subsection{I. Cross-Entropy Loss Function (CE)}\label{i.-cross-entropy-loss-function-ce}}
+
+In a classification task, for example, we might look at an image and determine whether it shows a ``cat,'' ``dog,'' or ``bird.'' The AI produces a ``probability distribution,'' such as q={[}cat: 0.7, dog: 0.2, bird: 0.1{]}. The correct answer is also a probability distribution: p={[}cat: 1, dog: 0, bird: 0{]}. Using MSE to measure the ``distance'' between q\_i and p\_i is highly inappropriate here. We now introduce the concepts of ``entropy'' and ``cross-entropy'' from information theory.
+
+Information theory regards information as something that eliminates random uncertainty. The amount of information depends on uncertainty and can be understood as ``surprisal,'' or the number of code bits needed to describe all the possibilities associated with the event:
+
+If an event is certain to occur (probability P=1), no coding information is needed: you already know it will happen and are not surprised at all. Its surprisal is -log₂(1) = 0 bits.
+
+If an event has a 25\% probability of occurring (P=0.5), its occurrence is equivalent to randomly selecting one of the four two-bit codes 00, 01, 10, and 11. When the event finally occurs, you receive 2 bits of information and experience some surprise: its surprisal is -log₂(0.25) = 2 bits.
+
+If an event is extremely rare (probability P -\textgreater{} 0), its surprisal approaches infinity. When it finally happens, you are extremely surprised.
+
+For a discrete probability distribution P, suppose there are n possible events, with respective probabilities (i=1,\ldots,n). The expected information content, or the expected number of code bits to allocate, is.
+
+In machine learning, we have a true distribution P (the true data labels) and a model-predicted distribution Q. We want to know how ``different'' these distributions are. KL divergence, also called relative entropy, measures the information loss incurred when an approximate distribution Q is used to describe the true distribution P.
+
+\Needspace{5\baselineskip}
+The KL divergence from P to Q is defined as:
+
+\[
+D_{\mathrm{KL}}(P \parallel Q)=\sum_i p(i)\log\left(\frac{p(i)}{q(i)}\right)
+\]
+
+This represents the ``information difference'' or ``degree of surprise'' caused by describing an event whose true probability is p(i) using q(i). KL divergence averages this ``information difference'' over all events, weighted by their true probabilities p(i). It is always nonnegative and equals 0 if and only if P and Q are identical distributions.
+
+\Needspace{5\baselineskip}
+Furthermore:
+
+\[
+\begin{aligned}
+D_{\mathrm{KL}}(P \parallel Q)
+&=\sum_i p(i)\log p(i)-\sum_i p(i)\log q(i)\\
+&=H(P,Q)-H(P)
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+H(P) is the entropy of the true distribution and remains unchanged in a classification task. H(P,Q) is the cross-entropy, defined as:
+
+\[
+H(P,Q)=-\sum_i p(i)\log q(i)
+\]
+
+\Needspace{5\baselineskip}
+Because our objective is to minimize \(D_{\mathrm{KL}}(P\parallel Q)\) and \(D_{\mathrm{KL}}(P\parallel Q)=H(P,Q)-\text{constant}\), we have:
+
+\[
+\min D_{\mathrm{KL}}(P\parallel Q)\Longleftrightarrow \min H(P,Q)
+\]
+
+In supervised learning, the true distribution P has fixed values (true labels are available) and is independent of the model parameters. Using cross-entropy instead of KL divergence therefore gives simpler code and is less prone to log0 errors.
+
+From a coding perspective, the cross-entropy loss function can be understood as the expected average number of code bits needed when coding uses an estimated probability distribution but events follow the true distribution.
+
+For a classification task, the values are 0 or 1 (with exactly one value equal to 1), and equal the corresponding label values of 0 or 1. Thus, cross-entropy loss can be written for the case where the value is 1: as it approaches 0, the loss grows rapidly. In effect, it only considers how close the predicted probability of the correct class is to 1 (that is, the value representing the predicted probability of the class to which the sample should belong), without considering the other classes.
+
+For a batch of samples (such as an LLM generating n tokens at once), the cross-entropy loss function takes the mean over the n samples. It can be viewed as expressing their ``average information content.'' Extending this idea, exponentiating cross-entropy loss gives the perplexity of the entire sequence (``the average number of tokens from which one is selected at each step when generating this sequence''). The reciprocal of perplexity raised to the nth power is the joint probability of generating that sequence.
+
+Why, then, not use mean squared loss?
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Theoretical mismatch: MSE measures the Euclidean distance between two numerical vectors. Cross-entropy measures an information-theoretic distance between two probability distributions. Classification fundamentally involves fitting a probability distribution, rather than particular numerical values.
+\item
+  Vanishing gradients: consider binary classification (Sigmoid). When we compute the gradient of cross-entropy loss with respect to input z of the Sigmoid activation function commonly used for classification, the result is remarkably elegant:
+\end{enumerate}
+
+\[
+\frac{\partial L_{\mathrm{BCE}}}{\partial z}=\hat{y}-y
+\]
+
+\Needspace{5\baselineskip}
+The gradient magnitude is proportional to the error between prediction and truth. Larger errors produce faster gradient updates, which is reasonable. With MSE, however:
+
+\[
+\frac{\partial L_{\mathrm{MSE}}}{\partial z}=(\hat{y}-y)\cdot\sigma'(z)
+\]
+
+\Needspace{5\baselineskip}
+where:
+
+\[
+\sigma'(z)=\sigma(z)(1-\sigma(z))=\hat{y}(1-\hat{y})
+\]
+
+The gradient contains an additional factor, sigma'(z). When the Sigmoid output y\_hat approaches 0 or 1, this factor approaches 0. The disastrous consequence is that when the model makes a highly confident but incorrect prediction (for example, y\_hat=0.01), sigma'(z) is nearly 0. Although the model is badly wrong, it cannot learn quickly (vanishing gradients), causing extremely slow training or trapping it in a local optimum.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-softmax-regression}{%
+\subsection{II. Softmax Regression}\label{ii.-softmax-regression}}
+
+For example, multiclass classification requires probabilities for each of n possible classes. The real-valued logits originally output by the neurons (such as zi) must therefore be transformed into e\textsuperscript{zi/(e}z1+\ldots+e\^{}zn) to serve as probabilities. The benefits are that the largest value is emphasized, matching the nature of classification, and the outputs are normalized into probabilities between 0 and 1. When cross-entropy loss is used:
+
+\Needspace{5\baselineskip}
+Because softmax and its associated loss function are common, we need a better understanding of their computation. Substituting \(l(\mathbf{y},\hat{\mathbf{y}})\) into the loss function and using the definition of softmax gives:
+
+\[
+\begin{aligned}
+l(\mathbf{y},\hat{\mathbf{y}})
+&=-\sum_{j=1}^{q}y_j\log\frac{\exp(o_j)}{\sum_{k=1}^{q}\exp(o_k)}\\
+&=\sum_{j=1}^{q}y_j\log\sum_{k=1}^{q}\exp(o_k)-\sum_{j=1}^{q}y_jo_j\\
+&=\log\sum_{k=1}^{q}\exp(o_k)-\sum_{j=1}^{q}y_jo_j
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+Taking the derivative with respect to any unnormalized prediction \(o_j\) gives:
+
+\[
+\partial_{o_j}l(\mathbf{y},\hat{\mathbf{y}})
+=\frac{\exp(o_j)}{\sum_{k=1}^{q}\exp(o_k)}-y_j
+=\mathrm{softmax}(\mathbf{o})_j-y_j
+\]
+
+In other words, the derivative is the difference between the probability assigned by the softmax model and what actually occurred (represented by the one-hot label vector).
+
+Thus, the ratios of the gradients (rates of descent) in different directions equal the ratios of the differences between predicted and actual values in those directions. For example, if the model predicts probabilities {[}0.1, 0.7, 0.2{]} and the true label is {[}0, 1, 0{]}, the computed gradient is {[}0.1-0, 0.7-1, 0.2-0{]}. Mean squared loss (corresponding to Gaussian-distributed noise) also has this property.
+
+\Needspace{5\baselineskip}
+In practical computation:
+
+\Needspace{5\baselineskip}
+Recall that the softmax function is:
+
+\[
+\hat{y}_j=\frac{\exp(o_j)}{\sum_k\exp(o_k)}
+\]
+
+Here, \(\hat{y}_j\) is the predicted probability distribution, and \(o_j\) is the \(j\)th element of the unnormalized predictions \(\mathbf{o}\). If some values of \(o_k\) are very large, \(\exp(o_k)\) may exceed the largest number the data type permits, causing overflow. To avoid this, subtract \(\max(o_k)\) from all \(o_k\) before continuing the softmax computation. Shifting every \(o_k\) by a constant does not change the value returned by softmax:
+
+\[
+\begin{aligned}
+\hat{y}_j
+&=\frac{\exp(o_j-\max(o_k))\exp(\max(o_k))}
+{\sum_k\exp(o_k-\max(o_k))\exp(\max(o_k))}\\
+&=\frac{\exp(o_j-\max(o_k))}
+{\sum_k\exp(o_k-\max(o_k))}
+\end{aligned}
+\]
+
+After subtraction and normalization, some \(o_j-\max(o_k)\) may be large negative values. With limited precision, \(\exp(o_j-\max(o_k))\) takes values near zero, causing underflow. These values may round to zero, making \(\hat{y}_j\) zero and \(\log(\hat{y}_j)\) equal to \texttt{-inf}. After a few backpropagation steps, we may find ourselves facing a screen full of alarming \texttt{nan} results.
+
+Although we compute exponentials, we ultimately take their logarithms when computing cross-entropy loss. Combining softmax and cross-entropy lets us use \(o_j-\max(o_k)\) directly, avoiding numerical stability problems that could otherwise affect backpropagation:
+
+\[
+\begin{aligned}
+\log(\hat{y}_j)
+&=\log\left(\frac{\exp(o_j-\max(o_k))}
+{\sum_k\exp(o_k-\max(o_k))}\right)\\
+&=\log(\exp(o_j-\max(o_k)))
+-\log\left(\sum_k\exp(o_k-\max(o_k))\right)\\
+&=o_j-\max(o_k)-\log\left(\sum_k\exp(o_k-\max(o_k))\right)
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-binary-cross-entropy-loss-bce}{%
+\subsection{III. Binary Cross-Entropy Loss (BCE)}\label{iii.-binary-cross-entropy-loss-bce}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Mathematical expression of binary cross-entropy
+\end{enumerate}
+
+When classification offers a choice between only two classes (true or false), suppose the actual probability of true is p, the predicted probability of true is q, and the actual data label is y (1 for true and 0 for false). The formula for the true binary cross-entropy is -p\emph{logq-(1-p)}log(1-q). Since y=p, it can also be written as -y\emph{logq-(1-y)}log(1-q).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  How the model produces the predicted probability q
+\end{enumerate}
+
+With only two classes, we no longer need multiple logits followed by Softmax. We need only one logit, use the sigmoid function to obtain the probability of one of the classes (such as choosing ``yes''), and then apply binary cross-entropy. This operation can in fact be shown to be a special case of Softmax:
+
+\Needspace{5\baselineskip}
+For two classes, Softmax outputs:
+
+\[
+p_0=\frac{e^{z_0}}{e^{z_0}+e^{z_1}},\qquad
+p_1=\frac{e^{z_1}}{e^{z_0}+e^{z_1}}
+\]
+
+\Needspace{5\baselineskip}
+Considering only the second-class probability \(p_1\) and defining \(z=z_1-z_0\):
+
+\[
+p_1=\frac{e^{z_1}}{e^{z_0}+e^{z_1}}
+=\frac{1}{1+e^{-(z_1-z_0)}}
+=\sigma(z_1-z_0)
+\]
+
+Thus, binary Softmax simplifies to the Sigmoid function, whose input is the difference between the two class logits.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Using BCE in multilabel classification
+\end{enumerate}
+
+Softmax only applies to ``single-choice'' classification, selecting ``one out of n.'' If we need to assign an object to multiple classes simultaneously (for example, attaching various functional labels to a protein), this becomes ``multiple-choice'' classification, and Softmax is no longer suitable. We can instead regard the task as consisting of many (sample, class) combinations, independently deciding for each combination whether the object belongs to that class. Cross-entropy loss is then summed over all (sample, class) combinations and divided by the total number of combinations.
+
+\Needspace{5\baselineskip}
+Code implementation of multilabel cross-entropy loss:
+
+\begin{verbatim}
+import torch
+
+import torch.nn as nn
+
+# Assume batch size=2 and number of classes=3
+
+logits = torch.tensor([[1.2, -0.5, 0.8],[-0.3, 1.5, -1.0]]) # Raw model outputs (before the activation function)
+
+targets = torch.tensor([[1, 0, 1], [0, 1, 0]], dtype=torch.float) # True labels: 0 and 1 indicate whether each sample belongs to each class
+
+# Use BCEWithLogitsLoss (the default reduction='mean' takes the average)
+
+criterion = nn.BCEWithLogitsLoss()
+
+loss = criterion(logits, targets)
+
+print(f"Loss: {loss.item()}")
+
+# Manually verify the computation
+
+sigmoid_outputs = torch.sigmoid(logits)
+
+bce_per_element = - (targets * torch.log(sigmoid_outputs) +
+
+(1 - targets) * torch.log(1 - sigmoid_outputs)) # Matrices of the same shape; PyTorch performs elementwise multiplication
+
+print(f"Loss for each (sample, class):\n{bce_per_element}")
+
+total_loss = bce_per_element.sum()
+
+num_elements = bce_per_element.numel()  # N × C = 2 × 3 = 6
+
+manual_loss = total_loss / num_elements
+
+print(f"Manually computed mean loss: {manual_loss.item()}")
+\end{verbatim}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-4}{%
+\subsection{References}\label{references-4}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\end{itemize}
+
+\clearpage

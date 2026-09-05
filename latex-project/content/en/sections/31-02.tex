@@ -1,0 +1,332 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{reinforcement-learning-for-vla-models}{%
+\section{Reinforcement Learning for VLA Models}\label{reinforcement-learning-for-vla-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-challenges-of-reinforcement-learning-for-vla-models}{%
+\subsection{I. Challenges of Reinforcement Learning for VLA Models}\label{i.-challenges-of-reinforcement-learning-for-vla-models}}
+
+\Needspace{5\baselineskip}
+An ordinary continuous-control policy is generally written as:
+
+\[
+a_t\sim\pi_\theta(a_t\mid s_t)
+\]
+
+\Needspace{5\baselineskip}
+Taking a Gaussian policy as an example:
+
+\[
+\pi_\theta(a\mid s)=\mathcal{N}\bigl(\mu_\theta(s),\sigma_\theta(s)\bigr)
+\]
+
+\Needspace{5\baselineskip}
+Algorithms such as SAC and PPO can then directly compute \(\log\pi_\theta(a_t\mid s_t)\) and obtain the policy-gradient term:
+
+\[
+\nabla_\theta\log\pi_\theta(a_t\mid s_t)A_t
+\]
+
+For autoregressive VLAs, the policy is the product of stepwise probabilities, and the log policy is the sum of stepwise log probabilities. For diffusion/flow-matching VLAs, however, computing the log policy is difficult. Moreover, allowing RL gradients to pass through an entire 10--50-step diffusion/flow trajectory requires substantial GPU memory and computation and is prone to instability.
+
+An important research question in VLA RL is therefore: Where exactly should RL be applied? To the entire VLA, the action head, action tokens, the flow-denoising trajectory, or latent noise?
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-vla-rl-directly-optimizing-the-entire-vla-with-ppo}{%
+\subsection{II. VLA-RL: Directly Optimizing the Entire VLA with PPO}\label{ii.-vla-rl-directly-optimizing-the-entire-vla-with-ppo}}
+
+\Needspace{5\baselineskip}
+\hypertarget{core-idea-2}{%
+\subsubsection{(1) Core Idea}\label{core-idea-2}}
+
+\Needspace{5\baselineskip}
+The idea is very similar to RLHF/PPO for LLMs. OpenVLA originally performs:
+
+\[
+(\text{image},\text{instruction})
+\longrightarrow
+[v_1,v_2,\ldots,v_7]
+\longrightarrow
+a_t
+\]
+
+\Needspace{5\baselineskip}
+The seven tokens correspond to seven robot-action dimensions. Because it is autoregressive:
+
+\[
+\pi_\theta(a_t\mid o_t,l)=\prod_{i=1}^{7}p_\theta(v_i\mid v_{<i},o_t,l)
+\]
+
+\Needspace{5\baselineskip}
+The action's log probability is directly available:
+
+\[
+\log\pi_\theta(a_t\mid o_t,l)=\sum_{i=1}^{7}\log p_\theta(v_i\mid v_{<i},o_t,l)
+\]
+
+For an autoregressive action tokenizer such as OpenVLA's, action probabilities are easy to compute. The paper only needs to view a robot's stepwise multimodal observations and actions as analogous to an LLM's multiround conversation, then directly use PPO and GAE to update the VLA.
+
+The entire VLA model can simply be trained with standard PPO.
+
+\Needspace{5\baselineskip}
+\hypertarget{sparse-feedback-and-its-solution}{%
+\subsubsection{(2) Sparse Feedback and Its Solution}\label{sparse-feedback-and-its-solution}}
+
+Feedback in robot tasks is sparse. For example, in the task of putting a cup in a cupboard, the environment may not return a result until after 100 steps. Whether step 20, ``the arm has correctly grasped the cup,'' is good is difficult to judge from terminal rewards alone. VLA-RL uses a process reward model, dividing milestones/subtasks according to significant changes in gripper opening and closing, and combining information such as near-zero end-effector velocity to identify key progress states and provide process rewards for intermediate actions.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-ux3c0rl-enabling-whole-model-rl-training-for-flow-matching-vlas}{%
+\subsection{III. πRL: Enabling Whole-Model RL Training for Flow-Matching VLAs}\label{iii.-ux3c0rl-enabling-whole-model-rl-training-for-flow-matching-vlas}}
+
+Methods such as Flow-Noise proposed in πRL introduce a learnable noise network into an existing flow-matching VLA and reformulate denoising as a discrete-time MDP, enabling traditional RL algorithms. This resolves flow matching's lack of stochasticity and inability to compute action-probability likelihoods, while learnable, directional exploration addresses the frequent failure of blind exploration in high-dimensional spaces.
+
+\Needspace{5\baselineskip}
+\hypertarget{core-idea-3}{%
+\subsubsection{(1) Core Idea}\label{core-idea-3}}
+
+Traditional flow matching solves an ordinary differential equation (ODE) in continuous time, lacks stochasticity, and makes log-likelihood computation for methods such as PPO difficult. Flow-Noise innovates by actively injecting a learnable noise network into the originally deterministic denoising path and reformulating denoising as a discrete-time Markov decision process (MDP). The model can then explore at every generation step while obtaining exact action log-likelihoods, making it fully compatible with traditional actor--critic online reinforcement-learning algorithms.
+
+\Needspace{5\baselineskip}
+\hypertarget{algorithmic-principles}{%
+\subsubsection{(2) Algorithmic Principles}\label{algorithmic-principles}}
+
+Flow-Noise abandons purely deterministic ODE sampling and introduces a learnable noise network. It discretizes the originally continuous denoising trajectory into several steps and injects controlled stochasticity at each step.
+
+\Needspace{5\baselineskip}
+In this internal denoising MDP:
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  State space: At denoising time step \(\tau\), the internal state combines the current environmental observation and noisy action chunk:
+\end{itemize}
+
+\[
+\bar{s}_t^\tau=(o_t,A_t^\tau).
+\]
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Action space: The internal ``action'' generates the flow model's hidden state at the next discrete time step. When \(\tau<1\), the policy outputs:
+\end{itemize}
+
+\[
+\bar{a}_t^\tau=A_t^{\tau+\delta}.
+\]
+
+When \(\tau=1\), it outputs the final action \(A_t^1\).
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Stochastic transitions and learnable noise: The transition from \(A_t^\tau\) to \(A_t^{\tau+\delta}\) is modeled as a Gaussian distribution:
+\end{itemize}
+
+\[
+A_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\delta\cdot\varepsilon,
+\qquad \varepsilon\sim\mathcal{N}(0,I).
+\]
+
+Here, \(\mu_\tau\) is determined by the mean direction predicted by the flow-matching network \(v_\theta\), and \(\sigma_\tau\) is the standard deviation output by the learnable noise network.
+
+\Needspace{5\baselineskip}
+This design has two effects:
+
+\begin{itemize}
+\tightlist
+\item
+  Adaptive exploration: In safe regions of the generated trajectory, the network outputs larger variance to encourage broad exploration; in noise-sensitive regions generating high-frequency details, \(\Sigma_\phi\) automatically converges and outputs smaller variance, potentially approaching zero.
+\item
+  Dimensional decoupling: The network can learn to explore more along unimportant background-feature dimensions while remaining restrained along key semantic dimensions, enabling fine-grained exploration in high-dimensional spaces.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Because every step \(\tau\to\tau+\delta\) follows a known Gaussian distribution, the joint probability density of the entire denoising trajectory can be factorized by the chain rule:
+
+\[
+\log\pi_\theta(a_t\mid o_t)=\sum_{\tau=0}^{1-\delta}\log p_\theta
+\bigl(A_t^{\tau+\delta}\mid A_t^\tau,o_t\bigr).
+\]
+
+Because \(p_\theta\) consists of parameterized Gaussian distributions, this expression can be computed directly and used in policy-gradient reinforcement-learning objectives such as PPO.
+
+\Needspace{5\baselineskip}
+\hypertarget{workflow-3}{%
+\subsubsection{(3) Workflow}\label{workflow-3}}
+
+\textbf{Step 1: Environmental interaction and initialization (start of the outer loop)}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The agent obtains the observation state \(o_t\) at the current time step \(t\) from a simulated environment or the real world, such as camera images and proprioceptive data.
+\item
+  Inside the model, initialize the flow-matching starting point by sampling \(A_t^0\sim\mathcal{N}(0,I)\) from standard Gaussian noise.
+\end{enumerate}
+
+\textbf{Step 2: Discretized denoising (the internal MDP loop)}
+
+\Needspace{5\baselineskip}
+Start a discrete denoising loop from \(\tau=0\) to \(\tau=1\) with step size \(\delta\). At each step:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Construct the internal state by combining the environmental observation and current variable as \(\bar{s}_t^\tau=(o_t,A_t^\tau)\).
+\item
+  Network inference: Feed internal state \(\bar{s}_t^\tau\) into the VLA backbone (such as a Transformer), predict the current velocity field \(v_\theta\), and compute the expected denoising direction \(\mu_\tau\).
+\item
+  Noise evaluation: The auxiliary learnable noise network outputs standard deviation \(\sigma_\tau\) based on the current state.
+\item
+  Sample and record: Sample random noise \(\varepsilon\) and compute the next latent \(A_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\delta\cdot\varepsilon\). At the same time, record the step's log-likelihood \(\log p_\theta(A_t^{\tau+\delta}\mid A_t^\tau,o_t)\) in the buffer.
+\end{enumerate}
+
+\textbf{Step 3: Action execution and reward collection (end of the outer loop)}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  When the internal denoising loop reaches \(\tau=1\), obtain the noiseless deterministic physical action \(a_t=A_t^1\).
+\item
+  Send action \(a_t\) to the environment for execution.
+\item
+  Update the observation state and return a single-step reward \(r_t\), such as a sparse \(+1\) reward for a successful grasp.
+\end{enumerate}
+
+\textbf{Step 4: Reinforcement-learning policy update (RL backpropagation)}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  After collecting complete trajectories for one or more episodes, compute the cumulative advantage function.
+\item
+  Extract the exact sum of joint log-likelihoods \(\sum\log p_\theta\) computed in Step 2.
+\item
+  Use PPO's clipped surrogate objective to compute policy gradients.
+\item
+  Update the VLA and noise-network parameters to maximize the probability of generating denoising trajectories that achieve high environmental rewards under similar observations.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{how-this-method-addresses-flow-matchings-exploding-step-count-after-departing-from-optimal-transport}{%
+\subsubsection{(4) How This Method Addresses Flow Matching's ``Exploding Step Count after Departing from Optimal Transport''}\label{how-this-method-addresses-flow-matchings-exploding-step-count-after-departing-from-optimal-transport}}
+
+In traditional flow matching, curved trajectories cause large truncation errors during ODE integration, requiring very small step sizes \(\Delta t\) and thus more function evaluations (NFE). Flow-Noise fundamentally bypasses the ODE solver: it reconstructs the entire generation process as a discrete-time MDP and explicitly defines the environmental transition function as:
+
+\[
+x_{t-\Delta t}=a_t.
+\]
+
+The model therefore no longer predicts a continuous ``tangent direction,'' but jumps directly to the next discrete state. The reinforcement-learning algorithm optimizes cumulative rewards at these discrete jump points. It no longer needs to integrate continuous differential equations and can avoid truncation errors caused by curved trajectories, allowing high-reward results in fewer steps.
+
+This makes Flow-Noise resemble a diffusion model while retaining flow matching's near-straight denoising trajectories and speed advantages.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-policy-agnostic-rl-letting-rl-gradients-optimize-output-actions-instead-of-the-vla-model}{%
+\subsection{IV. Policy Agnostic RL: Letting RL Gradients Optimize Output Actions Instead of the VLA Model}\label{iv.-policy-agnostic-rl-letting-rl-gradients-optimize-output-actions-instead-of-the-vla-model}}
+
+Since directly optimizing the policy is difficult, actions can be optimized directly first.
+
+\Needspace{5\baselineskip}
+The current policy is:
+
+\[
+a_i\sim\pi_\phi(a_i\mid s).
+\]
+
+First generate candidate actions \(a_1,a_2,\ldots,a_K\), then score each with the critic \(Q_\theta(s,a_i)\).
+
+\Needspace{5\baselineskip}
+Perform gradient ascent on each candidate:
+
+\[
+a_i^{j+1}=a_i^j+\alpha\nabla_a Q_\theta(s,a_i^j).
+\]
+
+Note that gradient ascent is performed directly on actions: gradients are computed with respect to actions, not VLA model parameters.
+
+After iteration, an optimal action \(a^\ast\) or a set of optimized actions \(a_1^\ast,a_2^\ast,\ldots\) can be obtained.
+
+\Needspace{5\baselineskip}
+These only need to be distilled into the VLA through supervised learning:
+
+\Needspace{5\baselineskip}
+For example, OpenVLA can use negative-log-likelihood distillation:
+
+\[
+\mathcal{L}=-\log\pi_\phi(a^\ast\mid s).
+\]
+
+\Needspace{5\baselineskip}
+Diffusion Policy can use denoising-objective distillation:
+
+\[
+\mathcal{L}=\left\|\varepsilon-\varepsilon_\phi(a_t,s,t)\right\|^2.
+\]
+
+RL gradients do not enter the VLA directly.
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-dsrl-training-only-which-noise-to-choose-not-the-vla}{%
+\subsection{V. DSRL: Training Only ``Which Noise to Choose,'' Not the VLA}\label{v.-dsrl-training-only-which-noise-to-choose-not-the-vla}}
+
+\Needspace{5\baselineskip}
+\hypertarget{core-idea-4}{%
+\subsubsection{(1) Core Idea}\label{core-idea-4}}
+
+Diffusion models generally choose random noise during inference. ``Steering Your Diffusion Policy with Latent Space Reinforcement Learning'' proposes using RL gradients to train the noise-selection policy rather than the model. With the model frozen, initial noise in different directions steers outputs toward different action modes (for example, w1 represents moving left and w2 represents grasping deeper).
+
+\Needspace{5\baselineskip}
+Comparison:
+
+Ordinary approach: Random noise → RL-trained model → Output action
+
+DSRL: RL-optimized noise → Frozen pretrained model → Output action
+
+\Needspace{5\baselineskip}
+\hypertarget{noise-aliasing-in-critic-training}{%
+\subsubsection{(2) Noise Aliasing in Critic Training}\label{noise-aliasing-in-critic-training}}
+
+In DSRL, the critic Q(s,a) takes state s and robot action a from the policy model as inputs. The frozen policy model is a=F(s,w), where F is frozen and w is the input noise, so a is a function of w. Even if a particular w has never been executed on a real robot, its value can be estimated as long as the action it maps to is known. Thus, Q(s,a)=Q(s,F(s,w))=Q\_w(s,w).
+
+DSRL-NA first trains Q(s,a) with robot data (s,a,s',r), then trains Q\_w(s,w): for each w, obtain a through a=F(s,w) and distill the output of Q(s,a) into Q\_w(s,w).
+
+\Needspace{5\baselineskip}
+\hypertarget{vi.-rldg-using-rl-only-to-produce-supervised-learning-samples}{%
+\subsection{VI. RLDG: Using RL Only to Produce Supervised-Learning Samples}\label{vi.-rldg-using-rl-only-to-produce-supervised-learning-samples}}
+
+``RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning'' proposes using RL to train smaller ``expert models'' for different tasks separately, then having each roll out expert trajectories. These data become supervised-learning samples for the large model, without directly fine-tuning it with RL.
+
+Because RL policies lack the occasional hesitation, pauses, and wobbling present in human policies, and their rollouts often contain recovery from erroneous states, samples obtained this way can sometimes outperform human data for training.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-153}{%
+\subsection{References}\label{references-153}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Lu, G., Guo, W., Zhang, C., et al.~(2025). \href{https://arxiv.org/abs/2505.18719}{VLA-RL: Towards Masterful and General Robotic Manipulation with Scalable Reinforcement Learning}. arXiv:2505.18719.
+\item
+  Chen, K., Liu, Z., Zhang, T., et al.~(2025). \href{https://arxiv.org/abs/2510.25889}{πRL: Online RL Fine-tuning for Flow-based Vision-Language-Action Models}. arXiv:2510.25889.
+\item
+  Mark, M. S., Gao, T., Sampaio, G. G., et al.~(2024). \href{https://arxiv.org/abs/2412.06685}{Policy Agnostic RL: Offline RL and Online RL Fine-Tuning of Any Class and Backbone}. arXiv:2412.06685.
+\item
+  Wagenmaker, A., Nakamoto, M., Zhang, Y., et al.~(2025). \href{https://arxiv.org/abs/2506.15799}{Steering Your Diffusion Policy with Latent Space Reinforcement Learning}. arXiv:2506.15799.
+\item
+  Xu, C., Li, Q., Luo, J., \& Levine, S. (2024). \href{https://arxiv.org/abs/2412.09858}{RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning}. arXiv:2412.09858.
+\end{itemize}
+
+\clearpage

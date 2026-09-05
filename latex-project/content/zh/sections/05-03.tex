@@ -1,0 +1,124 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux81eaux9002ux5e94ux5b66ux4e60ux7387}{%
+\section{自适应学习率}\label{ux81eaux9002ux5e94ux5b66ux4e60ux7387}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux81eaux9002ux5e94ux5b66ux4e60ux7387ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}{%
+\subsection{一、自适应学习率解决了什么问题？}\label{ux4e00ux81eaux9002ux5e94ux5b66ux4e60ux7387ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}}
+
+主要解决了SGD的学习率选择问题，特别是当不同参数的梯度尺度差异巨大时。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  全局学习率困境（Global Learning Rate Dilemma）
+\end{enumerate}
+
+在深度神经网络中，不同参数（如浅层权重、深层权重、偏置项）的梯度量级可能相差数个数量级。SGD对所有参数都使用同一个学习率。如果设置得太大，梯度大的参数（如损失函数变化剧烈的参数）会更新过快，导致震荡甚至``爆炸''；如果设置得太小，梯度小的参数（如损失函数变化平缓的参数）会更新过慢，导致收敛需要极长时间。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  非平稳目标（Non-Stationary Objectives）
+\end{enumerate}
+
+在某些任务（如强化学习）或训练后期，梯度的统计特性（如平均大小）可能会发生变化。固定的值无法适应这种变化。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux81eaux9002ux5e94ux5b66ux4e60ux7387ux7684ux89e3ux51b3ux65b9ux6848}{%
+\subsection{二、自适应学习率的解决方案}\label{ux4e8cux81eaux9002ux5e94ux5b66ux4e60ux7387ux7684ux89e3ux51b3ux65b9ux6848}}
+
+自适应学习率即在更新参数时，将每个维度的学习率除以本维度上过去梯度的``均方根''（Root Mean Square，即sqrt(v\_t)），缩放其大小。对于近期梯度一直很大的参数，其有效学习率会自动减小，防止其更新过猛而震荡；对于近期梯度一直很小的参数，其有效学习率会自动增大，使其能够更快地收敛。
+
+\Needspace{5\baselineskip}
+而对于这个均方根怎么计算，产生了两种方案：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  AdaGrad：使用过去全体梯度二次方的算术平均值。
+\item
+  RMSProp（Root Mean Square Propagation）：使用过去梯度二次方的移动平均值v\_t，这个v\_t向量（与参数维度相同）跟踪了每个参数近期梯度的平均幅度（或能量）。相对而言，近期梯度的权重更大。
+\end{enumerate}
+
+RMSProp效果更好，故后续围绕RMSProp讨论。
+
+\Needspace{5\baselineskip}
+这里有两个问题：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  为什么取近期而不是单次？
+\end{enumerate}
+
+``整体地形''更能反映实际情况。有时单个点梯度很大、整体梯度却很小，我们就不应该除以一个很大的值，因为首先一个点具有偶然性，其次可能这个点本来就很特殊、不应被``平均''扼杀。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  为什么用均方根？
+\end{enumerate}
+
+首先，如果一个参数在``峡谷''中剧烈震荡，它会产生非常大的梯度。均方根这一对异常值非常敏感的指标会迅速增大，从而急剧减小该参数的学习率，这正是我们想要的。我们需要一个强大的自动稳定器，对震荡（大梯度）做出快速而强烈的反应。
+
+其次，随着优化的进行，梯度平均值趋于0（这里有正负），我们知道方差等于E(X\textsuperscript{2)-E(X)}2，E(X)≈0时平方的平均实质上就是对方差的估计，方差在统计学上可以代表代表``震荡程度''，适合用于调节学习率的幅度。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6570ux5b66ux8868ux8fbe-1}{%
+\subsection{三、数学表达}\label{ux4e09ux6570ux5b66ux8868ux8fbe-1}}
+
+RMSProp将梯度除以引入了两个新超参数：β2和epsilon。前者是利用移动平均计算梯度平方和的值时的衰减率，后者是一个极小的值如10\^{}-8以防止除法分母为0。更新参数时，我们将梯度按元素除以（近期梯度的均方根+epsilon），再乘学习率。
+
+\Needspace{5\baselineskip}
+计算梯度：
+
+\[
+g_t = \nabla_\theta J(\theta_{t-1})
+\]
+
+\Needspace{5\baselineskip}
+更新梯度平方的 EMA（二阶矩估计）：
+
+\[
+v_t = \beta_2 \cdot v_{t-1} + (1-\beta_2)\cdot (g_t \odot g_t)
+\]
+
+注意：\(\odot\) 表示逐元素相乘（Element-wise multiplication），即 \(g_t\) 中的每个元素单独平方。
+
+\Needspace{5\baselineskip}
+更新参数：
+
+\[
+\theta_t = \theta_{t-1} - \frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t
+\]
+
+注意：这里的除法和乘法也都是逐元素的。\(\alpha\) 被 \(v_t\) 中每个参数对应的``均方根''所缩放。
+
+注：RMSProp 最初通过 Geoffrey Hinton 的课程讲义公开，而不是以一篇``原始论文''的形式发表。讲义中的更新使用 \(\frac{\alpha}{\sqrt{v_t}+\epsilon}\odot g_t\)，而不是 \(m_t\)。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-27}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-27}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Duchi, J., Hazan, E., \& Singer, Y. (2011). \href{https://jmlr.org/papers/v12/duchi11a.html}{Adaptive Subgradient Methods for Online Learning and Stochastic Optimization}. Journal of Machine Learning Research.
+\item
+  Hinton, G., Srivastava, N., \& Swersky, K. (2012). \href{https://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf}{Neural Networks for Machine Learning, Lecture 6e: RMSProp}. University of Toronto / Coursera.
+\end{itemize}
+
+\clearpage

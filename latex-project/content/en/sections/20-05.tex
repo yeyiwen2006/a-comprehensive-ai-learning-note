@@ -1,0 +1,145 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{self-distillation}{%
+\section{Self-Distillation}\label{self-distillation}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-an-expert-demonstration-based-method-self-distillation-fine-tuning-sdft}{%
+\subsection{I. An Expert-Demonstration-Based Method: Self-Distillation Fine-Tuning (SDFT)}\label{i.-an-expert-demonstration-based-method-self-distillation-fine-tuning-sdft}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Background
+\end{enumerate}
+
+Currently, supervised fine-tuning (SFT) is the mainstream paradigm for learning from expert demonstrations. SFT is off-policy learning. When a model must adapt sequentially to new tasks or domains, it causes severe degradation in generalization and catastrophic forgetting. Although on-policy RL can significantly reduce forgetting and improve out-of-distribution generalization, it usually requires an explicit reward function. In many real-world scenarios, constructing such a precise reward function is very difficult or even infeasible.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Core principles
+\end{enumerate}
+
+To obtain the advantages of on-policy learning when only demonstration or environmental-feedback data are available, without an explicit reward function, self-distillation lets the same model play both ``teacher'' and ``student'' during training.
+
+The student receives only the original task prompt and generates autoregressively. The teacher receives the task prompt and expert demonstration, using the large model's in-context learning ability to generate the \(i\)th token embodying the correct task intent from the student's first \(i-1\) tokens, providing a high-quality guidance signal.
+
+\Needspace{5\baselineskip}
+The distributions corresponding to the student and teacher can be written as:
+
+\begin{itemize}
+\tightlist
+\item
+  Student: given prefix \(y_{<t}\) and original question \(x\), predict the probability distribution of the next token, \(\pi_\theta(\cdot \mid y_{<t}, x)\).
+\item
+  Teacher: given the same prefix and an additional expert-demonstration-enhanced prompt \(c\), provide a higher-quality probability distribution, \(\pi(\cdot \mid y_{<t}, x, c)\).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+The overall sequence-level reverse KL optimization objective is:
+
+\[
+\mathcal{L}(\theta)
+= D_{\mathrm{KL}}\left(\pi_\theta(\cdot \mid x)\,\Vert\,\pi(\cdot \mid x,c)\right)
+= \mathbb{E}_{y\sim \pi_\theta(y\mid x)}
+\left[
+\log\frac{\pi_\theta(y\mid x)}{\pi(y\mid x,c)}
+\right].
+\]
+
+The outer expectation \(\mathbb{E}_{y\sim \pi_\theta(y\mid x)}\) indicates that the sampled data distribution comes from the student policy \(\pi_\theta\).
+
+\Needspace{5\baselineskip}
+This actually means summing over all possible next tokens v in the entire vocabulary V:
+
+\[
+\nabla_\theta D_{\mathrm{KL}}(\pi_\theta\Vert\pi)
+=
+\sum_{v\in V}
+\pi_\theta(v\mid y_{<t})
+\nabla_\theta \log \pi_\theta(v\mid y_{<t})
+\left(
+\log\frac{\pi_\theta(v\mid y_{<t})}{\pi(v\mid y_{<t},c)}
++ 1
+\right).
+\]
+
+\Needspace{5\baselineskip}
+When writing the vocabulary sum at each time step as an analytical gradient estimate, the probability weights of the student distribution must be retained:
+
+\[
+\hat{g}_{\mathrm{analytic}}
+=
+\sum_{t=1}^{T}\sum_{v\in V}
+\pi_\theta(v\mid y_{<t},x)
+\nabla_\theta \log \pi_\theta(v\mid y_{<t},x)
+\left(
+\log\frac{\pi_\theta(v\mid y_{<t},x)}{\pi(v\mid y_{<t},x,c)}
++1
+\right).
+\]
+
+In practical terms, this means that whenever the student reaches a step, it examines how much its probability distribution differs from the teacher's across every possible option in the entire vocabulary at that step, then reduces this difference.
+
+In addition, the ``expert demonstration'' need not come from an external source: it can also be a correct answer obtained through the model's own later revisions. Analogous to humans consolidating memories during sleep, the model can, asynchronously with the main process, use correct answers and successful experiences it later obtains for the same problem to correct its initial erroneous output produced with less context.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-an-environmental-feedback-based-method-self-distillation-policy-optimization-sdpo}{%
+\subsection{II. An Environmental-Feedback-Based Method: Self-Distillation Policy Optimization (SDPO)}\label{ii.-an-environmental-feedback-based-method-self-distillation-policy-optimization-sdpo}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Background
+\end{enumerate}
+
+In RL training, we usually provide only a sparse scalar outcome (such as ``pass: 1'' or ``fail: 0''), obscuring the rich underlying state information. The algorithm can only apply indiscriminate gradient penalties to all tokens in an entire piece of code, making it difficult for the model to identify exactly where it went wrong: a syntax error on a particular line, a flaw in logical reasoning, or merely a mishandled boundary condition. We want denser feedback.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Core principles
+\end{enumerate}
+
+The student autoregressively generates an attempted solution based only on the original instruction prompt. The attempt is executed in a verifiable environment, which returns not only a score but also detailed, rich feedback (such as error messages). Based on the original instruction and environmental feedback, a teacher with identical weights uses strong in-context learning capabilities to predict the correct next-token distribution at each position of the student's generated sequence. It reflects on the environmental feedback it sees, thereby correcting the student's erroneous output. The student approximates this distribution by minimizing KL divergence (the same reverse KL introduced earlier).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Benefits of SDPO
+\end{enumerate}
+
+Compared with RL using sparse reward signals, SDPO can precisely calculate a large gradient for the specific token causing an error, guiding the model to correct only the genuinely erroneous part. The sparse, single scalar reward originally available only at the end of the sequence is effectively transformed into a dense guidance signal at every token-generation step. Theoretical analysis proves that this mechanism is equivalent to optimizing an implicit teacher-defined reward within the maximum-entropy RL framework.
+
+This design, which can calculate dense gradients for an entire sequence with only one .forward() call in PyTorch, not only avoids off-policy distribution shift but also far surpasses traditional methods in which two models separately generate sequences of different lengths in GPU-memory utilization and computational efficiency.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-105}{%
+\subsection{References}\label{references-105}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Shenfeld, I., Damani, M., Hubotter, J., \& Agrawal, P. (2026). \href{https://arxiv.org/abs/2601.19897}{Self-Distillation Enables Continual Learning}. arXiv:2601.19897.
+\item
+  Hübotter, J., Lübeck, F., Behric, L., et al.~(2026). \href{https://arxiv.org/abs/2601.20802}{Reinforcement Learning via Self-Distillation}. arXiv:2601.20802.
+\end{itemize}
+
+\clearpage

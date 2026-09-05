@@ -1,0 +1,40 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6a21ux578bux526aux679d}{%
+\section{模型剪枝}\label{ux6a21ux578bux526aux679d}}
+
+\Needspace{5\baselineskip}
+模型剪枝，即移除模型中``不重要''的参数（权重）或结构。分为两类：
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux975eux7ed3ux6784ux5316ux526aux679d}{%
+\subsection{一、非结构化剪枝}\label{ux4e00ux975eux7ed3ux6784ux5316ux526aux679d}}
+
+移除单个权重（将其设为0）。由于可以根据模型权重动态调压缩率高，但通常需要专用硬件/库支持稀疏计算才能获得加速。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7ed3ux6784ux5316ux526aux679d}{%
+\subsection{二、结构化剪枝}\label{ux4e8cux7ed3ux6784ux5316ux526aux679d}}
+
+移除整个结构单元，如滤波器（通道）、神经元、层。更易于在通用硬件上获得加速，但压缩率可能稍低。
+
+流程通常包括：训练一个大模型 -\textgreater{} 评估参数重要性（如根据绝对值大小或梯度） -\textgreater{} 移除不重要的参数 -\textgreater{} 对剪枝后的模型进行微调。现代方法常采用迭代剪枝。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-90}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-90}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Han, S., Pool, J., Tran, J., \& Dally, W. (2015). \href{https://papers.nips.cc/paper_files/paper/2015/hash/ae0eb3eed39d2bcef4622b2499a05fe6-Abstract.html}{Learning both Weights and Connections for Efficient Neural Network}. NeurIPS 2015.
+\item
+  Li, H., Kadav, A., Durdanovic, I., Samet, H., \& Graf, H. P. (2017). \href{https://openreview.net/forum?id=rJqFGTslg}{Pruning Filters for Efficient ConvNets}. ICLR 2017.
+\item
+  Frankle, J., \& Carbin, M. (2019). \href{https://openreview.net/forum?id=rJl-b3RcF7}{The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks}. ICLR 2019.
+\end{itemize}
+
+\clearpage

@@ -27,6 +27,8 @@ desktop.ini
 
 # LaTeX 编译产物
 latex-project/build/
+output/pdf/
+tmp/pdfs/
 *.aux
 *.bbl
 *.bcf

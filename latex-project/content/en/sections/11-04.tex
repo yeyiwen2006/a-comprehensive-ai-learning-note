@@ -1,0 +1,205 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{environment-models-and-dyna-q}{%
+\section{Environment Models and Dyna-Q}\label{environment-models-and-dyna-q}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-problems-with-q-learning-without-an-environment-model}{%
+\subsection{I. Problems with Q-Learning Without an Environment Model}\label{i.-problems-with-q-learning-without-an-environment-model}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Delayed backward propagation
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Standard model-free Q-Learning updates values as:
+
+\[
+Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a^{\prime}}Q(S^{\prime},a^{\prime})-Q(S,A)]
+\]
+
+Note that this update spans only one step.
+
+Consider a maze treasure hunt with path \(S_0\to S_1\to S_2\to\cdots\to S_{99}\to\) treasure (+100).
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  First attempt (Episode 1): the agent wanders randomly and finally reaches the treasure.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Only the final step \(S_{99}\to\) treasure receives a reward.
+  \item
+    Result: only \(Q(S_{99},\text{action})\) is updated and learns that something good is there.
+  \item
+    Problem: \(Q\) values at \(S_{98}\), \(S_{50}\), and even starting state \(S_0\) remain 0. Before \(S_{99}\), the agent has no idea it is on the right path.
+  \end{itemize}
+\item
+  Second attempt (Episode 2): the agent starts again.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    It must randomly reach \(S_{99}\) again.
+  \item
+    Only when it moves from \(S_{98}\) to \(S_{99}\) and sees the high \(Q\) value of \(S_{99}\) does \(Q(S_{98},\text{action})\) update.
+  \item
+    Problem: propagating value from the end to the beginning requires 100 full episodes. This is painfully slow.
+  \end{itemize}
+\end{enumerate}
+
+Delayed backward propagation severely slows updates and also makes the agent slow to respond to environmental changes. If the environment changes slightly (for example, a previous route becomes blocked), it often struggles to adjust its policy quickly and repeatedly fails in the new environment.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Poor sample efficiency
+\end{enumerate}
+
+Accurate Q values require many interactions and samples. Collecting large numbers of samples is often expensive: every step in robot control consumes power, wears mechanical parts, and may cause damage; every trial-and-error trade costs real money. A computation, by comparison, is extremely inexpensive.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-dyna-q-environment-model-based-model-based-reinforcement-learning}{%
+\subsection{II. Dyna-Q: Environment-Model-Based (Model-Based) Reinforcement Learning}\label{ii.-dyna-q-environment-model-based-model-based-reinforcement-learning}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Steps
+\end{enumerate}
+
+A complete Dyna-Q iteration has four key steps.
+
+\textbf{Step 1: interact with the environment}
+
+In state \(S\), the agent selects action \(A\) from the current \(Q\) table (usually with \(\epsilon\)-greedy), executes it, and receives reward \(R\) and new state \(S'\).
+
+\[
+(S,A)\xrightarrow{\text{Environment}}(R,S')
+\]
+
+\textbf{Step 2: direct reinforcement learning}
+
+\Needspace{5\baselineskip}
+Use the real experience \((S,A,R,S')\) to update \(Q\) with the Q-Learning rule:
+
+\[
+Q(S,A)\leftarrow Q(S,A)+\alpha[R+\gamma\max_{a^{\prime}}Q(S^{\prime},a^{\prime})-Q(S,A)]
+\]
+
+This ensures the algorithm has the unbiasedness of model-free algorithms.
+
+\textbf{Step 3: model learning}
+
+\Needspace{5\baselineskip}
+Update the environment model using real experience. In a deterministic environment, simply record the result:
+
+\[
+\mathrm{Model}(S,A)\leftarrow(R,S^{\prime})
+\]
+
+This means that when the agent encounters \(S\) and tries \(A\) in its ``imagination,'' the model reports outcomes \(R\) and \(S'\).
+
+An environment model (world model) is a function taking \(s_t\) and \(a_t\) and outputting \(r_t\) and \(s_{t+1}\). It can be a neural network.
+
+\textbf{Step 4: planning}
+
+\Needspace{5\baselineskip}
+This is the central distinction between Dyna-Q and Q-Learning. The agent uses the model for \(N\) simulated updates:
+
+\Needspace{5\baselineskip}
+Repeat \(N\) times:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Randomly select state \(\tilde{S}\) from previously observed states.
+\item
+  Randomly select action \(\tilde{A}\) from actions previously taken at \(\tilde{S}\).
+\item
+\Needspace{5\baselineskip}
+  Model prediction: input \((\tilde{S},\tilde{A})\) into the model to obtain predicted reward \(\tilde{R}\) and next state \(\tilde{S}'\):
+\end{enumerate}
+
+\[
+(\tilde{R},\tilde{S}^{\prime})\leftarrow \mathrm{Model}(\tilde{S},\tilde{A})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Simulated update: update \(Q\) again with Q-Learning, now using simulated data:
+\end{enumerate}
+
+\[
+Q(\tilde{S},\tilde{A})\leftarrow Q(\tilde{S},\tilde{A})+\alpha[\tilde{R}+\gamma\max_{a^{\prime}}Q(\tilde{S}^{\prime},a^{\prime})-Q(\tilde{S},\tilde{A})]
+\]
+
+Advanced environment models need not select only previously visited \((s_t,a_t)\) pairs and can choose more randomly. Having learned environmental regularities, the model often generalizes and can output a prediction.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Further explanation
+\end{enumerate}
+
+Suppose an agent receives a reward for reaching a goal in a maze.
+
+Q-Learning: because the agent uses a Markov decision model, reward information propagates backward one step through Q values only when it approaches the goal again.
+
+Dyna-Q: even near the start, the agent can revisit previous memories ``mentally'' through N planning steps. If it has experienced a complete start-to-goal path, planning uses model-generated simulated transitions to rapidly propagate high terminal values toward the start.
+
+This resembles solving problems (the real environment): after solving one, we recall (model prediction) similar problems solved earlier (simulated experience), deepening understanding without redoing every problem.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Dyna-Q's problem: model bias
+\end{enumerate}
+
+Dyna-Q strongly depends on model accuracy. If Model(s, a) predictions disagree with reality (for example, the environment changes but the model has not been updated), planning propagates incorrect knowledge, producing policies that appear optimal in the model but fail in reality.
+
+\Needspace{5\baselineskip}
+To address model failure from environmental changes, later work introduced Dyna-Q+, adding an exploration bonus to state-action pairs not visited for a long time:
+
+Formula adjustment: during planning, simulated reward \(\tilde{R}\) becomes \(\tilde{R}+\kappa\sqrt{\tau}\), where \(\tau\) is the number of time steps since the pair was last visited, and \(\kappa\) is a coefficient.
+
+This encourages checking long-unvisited places, updating the model promptly and correcting bias.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-49}{%
+\subsection{References}\label{references-49}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Sutton, R. S. (1990). \href{http://incompleteideas.net/papers/sutton-90.pdf}{Integrated Architectures for Learning, Planning, and Reacting Based on Approximating Dynamic Programming}. ICML 1990.
+\end{itemize}
+
+\clearpage

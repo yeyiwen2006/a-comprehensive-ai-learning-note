@@ -1,0 +1,161 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{reinforcement-learning-from-human-feedback}{%
+\section{Reinforcement Learning from Human Feedback}\label{reinforcement-learning-from-human-feedback}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-background-1}{%
+\subsection{I. Background}\label{i.-background-1}}
+
+\Needspace{5\baselineskip}
+After supervised fine-tuning and reasoning-oriented reinforcement fine-tuning, a model is highly capable but has two problems:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Usability: it may mix Chinese and English, repeat itself, or speak aggressively, focusing only on solving the problem rather than making the answer comfortable for humans to read.
+\item
+  Safety: its values may not be aligned with humans.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-core-principles}{%
+\subsection{II. Core Principles}\label{ii.-core-principles}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Reward model
+\end{enumerate}
+
+Humans cannot score every training response. Instead, a model generates two or more answers to a question, humans rank their quality, and the answer--ranking data is used to train a reward model.
+
+\Needspace{5\baselineskip}
+Let the reward model's parameters be \(\phi\). For the same prompt \(x\), consider two answers:
+
+\begin{itemize}
+\tightlist
+\item
+  \(y_w\) (winner): the response human annotators prefer.
+\item
+  \(y_l\) (loser): the response human annotators consider worse.
+\item
+  \(r_\phi(x,y)\): the model's scalar score.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Define loss \(L(\phi)\) as:
+
+\[
+L(\phi)=-\mathbb{E}_{(x,y_w,y_l)\sim D}\left[\log\left(\sigma\left(r_\phi(x,y_w)-r_\phi(x,y_l)\right)\right)\right]
+\]
+
+\Needspace{5\baselineskip}
+Here, \(\sigma\) is the Sigmoid function:
+
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}
+\]
+
+It compresses values into \((0,1)\) to represent probabilities. \(r_\phi(x,y_w)-r_\phi(x,y_l)\) is the score difference.
+
+This applies cross-entropy to ``the probability that the model correctly identifies the better answer,'' encouraging higher scores for better answers and lower scores for worse ones.
+
+\Needspace{5\baselineskip}
+The loss is fundamentally maximum-likelihood estimation of assigning a higher score to the preferred sample:
+
+\Needspace{5\baselineskip}
+The Bradley--Terry model expresses this probability as:
+
+\[
+P(y_w>y_l)=\frac{\exp(r(y_w))}{\exp(r(y_w))+\exp(r(y_l))}
+\]
+
+\Needspace{5\baselineskip}
+Dividing numerator and denominator by \(\exp(r(y_l))\) gives:
+
+\[
+P(y_w>y_l)=\frac{\exp(r(y_w)-r(y_l))}{1+\exp(r(y_w)-r(y_l))}=\sigma(r(y_w)-r(y_l))
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Reinforcement learning
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Algorithms such as PPO and GRPO use the reward model from the second step to assign rewards to LLM answers and perform reinforcement learning. Taking PPO as an example:
+
+\Needspace{5\baselineskip}
+In RLHF's PPO objective, a KL-divergence term is usually subtracted in addition to clipping. The actual KL divergence places an expectation outside the logarithm; the objective is the expectation of the entire \(R_{\mathrm{total}}\):
+
+\[
+R_{total}=R_{model}(s,a)-\beta\log\frac{\pi_\theta(a|s)}{\pi_{ref}(a|s)}
+\]
+
+\Needspace{5\baselineskip}
+The first safeguard is the KL penalty, preventing loss of the model's foundations and uncontrolled deviation:
+
+\begin{itemize}
+\tightlist
+\item
+  Comparison: current policy \(\pi_\theta\) versus SFT model \(\pi_{ref}\).
+\item
+  \(\pi_{ref}\) is the anchor: it fixes the model's ``teacher'' or ``factory settings'' (the SFT model), remaining frozen throughout training.
+\item
+  Role: a long-term constraint.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Regardless of how many epochs or updates occur, the model must not move too far from its factory settings.
+  \item
+    Without this term, reward hacking may make the model output gibberish or exploit the reward model. The KL penalty constrains it to human-like language.
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+The second safeguard is PPO clipping, preventing destabilizing updates:
+
+\begin{itemize}
+\tightlist
+\item
+  Comparison: current policy \(\pi_\theta\) versus previous policy \(\pi_{\theta_{old}}\).
+\item
+  \(\pi_{\theta_{old}}\) is the anchor: the model's own state from a few minutes earlier. It changes dynamically.
+\item
+  Role: a short-term constraint (step-size control).
+
+  \begin{itemize}
+  \tightlist
+  \item
+    It ensures mathematical stability of gradient updates. It does not guarantee closeness to the SFT model; it only ensures that the current parameter update is not so aggressive that it destabilizes the network.
+  \end{itemize}
+\end{itemize}
+
+Extension: the original PPO-Penalty algorithm versus penalties in practical RLHF
+
+The ``PPO with Adaptive KL Penalty'' variant adds KL directly to the loss.
+
+In RLHF, however, KL is usually injected through each step's reward rather than added directly to the final loss. This lets the value function V(s) perceive the cost. When predicting whether a state (generating a token) is good, V(s) automatically considers the cost of deviating from SFT if that cost is included in the reward. The agent can then anticipate through V(s): ``If I begin producing nonsense, I might obtain a high score, but the severe KL penalty makes this a poor state.''
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-79}{%
+\subsection{References}\label{references-79}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Ouyang, L., Wu, J., Jiang, X., et al.~(2022). \href{https://arxiv.org/abs/2203.02155}{Training Language Models to Follow Instructions with Human Feedback}. NeurIPS 2022.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,162 @@
+---
+title: "28.1 Combining Autoregressive and Diffusion Generation and Their Transformer Architectures"
+chapter_title: "Multimodal Generation"
+section_id: "28-01"
+language: en
+source_language: zh
+source_docx: "第5部分 扩散模型与多模态生成/28.多模态生成/28.1 自回归、扩散生成的结合及其Transformer架构.docx"
+status: "manually reconstructed from Word-visible content"
+ocr: "not used; Word-visible images manually classified and reconstructed"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 28.1 Combining Autoregressive and Diffusion Generation and Their Transformer Architectures
+
+## I. Autoregressive Generative World Models
+
+### (1) The autoregressive generation paradigm: Genie 1 as an example
+
+Genie 1 is used below to introduce the classic autoregressive generation paradigm and its core architecture (such as the spatiotemporal Transformer).
+
+Training phase:
+
+1. First, train the video tokenizer separately to compress the raw video stream.
+
+2. Then jointly train the latent action model (LAM) and the dynamics model. The LAM extracts latent actions directly from pixel video, while the dynamics model predicts using video tokens.
+
+Inference/play phase:
+
+1. The user supplies an initial prompt image $x_1$ as the first frame.
+
+2. The tokenizer converts it into the initial tokens $z_1$.
+
+3. The user enters a discrete action command $a_1\in[0,|\mathcal{A}|)$.
+
+4. The system retrieves the embedding $\bar{a}_1$ corresponding to action $a_1$ from the VQ codebook.
+
+5. The dynamics model combines $z_1$ and $\bar{a}_1$ to predict the next frame's tokens $z_2$.
+
+6. The tokenizer's decoder converts $z_2$ back into a pixel image for the user. This repeats to generate continuous, controllable video.
+
+If the user supplies additional instructions or there is other context $c_1$, it is projected and either concatenated with $z_1$ and $a_1$ for self-attention or connected to $z_1$ and $a_1$ through cross-attention.
+
+Model architecture:
+
+Video tokenizer: reduces and compresses high-dimensional video-frame sequences into discrete token sequences. Given video frames $x_{\le t}$, it encodes them into discrete representations $z_{\le t}$. Because both the encoder and decoder use ST-Transformer architectures, each discrete code integrates temporal dynamics from all past frames.
+
+Latent action model (LAM): this component is key to training without action labels. The encoder receives past frames $x_{\le t}$ and the next frame $x_{t+1}$, infers a continuous action embedding $\tilde{a}_t$ between them, and quantizes it to a discrete action $a_t$ through a VQ codebook. In Genie 1, the action dictionary is restricted to $|\mathcal{A}|=8$ to ensure human playability and control. Finally, the decoder reconstructs and predicts the next frame $\hat{x}_{t+1}$ using only the past frame sequence and latent action. This prediction bottleneck forces the model to extract core action information that causes substantive changes between frames.
+
+Dynamics model: an autoregressive decoder model based on MaskGIT. At time step $t$, it receives past video tokens $z_{\le t-1}$ and their corresponding latent action embeddings $\bar{a}_{\le t-1}$, and predicts the next frame's tokens. It is trained with cross-entropy loss between predicted and real tokens. During training, a Bernoulli distribution randomly masks input tokens, with the mask rate sampled uniformly between 0.5 and 1.
+Regarding the tokenizer's representations: autoregressive models generally use sequences of discrete token IDs (unlike diffusion models, where each token is a high-dimensional vector).
+
+How past video and action embeddings are fused in the dynamics model:
+
+After video frames pass through the video tokenizer, they look up its VQ codebook. The paper states that the tokenizer's codebook latent embedding dimension is 32. Action commands (discrete indices) look up the LAM's VQ codebook, whose embedding dimension is also 32.
+Genie's interactivity is a major advance, but its actions are still restricted to a small set of options, far from the level of the open real world.
+
+The dynamics model itself has a large hidden dimension. For example, in the 0.1B Genie model, $d_{\mathrm{model}}$ reaches 5120. To enter the Transformer, both video-token embeddings and action embeddings are projected separately through linear layers from 32 to 5120 dimensions.
+
+Many early world models concatenate actions after video features, increasing sequence length or doubling feature dimensionality. Genie's authors found that adding actions directly to the corresponding video tokens as **additive embeddings** preserves dimensionality while significantly improving controllability:
+
+$$
+E_{\mathrm{input}}=E_{\mathrm{video}}+E_{\mathrm{action}}+E_{\mathrm{position}}
+$$
+
+Standard positional embeddings $E_{\mathrm{position}}$ are also added here.
+
+### (2) Multi-token prediction
+
+Autoregressive generative world models suffer from slow generation. In embodied AI and related areas, this latency substantially affects a robot's agility. One possible approach is multi-token prediction: multiple prediction heads are attached to the same hidden state during training to predict several subsequent tokens simultaneously. At inference time, self-speculative decoding proposes and verifies candidates in parallel, reducing the number of sequential forward passes. This does not work unconditionally for every existing autoregressive model; it generally requires corresponding multi-token prediction heads or a speculative-decoding mechanism.
+
+## II. Paradigms Combining Autoregression and Diffusion
+
+### (1) Diffusion within blocks and autoregression between blocks
+
+This is the most common combination: the same network generates one block at a time through diffusion, stores each generated block in the KV cache, and uses autoregression between blocks.
+
+### (2) Decoupling autoregressive prediction from diffusion generation
+
+In Cosmos, NVIDIA proposed improving generation quality through diffusion on top of autoregressive prediction. Unlike the previous approach, autoregression and diffusion take place in two networks. The autoregressive network's predicted blocks are passed to the diffusion network for visual generation. When predicting each block, the autoregressive network sees context (the recursively used content in the KV cache) generated by itself, not by the diffusion network.
+
+The autoregressive model uses a discrete tokenizer that compresses large amounts of video information into a few integers at a high compression ratio, but such aggressive compression produces blur or artifacts in decoded video. By contrast, the continuous tokenizer used by the diffusion model preserves more detail. To address this limitation, Cosmos fine-tunes a 7B text-to-video diffusion model (Cosmos-Predict1-7B-Text2Video), turning it into a powerful “decoder.”
+
+Training phase: the autoregressive model with a discrete tokenizer outputs a blurry target image, which is enlarged by a factor of 2 in height and width to match the pixel count of the final clear target image. A diffusion model is then used. Following diffusion training principles, noise is added to the clear target image to form the initial training state, while the blurry target image serves as context. The model outputs the clear denoised target image, and gradients are computed from its difference from the actual target for training.
+
+Inference workflow:
+
+1. The autoregressive model generates a highly compressed “discrete-token video.”
+
+2. This is converted into conditioning input. The fine-tuned diffusion denoiser upsamples it and predicts a clearer “continuous-token video.”
+
+3. Finally, the continuous tokens enter the Cosmos continuous tokenizer's decoder, recovering a clearer RGB video of the physical world.
+
+### (3) Cascading diffusion models
+
+A model using diffusion within blocks and autoregression between blocks can generate low-resolution video. The video can then be upsampled and passed to a diffusion model to produce high-resolution video suitable for decoding, while the low-resolution video is simultaneously stored in the KV cache for the next generation step. This may reduce latency.
+
+## III. Spatiotemporal Attention
+
+Spatiotemporal Transformer (ST-Transformer): conventional video Transformer computation grows quadratically, whereas ST-Transformer decouples spatial and temporal attention. In each ST block, spatial attention operates only on the $1\times H\times W$ tokens within one time step, while temporal attention operates on the $T\times 1\times 1$ tokens at the same spatial position across $T$ time steps. This makes the core computational cost grow more nearly linearly with the number of frames, rather than applying global attention directly to all $T\times H\times W$ tokens.
+Note that H*W here is not the number of pixels in a frame (and may not even be the number of tokens), but the number of patches in a frame. The vector dimension of each patch is compressed by the input projection layer. The ST-Transformer architecture is:
+
+Step 1: Spatial feature interaction. Input tokens first enter the spatial attention layer and exchange information only with other tokens in the same frame.
+
+Step 2: Temporal feature interaction. Tokens updated by the spatial layer enter the temporal attention layer and exchange information with tokens at the same spatial position in different frames.
+
+### (1) Spatial attention
+
+For any frame $t$, its token matrix is $Z_t\in\mathbb{R}^{S\times D}$. Standard self-attention is computed on this slice:
+
+$$
+Q_t^S=Z_tW_Q^S,\quad K_t^S=Z_tW_K^S,\quad V_t^S=Z_tW_V^S
+$$
+
+$$
+\mathrm{SpatialAttention}(Z_t)=\mathrm{Softmax}\left(\frac{Q_t^S(K_t^S)^\top}{\sqrt{d_k}}\right)V_t^S
+$$
+
+Here, $W_Q^S,W_K^S,W_V^S\in\mathbb{R}^{D\times d_k}$ are learnable weight matrices specific to the spatial attention layer. Each token computes its attention distribution only over the $1\times H\times W$ tokens in the same time step (the same frame).
+
+Complexity: for one frame, it is $O(S^2)$. With $T$ frames computed in parallel, the total is $T\times O(S^2)=O(TS^2)$. The spatial attention layer, which dominates computation, now has complexity linear in the number of frames $T$.
+For a mixture of visual and text tokens, consider Seedance:
+
+Dual-stream architecture (MMDiT design): following Stable Diffusion 3, the spatial layer uses multimodal self-attention to integrate visual and text tokens.
+
+Modality-specific weights: visual tokens (from a VAE) and text tokens (from a fine-tuned LLM) differ greatly in feature distribution and semantic space, so forcing shared weights within the same space can cause optimization conflicts. Seedance therefore retains two entirely separate sets of weights in the spatial layer, including adaptive layer normalization (AdaLN), the projection matrices for $Q,K,V$, and the MLP.
+
+### (2) Temporal attention
+
+Temporal attention is computed only for visual tokens, not text tokens. Each frame is divided into windows, and each token interacts only with tokens in the same window over the past time interval. (For simplicity, the discussion below assumes only one token per window.)
+
+For any fixed spatial position $s$, its token matrix along the time axis is $Z_s\in\mathbb{R}^{T\times D}$. Temporal self-attention is computed on this slice:
+
+$$
+Q_s^T=Z_sW_Q^T,\quad K_s^T=Z_sW_K^T,\quad V_s^T=Z_sW_V^T
+$$
+
+For autoregressive generation:
+
+Because video is temporally ordered, particularly during autoregressive prediction, the temporal layer must introduce a causal mask $M$:
+
+$$
+\mathrm{TemporalAttention}(Z_s)=\mathrm{Softmax}\left(\frac{Q_s^T(K_s^T)^\top}{\sqrt{d_k}}+M\right)V_s^T
+$$
+
+$M$ is an upper-triangular matrix, with $-\infty$ above the diagonal and 0 on and below it. This ensures that, when computing features for frame $t$, the model can only “see” itself and past frames, not “peek” at future frames. Each token computes attention only with the $T\times 1\times 1$ tokens at the same spatial position across $T$ time steps.
+For “diffusion within blocks and autoregression between blocks,” the analysis follows the block-level mask.
+
+Complexity: temporal attention for one position costs $O(T^2)$. With $S$ spatial positions, the total is $S\times O(T^2)=O(ST^2)$.
+
+## References
+
+- Kondratyuk, D., Yu, L., Gu, X., et al. (2023). [VideoPoet: A Large Language Model for Zero-Shot Video Generation](https://arxiv.org/abs/2312.14125). arXiv:2312.14125.
+- Villegas, R., Babaeizadeh, M., Kindermans, P.-J., et al. (2022). [Phenaki: Variable Length Video Generation From Open Domain Textual Description](https://arxiv.org/abs/2210.02399). arXiv:2210.02399.
+- Peebles, W., & Xie, S. (2023). [Scalable Diffusion Models with Transformers](https://arxiv.org/abs/2212.09748). ICCV.
+- Gloeckle, F., Idrissi, B. Y., Rozière, B., Lopez-Paz, D., & Synnaeve, G. (2024). [Better & Faster Large Language Models via Multi-token Prediction](https://arxiv.org/abs/2404.19737). arXiv:2404.19737.
+- Esser, P., Kulal, S., Blattmann, A., et al. (2024). [Scaling Rectified Flow Transformers for High-Resolution Image Synthesis](https://arxiv.org/abs/2403.03206). arXiv:2403.03206.
+- Gao, Y., Guo, H., Hoang, T., et al. (2025). [Seedance 1.0: Exploring the Boundaries of Video Generation Models](https://arxiv.org/abs/2506.09113). arXiv:2506.09113.
+- Bruce, J., Dennis, M., Edwards, A., et al. (2024). [Genie: Generative Interactive Environments](https://arxiv.org/abs/2402.15391). ICML.
+- Hafner, D., Yan, W., & Lillicrap, T. (2025). [Training Agents Inside of Scalable World Models](https://arxiv.org/abs/2509.24527). arXiv:2509.24527.
+- NVIDIA, Agarwal, N., Ali, A., et al. (2025). [Cosmos World Foundation Model Platform for Physical AI](https://arxiv.org/abs/2501.03575). arXiv:2501.03575.
+- Ren, Z., Wei, Y., Yu, X., et al. (2026). [VideoWorld 2: Learning Transferable Knowledge from Real-world Videos](https://arxiv.org/abs/2602.10102). CVPR; arXiv:2602.10102.

@@ -1,0 +1,262 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{stochastic-gradient-langevin-dynamics}{%
+\section{Stochastic Gradient Langevin Dynamics}\label{stochastic-gradient-langevin-dynamics}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-mathematical-expression-of-stochastic-gradient-langevin-dynamics}{%
+\subsection{I. Mathematical Expression of Stochastic Gradient Langevin Dynamics}\label{i.-mathematical-expression-of-stochastic-gradient-langevin-dynamics}}
+
+Langevin dynamics originated in physics as a description of the random motion of particles in a potential energy field. In machine learning, stochastic gradient Langevin dynamics (SGLD) treats parameter optimization as the movement of a ``particle'' through an energy landscape (defined by the loss function). Its discretized update formula is as follows:
+
+\Needspace{5\baselineskip}
+Suppose we want to sample an image \(x\) from an unknown target real-data distribution \(p(x)\). Langevin dynamics provides an iterative formula:
+
+\[
+x_{i+1}=x_i+\frac{\gamma}{2}\nabla_x\log p(x_i)+\sqrt{\gamma}z_i
+\]
+
+\Needspace{5\baselineskip}
+Here:
+
+\begin{itemize}
+\tightlist
+\item
+  \(x_i\) is the state at step \(i\) (an image vector).
+\item
+  \(\gamma\) is the step size.
+\item
+  \(z_i\sim\mathcal{N}(0,I)\) is standard Gaussian noise.
+\item
+  \(\nabla_x\log p(x_i)\) is called the score function: the gradient of the target distribution's log probability density function with respect to the input \(x\).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+This formula contains two competing forces:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Deterministic drift (gradient ascent)}: \(\frac{\gamma}{2}\nabla_x\log p(x_i)\) pulls the data point \(x_i\) in the direction of the fastest increase in probability density (uphill), making the image increasingly similar to a real image.
+\item
+  \textbf{Stochastic diffusion (noise injection)}: \(\sqrt{\gamma}z_i\) continually injects random perturbations. This not only prevents the model from becoming trapped in a local optimum (such as the ``hitting the tree'' mean point mentioned earlier), but also ensures that the final samples strictly follow the real \(p(x)\) distribution throughout the high-dimensional space, rather than collapsing to a single highest-probability point.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Although this may appear to be merely the addition of noise, it reflects a different objective from conventional gradient descent:
+
+Gradient descent is an optimization algorithm whose objective is to find a (local or global) minimum of the loss function and obtain a point estimate, corresponding to maximum a posteriori (MAP) estimation.
+
+SGLD is a Bayesian sampling algorithm. Its objective is not to find a ``best'' point, but to approximate the entire posterior distribution through sampling. This allows us to quantify uncertainty, that is, to understand the reliability of the parameter estimates.
+
+In addition, with large datasets, computing the true gradient \(\nabla_x L(x_t)\) over the entire dataset is extremely expensive. SGLD approximates this gradient using a stochastic gradient \(\nabla_x L(x_t;\xi_t)\) computed from a mini-batch \(\xi_t\) to perform the calculations above. The resulting parameter sequence \(\{x_t\}\) also converges to the true posterior distribution \(p(x\mid\mathrm{data})\).
+
+\Needspace{5\baselineskip}
+Why this sampling procedure can approximate the posterior distribution:
+
+\[
+\Delta\theta_t=-\frac{\epsilon_t}{2}\nabla\tilde{U}(\theta_t)+\sqrt{\epsilon_t}\cdot\eta_t,\quad \eta_t\sim\mathcal{N}(0,I)
+\]
+
+\Needspace{5\baselineskip}
+This formula contains two components:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(-\frac{\epsilon_t}{2}\nabla\tilde{U}(\theta_t)\): the stochastic gradient descent component. It attempts to push the parameters toward the point of highest posterior probability (the MAP estimate).
+\item
+  \(\sqrt{\epsilon_t}\cdot\eta_t\): the injected Gaussian noise component.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The crucial \(\sqrt{\epsilon}\) scaling:
+
+Notice that the coefficient of the gradient is \(\epsilon\) (the step size), whereas the coefficient of the noise is \(\sqrt{\epsilon}\). As the step size \(\epsilon\to 0\), the noise term \(\sqrt{\epsilon}\) becomes much larger than the gradient term \(\epsilon\) (because \(0.0001\ll\sqrt{0.0001}=0.01\)).
+
+This ensures that, even at the bottom of the valley (where the gradient is close to 0), noise still dominates and forces the parameters to keep moving.
+
+\Needspace{5\baselineskip}
+According to the derivation from the Fokker--Planck equation, the stationary distribution of this stochastic process converges exactly to:
+
+\[
+p(\theta)\propto \exp(-U(\theta))
+\]
+
+This is our posterior distribution.
+In addition, with large datasets, computing the true gradient \(\nabla_x L(x_t)\) over the entire dataset is extremely expensive. SGLD approximates this gradient using a stochastic gradient \(\nabla_x L(x_t;\xi_t)\) computed from a mini-batch \(\xi_t\) to perform the calculations above. The resulting parameter sequence \(\{x_t\}\) also converges to the true posterior distribution \(p(x\mid\mathrm{data})\).
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-score-matching}{%
+\subsection{II. Score Matching}\label{ii.-score-matching}}
+
+\Needspace{5\baselineskip}
+To run Langevin dynamics, we must know \(\nabla_x\log p(x)\). In practice, however, \(p(x)\) is extremely complex. A probability distribution can usually be written in energy-based form:
+
+\[
+p(x)=\frac{e^{-E_\theta(x)}}{Z_\theta}
+\]
+
+Here, \(Z_\theta=\int e^{-E_\theta(x)}dx\) is the partition function. In high-dimensional pixel space, summing or integrating over every possible image to compute \(Z_\theta\) is intractable.
+
+\textbf{The useful property of the score function is that it eliminates \(Z_\theta\):}
+
+\[
+\nabla_x\log p(x)=\nabla_x(-E_\theta(x)-\log Z_\theta)=-\nabla_x E_\theta(x)
+\]
+
+\Needspace{5\baselineskip}
+Since \(Z_\theta\) is a constant, its derivative with respect to \(x\) is simply 0. We can therefore train a neural network \(s_\theta(x)\) to fit this score directly:
+
+\[
+s_\theta(x)\approx\nabla_x\log p(x)
+\]
+
+This process is called score matching.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-the-essence-of-diffusion-models}{%
+\subsection{III. The Essence of Diffusion Models}\label{iii.-the-essence-of-diffusion-models}}
+
+\Needspace{5\baselineskip}
+In DDPM, the neural network \(\epsilon_\theta(x_t,t)\) predicts the noise \(\epsilon\). Mathematically, predicting noise and predicting the score are completely equivalent. The conversion between them is:
+
+\[
+\nabla_{x_t}\log p(x_t)=-\frac{\epsilon_\theta(x_t,t)}{\sqrt{1-\bar{\alpha}_t}}
+\]
+
+Thus, the denoising network in DDPM is essentially a score estimator. When DDPM uses the Euler--Maruyama method to solve the reverse SDE, each denoising operation it performs is essentially annealed Langevin dynamics with specific coefficients.
+
+\Needspace{5\baselineskip}
+The original DDPM reverse-sampling formula (generating \(x_{t-1}\) from \(x_t\)) is:
+
+\[
+x_{t-1}=\frac{1}{\sqrt{\alpha_t}}
+\left(x_t-\frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}}\epsilon_\theta(x_t,t)\right)
++\sigma_t z
+\]
+
+\Needspace{5\baselineskip}
+Now substitute the ``translation bridge'' above into this formula, replacing \(\epsilon_\theta\) with its gradient form. The formula becomes score-based:
+
+\[
+x_{t-1}=\frac{1}{\sqrt{\alpha_t}}x_t
++\frac{1-\alpha_t}{\sqrt{\alpha_t}}\nabla_{x_t}\log p_t(x_t)
++\sigma_t z
+\]
+
+\Needspace{5\baselineskip}
+For comparison, the standard Langevin dynamics iteration is:
+
+\[
+x_{i+1}=x_i+\frac{\gamma}{2}\nabla_x\log p(x_i)+\sqrt{\gamma}\epsilon
+\]
+
+\Needspace{5\baselineskip}
+The term-by-term correspondence between the two is now clear:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Gradient-guidance term (deterministic drift)}
+\end{enumerate}
+
+Langevin dynamics: \(\frac{\gamma}{2}\nabla_x\log p(x_i)\). This represents ascent along the probability-density gradient (toward the data manifold), with step size \(\frac{\gamma}{2}\).
+
+Diffusion model: \(\frac{1-\alpha_t}{\sqrt{\alpha_t}}\nabla_{x_t}\log p_t(x_t)\). This is precisely the force with which DDPM uses the neural network to push the image toward the real distribution at each denoising step. Here, \(\frac{1-\alpha_t}{\sqrt{\alpha_t}}\) is exactly equivalent to the Langevin dynamics step-size coefficient \(\frac{\gamma}{2}\). As \(t\) decreases, this step size also decays dynamically (annealing).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{Noise-injection term (random walk)}
+\end{enumerate}
+
+Langevin dynamics: \(\sqrt{\gamma}\epsilon\). This is a random perturbation that prevents trapping in a local optimum and preserves distributional properties.
+
+Diffusion model: \(\sigma_t z\), where \(z\sim\mathcal{N}(0,I)\). In DDPM, the variance \(\sigma_t^2\) is usually set to \(\beta_t\) or \(\tilde{\beta}_t\). This corresponds exactly to the random-injection component of Langevin sampling. The physical force that breaks the ``multimodal mean (hitting the tree)'' deadlock in embodied AI comes from this term.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{State-scaling term (damping/momentum)}
+\end{enumerate}
+
+Langevin dynamics: \(x_i\) (with coefficient 1).
+
+Diffusion model: \(\frac{1}{\sqrt{\alpha_t}}x_t\).
+
+\textbf{Why is there a difference?} Because the DDPM forward noise-addition process is not simply the addition of noise; it is an Ornstein--Uhlenbeck (OU) process. During the forward process, DDPM scales the image down at each step (multiplying it by \(\sqrt{\alpha_t}\)) to prevent pixel variance from exploding over time. During reverse Langevin sampling, it must therefore divide by \(\sqrt{\alpha_t}\) to compensate for that scaling. This is equivalent to Langevin dynamics with ``damping'' or ``centripetal force'' in physics.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-differential-equation-representation}{%
+\subsection{IV. Differential-Equation Representation}\label{iv.-differential-equation-representation}}
+
+Traditional DDPM (such as the formulation proposed by Ho et al.) uses discrete steps. When the number of noise-addition and denoising steps \(T\to\infty\), the discrete Markov chain becomes a continuous-time stochastic differential equation (SDE).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Forward noise-addition process (corrupting the data)}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The forward process can be described by the following SDE:
+
+\[
+dx=f(x,t)dt+g(t)dw
+\]
+
+Here, \(w\) is standard Brownian motion (a continuous-time random walk), \(f(x,t)\) is the drift coefficient, and \(g(t)\) is the diffusion coefficient. This process requires no network; it turns a clear image \(x_0\) into pure noise \(x_T\) solely through physical rules.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{Reverse generation process (the continuous manifestation of Langevin dynamics)}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+According to Anderson's theorem, any forward SDE of the form above has a corresponding reverse SDE that generates real data \(x_0\) backward from noise \(x_T\):
+
+\[
+dx=\left[f(x,t)-g(t)^2\nabla_x\log p_t(x)\right]dt+g(t)d\bar{w}
+\]
+
+Here, \(d\bar{w}\) is Brownian motion under time reversal. Consider the core term of this reverse SDE: \(-g(t)^2\nabla_x\log p_t(x)\). It corresponds exactly to the gradient-guidance term in Langevin dynamics.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-129}{%
+\subsection{References}\label{references-129}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Welling, M., \& Teh, Y. W. (2011). \href{https://www.stats.ox.ac.uk/~teh/research/compstats/WelTeh2011a.pdf}{Bayesian Learning via Stochastic Gradient Langevin Dynamics}. ICML.
+\item
+  Roberts, G. O., \& Tweedie, R. L. (1996). \href{https://doi.org/10.2307/3318418}{Exponential Convergence of Langevin Distributions and Their Discrete Approximations}. Bernoulli.
+\item
+  Hyvärinen, A. (2005). \href{https://www.jmlr.org/papers/v6/hyvarinen05a.html}{Estimation of Non-Normalized Statistical Models by Score Matching}. Journal of Machine Learning Research, 6, 695--709.
+\item
+  Ho, J., Jain, A., \& Abbeel, P. (2020). \href{https://arxiv.org/abs/2006.11239}{Denoising Diffusion Probabilistic Models}. NeurIPS.
+\item
+  Song, Y., Sohl-Dickstein, J., Kingma, D. P., Kumar, A., Ermon, S., \& Poole, B. (2021). \href{https://arxiv.org/abs/2011.13456}{Score-Based Generative Modeling through Stochastic Differential Equations}. ICLR.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,473 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6570ux636eux5206ux5e03ux504fux79fbux7684ux89e3ux51b3ux65b9ux6848}{%
+\section{数据分布偏移的解决方案}\label{ux6570ux636eux5206ux5e03ux504fux79fbux7684ux89e3ux51b3ux65b9ux6848}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6570ux636eux5206ux5e03ux504fux79fbux5e26ux6765ux7684ux95eeux9898}{%
+\subsection{一、数据分布偏移带来的问题}\label{ux4e00ux6570ux636eux5206ux5e03ux504fux79fbux5e26ux6765ux7684ux95eeux9898}}
+
+在机器学习中，我们希望的优化目标是 \(\mathrm{Loss}=\frac{1}{N}\sum L(y,f(x))=\mathbb{E}_{p(x,y)}[L(y,f(x))]\)，这代表所有真实数据的平均损失，也可以视为真实数据按其概率（密度）加权的损失。而我们实际上能优化的是 \(\mathrm{Loss}_{\mathrm{train}}=\frac{1}{n}\sum L(y,f(x))=\mathbb{E}_{p_{\mathrm{train}}(x,y)}[L(y,f(x))]\)，这代表样本数据的平均损失，也可以视为样本数据按其概率（密度）加权的损失。我们希望 \(\mathrm{Loss}_{\mathrm{train}}\) 尽量接近 \(\mathrm{Loss}\)，这样我们就能通过优化 \(\mathrm{Loss}_{\mathrm{train}}\) 来实现优化 \(\mathrm{Loss}\)，这也就意味着我们希望真实数据概率分布和样本概率分布一致，这样按概率（密度）加权的损失才会一致。
+
+当输入维度很高、特征量很大时（如图片），我们说的``概率分布p''默认为概率密度函数。这个概率密度一般无法直接求解，后续会介绍拟合方法。
+
+如果这两者不一致，如样本中暗色的图片特别多，亮色的图片特别少，那么在优化 \(\mathrm{Loss}_{\mathrm{train}}\) 时，暗色的图片在期望中的权重大，梯度下降方向就会被``让暗色的图片的 \(\mathrm{Loss}_{\mathrm{train}}\) 下降''主导，亮色的图片就很难得到充分训练，使得模型识别图片对光照的鲁棒性下降。
+
+这种偏移可能带来灾难性的后果。~假设我们训练了一个贷款申请人违约风险模型，用来预测谁将偿还贷款或违约。这个模型发现申请人的鞋子与违约风险相关（穿牛津鞋申请人会偿还，穿运动鞋申请人会违约）。此后，这个模型可能倾向于向所有穿着牛津鞋的申请人发放贷款，并拒绝所有穿着运动鞋的申请人。一旦模型开始根据鞋类做出决定，顾客就会理解并改变他们的行为。不久，所有的申请者都会穿牛津鞋，而信用度却没有相应的提高。通过将基于模型的决策引入环境，我们可能会破坏模型。当模型的输出被直接（且不加批判地）用作下一轮的输入时，任何微小的偏见都会被无限放大，最终导致系统``失控''。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5206ux5e03ux504fux79fbux7684ux5206ux7c7b}{%
+\subsection{二、分布偏移的分类}\label{ux4e8cux5206ux5e03ux504fux79fbux7684ux5206ux7c7b}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  协变量偏移
+\end{enumerate}
+
+特征x的分布p(x)变了，但规则p(y\textbar x)不变。
+
+这基于``x导致y''的假设（如因素 x决定公司股价y）。
+
+\Needspace{5\baselineskip}
+例如：
+
+\begin{itemize}
+\tightlist
+\item
+  训练集 \(P_{\mathrm{train}}(\mathbf{x})\)：真实的猫狗照片。
+\item
+  测试集 \(P_{\mathrm{test}}(\mathbf{x})\)：猫狗卡通画。
+\item
+  \(\mathbf{x}\) 变了：``照片''的像素分布和``卡通''的像素分布完全不同。
+\item
+  \(P(y\mid \mathbf{x})\) 不变：``卡通猫''的标签仍然是``猫''（\(y=1\)），``卡通狗''的标签仍然是``狗''（\(y=0\)），分类规则是稳定的。
+\item
+  为什么会失败：模型在训练时可能学习了依赖``照片''特有的特征，如毛发纹理、真实光影，而这些特征在``卡通''测试集中完全不存在。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  标签偏移
+\end{enumerate}
+
+标签y在样本标签中出现的概率p(y)变了，但同样的标签对应的特征p(x\textbar y)不变。
+
+这基于``y导致x''的假设（如疾病y导致症状x）。
+
+\Needspace{5\baselineskip}
+例如：
+
+\begin{itemize}
+\tightlist
+\item
+  训练集（夏季）：\(P(\mathcjk{流感})=1\%\)，\(P(\mathcjk{普通感冒})=10\%\)。
+\item
+  测试集（冬季）：\(P(\mathcjk{流感})=20\%\)，\(P(\mathcjk{普通感冒})=40\%\)。
+\item
+  \(P(y)\) 变了：``流感''这个标签本身变得更常见。
+\item
+  \(P(\mathbf{x}\mid y)\) 不变：``流感''在夏天和冬天引起的症状（如发烧、咳嗽）是一样的。
+\end{itemize}
+
+为什么有利：标签 \(y\) 通常是低维的，例如 10 个类别；而特征 \(\mathbf{x}\) 是高维的，例如 100 万个像素。纠正 \(P(y)\) 的偏移，远比纠正 \(P(\mathbf{x})\) 的偏移更容易。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  概念偏移
+\end{enumerate}
+
+x和y的对应关系，即规则本身P(y\textbar x)变了。
+
+\Needspace{5\baselineskip}
+例如：
+
+\begin{itemize}
+\tightlist
+\item
+  输入 \(\mathbf{x}\)：``一种甜的碳酸饮料''。
+\item
+\Needspace{5\baselineskip}
+  规则 \(P(y\mid\mathbf{x})\) 取决于地理位置：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    在纽约，规则是 \(P(y=\text{“soda”}\mid\mathbf{x})\approx 1\)。
+  \item
+    在芝加哥，规则是 \(P(y=\text{“pop”}\mid\mathbf{x})\approx 1\)。
+  \item
+    在亚特兰大，规则是 \(P(y=\text{“coke”}\mid\mathbf{x})\approx 1\)。
+  \end{itemize}
+\end{itemize}
+
+这是最难的问题。如果规则瞬息万变，模型就必须从头开始学。但幸运的是，在实践中，概念偏移通常是缓慢渐进的。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux5b9eux4f8bux5206ux6790}{%
+\subsection{三、实例分析}\label{ux4e09ux5b9eux4f8bux5206ux6790}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  医学诊断
+\end{enumerate}
+
+问题： 癌症检测器。
+
+数据： 病人 = 老年男性；健康人 = 大学生（健康对照组）。
+
+偏移类型： 极端的协变量偏移。
+
+失败原因： 模型根本没有学习``癌症 vs 健康''。它学习的是``老年人 vs 年轻人''。它会捕捉任何相关的虚假相关性（激素水平、体力活动、饮食），导致它在真正的老年健康人（它从未见过的群体）身上 100\% 失败。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  自动驾驶汽车 \& 坦克：
+\end{enumerate}
+
+``路沿检测器''： 用``游戏引擎''数据来扩充训练集。
+
+问题： 游戏引擎偷懒了，把所有的``路沿''都渲染成了同一种简单的纹理。
+
+偏移类型： 协变量偏移。
+
+失败原因： 模型没有学会识别``路沿的几何形状''，它学会了识别``那种特定的游戏纹理''。但这在真实世界中毫无用处。
+
+\Needspace{5\baselineskip}
+``坦克探测器''：
+
+无坦克 = 早上拍的森林（有阴影）。
+
+有坦克 = 中午拍的森林（无阴影）。
+
+失败原因： 模型学会了识别``阴影''，而不是``坦克''。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  非平稳分布（缓慢发生的概念偏移）
+\end{enumerate}
+
+广告模型： 2009 年的模型不知道``iPad''是什么。P(点击 \textbar{} ``iPad'') 这个规则在 2010 年被创造了出来。
+
+垃圾邮件过滤器： 垃圾邮件发送者会不断进化他们的词汇和手段。P(垃圾邮件 \textbar{} 邮件内容) 这个规则一直在被动地变化。
+
+推荐系统： 圣诞节过后，P(感兴趣 \textbar{} ``圣诞帽'') 这个规则从 1 变成了 0。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  总结
+\end{enumerate}
+
+人脸特写： 协变量偏移。（训练集里没有``脸占满屏幕''的x）。
+
+美国/英国： 概念偏移。（``football''对应的y 从``橄榄球''变成了``足球''）。
+
+数据类型不均衡： 标签偏移。（训练时 P(y) 是均衡的，但现实中 P(y) 是不均衡的）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux89e3ux51b3ux65b9ux6848}{%
+\subsection{四、解决方案}\label{ux56dbux89e3ux51b3ux65b9ux6848}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  对于协变量偏移：重要性采样和加权Loss
+\item
+\Needspace{5\baselineskip}
+  我们想优化的真实风险是：
+\end{enumerate}
+
+\[
+R_{\mathrm{test}}=E_{p_{\mathrm{test}}}[L]
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  但我们只有训练数据：
+\end{enumerate}
+
+\[
+E_{p_{\mathrm{train}}}[\cdots]
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  通过引入一个比率：
+\end{enumerate}
+
+\[
+\beta(\mathbf{x})=\frac{P_{\mathrm{test}}(\mathbf{x})}{P_{\mathrm{train}}(\mathbf{x})}
+\]
+
+\Needspace{5\baselineskip}
+就可以把对 \(P_{\mathrm{test}}\) 的期望，改写为对 \(P_{\mathrm{train}}\) 的加权期望：
+
+\[
+R_{\mathrm{test}}=E_{p_{\mathrm{train}}}[\beta(\mathbf{x})\cdot L]
+\]
+
+\Needspace{5\baselineskip}
+重要性权重为：
+
+\[
+\beta(\mathbf{x})=\frac{P_{\mathrm{test}}(\mathbf{x})}{P_{\mathrm{train}}(\mathbf{x})}
+\]
+
+含义：如果一个训练样本 \(\mathbf{x}\) 在测试集中出现的概率是在训练集中的 10 倍，那么它就非常重要，我们应该给它 10 倍的权重。
+
+\Needspace{5\baselineskip}
+我们无法显式求解每一个样本在两个集合中概率密度函数的值，但是我们可以训练一个鉴别器，直接拟合二者的比值：
+
+事实证明，我们不需要分别知道 \(P_{\mathrm{test}}\) 和 \(P_{\mathrm{train}}\) 的值，只需要知道它们的比率 \(\beta(\mathbf{x})\)。
+
+\Needspace{5\baselineskip}
+训练一个鉴别器 \(f(\mathbf{x})\)，让它区分样本来自 \(P_{\mathrm{test}}\)（标签 1）还是来自 \(P_{\mathrm{train}}\)（标签 0）。鉴别器为了最小化自己的分类损失，必须隐式地学习到这两个分布的相对密度。若鉴别器输出：
+
+\[
+f(\mathbf{x})=P(z=1\mid\mathbf{x})
+\]
+
+\Needspace{5\baselineskip}
+则通过贝叶斯公式可以直接转换成所需的比率：
+
+\[
+\beta(\mathbf{x})
+=\frac{P(\mathbf{x}\mid z=1)}{P(\mathbf{x}\mid z=0)}
+\propto\frac{P(z=1\mid\mathbf{x})}{P(z=0\mid\mathbf{x})}
+=\frac{f(\mathbf{x})}{1-f(\mathbf{x})}
+\]
+
+这里鉴别器训练时用训练集和测试集的等量数据，保证p(z=1)=p(z=0).
+
+例如，用卡通图片为主的数据集训练主模型，测试集以现实环境中的图片为主，为了增强泛化性，运用鉴别器，对于训练集中偶然出现的真实环境图片，会认为它高概率来自测试集，从而给它赋予高权重，使得测试集训练时增强对现实的泛化能力，避免严重偏移为一个卡通图像识别模型。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  对于标签偏移：计算``混淆矩阵''C
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+考虑医院的 AI 诊断模型：
+
+\begin{itemize}
+\tightlist
+\item
+  类别 \(y\)：3 个类别，\(\{0:\mathcjk{健康},1:\mathcjk{普通感冒},2:\mathcjk{流感}\}\)。
+\item
+  特征 \(\mathbf{x}\)：症状，如发烧、咳嗽、喉咙痛等。
+\item
+  标签偏移假设：\(P(\mathbf{x}\mid y)\) 不变，即``流感''的症状在夏天和冬天是一样的。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+训练集来自夏天：
+
+\begin{itemize}
+\tightlist
+\item
+  流行度 \(P_{\mathrm{train}}(y)\)：\(\{0:\mathcjk{健康 }80\%,1:\mathcjk{感冒 }19\%,2:\mathcjk{流感 }1\%\}\)。
+\item
+  模型会学到：``流感''极其罕见，因此非常不愿意预测``流感''。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+测试集部署在冬天：
+
+\begin{itemize}
+\tightlist
+\item
+  未知的真实流行度 \(P_{\mathrm{test}}(y)\)：\(\{??,??,??\}\)。
+\item
+  我们猜``流感''的比例会大大增加。
+\end{itemize}
+
+模型的缺陷：由于它是在 \(P_{\mathrm{train}}\) 上训练的，它天生具有一种偏见，即认为``流感''的先验概率只有 1\%。在冬天使用时，它会系统性地低估``流感''的发生率，并把很多``流感''病人错判为``普通感冒''。
+
+\Needspace{5\baselineskip}
+为解决这个问题，我们将数据集（不包括测试集）分为训练集和验证集。验证集也来自夏天（P\_train），所以我们拥有真实标签。我们让模型预测这个验证集。然后我们统计它的``犯错模式''，并将结果 normalized（归一化），得到混淆矩阵C：
+
+\Needspace{5\baselineskip}
+\(C_{ij}\) 的精确定义为：
+
+\[
+C_{ij}=P_{\mathrm{train}}(\hat{y}=i\mid y=j)
+\]
+
+其中 \(i\) 是行（预测值），\(j\) 是列（真实值）。例如，\(C_{1,2}\) 表示：当一个病人真实得了``流感''（\(y=2\)）时，模型有多大概率会错误地预测他是``普通感冒''（\(\hat{y}=1\)）。
+
+\Needspace{5\baselineskip}
+假设计算出的 \(C\) 如下（列是真实标签，行是预测标签）：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/4-6\tabcolsep/4\relax}@{}}
+\toprule
+预测 ~真实 & 健康 & 感冒 & 流感 \\
+\midrule
+\endhead
+健康 & 0.9 & 0.1 & 0.0 \\
+感冒 & 0.1 & 0.8 & 0.3 \\
+流感 & 0.0 & 0.1 & 0.7 \\
+\bottomrule
+\end{longtable}
+
+这个矩阵中，\(C_{1,2}=0.3\) 表示模型有 30\% 的概率把``流感''错判为``感冒''；\(C_{2,2}=0.7\) 表示模型有 70\% 的概率能正确识别``流感''。
+
+\Needspace{5\baselineskip}
+接下来我们把模型已经部署在冬天（测试集）。运行模型，比如看了 1000 个新病人，得到被``污染''的数据：
+
+\Needspace{5\baselineskip}
+我们没有这 1000 个病人的真实标签 \(y\)，但可以看到模型的预测 \(\hat{y}\)。简单统计模型预测的百分比，假设模型在 1000 个病人中预测：
+
+\begin{itemize}
+\tightlist
+\item
+  ``健康''（\(\hat{y}=0\)）：200 次。
+\item
+  ``感冒''（\(\hat{y}=1\)）：600 次。
+\item
+  ``流感''（\(\hat{y}=2\)）：200 次。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+于是得到平均模型输出向量：
+
+\[
+\mu_{\mathrm{test}}(\hat{y})=[0.2,0.6,0.2]
+\]
+
+注意：我们不认为这是真实的流行度。这个结果被 \(C\) ``污染''了，例如 \(0.6\) 的``感冒''里可能混入了很多被错判的``流感''。
+
+\Needspace{5\baselineskip}
+接下来我们运用混淆矩阵和全概率公式，从被``污染''的概率数据中复原真实概率数据：
+
+\Needspace{5\baselineskip}
+矩阵形式为：
+
+\[
+\mu_{\mathrm{test}}(\hat{y})=C\cdot P_{\mathrm{test}}(y)
+\]
+
+\Needspace{5\baselineskip}
+以``感冒''为例，冬天观测到的平均感冒预测率 \(\mu_{\mathrm{test}}(\hat{y}=1)\) 由三部分组成：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  真实是``健康''（\(j=0\)）且被错判为``感冒''（\(i=1\)）的概率。
+\item
+  真实是``感冒''（\(j=1\)）且被正确判为``感冒''（\(i=1\)）的概率。
+\item
+  真实是``流感''（\(j=2\)）且被错判为``感冒''（\(i=1\)）的概率。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+数学表达为：
+
+\[
+\begin{aligned}
+\mu_{\mathrm{test}}(\hat{y}=1)
+&=P(\hat{y}=1\mid y=0)P(y=0)\\
+&\quad+P(\hat{y}=1\mid y=1)P(y=1)
++P(\hat{y}=1\mid y=2)P(y=2)\\
+&=C_{1,0}\cdot P_{\mathrm{test}}(y=0)
++C_{1,1}\cdot P_{\mathrm{test}}(y=1)
++C_{1,2}\cdot P_{\mathrm{test}}(y=2)
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+这正是矩阵 \(C\) 的第二行（\(i=1\)）与真实标签分布向量 \(P_{\mathrm{test}}(y)\) 的点积。该结论对所有 \(i\) 都成立，因此：
+
+\[
+\mu_{\mathrm{test}}(\hat{y})=C\cdot P_{\mathrm{test}}(y)
+\]
+
+\Needspace{5\baselineskip}
+只要 \(C\) 可逆，就可以从被污染的预测分布中恢复真实标签分布：
+
+\[
+P_{\mathrm{test}}(y)=C^{-1}\cdot\mu_{\mathrm{test}}(\hat{y})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  对于缓慢的概念偏移：在线学习（Online Learning）
+\end{enumerate}
+
+如非平稳分布时，不要从头开始训练，而是使用新数据持续更新（微调）现有的模型权重，让模型``跟上''变化。另外，老虎机 (Bandits)是``在线学习''的特例，指的是你的``行动''（预测）是有限的几种选择（例如``拉 1 号杆''或``拉 2 号杆''）。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  强化学习
+\end{enumerate}
+
+明确引入了``奖励'' （Reward）。RL 的目标是学习一个策略（如何行动），以最大化长期奖励。
+
+RL 是``鞋子-贷款''问题的真正解： 银行（Agent）做出``发放贷款''（Action）的决策，环境（客户）做出``穿牛津鞋''（State change）的反应，银行最终得到``盈利情况''（Reward）。RL 框架天生就是为了解决这种``反馈循环''而设计的。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-10}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-10}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\end{itemize}
+
+\clearpage

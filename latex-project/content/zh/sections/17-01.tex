@@ -1,0 +1,161 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux57faux4e8eux4ebaux7c7bux53cdux9988ux7684ux5f3aux5316ux5b66ux4e60}{%
+\section{基于人类反馈的强化学习}\label{ux57faux4e8eux4ebaux7c7bux53cdux9988ux7684ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4ea7ux751fux80ccux666f}{%
+\subsection{一、产生背景}\label{ux4e00ux4ea7ux751fux80ccux666f}}
+
+\Needspace{5\baselineskip}
+经过了监督微调以及针对推理的强化微调之后，模型极其聪明，但存在两个问题：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  难用：可能会中英文夹杂、说话重复、或者语气很冲，因为它只管把题做对，不管人类看着舒不舒服。
+\item
+  安全性问题：价值观可能未和人类对齐。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6838ux5fc3ux539fux7406}{%
+\subsection{二、核心原理}\label{ux4e8cux6838ux5fc3ux539fux7406}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  奖励模型
+\end{enumerate}
+
+我们不可能让人类给所有训练回答打分。因此，我们用一个问题，让模型生成两个（或多个）回答，让人类对这些回答的优劣给出排名，通过回答与排名的对应数据来训练奖励模型。
+
+\Needspace{5\baselineskip}
+假设奖励模型参数为 \(\phi\)，对于同一个提示词 \(x\)，有两个回答：
+
+\begin{itemize}
+\tightlist
+\item
+  \(y_w\)（Winner）：人类标注认为更好的回答。
+\item
+  \(y_l\)（Loser）：人类标注认为较差的回答。
+\item
+  \(r_\phi(x,y)\)：模型给出的标量分数。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+损失函数 \(L(\phi)\) 定义为：
+
+\[
+L(\phi)=-\mathbb{E}_{(x,y_w,y_l)\sim D}\left[\log\left(\sigma\left(r_\phi(x,y_w)-r_\phi(x,y_l)\right)\right)\right]
+\]
+
+\Needspace{5\baselineskip}
+其中，\(\sigma\) 是 Sigmoid 函数：
+
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}
+\]
+
+它将数值压缩到 \((0,1)\) 区间，表示概率。\(r_\phi(x,y_w)-r_\phi(x,y_l)\) 是两者分数的差值。
+
+这实际上是对``模型正确判出更好回答的概率''用了交叉熵损失。上式鼓励了奖励模型给更优的回答给出高分，反之亦然。
+
+\Needspace{5\baselineskip}
+这个损失函数本质是对优样本给分大于劣样本的极大似然估计：
+
+\Needspace{5\baselineskip}
+根据 Bradley-Terry 模型，这个概率被建模为：
+
+\[
+P(y_w>y_l)=\frac{\exp(r(y_w))}{\exp(r(y_w))+\exp(r(y_l))}
+\]
+
+\Needspace{5\baselineskip}
+将分子分母同时除以 \(\exp(r(y_l))\)，可得：
+
+\[
+P(y_w>y_l)=\frac{\exp(r(y_w)-r(y_l))}{1+\exp(r(y_w)-r(y_l))}=\sigma(r(y_w)-r(y_l))
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  强化学习
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+运用强化学习算法如PPO、GRPO，利用第二步的奖励模型为LLM的回答给出奖励，进行强化学习。以PPO为例：
+
+\Needspace{5\baselineskip}
+在 RLHF 的 PPO 目标函数中，除了 Clip 这一项，通常还会减去一项 KL 散度（KL 散度实际上是 log 外面加期望，目标函数即 \(R_{\mathrm{total}}\) 整体的期望）：
+
+\[
+R_{total}=R_{model}(s,a)-\beta\log\frac{\pi_\theta(a|s)}{\pi_{ref}(a|s)}
+\]
+
+\Needspace{5\baselineskip}
+第一道锁是 KL Penalty，针对``忘本''与``乱伸''：
+
+\begin{itemize}
+\tightlist
+\item
+  对比对象：当前策略 \(\pi_\theta\) 和 SFT 模型 \(\pi_{ref}\)。
+\item
+  \(\pi_{ref}\) 是锚：它定格了模型的``老师''或者``出厂设置''（SFT 模型），它在这个训练过程中是永远不变的（Frozen）。
+\item
+  作用：这是一条长期约束。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    不管训练了多少轮（Epoch），不管你更新了多少次，你都不能偏离``出厂设置''太远。
+  \item
+    如果不加这一项，模型为了刷分（Reward Hacking），可能会输出乱码或利用 Reward Model 的漏洞。KL 惩罚通过定义``做人话''。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+第二道锁是 PPO Clip，针对``改革崩坏''：
+
+\begin{itemize}
+\tightlist
+\item
+  对比对象：当前策略 \(\pi_\theta\) 和上一步策略 \(\pi_{\theta_{old}}\)。
+\item
+  \(\pi_{\theta_{old}}\) 是锚：它是几分钟前的你自己。它是动态变化的。
+\item
+  作用：这是一条短期约束（步长控制）。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    它保证的是数学上梯度更新的稳定性。它不能保证没有偏离 SFT 模型，它只管``这一次参数更新别太猛''，别把神经网络推崩了。
+  \end{itemize}
+\end{itemize}
+
+拓展：PPO-Penalty原算法 vs RLHF实际运用时的Penalty
+
+``PPO with Adaptive KL Penalty'' 的变体，它把 KL 直接加在 Loss 函数里。
+
+但在 RLHF 中，我们通常选择把KL``通过每一步的Reward 注入''，而不是直接加在最终的Loss里。这是为了让价值函数V(s)感知到难度，如果把 KL 扣分算在Reward里，那么V(s)在预测``这个状态（生成这个token）好不好''时，就会自动把``偏离SFT模型的代价''也考虑进去。智能体会通过V(s)提前预判到``如果我这就开始乱说话，虽然可能骗到高分，但会被 KL 罚得很惨所以这并不是一个好的状态''。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-79}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-79}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Ouyang, L., Wu, J., Jiang, X., et al.~(2022). \href{https://arxiv.org/abs/2203.02155}{Training Language Models to Follow Instructions with Human Feedback}. NeurIPS 2022.
+\end{itemize}
+
+\clearpage

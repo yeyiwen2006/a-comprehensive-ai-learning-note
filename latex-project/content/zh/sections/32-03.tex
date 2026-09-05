@@ -1,0 +1,591 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux72b6ux6001ux7a7aux95f4ux6a21ux578b}{%
+\section{状态空间模型}\label{ux72b6ux6001ux7a7aux95f4ux6a21ux578b}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00rssmux5faaux73afux72b6ux6001ux7a7aux95f4ux6a21ux578b}{%
+\subsection{一、RSSM（循环状态空间模型）}\label{ux4e00rssmux5faaux73afux72b6ux6001ux7a7aux95f4ux6a21ux578b}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux67b6ux6784}{%
+\subsubsection{（一）模型架构}\label{ux4e00ux6a21ux578bux67b6ux6784}}
+
+\Needspace{5\baselineskip}
+在构建环境动力学模型时，通常有两种极端：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  \textbf{纯确定性模型（如标准 RNN）}：状态转移是完全确定的。这种模型容易出现的一个致命缺陷是，它无法捕捉环境动力学中固有的不确定性和多种可能的未来（Multiple futures）。如果用于规划，规划器（Planner）会很容易利用这种确定性模型的不准确性（即过拟合到单一的错误未来）。
+\item
+  \textbf{纯随机性模型（如传统 SSM）}：每一次状态转移都包含从概率分布中采样。虽然这能建模不确定性，但纯粹的随机转换使得模型极难在跨越多个时间步的情况下可靠地记忆信息。
+\end{enumerate}
+
+而且，如果环境存在随机性，确定性网络往往会输出所有可能未来的``模糊平均值''。
+
+\Needspace{5\baselineskip}
+RSSM采用了类似LSTM的方法，将隐状态（历史记忆）和反映当前状态的潜变量分开，从而结合了二者的优点。在POMDP（部分可观测马尔可夫决策过程）中：
+
+历史记忆 \(h_t\) 作为隐状态，其转移用确定性规则：由 \(t-2\) 时刻及以前的记忆 \(h_{t-1}\)、 \(t-1\) 时刻的状态潜变量 \(s_{t-1}\) 和 \(t-1\) 时刻的动作 \(a_{t-1}\) 经过函数得到。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{确定性状态模型（Deterministic state model）}
+\end{enumerate}
+
+\[
+h_t = f(h_{t-1}, s_{t-1}, a_{t-1})
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：用于汇总历史信息并维持跨越多个时间步的确定性记忆。
+\item
+  \textbf{拟合方式}：通常由一个循环神经网络（RNN，如 GRU）拟合。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+利用包含 \(t-1\) 时刻及以前状态和动作的历史记忆 \(h_t\) 预测世界状态潜变量 \(s_t\)，则随机采样：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{随机状态模型 / 先验分布（Stochastic state model / Prior）}
+\end{enumerate}
+
+\[
+s_t \sim p(s_t \mid h_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：在不观察当前真实图像的情况下，仅凭过去的记忆预测当前可能的状态分布。它为模型引入了不确定性，以刻画多种可能的未来。
+\item
+  \textbf{拟合方式}：由一个多层感知机（MLP）拟合，输出对角高斯分布的均值和方差。
+\end{itemize}
+
+而实际上世界状态的潜变量 \(s_t\)（也就是获得当前真实观测 \(o_t\) 后的``预测正确答案''）：（注：理论上可用贝叶斯计算，但涉及不可求的积分，故直接用神经网络拟合）
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{近似后验模型 / 变分编码器（Approximate posterior / Variational Encoder）}
+\end{enumerate}
+
+\[
+q(s_t \mid h_t, o_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：结合过去的确定性记忆 \(h_t\) 和当前的真实高维像素观测 \(o_t\)，推断出当前最准确的潜在状态分布。
+\item
+  \textbf{拟合方式}：由卷积神经网络（CNN）提取图像特征后，接多层感知机（MLP）输出对角高斯分布的均值和方差。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+当我们预测出 \(s_t\) 后，可基于 \(h_t\) 和 \(s_t\) 生成像素图像 \(o_t\)：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  \textbf{观测重构模型（Observation model / Decoder）}
+\end{enumerate}
+
+\[
+o_t \sim p(o_t \mid h_t, s_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：验证潜在状态是否包含了足够的环境信息，通过潜在状态还原出高维的像素图像。
+\item
+  \textbf{拟合方式}：由反卷积神经网络（Deconvolutional Neural Network）拟合。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+以及预测奖励：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  \textbf{奖励预测模型（Reward model）}
+\end{enumerate}
+
+\[
+r_t \sim p(r_t \mid h_t, s_t)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：预测在当前潜在状态下能获得的标量奖励，这是规划器（Planner）在潜在空间中评估动作好坏的唯一依据。
+\item
+  \textbf{拟合方式}：由多层感知机（MLP）拟合。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5de5ux4f5cux6d41-5}{%
+\subsubsection{（二）工作流}\label{ux4e8cux5de5ux4f5cux6d41-5}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 1：数据采样}
+\end{itemize}
+
+从经验回放池 \(\mathcal{D}\) 中均匀随机抽取批量大小为 \(B\)、长度为 \(L\) 的序列片段 \(\lbrace(o_t, a_t, r_t)_{t=k}^{L+k}\rbrace_{i=1}^{B}\)。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 2：状态展开与分布计算（Forward Pass）}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+对于序列中的每一个时间步 \(t = 1 \ldots L\)：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  执行确定性状态转移：将上一步的 \(h_{t-1}\)、 \(s_{t-1}\)（通过重参数化采样得到）和动作 \(a_{t-1}\) 输入 RNN \(f\)，得到当前的确定性状态 \(h_t\)。
+\item
+  计算先验分布 \(p\)：将 \(h_t\) 输入 MLP，输出当前先验高斯的均值和方差 \(\mu_{\mathrm{prior}}\)、 \(\sigma_{\mathrm{prior}}\)。
+\item
+  计算后验分布 \(q\)：将当前的图像 \(o_t\) 通过 CNN 提取特征，结合 \(h_t\) 输入到另一个 MLP，输出后验高斯的均值和方差 \(\mu_{\mathrm{post}}\)、 \(\sigma_{\mathrm{post}}\)。
+\item
+  重参数化采样：从后验分布 \(\mathcal{N}(\mu_{\mathrm{post}}, \sigma_{\mathrm{post}}^2)\) 中采样出潜在向量 \(s_t\)。
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 3：计算重构与预测}
+\end{itemize}
+
+将 \(h_t\) 和采样得到的 \(s_t\) 输入反卷积解码器预测重构图像 \(\hat{o}_t\)，并输入奖励模型预测标量奖励 \(\hat{r}_t\)。
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 4：损失计算（Loss Computation）}
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  计算重构图像 \(\hat{o}_t\) 与真实图像 \(o_t\) 的 MSE（重构损失）。
+\item
+  计算预测奖励 \(\hat{r}_t\) 与真实奖励 \(r_t\) 的 MSE。
+\item
+  计算先验分布 \(p\) 与后验分布 \(q\) 之间的 KL 散度（如果使用 Latent Overshooting，还需要并行计算并累加跨越多步的先验与当前后验的 KL 散度）。
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{步骤 5：参数更新（Backpropagation）}
+\end{itemize}
+
+将所有时间步的损失累加求平均得到总损失 \(\mathcal{L}(\theta)\)，使用优化器（如 Adam）计算梯度，更新构成这 5 个函数的所有神经网络参数 \(\theta \leftarrow \theta - \alpha \nabla_{\theta}\mathcal{L}(\theta)\)。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux635fux5931ux51fdux6570}{%
+\subsubsection{（三）损失函数}\label{ux4e09ux635fux5931ux51fdux6570}}
+
+\Needspace{5\baselineskip}
+损失分为三部分：仅有过去记忆时对现在潜变量的预测p和包含过去记忆与现在观测时的真实现在潜变量q之间的KL散度，体现的是预测下一时刻的潜变量和真实下一时刻的潜变量的差距，反映预测下一时刻状态的能力；图像重构损失反映由潜变量重构像素的能力；奖励损失反映由潜变量预测奖励的能力。表达式如下：
+
+\[
+\begin{aligned}
+\mathcal{L}
+&=
+\sum_{t=1}^{T}
+\Biggl(
+-\mathbb{E}_{q(s_t \mid o_{\le t}, a_{<t})}
+\left[\ln p(o_t \mid s_t) + \ln p(r_t \mid s_t)\right]
+\\
+&\quad+
+\mathbb{E}
+\left[
+D_{\mathrm{KL}}\left(
+q(s_t \mid o_{\le t}, a_{<t})
+\parallel
+p(s_t \mid s_{t-1}, a_{t-1})
+\right)
+\right]
+\Biggr)
+\end{aligned}
+\]
+
+这里 \(o_t\) 和 \(r_t\) 均满足高斯分布，故这两项等价于 MSE Loss。
+
+\Needspace{5\baselineskip}
+由于标准目标只通过一步 KL 散度训练随机路径，模型在多步预测时容易发散。Latent Overshooting 将约束扩展到距离为 \(d\) 的所有未来时间步：
+
+\[
+\begin{aligned}
+\mathcal{L}_{\mathrm{overshooting}}(\theta)
+&=
+\sum_{t=1}^{T}
+\Biggl(
+-\mathbb{E}_{q}\left[\ln p(o_t \mid s_t)\right]
+\\
+&\quad+
+\frac{1}{D}
+\sum_{d=1}^{D}
+\beta_d
+\mathbb{E}
+\left[
+D_{\mathrm{KL}}\left(
+q(s_t \mid o_{\le t})
+\parallel
+p(s_t \mid s_{t-d})
+\right)
+\right]
+\Biggr)
+\end{aligned}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{物理意义}：它不仅要求``由 \(t - 1\) 步预测的 \(t\) 步先验''要与后验对齐，还要求``由 \(t - 2\) 步、 \(t - d\) 步连续多步推演得出的 \(t\) 步先验''也要与当前后验对齐。这种潜在空间中的一致性正则化，增强了模型在不依赖真实观测时的长期演化能力。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux57faux4e8erssmux7684ux5e94ux7528}{%
+\subsection{二、基于RSSM的应用}\label{ux4e8cux57faux4e8erssmux7684ux5e94ux7528}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00planetux57faux4e8eux4e16ux754cux6a21ux578bux7684ux641cux7d22ux89c4ux5212}{%
+\subsubsection{（一）PlaNet：基于世界模型的搜索规划}\label{ux4e00planetux57faux4e8eux4e16ux754cux6a21ux578bux7684ux641cux7d22ux89c4ux5212}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{外层循环：模型训练与数据收集（Algorithm 1）}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{初始化}：使用随机动作收集少量初始种子回合（Seed episodes），存入经验回放池 \(\mathcal{D}\)。
+\item
+  \textbf{模型拟合}：从 \(\mathcal{D}\) 中随机抽取数据块，利用上述变分下界公式计算损失，并通过梯度上升更新 RSSM 的参数 \(\theta\)。
+\item
+  \textbf{环境交互}：使用更新后的模型，通过规划算法（见下文 CEM）选择动作 \(a_t\)，在动作上加入高斯探索噪声，与环境交互并将新经验存入 \(\mathcal{D}\)。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{内层循环：基于 CEM 的动作规划（Algorithm 2）}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+在每一个时间步，智能体不使用策略网络（Policy Network）输出动作，而是通过交叉熵方法（Cross Entropy Method, CEM）和模型预测控制（MPC）实时搜索最优动作序列：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{初始化信念}：构建一个随时间变化的正态分布信念 \(q(a_{t:t+H}) \sim Normal(\mu, \sigma^2 I)\)，用于表示规划视界 \(H\) 内的最佳动作序列。
+\item
+\Needspace{5\baselineskip}
+  \textbf{迭代优化}：
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    从当前信念中采样 \(J\) 个候选动作序列。
+  \item
+    将这些序列输入到学习好的 RSSM 模型中，仅在潜在空间中推演未来状态，并计算预期奖励总和 \(R^{(j)}\)。
+  \item
+    挑选出奖励最高的 \(K\) 个动作序列。
+  \item
+    使用这 \(K\) 个优秀序列的均值和方差重新拟合动作信念分布。
+  \end{enumerate}
+\item
+  \textbf{执行与重规划}：经过 \(I\) 次迭代后，提取最终信念均值的第一个动作去执行。由于采用 MPC 机制，接收到新观测后，动作序列的信念会重置为零均值和单位方差，以避免陷入局部最优。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cdreamer-3ux5229ux7528ux4e16ux754cux6a21ux578bux8fdbux884crlux8badux7ec3}{%
+\subsubsection{（二）Dreamer 3：利用世界模型进行RL训练}\label{ux4e8cdreamer-3ux5229ux7528ux4e16ux754cux6a21ux578bux8fdbux884crlux8badux7ec3}}
+
+\textbf{1. 世界模型}
+
+\begin{itemize}
+\tightlist
+\item
+  世界模型通过自动编码技术，将复杂的感知输入（如图像）压缩成紧凑的潜在表示。
+\item
+  它被实现为一个循环状态空间模型（RSSM）。
+\item
+  首先，编码器将感知输入 \(x_t\) 映射为随机表示 \(z_t \sim q_{\phi}(z_t \mid h_t, x_t)\)。
+\item
+\Needspace{5\baselineskip}
+  然后，动力学预测器根据之前的状态 \(h_t\) 预测未来的表示：
+\end{itemize}
+
+\[
+\hat{z}_t \sim p_{\phi}(\hat{z}_t \mid h_t).
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  通过这种方式，世界模型学会了理解环境的内在结构，并能在隐空间中``想象''未来的状态演变。
+\end{itemize}
+
+在数学上，RSSM 是一种结合了确定性循环神经网络（RNN）和随机状态变量的生成式模型。在时间步 \(t\)，它定义动作 \(a_t\)、观测输入 \(x_t\)、奖励 \(r_t\) 以及回合继续标志 \(c_t \in \{0, 1\}\)。
+
+\textbf{2. Critic}
+
+\textbf{Step 2：评论家学习（Critic Learning）}
+
+\begin{itemize}
+\tightlist
+\item
+  评论家和演员完全在世界模型``想象''出的抽象轨迹中进行学习，而无需直接与真实环境交互。
+\item
+  评论家接收模型状态 \(s_t = [h_t, z_t]\)，并学习评估该状态的价值。
+\item
+  为了考虑长期收益，评论家预测的是回报分布的期望值，并使用自举（bootstrapped）的 \(\lambda\)-回报来整合预测的奖励和价值。
+\end{itemize}
+
+\textbf{3. Actor}
+
+\textbf{Step 3：演员学习（Actor Learning）}
+
+\begin{itemize}
+\tightlist
+\item
+  演员的目标是选择能够最大化回报的动作，同时通过熵正则化（entropy regularizer）来鼓励探索。
+\item
+  它通过策略梯度方法（Reinforce estimator）在想象的轨迹上进行优化。
+\end{itemize}
+
+\textbf{4. 损失函数}
+
+\Needspace{8\baselineskip}
+（1）预测损失
+
+\[
+\mathcal{L}_{\mathrm{pred}}(\phi)
+\doteq
+-\ln p_{\phi}(x_t \mid z_t, h_t)
+-\ln p_{\phi}(r_t \mid z_t, h_t)
+-\ln p_{\phi}(c_t \mid z_t, h_t)
+\]
+
+这部分通过负对数似然，迫使模型准确地重构观测输入、奖励和回合标志。
+
+\Needspace{8\baselineskip}
+（2）动力学损失
+
+\[
+\mathcal{L}_{\mathrm{dyn}}(\phi)
+\doteq
+\max\left(
+1,
+D_{\mathrm{KL}}\left[
+\mathrm{sg}(q_{\phi}(z_t \mid h_t, x_t))
+\parallel
+p_{\phi}(\hat{z}_t \mid h_t)
+\right]
+\right)
+\]
+
+其核心目的是让动力学预测器 \(p_{\phi}\) 逼近编码器给出的后验分布 \(q_{\phi}\)。这里使用 \(\mathrm{sg}(\cdot)\)（stop-gradient，停止梯度）操作，表示在拉近两个分布距离时，只更新动力学预测器的参数，而不影响编码器提取特征的方式。
+
+同时，公式外围包裹的 \(\max(1, \cdot)\) 引入了空闲位（Free bits）技术：当 KL 散度下降到 1 nat \(\approx 1.44\) bits 以下时，模型会停止在这项损失上的惩罚，避免学到过于退化的平凡动力学，从而将学习重点转移回预测损失上。
+
+\Needspace{8\baselineskip}
+（3）表示损失
+
+\[
+\mathcal{L}_{\mathrm{rep}}(\phi)
+\doteq
+\max\left(
+1,
+D_{\mathrm{KL}}\left[
+q_{\phi}(z_t \mid h_t, x_t)
+\parallel
+\mathrm{sg}(p_{\phi}(\hat{z}_t \mid h_t))
+\right]
+\right)
+\]
+
+与上一个损失相反，表示损失的梯度方向被限制在编码器 \(q_{\phi}\) 上。它的目的是反向规范编码器的行为，促使它提取出来的隐状态更加``有规律''、更容易被动力学模型预测。
+
+通过巧妙运用停止梯度操作和不同的损失缩放（在论文中设定为 \(\beta_{\mathrm{pred}} = 1\)、 \(\beta_{\mathrm{dyn}} = 1\)、 \(\beta_{\mathrm{rep}} = 0.1\)），RSSM 解决了以往``强正则化在简单图像有效，但在复杂 3D 环境会抹杀关键细节''的进退两难问题，实现了跨领域的鲁棒性。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}{%
+\subsection{三、Dreamer 4：重建、动力学预测与奖励预测的损失解耦}\label{ux4e09dreamer-4ux91cdux5efaux52a8ux529bux5b66ux9884ux6d4bux4e0eux5956ux52b1ux9884ux6d4bux7684ux635fux5931ux89e3ux8026}}
+
+损失分步解耦方法是Google DeepMind在世界模型Dreamer 4中的改进。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-7}{%
+\subsubsection{（一）问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-7}}
+
+在 Dreamer 3 中，图像编码器（Encoder）、动力学模型（RSSM）、图像解码器（Decoder）和奖励预测器（Reward Predictor）是作为一个巨大的整体同时训练的。
+
+\Needspace{5\baselineskip}
+潜在特征 \(z_t\) 在每一次反向传播时，会同时受到三股力量的拉扯：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{重建梯度}（ \(\nabla \mathcal{L}_{recp}\) ）：逼着 \(z_t\) 记住画面里的每一片云彩和每一棵树，因为解码器需要重构整个画面。
+\item
+  \textbf{动力学梯度}（ \(\nabla \mathcal{L}_{dyn}\) ）：逼着 \(z_t\) 关注物体的运动规律。
+\item
+  \textbf{奖励预测梯度}（ \(\nabla \mathcal{L}_{pred}\) ）：逼着 \(z_t\) 把所有注意力都集中在那些能得分的微小物体上，例如远处的怪物或手里的钻石，而忽略暂时没有分数、但对理解物理世界至关重要的背景。
+\end{enumerate}
+
+这带来的致命问题是``表征容量的争夺''。当环境非常复杂（如 Minecraft）时，这三股梯度会互相打架。如果奖励信号很强，编码器就会为了迎合奖励预测，而在 \(z_t\) 中丢弃那些``暂时没有奖励，但对理解物理世界至关重要''的背景细节，例如地形起伏。这导致 Dreamer 3 的世界模型在复杂 3D 环境中极易发生表征坍塌。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux89e3ux8026ux635fux5931ux51fdux6570ux7684ux7ec4ux6210ux90e8ux5206}{%
+\subsubsection{（二）解耦损失函数的组成部分}\label{ux4e8cux89e3ux8026ux635fux5931ux51fdux6570ux7684ux7ec4ux6210ux90e8ux5206}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Tokenizer 压缩损失}
+\end{enumerate}
+
+Dreamer 4 不再像前代那样在潜空间动态推演的同时去重建图像。它首先训练一个 Causal Tokenizer，利用掩码自编码器（MAE, Masked Autoencoder）的逻辑，以 \(p \sim U(0, 0.9)\) 的概率随机遮盖视频块（Patches），只专注于时空特征的极致压缩。
+
+\Needspace{5\baselineskip}
+其损失函数抛弃了 Symlog，转而采用纯视觉领域的标准重建与感知损失的组合：
+
+\[
+\mathcal{L}_{\mathrm{tokenizer}}=\mathrm{MSE}(x, \hat{x})+\mathrm{LPIPS}(x, \hat{x})
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  MSE 保证像素级别的准确性。
+\item
+  LPIPS（Learned Perceptual Image Patch Similarity）保证人类视觉感知上的结构完整性，避免生成的特征模糊。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{动力学预测损失}
+\end{enumerate}
+
+这一项即Transformer对下一时刻预测的准确程度。Dreamer 4废弃了Dreamer 3的KL散度，避免在处理长序列时发生模式崩溃，而改用流匹配和Shortcut Forcing方法。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  \textbf{任务与奖励预测损失}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Dreamer 4在世界模型中训练Actor和Critic，世界模型需要输出奖励和动作预测：
+
+\Needspace{5\baselineskip}
+在通过海量无标签视频训练好 Tokenizer 和 Dynamics 之后，Dreamer 4 会摄入带标签的数据，例如带有鼠标键盘操作记录的 Minecraft 录像，专门训练一个极其轻量的任务头（Task Head）。这部分损失类似于 Dreamer 3 的 \(\mathcal{L}_{pred}\)，但加入了对具体动作的克隆预测：
+
+\[
+\mathcal{L}_{\mathrm{task}}=-\sum_{n=0}^{L}\ln p_{\theta}(r_{t+n}\mid h_t)-\sum_{n=0}^{L}\ln p_{\theta}(a_{t+n}\mid h_t)
+\]
+
+模型利用 Transformer 聚合出的历史时空上下文 \(h_t\)，同时去最大化未来奖励序列 \(r_{t+n}\) 和真实动作序列 \(a_{t+n}\) 的对数似然。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux635fux5931ux89e3ux8026ux7684ux597dux5904}{%
+\subsubsection{（三）损失解耦的好处}\label{ux4e09ux635fux5931ux89e3ux8026ux7684ux597dux5904}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{避免梯度冲突}
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{第一步（视觉独立）}：先只用重建损失（类似 MAE 的自编码器逻辑）把 Tokenizer 训练到极致。此时的 \(z_t\) 是完美的\textbf{纯视觉客观表征}，完全没有被奖励信号污染。训练完后，直接冻结 Tokenizer。
+\item
+  \textbf{第二步（物理独立）}：在冻结的 Tokenizer 提取的 \(z_t\) 之上，单独训练 Block-Causal Transformer（动力学模型）。此时模型只关心上一帧怎么变成下一帧（Shortcut Forcing），完全不知道``奖励''是什么。训练完后，世界模型的物理推演能力也被冻结（或被低学习率训练）。
+\item
+  \textbf{第三步（任务对齐）}：最后，只在这个懂视觉、懂物理的冻结大模型之上，加一个极小的网络去拟合具体的奖励 \(r_t\) 和动作 \(a_t\)。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{数据可 Scaling}
+\end{enumerate}
+
+Dreamer 3这样的端到端强化学习要求每一帧数据都必须包含精确的（状态，动作，奖励，下一状态）四元组，否则就会因为缺了奖励预测分支的梯度而学偏。但在现实世界中，获取海量带动作标签和奖励的数据极其昂贵且困难。通过解耦，Dreamer 4的前两个最庞大的阶段（Tokenizer和Flow Matching Transformer）完全不需要奖励和动作标签，可以直接用海量无标签视频学习。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-156}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-156}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Hafner, D., Lillicrap, T., Fischer, I., et al.~(2019). \href{https://arxiv.org/abs/1811.04551}{Learning Latent Dynamics for Planning from Pixels}. ICML.（PlaNet；论文提出 RSSM）
+\item
+  Hafner, D., Pasukonis, J., Ba, J., \& Lillicrap, T. (2023). \href{https://arxiv.org/abs/2301.04104}{Mastering Diverse Domains through World Models}. arXiv:2301.04104.（Dreamer 3）
+\item
+  Hafner, D., Yan, W., \& Lillicrap, T. (2025). \href{https://arxiv.org/abs/2509.24527}{Training Agents Inside of Scalable World Models}. arXiv:2509.24527.（Dreamer 4）
+\end{itemize}
+
+\clearpage

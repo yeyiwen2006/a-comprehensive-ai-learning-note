@@ -1,0 +1,35 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{multi-expert-on-policy-distillation}{%
+\section{Multi-Expert On-Policy Distillation}\label{multi-expert-on-policy-distillation}}
+
+DeepSeek-V4 uses multi-expert on-policy distillation: starting from a pretrained model, it first trains multiple domain experts using SFT and RL, then distills their knowledge into a unified student model.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-training-domain-expert-models}{%
+\subsection{I. Training Domain-Expert Models}\label{i.-training-domain-expert-models}}
+
+Starting from the pretrained model, train a set of domain-expert models using SFT and GRPO, covering mathematics, coding, agents, instruction following, and other domains. Industry practice also generally trains subversions with different reasoning intensities for each domain, corresponding to Non-think, Think, and Think Max. These three modes use different length penalties and context windows during RL.
+
+Agent experts also incorporate the Quick Instruction mechanism. Chat products involve many auxiliary tasks, such as deciding whether to trigger a search or identifying intent. Traditionally, another small model handles these tasks, requiring prefill to be repeated whenever the context changes. V4 directly appends a set of special tokens to the input sequence, with each token corresponding to an auxiliary task, reusing the existing KV cache and reducing time to first token.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-on-policy-distillation}{%
+\subsection{II. On-Policy Distillation}\label{ii.-on-policy-distillation}}
+
+Use on-policy distillation to combine the knowledge of all experts into a unified student model. Compared with off-policy methods, on-policy distillation better avoids catastrophic forgetting. Specifically, the student learns the output probability distributions of multiple expert models on trajectories it generates itself.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-106}{%
+\subsection{References}\label{references-106}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  DeepSeek-AI. (2026). \href{https://arxiv.org/abs/2606.19348}{DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence}. arXiv:2606.19348.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,115 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{gfpo}{%
+\section{GFPO}\label{gfpo}}
+
+\begin{quote}
+This article is a paper-reading note. Its content represents the corresponding paper's method or the author's understanding and should not be treated directly as field consensus or engineering best practice.
+\end{quote}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-background-4}{%
+\subsection{I. Background}\label{i.-background-4}}
+
+Generative Filtered Preference Optimization (GFPO) primarily aims to address GRPO's limitations in multi-attribute optimization (such as optimizing accuracy and conciseness simultaneously), particularly the tendency of large models to generate verbose responses in pursuit of high accuracy.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-the-core-idea-1}{%
+\subsection{II. The Core Idea}\label{ii.-the-core-idea-1}}
+
+GRPO generates a group of responses to a question, calculates the within-group reward mean and standard deviation using all responses, and standardizes each response's reward into an advantage. It relies on a single scalar reward. If the reward function favors accuracy and the model discovers that longer responses are more likely to be correct, outputs become longer. Balancing ``accurate'' and ``short'' with a single reward function is difficult.
+
+GFPO introduces an explicit filtering step. First generate a group of responses, then apply rejection sampling based on specific metrics (such as length or format) to select a subset S. Advantage calculation and gradient updates use only the filtered subset S. Responses that fail the criteria (even high-scoring ones that are too long) are directly excluded, contributing neither to the baseline nor to the gradient.
+
+Essentially, this decomposes ``joint optimization'' involving several coupled variables: hard criteria (such as requiring valid JSON or a particular keyword) become thresholds implemented through masks, while soft criteria (such as semantic accuracy) become rewards. This hierarchical approach stabilizes optimization and allows the model to better adapt to complex real-world requirements.
+
+Consider a question: if we must manually specify ``filter by length'' or ``filter by format,'' does the model not become a specialized machine fitted to particular rules? Does this contradict the original goal of general intelligence in LLMs?
+
+\Needspace{5\baselineskip}
+It does not, for two reasons:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Decoupling training and inference: GFPO filtering occurs only during training, when we explicitly define ``short, correct responses are good responses.'' The model updates its parameters through gradient descent and ultimately learns a tendency. At inference, the trained model no longer needs the external filter; it has internalized this concise style. The model remains a general-purpose neural network, but its parameter distribution has been ``pushed'' toward our desired subspace.
+\item
+  The essence of ``alignment'' is ``restricting generalization'': reinforcement fine-tuning is not itself intended to increase knowledge or generalization, but primarily to constrain model behavior to match our preferences. A pretrained model can write poetry, insult people, and produce nonsense; RL aims to trim this distribution into a logical, nonverbose assistant at inference. Therefore, explicitly reducing the probability of useless output tokens through rules is precisely the desired effect at this stage. GFPO is more likely to be used late in post-training, adjusting an already capable reasoning model to our preferences.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-advantage-function}{%
+\subsection{III. Advantage Function}\label{iii.-advantage-function}}
+
+\Needspace{5\baselineskip}
+A mask is added to the advantage function \(\hat{A}_{i,t}^{(m)}\):
+
+\[
+\hat{A}_{i,t}^{(m)} = \frac{R(q,o_i)-\mu_S}{\sigma_S} m_i
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  If sample \(i\) is rejected (\(m_i=0\)), its advantage becomes \(0\) and it makes no contribution to model updates.
+\item
+  If sample \(i\) is retained, its advantage measures its quality relative to other retained samples, not the rejected ``junk'' samples.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-workflow}{%
+\subsection{IV. Workflow}\label{iv.-workflow}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Generation}: for a given question \(q\), use the current policy \(\pi_\theta\) to generate a relatively large group of candidate responses \(G=\{o_1,o_2,\ldots,o_G\}\).
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Note: more samples than in GRPO are usually drawn to ensure some remain after filtering.
+  \end{itemize}
+\item
+  \textbf{Evaluation}: calculate each response \(o_i\)'s base reward \(R(q,o_i)\), such as answer correctness.
+\item
+  \textbf{Filtering---the crucial adjustment step}: apply hard rules based on non-reward constraints or metrics.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    For example, if the objective is ``short and correct,'' the rule may be ``length \(<200\) tokens.''
+  \item
+    Mark every response failing the rule with \(m_i=0\) and place those satisfying it in set \(S\).
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  \textbf{Advantage calculation}: use only samples in \(S\):
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Calculate the mean reward \(\mu_S\) and standard deviation \(\sigma_S\) within \(S\).
+  \item
+    Calculate the standardized advantage \(\hat{A}_{i,t}^{(m)}\) for each sample \(i \in S\).
+  \item
+    Set the advantage to \(0\) for \(i \notin S\).
+  \end{itemize}
+\item
+  \textbf{Policy optimization}: update model parameters \(\theta\) using the PPO objective. Because rejected samples have advantage \(0\), the model actually learns only the distribution of samples that ``both satisfy the constraint (such as brevity) and achieve a high score (such as correctness).''
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-112}{%
+\subsection{References}\label{references-112}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Shrivastava, V., Awadallah, A., Balachandran, V., Garg, S., Behl, H., \& Papailiopoulos, D. (2025). \href{https://arxiv.org/abs/2508.09726}{Sample More to Think Less: Group Filtered Policy Optimization for Concise Reasoning}. arXiv:2508.09726.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,366 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{vapoux7b97ux6cd5}{%
+\section{VAPO算法}\label{vapoux7b97ux6cd5}}
+
+\begin{quote}
+本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
+\end{quote}
+
+VAPO（Value-model-based Augmented Proximal Policy Optimization）回归了Actor-Critic，是PPO的一种改进算法，也融合了PPO以及GRPO/DAPO的一些设计思想。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4e3bux8981ux6539ux8fdb}{%
+\subsection{一、主要改进}\label{ux4e00ux4e3bux8981ux6539ux8fdb}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  价值预训练（Value Pre-training）
+\end{enumerate}
+
+在正式强化学习（RL）之前，先在一个高质量数据集上专门训练Critic（价值模型）。在 RLHF 初期，如果Critic是随机初始化的，它对长序列的价值估计是一团糟。Actor会被错误的Critic 带偏，浪费算力。预训练让Critic在``上岗''前就已经学会了判断什么是有希望的推理路径，从而在RL开始的第一步就能提供准确的长期回报（Long-term Return）估计，避免让Actor白白浪费大量算力。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  解耦GAE（Decoupled GAE）
+\end{enumerate}
+
+强化学习中，``偏差-方差权衡''是一个重要的话题。蒙特卡洛方法（舍弃Critic网络）无偏，但是方差大，训练不稳定；时序差分方法（运用Critic网络）每一步Critic估计的偏差会不断累积，导致在几百步的推理中，最关键的最终答案的奖励很难传导回第一步。
+
+VAPO算法提出了解耦GAE方法，将这二者结合起来。
+
+\Needspace{5\baselineskip}
+其核心优势估计可以写成：
+
+\[
+\hat{A}_t^{\mathrm{VAPO}}
+=
+\beta\cdot(R_{\mathrm{final}}-V(s_t))
++
+(1-\beta)\cdot A_t^{\mathrm{GAE}}(\lambda).
+\]
+
+其中，前半部分是 GRPO/蒙特卡洛成分，用真实最终回报校正方向；后半部分是 PPO/Critic 成分，依赖时序差分提供更平滑的估计。
+
+\Needspace{5\baselineskip}
+也可以在计算 GAE 的递归过程中强制注入真实回报：
+
+\[
+A_t
+=
+\delta_t
++
+(\gamma\lambda)A_{t+1}
++
+\eta\cdot(R-V(s_t)).
+\]
+
+最后一项是解耦修正项，用来把最终真实回报直接注入每一步的优势估计。
+
+\Needspace{5\baselineskip}
+这里 \(R\) 就是蒙特卡洛估计中的 \(G_t\)：
+
+\[
+G_t
+=
+r_t+\gamma r_{t+1}+\gamma^2 r_{t+2}
++\cdots+
+\gamma^{T-t}R_{\mathrm{final}}.
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  在数学推理中，通常只有最后有奖励，且 \(\gamma=1\)。
+\item
+  所以 \(G_t=R_{\mathrm{final}}\)，最终奖励是多少，这里就是多少。
+\end{itemize}
+
+解耦GAE方法最重要的意义是在早期Critic有偏差时引入蒙特卡洛方法准确估计，在后期蒙特卡洛方法不稳定时用Critic促进收敛。因此，参数 \(\beta\) 一般会随时间递增而衰减，如从 \(1.0\) 到 \(0.1\)。（事实上，即便不调整 \(\beta\)，\(R_{\mathrm{final}}-V(s_t)\) 的绝对值一般也会随着 \(V(s_t)\) 估计趋稳而减小，但衰减效果更好）
+
+早期（Critic 弱时），需要更强的 MC 信号（GRPO 成分）来告诉模型``什么是对的''。解耦项保证了即使 Critic 预测 \(V(s_{t+1})\) 很差，最终回报 \(R\) 也能直接越过中间环节，给 \(A_t\) 修正方向。
+
+后期（Critic 强时），Critic 已经学会了每一步的精细价值。此时 \(A_t^{\mathrm{GAE}}\)（PPO 成分）会变得更准确，能够区分``最后答案虽然对了，但中间第 5 步其实有点问题''这类细微差别。
+
+\Needspace{5\baselineskip}
+可以把 VAPO 的优势理解为：
+
+\[
+A_t^{\mathrm{VAPO}}
+\approx
+w_1\cdot A_t^{\mathrm{MC}}
++
+w_2\cdot A_t^{\mathrm{Critic}}.
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  它利用 GRPO 的``真''（真实回报）来纠正 Critic 的偏差。
+\item
+  它利用 PPO 的``稳''（Critic 提供的密集信号）来降低长序列蒙特卡洛采样的方差。
+\end{itemize}
+
+这种设计使得 VAPO 既能像 GRPO 那样在大模型推理初期快速找到正确方向，又能像 PPO 那样在后期细致打磨每一步的逻辑质量。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  长度自适应GAE（Length-Adaptive GAE）
+\end{enumerate}
+
+长度自适应GAE和解耦GAE一样，也是平衡偏差与方差的重要方法。但区别在于，解耦GAE（Decoupled GAE）解决的是``信号源准不准''的问题（对抗 Critic 的早期无能），长度自适应GAE（Length-Adaptive GAE）解决的是``信号传得远不远''的问题（对抗数学上的指数衰减），以适应不同长度的推理问题。
+
+\Needspace{5\baselineskip}
+定义有效视野：
+
+\[
+\mathrm{Horizon}
+\approx
+\sum_{t=0}^{\infty}\lambda^t
+=
+\frac{1}{1-\lambda}.
+\]
+
+这本质上是用几何分布的数学期望定义的。可以理解为：持续获取回报，但每次衰减 \(\lambda\)，期望上等价于：假设一个人从 \(t\) 处出发，专门负责收取后面的回报，用于更新 \(A_t\)。此人每次有 \(\lambda\) 的概率能继续往前走，获取下一轮回报，有 \(1-\lambda\) 的概率被拦住（也就是以后的回报全部被直接``截留''，不能被 \(A_t\) 获取），则在数学期望上能一直走到第 \(1/(1-\lambda)\) 轮，即 \(A_t\) 可以获取前 \(1/(1-\lambda)\) 轮的回报，这就是``有效视野''。
+
+一个固定的 \(\lambda\)（如 \(0.95\)，Horizon \(=20\)）不能适应不同长度要求。对于一个10步的回答，看20步太远了（远处样本权重偏大，而远处样本是蒙特卡洛采样获得，有随机性，方差大）；对于一个1000 步的推理，看20步简直是``鼠目寸光''（偏差大，看不见结尾的奖励）。因此，我们希望有效视野 \(H\) 和序列长度 \(L\) 成正比（\(H=\alpha L\)），得到 \(\lambda=1-\frac{1}{\alpha L}\)。下面以 \(\alpha=1\) 为例：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.24381}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1853}}@{}}
+\toprule
+样本类型 & 长度 \(L\) & 标准 GAE（\(\lambda=0.95\)） & 自适应 GAE（\(\lambda=1-1/L\)） & 效果分析 \\
+\midrule
+\endhead
+短对话 & 20 & \(\lambda=0.95\) & \(\lambda=0.95\) & 两者一致，视野合适。 \\
+中等推理 & 100 & \(\lambda=0.95\) & \(\lambda=0.99\) & 标准 GAE 开始看不清结尾；自适应 GAE 强行提升 \(\lambda\)，减少衰减。 \\
+超长 CoT & 1000 & \(\lambda=0.95\) & \(\lambda=0.999\) & 标准 GAE 信号几乎完全消失；自适应 GAE 将 \(\lambda\) 推向极限，确保第 1000 步的奖励能传回第 1 步。 \\
+\bottomrule
+\end{longtable}
+
+对于长样本（Long CoT），它通过增大 \(\lambda\)（接近1），将算法行为推向蒙特卡洛，容忍高方差，但确保信号不丢失；对于短样本（Short QA），它保持适中的 \(\lambda\)，利用时序差分的低方差特性，让训练更稳定。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Token级损失
+\end{enumerate}
+
+同DAPO，对所有token的损失进行平均（而非对样本平均），所有token对最终损失的贡献均匀分配，避免关键错误被稀释。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  组采样
+\end{enumerate}
+
+标准PPO假设环境是平稳的。但在数学推理中，如果模型很弱，采样1次大概率是错的（Reward=0）。如果一直采样一直错，Critic就学不到东西。VAPO的Group Sampling则是对每个Prompt，一次采4个或8个，只要其中有一个是对的，Critic 就能通过对比（解耦GAE中利用真实回报）学到什么是对的。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5de5ux4f5cux6d41ux4e0eppoux5bf9ux6bd4}{%
+\subsection{二、工作流与PPO对比}\label{ux4e8cux5de5ux4f5cux6d41ux4e0eppoux5bf9ux6bd4}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+PPO 与 VAPO 在初始化上的差异：
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{PPO}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    通常直接初始化 Actor（来自 SFT 模型）和 Critic（通常基于 Reward Model 初始化）。
+  \item
+    不同点是直接开始训练，没有专门针对 Critic 的预热环节。
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  \textbf{VAPO}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    新增步骤：Value Pretraining（价值预训练）。
+  \item
+    不同点是在进入 RL 循环前，先使用 SFT 数据或推理数据监督训练 Value Model \(V_\psi\)。
+  \item
+    目的是消除奖励模型带来的偏差，让 Critic 在``上岗''第一天就能比较准确地预测长序列价值，防止 PPO 早期崩盘。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  数据采样
+\end{enumerate}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.33}}@{}}
+\toprule
+维度 & 标准 PPO（Standard PPO） & VAPO（Augmented PPO） \\
+\midrule
+\endhead
+采样策略 & 单次采样（Single/Random Sampling） & 组采样（Group Sampling） \\
+具体操作 & 对于一个 prompt \(q\)，通常采样 1 个回答 \(a\)，或者 batch 内不同 prompt 各采一个。 & 对于一个 prompt \(q\)，强制策略 \(\pi_\theta\) 生成一组 \(G\) 个不同的回答 \(\{o_1,\ldots,o_G\}\)。 \\
+数据形态 & 轨迹 \(\{s_t,a_t,r_t\}\) 是独立的。 & 数据以组为单位存在，组内包含成功和失败的样本。 \\
+目的 & 获取环境反馈，计算梯度。 & 增强对比信号：通过生成多个回答，提高采样到正确答案的概率，确保活下来的样本中有正向信号可学。 \\
+奖励计算 & 通常只看结果奖励（Outcome Reward）或稀疏奖励。 & 密集奖励：通常结合结果奖励和过程奖励（Process Reward）。 \\
+Value 计算 & 在采样时顺便计算 \(V(s_t)\)。 & 同样需要计算 \(V(s_t)\)，但用于后续更复杂的解耦计算。 \\
+\bottomrule
+\end{longtable}
+
+注：同时处理若干个Prompt，都存入经验回放池。如同时处理16个Prompt，标准PPO在每个Prompt下各生成64个token的回答，就会往经验回放池存入1024个数据；VAPO在每个Prompt下各生成8组各64个token的回答，就会存入8192个数据。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  优势估计
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+PPO 与 VAPO 在优势估计上的差异：
+
+\Needspace{5\baselineskip}
+\textbf{PPO}：
+
+\begin{itemize}
+\tightlist
+\item
+  算法是标准 GAE（Generalized Advantage Estimation）。
+\item
+\Needspace{5\baselineskip}
+  公式为：
+\end{itemize}
+
+\[
+A_t
+=
+\sum_{\ell\ge 0}(\gamma\lambda)^\ell\delta_{t+\ell}.
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  特征是 \(\lambda\) 是固定常数，例如 0.95。
+\item
+  局限是对长短不一的序列使用相同视野，容易导致长序列信号丢失。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\textbf{VAPO}：
+
+\begin{itemize}
+\tightlist
+\item
+  算法是解耦 GAE + 长度自适应 GAE。
+\item
+  步骤 1：先计算每个回答 \(o_i\) 的长度 \(l_i\)。
+\item
+\Needspace{5\baselineskip}
+  步骤 2：为每个样本单独计算 \(\lambda_i\)，满足：
+\end{itemize}
+
+\[
+\frac{1}{1-\lambda_i}
+=
+\alpha l_i.
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  步骤 3：结合 Critic 预测 \(V(s)\) 和真实回报 \(R\)，使用解耦公式计算 \(\hat{A}_t\)，确保信号穿透整个长序列。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  优化更新
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{PPO}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Loss 聚合通常计算 Sample-level Mean，也就是把一个 batch 内所有样本的 loss 求平均。
+  \item
+    问题是长文本（1000 token）和短文本（10 token）权重相同，导致长文本中每个 token 的梯度被稀释 100 倍。
+  \item
+    更新时同时更新 \(\theta\) 和 \(\phi\)。
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  \textbf{VAPO}：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Loss 聚合使用 Token-level Loss。
+  \item
+    操作上，将所有样本的所有 token 损失求和，即 \(\sum_i\sum_t \mathcal{L}_{i,t}\)，然后除以总 token 数。
+  \item
+    目的在于实现 token 平权，保证长链推理中的每一个步骤都对梯度有足够贡献，避免关键错误被稀释。
+  \end{itemize}
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-110}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-110}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Yue, Y., Yuan, Y., Yu, Q., et al.~(2025). \href{https://arxiv.org/abs/2504.05118}{VAPO: Efficient and Reliable Reinforcement Learning for Advanced Reasoning Tasks}. arXiv:2504.05118.
+\end{itemize}
+
+\clearpage

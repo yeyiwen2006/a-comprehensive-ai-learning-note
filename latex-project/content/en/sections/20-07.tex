@@ -1,0 +1,89 @@
+\setcounter{section}{6}
+
+\Needspace{5\baselineskip}
+\hypertarget{kl-divergence-and-js-divergence}{%
+\section{KL Divergence and JS Divergence}\label{kl-divergence-and-js-divergence}}
+
+In large language models, KL divergence measures differences between output probability distributions. It is calculated over a vocabulary of size \(V\), not over the hidden-layer dimensions before the output, because the model's outputs are fundamentally discrete tokens.
+
+\[
+D(P\Vert Q)=\sum_{i=1}^{V}p_i\log\frac{p_i}{q_i}
+\]
+
+Note: calculating perplexity averages the negative log-probabilities of all tokens in a sequence, whereas calculating KL divergence averages the KL divergence over all words in the vocabulary when outputting one token. The two use different forms of averaging.
+
+\Needspace{5\baselineskip}
+In research, JS divergence, a variant of KL divergence, is often used for greater numerical stability. It takes the average \(M\) of \(P\) and \(Q\):
+
+\[
+M=\frac{1}{2}(P+Q)
+\]
+
+\Needspace{5\baselineskip}
+JS divergence is defined as:
+
+\[
+\mathrm{JSD}(P,Q)=\frac{1}{2}\left(D_{\mathrm{KL}}(P\Vert M)+D_{\mathrm{KL}}(Q\Vert M)\right)
+\]
+
+Its function is similar to KL divergence, but the denominator inside \(\log\) does not become zero. For example, studying the JS divergence between neuron activation values in a model's intermediate hidden layers and output layer (projecting first if their dimensions differ) can determine the degree of similarity between their distributions.
+
+\Needspace{5\baselineskip}
+For an LLM, the KL divergence of an autoregressive output of \(n\) tokens is:
+
+\[
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\sum_Y P(Y)\log\frac{P(Y)}{Q(Y)}.
+\]
+
+\Needspace{5\baselineskip}
+Because directly summing over all possible sequences is infeasible (there are \(V^n\) possibilities), the autoregressive property must be used to decompose it:
+
+\[
+\begin{aligned}
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+&=\mathbb{E}_{Y\sim P}
+\left[
+\sum_{t=1}^{n}
+\left(
+\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})
+\right)
+\right] \\
+&=\sum_{t=1}^{n}
+\mathbb{E}_{Y\sim P}
+\left[
+\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}
+\right].
+\end{aligned}
+\]
+
+The difficulty here lies in \(Y\sim P\), which requires considering the probability distribution of the entire sequence. Notice that the conditional probabilities on the right are conditioned on \(y_{<t}\). Given a known distribution of \(y_{<t}\), the autoregressive property also determines the distribution of \(y_t\), so the distribution of \(Y=\{y_1,\ldots,y_t\}\) is known as well. We can therefore rewrite the expression as:
+
+\[
+D_{\mathrm{KL}}(P(Y)\Vert Q(Y))
+=
+\sum_{t=1}^{n}
+\mathbb{E}_{y_{<t}\sim P(y_{<t})}
+\left[
+D_{\mathrm{KL}}\left(P(y_t\mid y_{<t})\Vert Q(y_t\mid y_{<t})\right)
+\right].
+\]
+
+This means that the KL divergence between two sequence distributions equals the sum of the expected KL divergences between their conditional probability distributions at each step (where the expectation is calculated over histories generated from distribution \(P\)).
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-107}{%
+\subsection{References}\label{references-107}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Kullback, S., \& Leibler, R. A. (1951). \href{https://doi.org/10.1214/aoms/1177729694}{On Information and Sufficiency}. The Annals of Mathematical Statistics, 22(1), 79-86.
+\item
+  Lin, J. (1991). \href{https://doi.org/10.1109/18.61115}{Divergence measures based on the Shannon entropy}. IEEE Transactions on Information Theory, 37(1), 145-151.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,351 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{deep-learning-frameworks}{%
+\section{Deep Learning Frameworks}\label{deep-learning-frameworks}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-imperative-and-symbolic-programming}{%
+\subsection{I. Imperative and Symbolic Programming}\label{i.-imperative-and-symbolic-programming}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Imperative programming
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Core logic
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+``What you see is what you get'': when execution reaches a line of code, the computer executes that line and immediately computes the result. A Python example:
+
+e = add(a, b) \# The interpreter immediately computes a+b and stores the result in memory as e
+
+f = add(c, d) \# The interpreter immediately computes c+d and stores the result in memory as f
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Advantages
+\end{enumerate}
+
+High flexibility: Python control flow (if, for) can freely change the computational logic.
+
+Easy debugging: when the program reports an error, you can identify exactly which line's data caused the problem because intermediate variables remain in memory.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Disadvantages (performance bottlenecks)
+\end{enumerate}
+
+High Python overhead: every operation requires the Python interpreter. With extremely fast hardware such as GPUs, the interpreter may fail to keep up, leaving the GPU idle and waiting.
+
+Lack of global optimization: because execution proceeds line by line, the system does not know what the next line will do and cannot fuse computations or reuse memory. For example, it must retain e and f until the function ends because it does not know whether they will be used again later.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Symbolic programming
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Core logic
+\end{enumerate}
+
+``Draw the blueprint first, then build'': code first describes all computational steps to generate a flowchart, without performing any actual computation. The compiler optimizes this graph (for example, discovering that (1+2)+(3+4) can be simplified directly to 10, or that memory for a variable can be released immediately after its last use), and data are then fed into the compiled program for execution. We simulate this process with C++ code (although C++ is imperative, it is a compiled language, and its ``compilation and optimization before execution'' share similarities with the advantages of symbolic programming):
+
+\begin{verbatim}
+int main() {
+    // --- Stage 1: Symbolic Definition ---
+    // No mathematical operations occur yet; only "strings" are recorded
+
+    std::vector<Node> computation_graph;
+
+    // Define: e = add(a, b)
+    computation_graph.push_back({"e", "ADD", {"a", "b"}});
+
+    // Define: f = add(c, d)
+    computation_graph.push_back({"f", "ADD", {"c", "d"}});
+
+    // Define: g = mult(e, f)
+    computation_graph.push_back({"g", "MULT", {"e", "f"}});
+
+    std::cout << ">>> Blueprint complete; no computation has occurred yet." << std::endl;
+
+    // --- Stage 2: Compilation/Optimization ---
+    // This is the decisive advantage of symbolic programming.
+    // After seeing the complete blueprint, the compiler finds a remarkable optimization opportunity!
+
+    std::cout << ">>> Compiling and optimizing..." << std::endl;
+    // Assume constant inputs: a=1, b=2, c=3, d=4
+    // The compiler discovers that all inputs are fixed!
+    // It can simplify (1+2)*(3+4) directly to 21, removing all intermediate steps.
+
+    // The optimized blueprint may contain only one instruction:
+    std::string optimized_instruction = "Return 21";
+
+    // --- Stage 3: Execution ---
+    std::cout << ">>> Starting execution:" << std::endl;
+    std::cout << optimized_instruction << std::endl;
+}
+\end{verbatim}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Advantages
+\end{enumerate}
+
+Extremely high efficiency: the compiler sees the global picture and can perform memory optimization and operator fusion.
+
+Portability: once compiled into a computational graph, the program no longer depends on the Python environment. The model and its parameters can be serialized (saved) to disk, and computation can proceed directly from the graph at runtime. This allows trained models to be deployed to other devices (such as mobile devices) and also makes it convenient to use other frontend programming languages such as C++.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Disadvantages
+\end{enumerate}
+
+Difficult debugging: because definition and execution are separate, errors are often hard to trace back to the original Python line.
+
+Steep learning curve: less intuitive than Python.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Hybrid programming
+\end{enumerate}
+
+Early deep learning frameworks generally used either imperative or symbolic programming. Theano, TensorFlow, Keras, and CNTK adopted symbolic programming, whereas Chainer and PyTorch adopted imperative programming. In subsequent version updates, TensorFlow 2.0 and Keras added imperative programming.
+
+As AI develops, compute requirements continue to grow, and multi-GPU parallel processing has become routine, making the single-threaded Python interpreter an obvious bottleneck. Hybrid programming emerged to provide the efficiency and portability of symbolic programming while retaining the development convenience of imperative programming. It combines the strengths of the two models. For example, torchscript lets users develop and debug imperatively while converting most programs into symbolic programs for production-level computational performance and deployment. If we define an MLP network net, for instance, net = torch.jit.script(net) converts it into a form that can be compiled and optimized.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-asynchronous-computation}{%
+\subsection{II. Asynchronous Computation}\label{ii.-asynchronous-computation}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Core idea of asynchronous computation
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Python (the waiter) receives the instruction b = dot(a, a).
+\item
+  Python writes the instruction on an order slip and drops it into the backend task queue.
+\item
+  Key point: Python does not wait for the result. It returns immediately, ready to receive the next instruction.
+\item
+  C++ (the kitchen) quietly takes orders from the queue and cooks in the background.
+\end{enumerate}
+
+In other words, instructions enter the queue on one side while they are taken out and executed on the other; the two sides can proceed at different rates.
+
+For PyTorch users, although PyTorch looks synchronous (imperative), its GPU operations are also asynchronous. When you execute result = gpu\_tensor\_a + gpu\_tensor\_b, Python likewise returns instantly, while the actual addition waits in the GPU queue. Python synchronizes the CPU and GPU only when print(result) is called.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Major advantage of asynchronous computation: pipeline parallelism
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Synchronous execution
+\end{enumerate}
+
+\Needspace{10\baselineskip}
+\begin{verbatim}
+for _ in range(10000):
+    y = x + 1
+    y.wait_to_read()  # Force a wait every time
+\end{verbatim}
+
+Process: Python issues an instruction -\textgreater{} wait -\textgreater{} C++ computes -\textgreater{} Python issues an instruction -\textgreater{} wait -\textgreater{} C++ computes\ldots{}
+
+Problem: the CPU and GPU are idle during the waiting periods.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Asynchronous execution
+\end{enumerate}
+
+\Needspace{10\baselineskip}
+\begin{verbatim}
+for _ in range(10000):
+    y = x + 1
+
+npx.waitall()  # Wait once at the end
+\end{verbatim}
+
+Process: Python rapidly issues instructions (issue, issue, issue\ldots), while C++ rapidly computes in the background (compute, compute, compute\ldots).
+
+Advantage: Python's instruction-issuing time overlaps with C++'s computation time. As long as Python issues instructions faster than C++ computes them, the GPU always has work to do and operates at full utilization.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Dependency graph
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Since Python drops off a task and leaves, what happens if a later task depends on an earlier result? For example:
+
+\Needspace{10\baselineskip}
+\begin{verbatim}
+x = np.ones((1, 2))
+y = np.ones((1, 2))
+z = x * y + 2 * x  # Computing z depends on x and y
+\end{verbatim}
+
+The backend (kitchen) is very clever: it maintains a computational graph (dependency graph). When it receives the task of computing z, it checks and finds that z requires the results of x and y. If x and y are not ready, it suspends z and computes x and y first. This ensures that even if Python issues instructions extremely quickly, their computational order remains correct.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Blocking operations and barriers
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Explicit blocking
+\end{enumerate}
+
+You instruct the program: ``You cannot leave until all the dishes are ready.''
+
+npx.waitall(): forces a wait until the backend finishes every task in the queue.
+
+z.wait\_to\_read(): waits only for variable z to be computed, regardless of other tasks.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Implicit blocking
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Some operations inherently imply that a result is needed, so the framework automatically triggers a wait:
+
+print(z): to print the numerical value, you must wait until it has been computed.
+
+z.asnumpy() or z.item(): converts data from the framework (device memory/MXNet format) back to Python/NumPy format. Since NumPy is synchronous, waiting is necessary.
+
+Performance pitfall: frequently copying small amounts of data from MXNet's scope to NumPy can undermine performance.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-automatic-parallelism}{%
+\subsection{III. Automatic Parallelism}\label{iii.-automatic-parallelism}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  GPU-based parallel computation
+\end{enumerate}
+
+Deep learning frameworks (such as MxNet, PaddlePaddle, and PyTorch) automatically construct computational graphs in the backend. These graphs let the system understand all dependencies and selectively execute independent tasks in parallel to improve speed. Typically, a single operator uses all computational resources on all CPUs or on one GPU. Parallelization is therefore not particularly useful on a single-device computer, but is important across multiple devices. Although it is usually applied across multiple GPUs, adding the local CPU can improve performance slightly further.
+
+Executing two parts of a task in parallel on two GPUs takes less total time than the sum of their individual execution times, because the deep learning framework automatically schedules computations across the two GPU devices without requiring users to write complex code.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Data communication
+\end{enumerate}
+
+In many situations, data must move between devices, such as between a CPU and a GPU or between different GPUs. For example, distributed optimization requires moving data to aggregate gradients across multiple accelerator cards.
+
+The difference from parallel computation lies in the resources used by communication: the bus between CPU and GPU. In fact, computation and communication can occur simultaneously on two devices. Their dependency requires y{[}i{]} to be computed before it can be copied to the CPU. Naturally, the system can copy y{[}i-1{]} while computing y{[}i{]}, reducing total runtime.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  An example computational graph and its dependencies
+\end{enumerate}
+
+The following figure shows a two-layer multilayer perceptron running on one CPU and two GPUs. Its dependencies are quite complex and difficult to schedule manually.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0011.png}
+\caption{Computational dependencies of a two-layer MLP on a CPU and two GPUs}
+\end{figure}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-35}{%
+\subsection{References}\label{references-35}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\end{itemize}
+
+\clearpage

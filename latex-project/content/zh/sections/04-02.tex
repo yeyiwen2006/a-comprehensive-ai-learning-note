@@ -1,0 +1,248 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5faaux73afux795eux7ecfux7f51ux7edcrnn}{%
+\section{循环神经网络（RNN）}\label{ux5faaux73afux795eux7ecfux7f51ux7edcrnn}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-1}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-1}}
+
+RNN的核心思想是为网络引入``记忆''或``状态''的概念，使其能够保留之前输入的信息，并用于影响当前输出的计算。
+
+前馈神经网络（如CNN、MLP）假设所有输入（和输出）之间是相互独立的。处理一个输入样本时，不会考虑它之前或之后的样本，没有``上下文''的概念。每次前向计算时，输入的样本的数据量是恒定的。对于基于此设计的 \(n\) 元语法模型（\(n\) 给定），要预测下一个词 \(x_t\)，它只会回头看紧挨着的前 \(n-1\) 个词 \(x_{t-1},\ldots,x_{t-n+1}\)，但如果 \(n\) 变得很大，模型需要记录所有可能的 \(n\) 个词组合的概率。假设词表有10万个词，一个 \(n=4\) 的模型就需要存储 \(100{,}000^4\) 个概率值，这是一个天文数字，在计算和存储上都是不可能的。
+
+\Needspace{5\baselineskip}
+为了解决 \(n\) 增大带来的参数爆炸问题，我们引入一个隐变量模型。这个模型不再直接依赖于所有过去的历史词，而是依赖于一个总结了过去所有历史信息的中间变量，称为隐状态（hidden state）。新的模型化为：
+
+\[
+P(x_t \mid x_{t-1},\ldots,x_1) \approx P(x_t \mid h_{t-1})
+\]
+
+这个隐状态 \(h_{t-1}\) 是一个向量，它封装了从序列开始到 \(t-1\) 时刻的所有有用信息。它的维度是固定的（比如256维），不会因为序列变长而改变大小。这就巧妙地避免了参数随历史长度指数增长。基于此设计的循环神经网络（RNN）专门设计用于处理序列数据，即输入（或输出）是一个接一个的、相互关联的数据点。例如时间序列数据（股票价格、天气数据、传感器读数）、自然语言（句子、段落，本质上是词的序列）、音频/视频（按时间顺序排列的帧或采样点）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6570ux5b66ux8868ux8fbe}{%
+\subsection{二、数学表达}\label{ux4e8cux6570ux5b66ux8868ux8fbe}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  新的隐藏层：
+\end{enumerate}
+
+\[
+h_t=f(x_t,h_{t-1})=\phi(W_{xh}x_t+W_{hh}h_{t-1}+b_h)
+\]
+
+\(W_{xh}x_t\)：这是一个线性变换，将当前输入 \(x_t\)（一个代表词的数字向量）投影到隐藏空间。
+
+\(W_{hh}h_{t-1}\)：这是另一个线性变换，将过去的隐状态（记忆）也投影到隐藏空间。权重矩阵 \(W_{hh}\) 是RNN最关键的部分，它决定了过去的记忆如何影响当前状态。
+
+\(b_h\)：偏置项。
+
+\(\phi\)：一个非线性激活函数（如 \(\tanh\) 或ReLU）。\(\tanh\) 函数可以将值压缩到 \((-1,1)\) 之间，有助于稳定网络的输出。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  生成输出：新的隐藏状态 \(h_t\) 通常可以直接用作输出，或者再通过一个输出层进行计算。当前时刻的最终输出为：
+\end{enumerate}
+
+\[
+o_t=W_{ho}h_t+b_o
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  参数更新：通过时间反向传播（BPTT）
+\end{enumerate}
+
+\Needspace{8\baselineskip}
+（1）将网络按时间步展开成一个深度的前馈网络
+
+\Needspace{5\baselineskip}
+想象RNN在处理一个长度为5的序列 \([x_1,x_2,x_3,x_4,x_5]\)。前向传播时，RNN逐步计算：
+
+\[
+h_1=f(x_1,h_0)\to h_2=f(x_2,h_1)\to h_3=f(x_3,h_2)\to h_4=f(x_4,h_3)\to h_5=f(x_5,h_4)
+\]
+
+\Needspace{5\baselineskip}
+BPTT的视角：它把这个过程看成是一个5层的特殊DNN：
+
+第1层：输入是 \([x_1,h_0]\)，输出是 \(h_1\)
+
+第2层：输入是 \([x_2,h_1]\)，输出是 \(h_2\)
+
+\ldots{}
+
+这个``深度网络''的特殊之处在于：所有``层''都共享同一组参数 \((W_{xh}, W_{hh}, b_h)\)。第 \(t\) 层的输入不仅包括原始输入 \(x_t\)，还包括前一层的输出 \(h_{t-1}\)。
+
+\Needspace{8\baselineskip}
+（2）反向传播
+
+\Needspace{5\baselineskip}
+我们以一个简单的 RNN 为例，其隐状态更新公式为：
+
+\[
+h_t = \tanh(W_{xh}x_t + W_{hh}h_{t-1} + b_h)
+\]
+
+\Needspace{5\baselineskip}
+最终输出和损失为：
+
+\[
+o_t = W_{hq}h_t + b_q
+\]
+
+\[
+L = \sum_{t=1}^{T} L_t = \sum_{t=1}^{T} \mathrm{Loss}(o_t, y_t)
+\]
+
+A. 计算最终输出层参数的梯度（\(W_{hq}, b_q\)）
+
+这部分最简单，因为 \(o_t\) 只依赖于 \(h_t\)，梯度不跨时间步传播，可以按时间步独立计算再求和。
+
+\[
+\frac{\partial L}{\partial W_{hq}}
+= \sum_{t=1}^{T} \frac{\partial L_t}{\partial o_t}\frac{\partial o_t}{\partial W_{hq}}
+= \sum_{t=1}^{T}(o_t - y_t) \cdot h_t^T
+\]
+
+\[
+\frac{\partial L}{\partial b_q}
+= \sum_{t=1}^{T} \frac{\partial L_t}{\partial o_t}\frac{\partial o_t}{\partial b_q}
+= \sum_{t=1}^{T}(o_t - y_t)
+\]
+
+B. 计算循环层参数的梯度（\(W_{xh}, W_{hh}, b_h\)）
+
+总损失 \(L\) 依赖于 \(h_t\)，而 \(h_t\) 又依赖于 \(h_{t-1}\) 和参数，这种依赖关系一直传递到序列开始。因此，梯度计算涉及跨时间步的链式法则。
+
+我们定义一个关键变量：损失对 \(t\) 时刻隐状态的梯度 \(\delta_t\)。
+
+\[
+\delta_t = \frac{\partial L}{\partial h_t}
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  从最后一个时间步 \(T\) 开始初始化：
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\(\delta_T\) 由两部分构成：来自当前输出的损失和来自未来的损失。但在许多简单情况下，如果 \(h_T\) 只影响 \(o_T\)，则：
+
+\[
+\delta_T = \frac{\partial L_T}{\partial h_T}
+= \frac{\partial L_T}{\partial o_T}\frac{\partial o_T}{\partial h_T}
+= (o_T - y_T) W_{hq}^T
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  对于 \(t = T-1, T-2, \ldots, 1\)，梯度递归地反向传播：
+\end{enumerate}
+
+\[
+\delta_t = \frac{\partial L_t}{\partial h_t} + \frac{\partial h_{t+1}}{\partial h_t}\delta_{t+1}
+\]
+
+其中，第一项来自当前输出，第二项来自未来时间步。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4f20ux7edfrnnux5b58ux5728ux7684ux95eeux9898grulstmux7684ux63d0ux51faux80ccux666f}{%
+\subsection{三、传统RNN存在的问题（GRU、LSTM的提出背景）}\label{ux4e09ux4f20ux7edfrnnux5b58ux5728ux7684ux95eeux9898grulstmux7684ux63d0ux51faux80ccux666f}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  梯度消失与梯度爆炸
+\end{enumerate}
+
+这是RNN最著名的问题。在反向传播时，梯度需要沿着时间步一路相乘回去。
+
+如果 \(W_{hh}\)（隐藏状态权重矩阵）的特征值小于1，连续相乘会导致梯度变得极小，以至于较早时间步的参数无法得到有效更新，难以修正其在序列早期犯下的错误（网络``忘记''了远处的事情）。而如果想强行让模型记住早期信息，就需要早期参数产生一个在反向传播中不衰减的巨大梯度，这要么在数学上很难自然发生，要么会引发另一个问题（引发梯度爆炸，影响其他参数训练）导致训练失败。
+
+反之，如果特征值大于1，梯度会指数级增长（梯度爆炸），导致训练不稳定，网络参数更新剧烈，无法收敛。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  长程依赖问题
+\end{enumerate}
+
+梯度消失的直接后果就是模型难以学习到序列中远距离的依赖关系。例如，在句子``The clouds which have been covering the sky all day are finally starting to \_\_\_''中，要预测最后一个词``clear''或``rain''，模型需要记住很久之前的主语``clouds''。
+
+传统RNN的困境：由于梯度消失，网络很难将第一个时间步的信息（误差）一路传递到最后一个时间步。为了学会记住这个信息，网络必须给第一个时间步分配一个巨大的梯度，这在实际训练中很难实现。
+
+所需的机制：需要一个``记忆单元''，能够像计算机硬盘一样，稳定地存储关键信息很长一段时间，而不受后续操作（梯度计算）的干扰。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  难以满足忽略无关信息需求
+\end{enumerate}
+
+例子：在分析网页情感时，HTML标签（如 \texttt{\textless{}div\textgreater{}}、\texttt{\textless{}br\textgreater{}}）与情感无关，是噪声。
+
+传统RNN的困境：传统RNN会无差别地处理每一个输入，这些无关词元也会更新隐状态，污染后续有用的信息。
+
+所需的机制：需要一个``遗忘''或``跳过''机制，能够主动选择哪些信息是重要的需要流入，哪些是不重要的需要被忽略。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  难以满足重置内部状态需求
+\end{enumerate}
+
+例子：序列的不同部分之间存在明显边界或主题转换，比如书的新章节开始，或市场行情从熊市转为牛市。
+
+传统RNN的困境：传统RNN的隐状态会不断地累积历史信息。当场景突然切换时，旧章节或旧行情的信息会持续影响新章节或新行情的学习，造成干扰。
+
+所需的机制：需要一个``重置''机制，能够在检测到逻辑中断时，有选择地清除过去的、不再相关的记忆，从而更好地初始化新场景的学习。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-18}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-18}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\end{itemize}
+
+\clearpage

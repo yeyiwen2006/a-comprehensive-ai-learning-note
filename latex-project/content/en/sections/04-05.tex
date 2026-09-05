@@ -1,0 +1,150 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{long-short-term-memory-networks-lstms}{%
+\section{Long Short-Term Memory Networks (LSTMs)}\label{long-short-term-memory-networks-lstms}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-dual-state-architecture}{%
+\subsection{I. Dual-State Architecture}\label{i.-dual-state-architecture}}
+
+Memory cell (\(C_t\)): internal, private long-term memory. It resembles a hidden conveyor belt, primarily retaining and transmitting long-term information.
+
+Hidden state (\(h_t\)): externally exposed short-term memory/output. It is the current time step's output and part of the next step's input.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-core-steps-and-gates}{%
+\subsection{II. Core Steps and Gates}\label{ii.-core-steps-and-gates}}
+
+\Needspace{8\baselineskip}
+\Needspace{5\baselineskip}
+Step 1: compute the candidate memory cell:
+
+\[
+\tilde{C}_t = \tanh(W_C [h_{t-1}, x_t] + b_C)
+\]
+
+\Needspace{8\baselineskip}
+\Needspace{5\baselineskip}
+Step 2: update the memory cell:
+
+\[
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
+\]
+
+Here, forget gate \(f_t\) multiplies the previous memory state \(C_{t-1}\) elementwise. Values near \(0\) mean ``forget this information,'' while values near \(1\) mean ``retain it completely.'' Input gate \(i_t\) determines how much information from each candidate position is written into memory. Together they act somewhat like a GRU's update gate, but their sum is not constrained to \(1\), which in fact alleviates vanishing gradients (summing to \(1\) entails many fractional weights below one).
+
+\Needspace{8\baselineskip}
+\Needspace{5\baselineskip}
+Step 3: compute the current hidden state (output):
+
+\[
+h_t = o_t \odot \tanh(C_t)
+\]
+
+Output gate \(o_t\) bridges the memory cell and hidden state, deciding what to read from \(C_t\) into \(h_t\).
+
+\Needspace{5\baselineskip}
+An intuitive interpretation:
+
+\Needspace{5\baselineskip}
+An LSTM resembles an office with strict document-management procedures:
+
+Forget gate: decides which old documents in the archive (\(C_t\)) should be shredded.
+
+Input gate: decides how many new documents received today (\(\tilde{C}_t\)) should be filed.
+
+Output gate: decides which archived documents to show to a visitor (\(h_t\)).
+
+\Needspace{5\baselineskip}
+Questions to consider:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  An LSTM has no reset gate like a GRU's, so irrelevant information such as HTML tags affects the candidate memory computation. How does it avoid the resulting problems?
+\end{enumerate}
+
+When encountering HTML tags such as \texttt{\textless{}div\textgreater{}} or \texttt{\textless{}/p\textgreater{}}, a trained LSTM makes \(i_t \approx 0\) at the input-gate positions affected by those tags. Meanwhile, forget gate \(f_t\) can remain close to \(1\), fully preserving the previous memory. Even if this handling is imperfect, the output gate provides an additional ``safeguard.''
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Why does it effectively address vanishing gradients in conventional RNNs?
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The LSTM memory-update formula is:
+
+\[
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
+\]
+
+It is a weighted sum of two parts: previous memory \(C_{t-1}\) and current candidate memory \(\tilde{C}_t\).
+
+\Needspace{5\baselineskip}
+During backpropagation, we compute the gradient of \(C_t\) with respect to \(C_{t-1}\). By differentiation:
+
+\[
+\frac{\partial C_t}{\partial C_{t-1}} = f_t
+\]
+
+This ignores the candidate memory's dependence on \(C_{t-1}\) because we typically consider only the direct dependency. The candidate itself is also computed through \(C_{t-1}\), but here we focus on the main path.
+
+An important component of this gradient is forget gate \(f_t\). Moreover, the gradient is added onto \(C_{t-1}\) rather than passing through the derivative of a compressive nonlinearity such as \(\tanh\).
+
+In a conventional RNN, \(h_t = \tanh(W [h_{t-1}, x_t] + b)\), gradients repeatedly multiply the derivative of \(\tanh\) (less than \(1\)), causing exponential shrinkage. In an LSTM, the memory-cell gradient is directly \(f_t\), and this \(f_t\) is obtained through sigmoid, ranging from \(0\) to \(1\). The key is that the gradient does not repeatedly multiply a number less than \(1\), but instead multiplies \(f_t\). If \(f_t\) is close to \(1\), the gradient passes to the preceding time step almost without loss.
+
+The memory gradient can therefore remain relatively stable across time steps during backpropagation instead of vanishing exponentially. This resembles a ``highway'' along which gradients flow directly, alleviating vanishing gradients.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-computing-the-three-gates}{%
+\subsection{III. Computing the Three Gates}\label{iii.-computing-the-three-gates}}
+
+\Needspace{5\baselineskip}
+Forget gate:
+
+\[
+f_t = \sigma(W_f [h_{t-1}, x_t] + b_f)
+\]
+
+\Needspace{5\baselineskip}
+Input gate:
+
+\[
+i_t = \sigma(W_i [h_{t-1}, x_t] + b_i)
+\]
+
+\Needspace{5\baselineskip}
+Output gate:
+
+\[
+o_t = \sigma(W_o [h_{t-1}, x_t] + b_o)
+\]
+
+Here, \(\sigma\) is sigmoid, keeping all three gates within \((0,1)\).
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-summary}{%
+\subsection{IV. Summary}\label{iv.-summary}}
+
+Overall, LSTMs have more parameters and more complex computation than GRUs. They generally perform better on more complex datasets but have no significant advantage over GRUs when data are limited.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-21}{%
+\subsection{References}\label{references-21}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Hochreiter, S., \& Schmidhuber, J. (1997). \href{https://doi.org/10.1162/neco.1997.9.8.1735}{Long Short-Term Memory}. Neural Computation.
+\end{itemize}
+
+\clearpage

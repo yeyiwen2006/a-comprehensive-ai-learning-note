@@ -1,0 +1,55 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5927ux6a21ux578bux7684ux4e2dux671fux8badux7ec3}{%
+\section{大模型的中期训练}\label{ux5927ux6a21ux578bux7684ux4e2dux671fux8badux7ec3}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux80ccux666f}{%
+\subsection{一、背景}\label{ux4e00ux80ccux666f}}
+
+在传统的单轮对话或推理任务中，模型需要的是单一能力的纵深，如把推理做到极致，把对话做得流畅。但在Agent场景下，模型可能需要串联检索、代码诊断、测试、工具调用、上下文管理等多种能力，并构成规划、推理、执行、反馈的闭环；此外，一些特殊领域可能需要用更多语料进行特化训练。而目前的Post-training主要是在预训练模型已有的能力边界内优化模型的表现，难以凭空创造模型未曾见过的能力，对于从未学过的``工具调用后的异常处理''等难以训练。因此，可在后训练前引入Mid-training，注入需要的行为先验。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6570ux636eux7c7bux578b}{%
+\subsection{二、数据类型}\label{ux4e8cux6570ux636eux7c7bux578b}}
+
+高质量长文档、领域语料、代码仓库（如Github PR）、数学推理、agent轨迹、长上下文数据。例如对于Coding Agent而言，可以让Agent在不同Docker中自主运行不同的真实任务，记录每个任务中Agent与环境交互的全过程等，每一个Action和环境返回的每一个Observation都会成为训练的数据。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux8badux7ec3ux65b9ux6cd5}{%
+\subsection{三、训练方法}\label{ux4e09ux8badux7ec3ux65b9ux6cd5}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Mid-training阶段使用的是标准的Next Token Prediction，目的是在知识层面（Knowledge Level）通过领域特定数据迁移模型的能力分布，而不是像SFT那样教授具体的指令遵循行为。
+\item
+  不使用Loss Mask：在SFT或RL中，我们需要运用Loss Mask，因为我们要优化模型的输出策略，而User Prompt或环境反馈是无法被优化的，模型训练中也不应该试图优化它们，故需要加Loss Mask以免干扰训练。而Mid-Training的重点是``学习知识''而非``解决真实问题''，要让它通过预测环境反馈token并优化对应Loss，学到环境中真实的数据概率分布。模型不仅需要学会``如何修改代码''，还需要学会``如何描述一个Bug''以及``代码库通常长什么样''。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-117}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-117}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Chen, M., Zhang, L., Feng, Y., et al.~(2026). \href{https://arxiv.org/abs/2602.02361}{SWE-Universe: Scale Real-World Verifiable Environments to Millions}. arXiv:2602.02361.
+\item
+  GLM-4.5 Team. (2025). \href{https://arxiv.org/abs/2508.06471}{GLM-4.5: Agentic, Reasoning, and Coding (ARC) Foundation Models}. arXiv:2508.06471.
+\item
+  Tu, C., Zhang, X., Weng, R., et al.~(2025). \href{https://arxiv.org/abs/2510.23081}{A Survey on LLM Mid-training}. arXiv:2510.23081.
+\item
+  Zeng, J., Fu, D., Mi, T., et al.~(2026). \href{https://arxiv.org/abs/2601.18418}{daVinci-Dev: Agent-native Mid-training for Software Engineering}. arXiv:2601.18418.
+\item
+  Zhu, Q., Chen, T., Lu, S., et al.~(2026). \href{https://arxiv.org/abs/2602.07457}{Pull Requests as a Training Signal for Repo-Level Code Editing}. arXiv:2602.07457.
+\item
+  Zhang, C., Neubig, G., \& Yue, X. (2025). \href{https://arxiv.org/abs/2512.07783}{On the Interplay of Pre-Training, Mid-Training, and RL on Reasoning Language Models}. arXiv:2512.07783.
+\item
+  Wang, Z., Zhou, F., Li, X., \& Liu, P. (2025). \href{https://arxiv.org/abs/2506.20512}{OctoThinker: Mid-training Incentivizes Reinforcement Learning Scaling}. arXiv:2506.20512.
+\end{itemize}
+
+\clearpage

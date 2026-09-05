@@ -1,0 +1,151 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux7f16ux7801ux5668-ux89e3ux7801ux5668ux67b6ux6784}{%
+\section{编码器-解码器架构}\label{ux7f16ux7801ux5668-ux89e3ux7801ux5668ux67b6ux6784}}
+
+编码器-解码器（Encoder-Decoder）架构的目标是将一个输入序列（例如一句英文句子）(x₁, x₂, \ldots, x\_T)~转换成一个输出序列（例如一句中文句子）(y₁, y₂, \ldots, y\_T')。两个序列的长度可以不同。
+
+编码器：读取并``理解''整个输入序列，将其压缩成一个固定维度的上下文向量（Context Vector）~c，这个向量旨在包含输入序列的完整语义信息。
+
+解码器：以该上下文向量~c~作为初始``记忆''和``指令''，开始逐步生成输出序列。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux7f16ux7801ux5668encoder}{%
+\subsection{一、编码器（Encoder）}\label{ux4e00ux7f16ux7801ux5668encoder}}
+
+编码器是一个RNN（可以是普通RNN、LSTM或GRU）。它逐个处理输入序列中的每个词元。
+
+\Needspace{5\baselineskip}
+对于每一个时间步~t~(从 1 到~T)，编码器执行以下计算：
+h\_t\^{}\{enc\} = f\_\{enc\}(x\_t, h\_\{t-1\}\^{}\{enc\})
+
+h\_t\^{}\{enc\}： 编码器在时间步~t~的隐状态。
+
+f\_\{enc\}： 编码器RNN的函数（例如，LSTM单元的计算过程）。它包含可学习的参数~W\_\{xh\}\textsuperscript{\{enc\},~W\_\{hh\}}\{enc\},~b\_h\^{}\{enc\}~等以及激活函数。
+
+x\_t： 时间步~t~的输入词嵌入向量。
+
+h\_\{t-1\}\^{}\{enc\}： 上一个时间步的隐状态。初始隐状态~h\_0\^{}\{enc\}~通常初始化为全零向量。
+
+\Needspace{5\baselineskip}
+上下文向量的生成：
+在处理完整个输入序列后，编码器最后一个时间步的隐状态~h\_T\^{}\{enc\}~被用作上下文向量~c。
+c = h\_T\^{}\{enc\}
+
+这个向量~c~承载了编码器从整个输入序列中读取并整合的所有信息。它将被用作解码器的初始状态。
+
+更高级的架构中，c~可以是一个池化后的结果，或者是注意力机制的加权组合，但最经典的形式就是~h\_T\^{}\{enc)。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux89e3ux7801ux5668decoder}{%
+\subsection{二、解码器（Decoder）}\label{ux4e8cux89e3ux7801ux5668decoder}}
+
+解码器是另一个RNN，其目标是生成输出序列。它的初始状态由编码器提供的上下文向量初始化。
+
+\Needspace{5\baselineskip}
+数学表达：解码器在每一个时间步~t'~(从 1 到~T') 的计算分为两部分：
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi})}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  计算当前隐状态：
+  s\_\{t'\} = f\_\{dec\}(y\_\{t'-1\}, s\_\{t'-1\})
+\end{enumerate}
+
+s\_\{t'\}： 解码器在时间步~t'~的隐状态。
+
+f\_\{dec\}： 解码器RNN的函数，参数~W\_\{xh\}\textsuperscript{\{dec\},~W\_\{hh\}}\{dec\},~b\_h\^{}\{dec\}~等。
+
+s\_\{t'-1\}： 解码器上一个时间步的隐状态。关键点：初始状态~s\_0~被设置为上下文向量~c。
+s\_0 = c
+
+y\_\{t'-1\}：~解码器在上一个时间步~生成~的输出。在训练和推理时，这个输入的策略不同（详见后面的`` teacher forcing''）。
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  计算当前输出：
+  解码器的隐状态~s\_\{t'\}~被送入一个输出层（通常是全连接层 + Softmax），以预测当前时间步的输出词元概率分布。
+  o\_\{t'\} = g(s\_\{t'\}) = \text{softmax}(W\_\{out\} s\_\{t'\} + b\_\{out\})
+  P(y\_\{t'\} \textbar{} y\_\{\textless t'\}, c) = o\_\{t'\}
+\end{enumerate}
+
+o\_\{t'\}： 一个概率分布向量，其维度与输出词表大小相同。每个值代表了对应词元是当前时间步~t'~输出的概率。一般而言，每个词由
+
+W\_\{out\},~b\_\{out\}： 输出层的权重和偏置参数。
+
+\Needspace{5\baselineskip}
+解码器生成序列的过程是一个自回归（Autoregressive）过程：
+
+初始状态~s\_0 = c，初始输入通常是一个特殊的 \texttt{\textless{}start\textgreater{}} token。
+
+计算~s\_1~和~o\_1，从~o\_1~中采样或取argmax得到第一个词~y₁。
+
+将~y₁~作为下一个时间步的输入，计算~s\_2~和~o\_2，得到~y₂。
+
+重复此过程，直到生成一个特殊的 \texttt{\textless{}end\textgreater{}} token，表示序列生成结束。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux603bux7ed3ux4e0eux5b8cux6574ux7684ux6570ux5b66ux6d41ux7a0b}{%
+\subsection{三、总结与完整的数学流程}\label{ux4e09ux603bux7ed3ux4e0eux5b8cux6574ux7684ux6570ux5b66ux6d41ux7a0b}}
+
+\Needspace{5\baselineskip}
+将一个输入序列~X = (x₁, x₂, \ldots, x\_T)~翻译为输出序列~Y = (y₁, y₂, \ldots, y\_\{T'\})：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+\Needspace{5\baselineskip}
+  编码器阶段：
+  h\_t\^{}\{enc\} = f\_\{enc\}(x\_t, h\_\{t-1\}\^{}\{enc\}), \quad \text{for } t = 1, \ldots, T
+  c = h\_T\^{}\{enc\}
+\item
+\Needspace{5\baselineskip}
+  解码器阶段：
+  s\_0 = c
+  s\_\{t'\} = f\_\{dec\}(y\_\{t'-1\}, s\_\{t'-1\}), \quad \text{for } t' = 1, \ldots, T'
+  P(y\_\{t'\} \textbar{} y\_\{\textless t'\}, c) = g(s\_\{t'\}) = \text{softmax}(W\_\{out\} s\_\{t'\} + b\_\{out\})
+\item
+\Needspace{5\baselineskip}
+  训练目标和损失：
+\Needspace{5\baselineskip}
+  最大化输出序列的条件对数似然：
+  要log P(Y\textbar X) 最大，也就是sum(log P(y\_\{t'\} \textbar{} y\_\{\textless t'\})最大；而-log P(y\_\{t'\} \textbar{} y\_\{\textless t'\})就是交叉熵损失，让模型趋向于真实one-hot分布
+\item
+  一个重要技巧：Teacher Forcing
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+在训练时，解码器每一步的输入~y\_\{t'-1\}~有一个重要选择：
+
+不使用Teacher Forcing： 使用解码器自己上一步预测的结果作为输入。错误会累积，训练可能不稳定。
+
+使用Teacher Forcing： 无论解码器上一步预测的是什么，都强制使用真实标签（Ground Truth）~中的上一个词~y\_\{t'-1\}\^{}\{true\}~作为输入。
+
+s\_\{t'\} = f\_\{dec\}(y\_\{t'-1\}\^{}\{true\}, s\_\{t'-1\})
+
+这大大加速了训练的收敛，因为它在每一步都为解码器提供了正确的上下文。然而，这可能导致训练和推理时的不匹配（Exposure Bias），因为推理时没有真实标签可用。通常采用一种课程学习策略，在训练后期逐渐减少Teacher Forcing的使用。
+
+推理时，则没有真实标签可用，只能使用解码器自己上一步的预测结果作为当前步的输入。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-19}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-19}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Bengio, S., Vinyals, O., Jaitly, N., \& Shazeer, N. (2015). \href{https://proceedings.neurips.cc/paper/2015/hash/e995f98d56967d946471af29d7bf99f1-Abstract.html}{Scheduled Sampling for Sequence Prediction with Recurrent Neural Networks}. NeurIPS 2015.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,130 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{gptux4e0eux9884ux8badux7ec3}{%
+\section{GPT与预训练}\label{gptux4e0eux9884ux8badux7ec3}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-5}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-5}}
+
+GPT（Generative Pre-trained Transformer）的核心思想是``预测 next token''，这是一个单向、自回归的生成过程。比如，第一次根据已有提示词，预测第一个 token（记为 \(x_1\)）；第二次根据提示词和 \(x_1\)，预测第二个 token \(x_2\)；第三次根据提示词和 \(x_1\)、\(x_2\)，预测第三个 token \(x_3\)\ldots\ldots 这样做的背后逻辑在于：一个真正强大的语言模型，仅仅通过``预测下一个词''这个任务，就能学到关于语言、知识、推理和思维的几乎所有规律。当模型的规模（参数、数据、算力）足够大时，这个看似简单的任务会迫使模型构建一个极其复杂和精确的对世界的模型，以便做出更好的预测。这个训练过程称为``预训练''（Pre-training），以和后续的微调（后训练）相区分。
+
+事实上，这样的模型训练过程相当于将丰富的对世界的认识``压缩''在了模型参数中。有观点认为``压缩即智能''，因为为了在生成过程中获得高置信度的还原，模型必须从海量知识中提炼出内在规律，在训练时尽可能接近``无损压缩''。而这个提炼的过程也会让模型发现人类可能无法发现的一些不同领域知识间的内在关联，这也是创新的源泉之一（所以我们不能武断地认为 AI 不能创新）。当然，强化微调（后面会提到）也是 AI 能产生新策略的一个重要原因。
+
+另外特别说明，这里的 GPT 指的是``生成式预训练 Transformer''这样一个通用架构，而并非特指 OpenAI 的 ChatGPT 系列模型（当然 ChatGPT 作为首个生成式 AI 产品，应该就是因这样的架构而命名的）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6a21ux578bux67b6ux6784-1}{%
+\subsection{二、模型架构}\label{ux4e8cux6a21ux578bux67b6ux6784-1}}
+
+GPT 和 BERT 一样基于 Transformer，但和 BERT 不同的是，GPT 选用了 Transformer 架构的解码器部分，在三个注意力块中也只选用了其中的带掩码的多头自注意力（Masked Multi-Head Self-Attention）。
+
+在这个注意力块中，查询、键、值均来自同一序列的已生成部分，每个词只能关注到它左边的词（即过去的词），而不能关注到它右边（即未来）的词，这决定了 GPT 的``单向性''。这是通过一个注意力掩码来实现的，它将未来位置的信息全部遮盖掉，确保模型在生成下一个词时，不会``偷看''到未来的答案，这与模型在推理时（生成模式）的行为保持一致。
+
+GPT 模型由多层 Transformer 解码器块堆叠而成。例如，GPT-3 有 96 层。每个解码器块内都包含一个全连接前馈网络，用于对每个位置的表示进行非线性变换。
+
+为什么选择解码器？解码器的自回归特性天然契合``下一个词预测''的预训练任务。模型在训练时和推理时的行为是完全一致的，都是根据已知文本来预测未知文本，这避免了 BERT 存在的预训练-微调不一致问题。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e3aux4ec0ux4e48ux4e0dux9700ux8981ux7f16ux7801ux5668ux4e3aux4ec0ux4e48ux6548ux679cux6bd4ux57faux4e8eux7f16ux7801ux5668ux7684-bert-ux66f4ux597d}{%
+\subsection{三、为什么不需要编码器\&为什么效果比基于编码器的 BERT 更好？}\label{ux4e09ux4e3aux4ec0ux4e48ux4e0dux9700ux8981ux7f16ux7801ux5668ux4e3aux4ec0ux4e48ux6548ux679cux6bd4ux57faux4e8eux7f16ux7801ux5668ux7684-bert-ux66f4ux597d}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux751fux6210ux80fdux529bux662fux66f4ux6839ux672cux66f4ux901aux7528ux7684ux80fdux529b}{%
+\subsubsection{1. 生成能力是更根本、更通用的能力}\label{ux751fux6210ux80fdux529bux662fux66f4ux6839ux672cux66f4ux901aux7528ux7684ux80fdux529b}}
+
+理解是生成的子集：要想高质量地生成一段文本，模型必须深刻地理解语言、知识、逻辑和上下文。一个能和你流畅对话的模型，其理解能力必然不差。反之，一个只擅长理解的模型（如 BERT），却无法进行流畅的生成。而通过``生成''范式，GPT 可以被引导去完成几乎任何 NLP 任务，这被称为``提示工程''。这种统一性使得一个模型可以应对千变万化的任务，而 BERT 通常需要为每个任务设计特定的模型结构和微调过程。
+
+\Needspace{5\baselineskip}
+\hypertarget{scaling-law}{%
+\subsubsection{2. Scaling Law}\label{scaling-law}}
+
+大量实验发现，纯解码器的 Transformer 架构在当模型参数规模、数据量和计算力扩大到一定程度时，模型会涌现出令人惊讶的新能力（如推理、代码生成、复杂指令跟随等）。
+
+当参数达到千亿级别（如 GPT-3）时，纯解码器架构涌现出了强大的上下文学习能力。这意味着，仅仅通过一个提示（Prompt），模型就能理解并执行各种复杂任务，而无需一个专门的编码器来为其解析指令。
+
+这最终证明：一个足够庞大的自回归模型，其解码器本身就已经具备了我们期望编码器拥有的``深度理解''能力。它通过在生成过程中``反复咀嚼''前文，同样可以完成深度的语义理解。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux9884ux8badux7ec3ux4e0eux4f7fux7528ux4efbux52a1ux7684ux4e00ux81f4ux6027}{%
+\subsubsection{3. 预训练与使用任务的一致性}\label{ux9884ux8badux7ec3ux4e0eux4f7fux7528ux4efbux52a1ux7684ux4e00ux81f4ux6027}}
+
+GPT 的训练任务是下一个词预测（自回归），GPT 的推理/使用方式也是生成下一个词，并将其作为新的输入，继续生成下一个词（自回归）。模型在训练时和部署时的行为是完全一致的。它永远不会在训练时看到整个句子（因为未来词被掩码遮住了），在推理时也不需要看到未来词。这种一致性使得模型能够将其在训练中学到的所有能力，毫无损耗地应用到实际生成中。
+
+反之，如果 GPT 在预训练时使用了编码器（双向注意力）来理解输入，那么在推理生成时就会遇到一个悖论：在生成第 \(N\) 个词时，编码器需要看到完整的输入序列才能进行编码，但完整的输入序列包含了尚未生成的未来词。因此，为了保持极致的任务一致性，抛弃编码器是必然的选择。
+
+而训练过程与生成任务的不一致性也被认为是制约 BERT 性能（尤其是生成方面性能）的瓶颈之一。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux7f16ux7801ux5668ux7684ux5197ux4f59ux6027}{%
+\subsubsection{4. 编码器的冗余性}\label{ux7f16ux7801ux5668ux7684ux5197ux4f59ux6027}}
+
+编码器-解码器架构是为序列到序列任务设计的，比如机器翻译、文本摘要。这些任务的特点是输入和输出可以是不同长度、不同模态的，编码器要理解、编码整个输入序列（双向），再由解码器负责根据编码器的输出，自回归地生成输出序列，而 GPT 的任务更像是``文本续写''，而不是``文本转换''。
+
+从参数和计算效率上，只训练一个解码器栈，相比训练编码器和解码器两个栈，在参数量相同的情况下，每个组件可以更``深''或更``宽''，模型能力可能更强。训练和推理过程也更简单，避免了编码器和解码器之间的复杂交互。
+
+一个比喻：编码器-解码器（如 T5）像是一个翻译团队。编码器是分析源语言的研究员（全面理解原文），解码器是根据研究员报告撰写目标语言的作家（生成译文）；纯解码器（如 GPT）像是一个独自创作的作家。他一边阅读自己已经写下的前文（这本身就是``理解''过程），一边续写后面的内容。他不需要一个独立的研究员来告诉他前文是什么意思，因为他自己就是作者。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6587ux672cux81eaux8eabux7684ux5e8fux5217ux6027}{%
+\subsubsection{5. 文本自身的序列性}\label{ux6587ux672cux81eaux8eabux7684ux5e8fux5217ux6027}}
+
+BERT 为代表的编码器架构在模型规模极大时，可能不如自回归的解码器有效，因为它破坏了文本的天然序列性。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbscaling-law}{%
+\subsection{四、Scaling Law}\label{ux56dbscaling-law}}
+
+\Needspace{5\baselineskip}
+Scaling Law（缩放定律）由 OpenAI 于 2020 年在《Scaling Laws for Neural Language Models》中提出（一说 Dario Amodei 等在百度时就已经观测到了其雏形），是在大模型研究中观察到的一类经验规律：当模型规模、训练数据量和训练计算量增加时，模型的性能通常会按照比较稳定、可预测的趋势提升。这里的``性能''常用训练损失或验证损失来衡量，而这种下降关系往往近似符合幂律形式，例如：
+
+\[
+\mathrm{Loss} \approx A \times N^{-\alpha}
+\]
+
+其中 \(N\) 可以表示模型参数量、数据量或计算量，\(\alpha\) 表示性能随规模增长而改善的速度。直观来说，模型越大、数据越多、算力越充足，损失通常越低，能力也往往越强；但这种提升不是线性的，而是边际收益递减的。也就是说，投入更多资源仍然有用，但每增加一倍资源带来的提升会逐渐变小。
+
+在大语言模型中，Scaling Law 的核心意义是帮助研究者预测``大模型会不会更好''。如果一个小规模模型和中等规模模型的实验结果已经显示出稳定趋势，那么研究者可以据此估计更大模型在更大数据和更多计算下可能达到的效果。这使得训练超大模型不再完全依赖盲目尝试，而可以提前规划模型参数量、数据规模和训练算力之间的比例。
+
+不过，Scaling Law 并不只是简单地``模型越大越好''。后来的研究发现，模型参数量和训练 token 数需要合理匹配。如果模型很大但数据不足，就会训练不充分；如果数据很多但模型太小，模型容量又可能不够。如 Chinchilla 相关研究就强调，在固定计算预算下，很多早期大模型其实参数偏大、训练数据偏少，更优做法可能是训练一个相对小一些但看过更多数据的模型。此外，Scaling Law 主要来自经验观察，不保证在所有任务、所有模型结构或所有数据质量条件下都严格成立；当数据质量、训练方法、模型架构或任务类型发生变化时，实际效果也可能偏离预测。
+
+近几年，Scaling 进一步扩展到后训练和推理阶段，以 RLVR 为代表的后训练也遵循着类似的 Scaling Law，随着参数量、训练环境、算力的扩展，模型性能不断提升；而模型参数不变时，通过增加回答时的计算预算，例如生成更长思考过程、尝试多条路径、自我检查等，也能显著提升复杂任务表现，呈现出推理时的 Scaling Law。因此，如今大模型能力的提升不再只依赖预训练规模扩张，而是由预训练 Scaling、后训练 Scaling 和推理时 Scaling 共同推动。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux591aux6a21ux6001}{%
+\subsection{五、多模态}\label{ux4e94ux591aux6a21ux6001}}
+
+多模态技术，就是让 AI 从单纯的``文字处理者''进化为具备``眼耳口脑''的全能感知体。它打破了文本、图像、音频和视频之间的壁垒，能够像人类一样同时通过看图、听声音和读文字来理解世界；例如，你不仅可以用文字提问，还能直接上传一段视频或一张图表让 AI 分析其中的逻辑。
+
+目前主流的实现方法是通过一些方式，将各个模态的信息``对齐''到统一的高维语义空间中进行处理，从而在预训练中融合多个模态的数据。无论输入的是文本、图像还是音频，输入信息经过不同方式处理后，最终都会统一到同一个高维语义空间中。比如，``猫''这个词语和一张猫的图片在这个语义空间中距离较近，和一张西瓜的图片在空间中距离较远。具体实现方式可见多模态部分介绍。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-73}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-73}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Vaswani, A., Shazeer, N., Parmar, N., et al.~(2017). \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need}. NeurIPS 2017.
+\item
+  Radford, A., Narasimhan, K., Salimans, T., \& Sutskever, I. (2018). \href{https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf}{Improving Language Understanding by Generative Pre-Training}. OpenAI.
+\item
+  Radford, A., Wu, J., Child, R., et al.~(2019). \href{https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf}{Language Models are Unsupervised Multitask Learners}. OpenAI.
+\item
+  Brown, T. B., Mann, B., Ryder, N., et al.~(2020). \href{https://arxiv.org/abs/2005.14165}{Language Models are Few-Shot Learners}. NeurIPS 2020.
+\item
+  Kaplan, J., McCandlish, S., Henighan, T., Brown, T. B., Chess, B., Child, R., Gray, S., Radford, A., Wu, J., \& Amodei, D. (2020). \href{https://arxiv.org/abs/2001.08361}{Scaling Laws for Neural Language Models}. arXiv:2001.08361.
+\item
+  Amodei, D., Anubhai, R., Battenberg, E., et al.~(2016). \href{https://arxiv.org/abs/1512.02595}{Deep Speech 2: End-to-End Speech Recognition in English and Mandarin}. ICML 2016.
+\item
+  Hoffmann, J., Borgeaud, S., Mensch, A., et al.~(2022). \href{https://arxiv.org/abs/2203.15556}{Training Compute-Optimal Large Language Models}. NeurIPS 2022.
+\item
+  DeepSeek-AI, Guo, D., Yang, D., et al.~(2025). \href{https://arxiv.org/abs/2501.12948}{DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning}. arXiv:2501.12948.
+\item
+  Snell, C., Lee, J., Xu, K., \& Kumar, A. (2024). \href{https://arxiv.org/abs/2408.03314}{Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters}. arXiv:2408.03314.
+\end{itemize}
+
+\clearpage

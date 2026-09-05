@@ -1,0 +1,302 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux63a8ux7406ux65f6ux4e0dux751fux6210ux89c6ux9891ux7684ux4e16ux754c-ux52a8ux4f5cux6a21ux578b}{%
+\section{推理时不生成视频的世界-动作模型}\label{ux63a8ux7406ux65f6ux4e0dux751fux6210ux89c6ux9891ux7684ux4e16ux754c-ux52a8ux4f5cux6a21ux578b}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux95eeux9898ux80ccux666f-10}{%
+\subsection{一、问题背景}\label{ux4e00ux95eeux9898ux80ccux666f-10}}
+
+世界-动作模型（WAM）尽管有助于解决VLA模型存在的问题，但其必须生成未来的视频帧，导致存在明显的推理延迟。物理世界并不会停下来，因此机器人必须实现低延迟的实时控制，过长的延迟往往是不可接受的。针对此问题，如何让世界-动作模型在推理时不需要生成完整的视频成为了一个重要的研究方向。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cfast-wamux63a8ux7406ux65f6ux5f03ux7528ux89c6ux9891ux5206ux652fux4ec5ux4f7fux7528ux52a8ux4f5cux5206ux652f}{%
+\subsection{二、Fast-WAM：推理时弃用视频分支、仅使用动作分支}\label{ux4e8cfast-wamux63a8ux7406ux65f6ux5f03ux7528ux89c6ux9891ux5206ux652fux4ec5ux4f7fux7528ux52a8ux4f5cux5206ux652f}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux67b6ux6784ux4e0eux8badux7ec3ux5de5ux4f5cux6d41}{%
+\subsubsection{（一）模型架构与训练工作流}\label{ux4e00ux6a21ux578bux67b6ux6784ux4e0eux8badux7ec3ux5de5ux4f5cux6d41}}
+
+Fast-WAM以Wan2.2作为基座模型，复用了其视频DiT、文本编码器和视频VAE，并经过后训练改造为MoT架构。
+
+\textbf{第一步：Token的精准分组}
+
+\Needspace{5\baselineskip}
+在送入MoT架构之前，所有输入信息被严格划分为三个Token组：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  视觉锚点 \(f_0\)：当前第一帧观测图像的``干净''潜在特征，不加噪。
+\item
+  未来视频 \(f_1,\ldots,f_h\)：未来视频帧的加噪潜在特征，仅在训练时存在。
+\item
+  动作序列 \(a_1,\ldots,a_h\)：要生成的动作块的加噪特征。
+\end{enumerate}
+
+这里的``第一帧''是相对于原本要生成的``未来视频块''而言的锚点（Anchor）。模型摒弃生成未来画面的过程，将这唯一的一帧当前图像输入视频骨干网络中进行一次单向前向传播，提取世界表征，然后直接交给动作专家网络去生成后续动作。这种设计赋予了Fast-WAM类似标准VLA的极速实时响应能力。
+
+\textbf{第二步：全局文本Cross-Attention注入}
+
+在这三个Token组进入DiT的每一层时，所有Token组都会通过Cross-Attention机制关注语言特征向量。数学上， \(f_0\)、 \(f_{1:h}\) 和 \(a_{1:h}\) 都作为Query，而文本特征作为Key和Value。这保证了无论是提取当前环境的视觉特征、推演未来的物理变化，还是规划机器人的具体动作，都始终受到人类语言指令的引导。
+
+\textbf{第三步：结构化Self-Attention掩码}
+
+\Needspace{5\baselineskip}
+注入文本信息后，Token之间在DiT内部进行自注意力交互。Video DiT和Action DiT通过严格的注意力掩码实现``组合''与``隔离''：
+
+\begin{itemize}
+\tightlist
+\item
+  Video DiT的内部交互：未来的加噪视频Token \(f_1,\ldots,f_h\) 可以在视频分支内双向关注，并且被允许关注第一帧干净特征 \(f_0\)，使模型能基于初始状态推演未来。
+\item
+  Action DiT的内部交互：动作Token \(a_1,\ldots,a_h\) 可以在动作分支内双向关注，也被允许关注第一帧干净特征 \(f_0\)，使模型能基于当前视觉状态规划连贯动作。
+\item
+  不可跨越的红线：动作Token绝对不允许关注未来视频Token；同时，第一帧干净Token \(f_0\) 不关注任何其他Token，以免被噪声污染。
+\end{itemize}
+
+严格隔离的根本原因是：如果训练时动作特征看到了未来视频特征，动作专家就会根据``未来已经发生的结果''反推动作，形成依赖。然而在真实部署时，为追求极低延迟，Fast-WAM会直接砍掉整个未来视频生成分支。如果模型在训练中养成了依赖未来视频的习惯，推理时一旦看不到未来视频，动作分支就会因信息缺失而崩溃。结构化掩码强迫动作预测只立足于当下，即第一帧和文本，从根本上解耦训练时的视频辅助和推理时的动作生成。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux63a8ux7406ux5de5ux4f5cux6d41}{%
+\subsubsection{（二）推理工作流}\label{ux4e8cux63a8ux7406ux5de5ux4f5cux6d41}}
+
+\Needspace{5\baselineskip}
+推理阶段彻底抛弃显式视频生成：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  单次前向传播：仅保留第一帧的干净潜在特征，将其输入视频骨干网络进行一次单向前向传播，提取具有物理意义的潜在世界表征 \(z(o,l)\)。
+\item
+  直接动作去噪：动作专家DiT直接基于该表征参数化动作分布
+\end{enumerate}
+
+\[
+p_\theta(a_{1:H}\mid o,l)=p_\theta(a_{1:H}\mid z(o,l)).
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  输出执行：由于不需要实例化和去噪未来视频帧，动作生成只需10步、无分类器引导（CFG=1.0）的去噪即可输出动作序列。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux5b9eux9a8cux7ed3ux679c}{%
+\subsubsection{（三）实验结果}\label{ux4e09ux5b9eux9a8cux7ed3ux679c}}
+
+\begin{itemize}
+\tightlist
+\item
+  Fast-WAM的表现与显式生成未来的变体（Joint和IDM）极其接近。
+\item
+  如果去掉训练时的视频协同训练任务，模型在RoboTwin上的成功率骤降至83.8\%，在真机折叠毛巾任务上的成功率更断崖式跌至10\%。
+\end{itemize}
+
+因此，WAM能力增强的关键在于训练阶段的视频预测任务重塑了模型对物理世界的表征，而不在于推理阶段显式生成未来画面。Fast-WAM可以在训练时吸收世界模型带来的物理先验，同时在部署时获得类似VLA的实时响应。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09dyna-2ux63a8ux7406ux65f6ux89c6ux9891ux5206ux652fux4e0dux4f5cux9884ux6d4bux53eaux4e3aux52a8ux4f5cux5206ux652fux63d0ux4f9bux89c6ux89c9-ux6587ux672cux7279ux5f81}{%
+\subsection{三、Dyna-2：推理时视频分支不作预测、只为动作分支提供视觉-文本特征}\label{ux4e09dyna-2ux63a8ux7406ux65f6ux89c6ux9891ux5206ux652fux4e0dux4f5cux9884ux6d4bux53eaux4e3aux52a8ux4f5cux5206ux652fux63d0ux4f9bux89c6ux89c9-ux6587ux672cux7279ux5f81}}
+
+Dyna-2是在大量以人类第一视角视频为核心的数据上训练的世界-动作模型，同样用视频生成和动作生成目标联合训练。关于人类第一视角视频数据的Scaling在具身数据的章节另行探讨，这里主要分析Dyna-2的模型架构。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux67b6ux6784-2}{%
+\subsubsection{（一）模型架构}\label{ux4e00ux6a21ux578bux67b6ux6784-2}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Video Transformer层
+\end{enumerate}
+
+输入：已观测到的视频帧Vc=\{v\_1,v\_2,\ldots,v\_N\}；待去噪的未来视频帧z\_t=\{z\_N+1,\ldots,z\_N+H\}；文本指令T。
+
+注意力范式：视频帧之间采取因果注意力，Vc内部v\_i只能注意到v\_1,\ldots,v\_i-1；z\_t对Vc只能单向关注；视频帧对文本采取Cross Attention，以视频帧为Query，文本为Key和Value，即视频帧对应的向量从文本中吸收信息。
+
+输出：Vc经过Video Transformer层后得到吸收了文本信息（但不吸收z\_t信息）的已观测到的视觉特征Vc'（可看成Vc和T的函数），经过1-3个Video Transformer层的视觉特征向量都会被注入Action Transformer参与动作生成（研究表明经过较少的层数就可以得到有用的视觉特征，不需要等到深层跑完）；z\_t经过Video Transformer层后得到去噪后的未来帧z\_t'（可看成Vc、z\_t和T的函数），训练时用流匹配计算视觉部分的损失。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Action Transformer层
+\end{enumerate}
+
+输入：待去噪的动作块a\_t=\{a\_N+1,\ldots,a\_N+H\}；机器人本体感受量（如当前joint positions、joint velocities、gripper state、end-effector state等）；来自Video Transformer层的已观测到的视觉特征Vc'。
+
+注意力范式：动作块a\_t内部采取双向注意力；动作块a\_t对已观测到的视觉特征Vc'采取Cross Attention，以动作为Query，视觉特征为Key和Value。动作块不直接attend文本，但通过已观测到的视觉特征Vc'可间接获取文本信息；动作块不从未来视觉预测z\_t'中获取任何信息。
+
+输出：去噪后的动作块a\_t'既是最终推理结果，也用于训练时计算动作部分的损失
+
+Action Transformer层数更少，推理时只需要跑各Action Transformer层和Video Transformer较浅的几层即可生成动作，保证了较高的速度。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  实例说明
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+假设机器人已经观测到3帧 \(I_1,I_2,I_3\)，训练数据中还包含真实未来视频 \(I_4,I_5,I_6\)。未来帧先被编码为潜变量并加噪，形成 \(z_{4,t},z_{5,t},z_{6,t}\)。Video Transformer的输入可以示意为：
+
+\begin{verbatim}
+past context                  noisy future
+I1  I2  I3       |        z4,t  z5,t  z6,t
+        │
+Video Transformer（causal attention）
+        │
+text ──cross-attention
+        │
+predicted video velocity
+\end{verbatim}
+
+Action Transformer读取的是世界模型骨干对已观测视频的表征，并输出动作；它不读取未来预测分支中的 \(z_{4,t},z_{5,t},z_{6,t}\)。也就是说，训练中的未来视频仅用于塑造世界模型表征，不会成为动作推理的必需输入。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbbeing-h0.7ux8badux7ec3ux65f6ux8ba9ux52a8ux4f5cux9884ux6d4bux4e0eux57faux4e8eux672aux6765ux72b6ux6001ux7684ux52a8ux4f5cux9884ux6d4bux5bf9ux9f50}{%
+\subsection{四、Being-H0.7：训练时让``动作预测''与``基于未来状态的动作预测''对齐}\label{ux56dbbeing-h0.7ux8badux7ec3ux65f6ux8ba9ux52a8ux4f5cux9884ux6d4bux4e0eux57faux4e8eux672aux6765ux72b6ux6001ux7684ux52a8ux4f5cux9884ux6d4bux5bf9ux9f50}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-20}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-20}}
+
+Being-H0.7不需要在像素层面预测未来，而是直接在训练时让动作预测与基于未来状态的动作预测对齐。模型引入了一组可学习的Latent Queries，在Transformer层层前向传播的过程中，这组查询向量不断从多模态上下文中汲取与任务相关的信息，将其压缩重组、生成动作；另外在训练时，将观测到的未来状态也压缩到Latent空间，也从多模态上下文中汲取与任务相关的信息，将其压缩重组、生成动作；让前者（先验分支）向后者（后验分支）对齐。
+
+\begin{itemize}
+\tightlist
+\item
+  先验分支（Prior Branch）：最终用于实机部署的干线分支，仅依赖当前指令和观测，使用Latent Queries生成动作。
+\item
+  后验分支（Posterior Branch）：仅在训练阶段存在的辅助分支，将干线中的Latent Queries替换为由视觉编码器提取的未来观察嵌入（Future Embeddings）。
+\item
+  对齐机制：在隐藏层特征级别计算先验分支与后验分支的对齐损失，迫使先验分支在只看到当下画面的情况下，推断出与``看到未来''相同的特征表示。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux8badux7ec3ux5de5ux4f5cux6d41}{%
+\subsubsection{（二）训练工作流}\label{ux4e8cux8badux7ec3ux5de5ux4f5cux6d41}}
+
+\textbf{步骤1：上下文编码与序列构建}
+
+\Needspace{5\baselineskip}
+给定任务指令 \(x\)、时间长度为 \(H\) 的历史观测 \(o_{-H:0}\) 以及机器人本体状态 \(s\)。将这些特征映射并拼接后，在动作块 \(a_{0:T}\) 的预测序列前插入数量为 \(K\)、维度为 \(d\) 的潜在查询矩阵 \(Q\in\mathbb{R}^{K\times d}\)，构建先验分支的完整Transformer序列：
+
+\[
+S=[x;o_{-H:0};s;Q;a_{0:T}].
+\]
+
+\textbf{步骤2：后验分支的未来特征提取}
+
+\Needspace{5\baselineskip}
+训练时同步取得未来真实观测视频帧 \(\tilde{o}_{0:T}\)，使用冻结的预训练ViT和Perceiver重采样器 \(E\)，将其压缩为大小与 \(Q\) 一致的未来嵌入：
+
+\[
+z^{\mathrm{post}}=E(\tilde{o}_{0:T})\in\mathbb{R}^{K\times d}.
+\]
+
+\textbf{步骤3：混合Transformer双分支前向传播}
+
+为提高计算效率，算法不串行执行两次巨大的前向传播，而是用Mixture-of-Transformers架构将两个分支合并成一个长序列，并应用双分支注意力掩码（Dual-Branch Attention Mask）：两个分支都能看到共享上下文 \(c=[x;o_{-H:0};s]\)，但先验分支和后验分支的Token彼此不可见。
+
+\textbf{步骤4：损失函数计算}
+
+整个框架通过三组损失联合优化。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  动作流匹配损失：基于扩散生成范式，分别计算两个分支对加噪动作 \(\tilde a_t\) 的去噪速度场损失。若真实动作为 \(a\)、加噪时间为 \(t\)，目标速度为 \(u_t=a-\tilde a_t\)，则
+\end{enumerate}
+
+\[
+\mathcal{L}_{\mathrm{FM}}^{\mathrm{prior}}=\left\|v_\theta^{\mathrm{prior}}(a_t,c)-u_t\right\|_2^2,
+\]
+
+\[
+\mathcal{L}_{\mathrm{FM}}^{\mathrm{post}}=\left\|v_\theta^{\mathrm{post}}(a_t,c,z^{\mathrm{post}})-u_t\right\|_2^2.
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  隐状态联合对齐损失：在第 \(l\) 个包含对齐的Transformer层，提取先验分支隐状态 \(h_l^{\mathrm{prior}}\) 与后验分支隐状态 \(h_l^{\mathrm{post}}\)，计算均方误差：
+\end{enumerate}
+
+\[
+\mathcal{L}_{\mathrm{align}}=\frac{1}{L}\sum_{l=1}^{L}\left\|h_l^{\mathrm{prior}}-h_l^{\mathrm{post}}\right\|_2^2.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  防崩溃正则化损失：为防止对齐导致隐特征趋于全0或方向单一，分别施加范数与秩的惩罚。范数正则化为
+\end{enumerate}
+
+\[
+\mathcal{R}_{\mathrm{norm}}(h)=\left[\operatorname{ReLU}\!\left(\tau-\|h\|_2\right)\right]^2.
+\]
+
+\Needspace{5\baselineskip}
+秩正则化由Gram矩阵 \(G\) 的归一化特征值 \(p_i\) 的信息熵表示：
+
+\[
+\mathcal{R}_{\mathrm{rank}}(H)=\sum_{i=1}^{B}p_i\log p_i.
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux63a8ux7406ux5de5ux4f5cux6d41}{%
+\subsubsection{（三）推理工作流}\label{ux4e09ux63a8ux7406ux5de5ux4f5cux6d41}}
+
+\Needspace{5\baselineskip}
+由于模型将特征对齐与前向生成解耦，推理阶段非常轻量：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  观察采集：机器人摄像头实时采集当前画面，处理并拼接为上下文向量。
+\item
+  纯先验分支执行：完全丢弃庞大的后验分支和所有未来视频输入，只保留Transformer骨干、Latent Queries \(Q\) 以及用于扩散的Flow Matching生成头。
+\item
+  动作块输出与UAC异步控制：模型一次性生成连续的未来动作块 \(a_{0:T}\)。真实系统部署时结合通用异步分块机制（UAC），服务器异步推理未来动作序列，机器人驱动器从线程安全缓冲池持续取出历史前缀锁定动作执行。二者解耦后，以约3至4毫秒每步的延迟实现平滑动态控制。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-160}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-160}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Yuan, T., Dong, Z., Liu, Y., \& Zhao, H. (2026). \href{https://arxiv.org/abs/2603.16666}{Fast-WAM: Do World Action Models Need Test-time Future Imagination?}. arXiv:2603.16666.
+\item
+  Dyna Robotics. (2026). \href{https://www.dyna.co/dyna-2}{Dyna-2: A 1-Million-Hour Scaling Law for World-Action Models}. Official research report.
+\item
+  Luo, H., Zhang, W., Feng, Y., et al.~(2026). \href{https://arxiv.org/abs/2605.00078}{Being-H0.7: A Latent World-Action Model from Egocentric Videos}. arXiv:2605.00078.
+\end{itemize}
+
+\clearpage

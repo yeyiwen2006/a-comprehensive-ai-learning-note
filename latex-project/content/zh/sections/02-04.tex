@@ -1,0 +1,293 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux6570ux521dux59cbux5316}{%
+\section{参数初始化}\label{ux53c2ux6570ux521dux59cbux5316}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00xavierglorotux521dux59cbux5316}{%
+\subsection{一、Xavier（Glorot）初始化}\label{ux4e00xavierglorotux521dux59cbux5316}}
+
+为了避免梯度消失或爆炸，我们希望每一层输出的方差与输入的方差大致相等。除了在每次计算结束后用批量规范化``拉回来''之外，我们还希望计算过程本身就能保证这一点。在线性网络中，如y\_j=sigma(x\_i*w\_ij)+b\_j，输入与输出方差的关系取决于参数的取值，因此参数如何初始化至关重要。
+
+假设权重和输入独立同分布，且它们的均值都为 0。权重的方差为sigma\^{}2，这是我们要解的。输入的方差为Var(x\_i)=Var(X)。
+
+考虑一个简单的线性层，输出y\_j=sigma(x\_i\emph{w\_ij)（忽略偏置），对任意j，Var(y\_j)=sigma(Var(x\_i}w\_ij))=n\_in\emph{Var(x\_i}w\_ij)（n\_in为输入数量）
+
+\Needspace{5\baselineskip}
+根据方差公式：
+
+\[
+\mathrm{Var}(Z)=E[Z^2]-(E[Z])^2
+\]
+
+\Needspace{5\baselineskip}
+有：
+
+\[
+E[W_iX_i]=E[W_i]E[X_i]=0\cdot 0=0
+\]
+
+\[
+\mathrm{Var}(W_iX_i)
+=E[(W_iX_i)^2]-0
+=E[W_i^2]E[X_i^2]
+\]
+
+\Needspace{5\baselineskip}
+因为 \(E[W]=0\)，所以：
+
+\[
+\mathrm{Var}(W)=E[W^2]-(E[W])^2=E[W^2]
+\]
+
+\Needspace{5\baselineskip}
+同理：
+
+\[
+\mathrm{Var}(X)=E[X^2]
+\]
+
+\Needspace{5\baselineskip}
+将这些代入，可以得到：
+
+\[
+\mathrm{Var}(Y)=n_{\mathrm{in}}\cdot E[W_i^2]E[X_i^2]
+\]
+
+\Needspace{5\baselineskip}
+即：
+
+\[
+\mathrm{Var}(Y)=n_{\mathrm{in}}\cdot \mathrm{Var}(W)\cdot \mathrm{Var}(X)
+\]
+
+前向传播的目标是保持方差不变，即~Var(Y) = Var(X)，故Var(W)=1/n\_in
+
+\Needspace{5\baselineskip}
+同理，对于反向传播，为了保持梯度不变性，我们希望：
+
+\[
+\mathrm{Var}\left(\frac{\partial L}{\partial z^{l-1}}\right)
+=\mathrm{Var}\left(\frac{\partial L}{\partial z^l}\right)
+\]
+
+\Needspace{5\baselineskip}
+这里z\_l是第l层的输出（尚未经过激活函数）。接下来进行推导：
+
+为了推导出 \(\dfrac{1}{n_{\mathrm{out}}}\)，我们使用 Xavier（Glorot）初始化的假设：激活函数是 \(\tanh\) 或 sigmoid，并且输入 \(z\) 大部分位于其线性区域（\(z\approx 0\)）。在这个区域内，\(f(z)\approx z\)，更重要的是导数 \(f'(z)\approx 1\)。同时假设权重 \(W\)、输入 \(a\) 以及梯度 \(\dfrac{\partial L}{\partial z}\) 的均值都为 0：
+
+\[
+E[W]=0,\qquad E\left[\frac{\partial L}{\partial z^l}\right]=0
+\]
+
+并假设 \(W\)、\(\dfrac{\partial L}{\partial z^l}\) 和 \(a^{l-1}\) 相互独立。
+
+\Needspace{5\baselineskip}
+分析梯度如何从第 \(l\) 层反向传播到第 \(l-1\) 层。令：
+
+\[
+z^l=W^la^{l-1}+b^l,\qquad a^l=f(z^l)
+\]
+
+\Needspace{5\baselineskip}
+其中 \(W^l\) 的形状为 \((n_l,n_{l-1})\)，\(n_{l-1}\) 是第 \(l-1\) 层的神经元数量（fan-in），\(n_l\) 是第 \(l\) 层的神经元数量（fan-out）。根据链式法则：
+
+\[
+\frac{\partial L}{\partial z^{l-1}}
+=\frac{\partial L}{\partial z^l}\cdot
+\frac{\partial z^l}{\partial a^{l-1}}\cdot
+\frac{\partial a^{l-1}}{\partial z^{l-1}}
+\]
+
+\Needspace{5\baselineskip}
+写成逐元素形式：
+
+\[
+\frac{\partial L}{\partial z^{l-1}}
+=\left((W^l)^\top\cdot\frac{\partial L}{\partial z^l}\right)
+\odot f'(z^{l-1})
+\]
+
+\Needspace{5\baselineskip}
+看 \(\dfrac{\partial L}{\partial z_j^{l-1}}\) 中任意一个神经元 \(j\)：
+
+\[
+\frac{\partial L}{\partial z_j^{l-1}}
+=\left(\sum_{k=1}^{n_l}W^l_{k,j}\frac{\partial L}{\partial z_k^l}\right)\cdot f'(z_j^{l-1})
+\]
+
+这个求和是对第 \(l\) 层所有 \(k\) 个神经元进行的，因此 \(n_l\) 正是第 \(l-1\) 层的 fan-out，记作 \(n_{\mathrm{out}}\)。
+
+反向传播中，对于前一层（第l-1层）的一个神经元j，L对它的梯度是第l层的全部（第1至n\_out个）神经元传播而来的梯度的总和。故需要Var(W)=Var(w\_k,j)=1/n\_out.
+
+实际操作中，取二者的调和平均数2/(n\_in+n\_out)作为方差。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8ckaimingux521dux59cbux5316}{%
+\subsection{二、Kaiming初始化}\label{ux4e8ckaimingux521dux59cbux5316}}
+
+\Needspace{5\baselineskip}
+若激活函数使用ReLU，f'(z)在z\textgreater0时为 1，在z\textless0时为 0，其方差：
+
+\Needspace{5\baselineskip}
+先使用独立随机变量乘积的方差公式：
+
+\[
+\mathrm{Var}(AB)
+=\mathrm{Var}(A)\mathrm{Var}(B)
++\mathrm{Var}(A)E[B]^2
++\mathrm{Var}(B)E[A]^2
+\]
+
+\Needspace{5\baselineskip}
+令 \(A=W^l\) 且 \(B=a^{l-1}\)：
+
+\[
+\begin{aligned}
+\mathrm{Var}(W^la^{l-1})
+&=\mathrm{Var}(W^l)\mathrm{Var}(a^{l-1})
++\mathrm{Var}(W^l)(E[a^{l-1}])^2\\
+&\quad+\mathrm{Var}(a^{l-1})(E[W^l])^2
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+应用假设 \(E[W^l]=0\)：
+
+\[
+\mathrm{Var}(W^la^{l-1})
+=\mathrm{Var}(W^l)\left(\mathrm{Var}(a^{l-1})+(E[a^{l-1}])^2\right)
+\]
+
+\Needspace{5\baselineskip}
+根据方差定义 \(E[X^2]=\mathrm{Var}(X)+(E[X])^2\)，可将上式简化为：
+
+\[
+\mathrm{Var}(W^la^{l-1})
+=\mathrm{Var}(W^l)\cdot E[(a^{l-1})^2]
+\]
+
+\Needspace{5\baselineskip}
+代回 \(\mathrm{Var}(Z^l)\) 的公式，得到前向传播主公式：
+
+\[
+\mathrm{Var}(Z^l)=n_{\mathrm{in}}\cdot \mathrm{Var}(W^l)\cdot E[(a^{l-1})^2]
+\]
+
+\Needspace{5\baselineskip}
+接下来需要 \(E[(a^l)^2]\) 和 \(\mathrm{Var}(Z^l)\) 之间的关系。由于 ReLU 满足 \(a^l=\max(0,Z^l)\)，有：
+
+\[
+E[(a^l)^2]=E[(\max(0,Z^l))^2]
+\]
+
+\Needspace{5\baselineskip}
+假设 \(Z^l\) 是均值为 0 的对称分布，例如高斯分布，则：
+
+\[
+\begin{aligned}
+E[(a^l)^2]
+&=\int_{-\infty}^{\infty}(\max(0,z))^2p(z)\,dz\\
+&=\int_{-\infty}^{0}0^2p(z)\,dz+\int_{0}^{\infty}z^2p(z)\,dz\\
+&=\int_{0}^{\infty}z^2p(z)\,dz
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+因为 \(p(z)\) 是对称的，所以 \(\int_0^\infty z^2p(z)\,dz\) 恰好是 \(\int_{-\infty}^{\infty}z^2p(z)\,dz\) 的一半。而：
+
+\[
+E[(Z^l)^2]=\int_{-\infty}^{\infty}z^2p(z)\,dz
+\]
+
+\Needspace{5\baselineskip}
+又因为 \(E[Z^l]=0\)，所以 \(\mathrm{Var}(Z^l)=E[(Z^l)^2]\)。因此：
+
+\[
+E[(a^l)^2]=\frac{1}{2}\mathrm{Var}(Z^l)
+\]
+
+\Needspace{5\baselineskip}
+将这个关系代入前向传播主公式，并要求信号稳定：
+
+\[
+E[(a^l)^2]=E[(a^{l-1})^2]
+\]
+
+\Needspace{5\baselineskip}
+可得：
+
+\[
+E[(a^{l-1})^2]
+=\frac{1}{2}\cdot n_{\mathrm{in}}\cdot \mathrm{Var}(W^l)\cdot E[(a^{l-1})^2]
+\]
+
+得到W的方差应为2/n\_in.
+
+\Needspace{5\baselineskip}
+反向传播：
+
+\Needspace{5\baselineskip}
+设sum是L对第l层输入a的梯度（包含了第l层n\_out个神经元传来的梯度之和），f'(z)是激活函数的梯度，则由独立随机变量乘积方差公式：
+
+\[
+\mathrm{Var}\left(\frac{\partial L}{\partial z_j^{l-1}}\right)
+=\mathrm{Var}(\mathrm{sum})\mathrm{Var}(f')
++\mathrm{Var}(\mathrm{sum})(E[f'])^2
++\mathrm{Var}(f')(E[\mathrm{sum}])^2
+\]
+
+\Needspace{5\baselineskip}
+假设 \(E[\mathrm{sum}]=0\)：
+
+\[
+\mathrm{Var}\left(\frac{\partial L}{\partial z_j^{l-1}}\right)
+=\mathrm{Var}(\mathrm{sum})\left(\mathrm{Var}(f')+(E[f'])^2\right)
+\]
+
+\Needspace{5\baselineskip}
+即：
+
+\[
+\mathrm{Var}\left(\frac{\partial L}{\partial z_j^{l-1}}\right)
+=\mathrm{Var}(\mathrm{sum})\cdot E[(f')^2]
+\]
+
+\Needspace{5\baselineskip}
+已经推出：
+
+\[
+\mathrm{Var}(\mathrm{sum})
+=n_{\mathrm{out}}\cdot\mathrm{Var}(W)\cdot
+\mathrm{Var}\left(\frac{\partial L}{\partial z}\right)
+\]
+
+\Needspace{5\baselineskip}
+并且对 ReLU 有 \(E[(f')^2]=0.5\)，代入：
+
+\[
+\mathrm{Var}\left(\frac{\partial L}{\partial z^{l-1}}\right)
+=\left(n_{\mathrm{out}}\cdot\mathrm{Var}(W)\cdot
+\mathrm{Var}\left(\frac{\partial L}{\partial z}\right)\right)\cdot\frac{1}{2}
+\]
+
+则W的方差应为2/n\_out.
+
+一般来说，取前向传播对应的方差2/n\_in即可达到足够好的效果（一般用2/n\_in和2/n\_out初始化差别也不大）。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-9}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-9}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Glorot, X., \& Bengio, Y. (2010). \href{https://proceedings.mlr.press/v9/glorot10a.html}{Understanding the difficulty of training deep feedforward neural networks}. AISTATS 2010.
+\item
+  He, K., Zhang, X., Ren, S., \& Sun, J. (2015). \href{https://arxiv.org/abs/1502.01852}{Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification}. ICCV 2015.
+\end{itemize}
+
+\clearpage

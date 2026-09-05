@@ -1,13 +1,9 @@
-# LaTeX 项目资源清单
+# LaTeX resources (zh)
 
-- 已纳入根目录 Markdown：6
-- 已纳入 docs Markdown：168
-- 原始 assets 文件：64
-- 已转换图片引用：64
+- Sections: 168
+- Root documents: 5
 
-## 图片引用映射
-
-| 原始资源 | LaTeX 编译引用 |
+| Source | LaTeX image |
 |---|---|
 | `assets/images/01-deep-learning/01-02/img-7229400d63e3-0002.png` | `images/image-0001.png` |
 | `assets/images/01-deep-learning/01-02/img-7229400d63e3-0003.png` | `images/image-0002.png` |
@@ -33,13 +29,13 @@
 | `assets/images/03-large-language-model/17-07/ppo-grpo-architecture.webp` | `images/image-0022.png` |
 | `assets/images/03-large-language-model/17-09/online-rl-policy-space-projection.png` | `images/image-0023.png` |
 | `assets/images/03-large-language-model/19-09/kimi-delta-attention-architecture.png` | `images/image-0024.png` |
+| `assets/images/03-large-language-model/20-01/blockwise-overlap-predict-verify.png` | `images/image-0027.png` |
 | `assets/images/03-large-language-model/20-01/blockwise-parallel-decoding-architecture.png` | `images/image-0025.png` |
 | `assets/images/03-large-language-model/20-01/blockwise-predict-verify.png` | `images/image-0026.png` |
-| `assets/images/03-large-language-model/20-01/blockwise-overlap-predict-verify.png` | `images/image-0027.png` |
-| `assets/images/03-large-language-model/20-01/meta-mtp-architecture.png` | `images/image-0028.png` |
-| `assets/images/03-large-language-model/20-01/deepseek-mtp-sample-construction.png` | `images/image-0029.png` |
 | `assets/images/03-large-language-model/20-01/deepseek-mtp-architecture.png` | `images/image-0030.png` |
 | `assets/images/03-large-language-model/20-01/deepseek-mtp-paper-architecture.png` | `images/image-0031.png` |
+| `assets/images/03-large-language-model/20-01/deepseek-mtp-sample-construction.png` | `images/image-0029.png` |
+| `assets/images/03-large-language-model/20-01/meta-mtp-architecture.png` | `images/image-0028.png` |
 | `assets/images/03-large-language-model/20-02/engram-architecture.png` | `images/image-0032.png` |
 | `assets/images/03-large-language-model/20-03/hyper-connections-comparison.png` | `images/image-0033.png` |
 | `assets/images/03-large-language-model/20-03/manifold-constrained-hyper-connections.png` | `images/image-0034.png` |
@@ -54,22 +50,22 @@
 | `assets/images/04-llm-agents/25-03/08-subagent-by-shared-context.png` | `images/image-0043.png` |
 | `assets/images/05-diffusion-multimodal-generation/28-05/diffusion-forcing-rolling-forcing-comparison.png` | `images/image-0044.png` |
 | `assets/images/05-diffusion-multimodal-generation/28-05/diffusion-forcing-rolling-forcing-legend.png` | `images/image-0045.png` |
-| `assets/images/06-embodied-ai-world-models/33-02/semantic-visual-action-tokenizer.png` | `images/image-0046.png` |
 | `assets/images/06-embodied-ai-world-models/33-02/asynchronous-inference-timeline.png` | `images/image-0047.png` |
+| `assets/images/06-embodied-ai-world-models/33-02/semantic-visual-action-tokenizer.png` | `images/image-0046.png` |
 | `assets/images/06-embodied-ai-world-models/33-02/unified-physical-token-model.png` | `images/image-0048.png` |
 | `assets/images/06-embodied-ai-world-models/33-04/craftnet-architecture.png` | `images/image-0049.png` |
-| `assets/images/06-embodied-ai-world-models/33-04/tactile-vla-architecture.png` | `images/image-0050.png` |
 | `assets/images/06-embodied-ai-world-models/33-04/ftp1-architecture.png` | `images/image-0051.png` |
+| `assets/images/06-embodied-ai-world-models/33-04/tactile-vla-architecture.png` | `images/image-0050.png` |
 | `assets/images/06-embodied-ai-world-models/34-01/gigaworld-policy-data-recipe.png` | `images/image-0052.png` |
-| `assets/images/06-embodied-ai-world-models/34-02/umi-device.png` | `images/image-0053.png` |
 | `assets/images/06-embodied-ai-world-models/34-02/gen0-scaling-data-compute.png` | `images/image-0054.png` |
 | `assets/images/06-embodied-ai-world-models/34-02/gen0-scaling-task-set.png` | `images/image-0055.png` |
 | `assets/images/06-embodied-ai-world-models/34-02/gen15-training-loss.png` | `images/image-0056.png` |
-| `assets/images/06-embodied-ai-world-models/34-03/egoscale-training-pipeline.png` | `images/image-0057.png` |
-| `assets/images/06-embodied-ai-world-models/34-03/lapa-overview.png` | `images/image-0058.png` |
-| `assets/images/06-embodied-ai-world-models/34-03/egomimic-before-masking.png` | `images/image-0059.png` |
-| `assets/images/06-embodied-ai-world-models/34-03/egomimic-after-masking.png` | `images/image-0060.png` |
+| `assets/images/06-embodied-ai-world-models/34-02/umi-device.png` | `images/image-0053.png` |
 | `assets/images/06-embodied-ai-world-models/34-03/dyna-2-held-out-human-scaling.png` | `images/image-0061.png` |
-| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-zero-shot-robot-scaling.png` | `images/image-0062.png` |
 | `assets/images/06-embodied-ai-world-models/34-03/dyna-2-real-robot-scaling.png` | `images/image-0063.png` |
 | `assets/images/06-embodied-ai-world-models/34-03/dyna-2-world-modeling-ablation.png` | `images/image-0064.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/dyna-2-zero-shot-robot-scaling.png` | `images/image-0062.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egomimic-after-masking.png` | `images/image-0060.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egomimic-before-masking.png` | `images/image-0059.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/egoscale-training-pipeline.png` | `images/image-0057.png` |
+| `assets/images/06-embodied-ai-world-models/34-03/lapa-overview.png` | `images/image-0058.png` |

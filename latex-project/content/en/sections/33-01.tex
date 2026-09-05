@@ -1,0 +1,74 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{overview-of-worldaction-models}{%
+\section{Overview of World--Action Models}\label{overview-of-worldaction-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-concept-of-a-worldaction-model}{%
+\subsection{I. The Concept of a World--Action Model}\label{i.-the-concept-of-a-worldaction-model}}
+
+A world--action model (WAM) applies the world-model paradigm to embodied AI foundation models. It combines state prediction and action generation, taking past states (and actions already taken) as input and using a unified model to predict the next state and subsequent actions, sequentially or simultaneously. A unified model is used because both tasks fundamentally learn physical-world laws, many parameters overlap, and unification better follows the end-to-end principle.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-training-objectives-of-worldaction-models}{%
+\subsection{II. Training Objectives of World--Action Models}\label{ii.-training-objectives-of-worldaction-models}}
+
+\Needspace{5\baselineskip}
+A WAM's loss is generally a weighted sum of state loss (video pixels or visual features) and action loss:
+
+\[
+\mathcal{L}_{\mathrm{vid}}+\lambda_{\mathrm{act}}\mathcal{L}_{\mathrm{act}}
+\]
+
+\Needspace{5\baselineskip}
+Both usually use flow-matching losses:
+
+\Needspace{5\baselineskip}
+For target variable \(y\) (either an action sequence \(a_{1:H}\) or future visual features \(z_{1:T}\)), sample Gaussian noise \(\varepsilon\sim\mathcal{N}(0,I)\) and time step \(t\in(0,1)\) to construct an interpolated sample:
+
+\[
+y_t=(1-t)y+t\varepsilon.
+\]
+
+\Needspace{5\baselineskip}
+The model predicts the velocity field through a standard flow-matching loss:
+
+\[
+\mathcal{L}_{\mathrm{FM}}(y)=\mathbb{E}_{y,\varepsilon,t}\left[\left\|f_\theta(y_t,t,o,l)-(\varepsilon-y)\right\|_2^2\right].
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-embodiment-native-models}{%
+\subsection{III. Embodiment-Native Models}\label{iii.-embodiment-native-models}}
+
+\Needspace{5\baselineskip}
+Early WAMs were often obtained by post-training video-generation models. However, video-generation models were designed for digital-content creation, and transferring them to robots creates three problems:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  The representation VAE is optimized only for pixel-level reconstruction. Much of its valuable latent space is devoted to lighting, background textures, and surface highlights, while control-relevant events such as a cup moving left occupy only a tiny fraction. It preserves visual details while discarding physical and semantic structure. The action module is also often attached externally, leaving world states and actions in two misaligned spaces.
+\item
+  High-dimensional video tokens combined with multistep iterative denoising create long latency, while real-robot operation requires the policy to read new observations at every action-chunk boundary and correct itself as needed.
+\item
+  Internet videos lack action labels, and generic video-prediction objectives do not teach the model ``how actions change the world.''
+\end{enumerate}
+
+Many WAMs are therefore shifting toward native training on embodied data. This demands more compute and data but also raises the ceiling of model capability.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-158}{%
+\subsection{References}\label{references-158}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Wang, S., Shi, J., Fu, Z., et al.~(2026). \href{https://arxiv.org/abs/2605.12090}{World Action Models: The Next Frontier in Embodied AI}. arXiv:2605.12090.
+\item
+  Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
+\end{itemize}
+
+\clearpage

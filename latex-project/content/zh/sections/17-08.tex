@@ -1,0 +1,286 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{klux6563ux5ea6ux7684ux9009ux62e9}{%
+\section{KL散度的选择}\label{klux6563ux5ea6ux7684ux9009ux62e9}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00llmux4e2dux7684klux6563ux5ea6}{%
+\subsection{一、LLM中的KL散度}\label{ux4e00llmux4e2dux7684klux6563ux5ea6}}
+
+在大模型中，KL散度衡量输出概率分布的差异，并非按输出前的隐藏层维度计算，而是在大小为 \(V\) 的词表上计算（因为本质上大模型的输出是离散的tokens）。
+
+\(D(P \Vert Q)=\sum_{i=1}^{V}p_i\log\frac{p_i}{q_i}\)，相当于 \(\log(p_i/q_i)\) 在 \(p\) 分布上的期望。
+
+\Needspace{5\baselineskip}
+对于LLM，自回归输出 \(n\) 个token的KL散度：
+
+\[
+D_{KL}(P(Y) \Vert Q(Y))=\sum_Y P(Y)\log\frac{P(Y)}{Q(Y)}
+\]
+
+\Needspace{5\baselineskip}
+由于直接对所有可能的序列求和是不可行的（有 \(V^n\) 种可能），需利用自回归特性分解：
+
+\[
+\begin{aligned}
+D_{KL}(P(Y) \Vert Q(Y))
+&= \mathbb{E}_{Y\sim P}\left[\sum_{t=1}^{n}\left(\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})\right)\right] \\
+&= \sum_{t=1}^{n}\mathbb{E}_{Y\sim P}\left[\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}\right]
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+这里的处理难点在于 \(Y\sim P\)，需要考虑整个序列的概率分布。注意到右边的条件概率的条件为 \(y_{<t}\)，对于给定已知的 \(y_{<t}\) 分布，由自回归特性，\(y_t\) 的分布也会随之确定，\(Y=\{y_1,\ldots,y_t\}\) 的分布也就已知。因此可以改写为：
+
+\[
+D_{KL}(P(Y) \Vert Q(Y))
+=\sum_{t=1}^{n}\mathbb{E}_{y_{<t}\sim P(y_{<t})}\left[
+D_{KL}\left(P(y_t\mid y_{<t}) \Vert Q(y_t\mid y_{<t})\right)
+\right]
+\]
+
+这意味着，两个序列分布的KL散度，等于每一步条件概率分布之间KL散度的期望之和（期望是基于分布P生成的历史轨迹计算的）。利用蒙特卡洛估计，在策略P下生成的各轨迹平均即可近似策略P下的期望。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8ck1ux4f30ux8ba1ux5668ux548ck3ux4f30ux8ba1ux5668}{%
+\subsection{二、K1估计器和K3估计器}\label{ux4e8ck1ux4f30ux8ba1ux5668ux548ck3ux4f30ux8ba1ux5668}}
+
+\Needspace{5\baselineskip}
+对于长度为T的序列：
+
+\textbf{K1 估计器（The Naïve Estimator）}
+
+\Needspace{5\baselineskip}
+这是最直观的蒙特卡洛估计，直接计算 log 似然比：
+
+\[
+K1=\sum_{t=1}^{T}K1_t
+=\sum_{t=1}^{T}\log\frac{\pi_\theta(y_t\mid x,y_{<t})}{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}
+\]
+
+特点：它是 \(D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})\) 的无偏估计，但在实践中方差较大。
+
+\textbf{K3 估计器（The Schulman Estimator）}
+
+\Needspace{5\baselineskip}
+由 John Schulman 提出，旨在减少方差。它利用了 \(\log(x)\le x-1\) 的性质来逼近：
+
+\[
+K3=\sum_{t=1}^{T}K3_t
+=\sum_{t=1}^{T}\left(
+\frac{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}
+-1
+-\log\frac{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}
+\right)
+\]
+
+特点：它也是 \(D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})\) 的无偏估计（期望为 KL 散度值），且具有比 K1 更低的方差。
+
+KL散度项可以减在Reward或加在Loss里。在实际训练中，K1 in loss和K3 in reward不稳定，一般采用K3 in loss（方差更小）或K1 in reward（梯度无偏）。GRPO默认前者，但2025年有研究证明后者实际上可能性能更优，因为前者本身无偏但其梯度有偏。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux8bc1ux660ek1-in-rewardux68afux5ea6ux65e0ux504fux53cak3-in-lossux68afux5ea6ux6709ux504f}{%
+\subsubsection{（三）证明K1 in reward梯度无偏及K3 in loss梯度有偏}\label{ux4e09ux8bc1ux660ek1-in-rewardux68afux5ea6ux65e0ux504fux53cak3-in-lossux68afux5ea6ux6709ux504f}}
+
+\Needspace{5\baselineskip}
+我们需要优化的真实目标（Reverse KL）的梯度为：
+
+\[
+\nabla_\theta D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})
+=\mathbb{E}_{y\sim\pi_\theta}\left[
+\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\nabla_\theta\log\pi_\theta
+\right]
+\]
+
+注：为简化符号，省略条件 \(x\) 和求和符号，关注核心各项。
+
+\textbf{推导 1：K1 in Reward（无偏）}
+
+\Needspace{5\baselineskip}
+当把 K1 放入 Reward 时，我们不对 K1 本身求导（视为常数奖励），而是利用 REINFORCE/PPO 的性质：
+
+\[
+\mathrm{Gradient}
+=\mathbb{E}_{y\sim\pi_\theta}\left[K1\cdot\nabla_\theta\log\pi_\theta\right]
+\]
+
+\Needspace{5\baselineskip}
+代入 \(K1=\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\)：
+
+\[
+\mathrm{Gradient}
+=\mathbb{E}_{y\sim\pi_\theta}\left[
+\left(\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\right)
+\nabla_\theta\log\pi_\theta
+\right]
+\]
+
+结论：这与 Reverse KL 的真实梯度表达式完全一致，因此是无偏的。
+
+\textbf{推导 2：K3 in Loss（有偏）}
+
+当把 K3 放入 Loss 时，我们直接计算 \(\nabla_\theta K3\) 的期望。设比率 \(r=\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\)，则 \(K3=r-1-\log r\)。注意 \(\log r=\log\pi_{\mathrm{ref}}-\log\pi_\theta\)。
+
+\Needspace{5\baselineskip}
+我们需要计算 \(\mathbb{E}_{y\sim\pi_\theta}[\nabla_\theta K3]\)。首先看 \(\nabla_\theta K3\) 的各项：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(\nabla_\theta r=\nabla_\theta(\pi_{\mathrm{ref}}\cdot\pi_\theta^{-1})=\pi_{\mathrm{ref}}\cdot(-1)\pi_\theta^{-2}\cdot\nabla_\theta\pi_\theta=-\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\cdot\frac{\nabla_\theta\pi_\theta}{\pi_\theta}=-r\nabla_\theta\log\pi_\theta\)
+\item
+  \(\nabla_\theta(-1)=0\)
+\item
+  \(\nabla_\theta(-\log r)=\nabla_\theta(\log\pi_\theta-\log\pi_{\mathrm{ref}})=\nabla_\theta\log\pi_\theta\)（假设 \(\pi_{\mathrm{ref}}\) 固定）
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+合并各项得到 \(\nabla_\theta K3\)：
+
+\[
+\nabla_\theta K3
+=-r\nabla_\theta\log\pi_\theta+\nabla_\theta\log\pi_\theta
+=(1-r)\nabla_\theta\log\pi_\theta
+\]
+
+\Needspace{5\baselineskip}
+现在计算其期望：
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}[\nabla_\theta K3]
+=\mathbb{E}_{y\sim\pi_\theta}\left[(1-r)\nabla_\theta\log\pi_\theta\right]
+\]
+
+\[
+\begin{aligned}
+&=\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta\right]
+-\mathbb{E}_{y\sim\pi_\theta}\left[
+\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla_\theta\log\pi_\theta
+\right] \\
+&=-\mathbb{E}_{y\sim\pi_\theta}\left[
+\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla_\theta\log\pi_\theta
+\right]
+\end{aligned}
+\]
+
+其中第一项为 \(0\)（Score Function property）。
+
+\Needspace{5\baselineskip}
+对比真实梯度：
+
+\begin{itemize}
+\tightlist
+\item
+  真实 Reverse KL 梯度：\(\mathbb{E}\left[\log\left(\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\right)\nabla\log\pi_\theta\right]\)
+\item
+  K3 in Loss 梯度：\(\mathbb{E}\left[-\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla\log\pi_\theta\right]\)
+\end{itemize}
+
+事实上，K3估计器梯度变成了对应前向KL散度的梯度，而非反向KL散度，导致模型训练中更倾向于覆盖已有模式，而非在模式内部探索奖励最高区域。
+
+\Needspace{5\baselineskip}
+其中Score Function property：
+
+\textbf{1. 数学推导（The ``Why''）}
+
+\Needspace{5\baselineskip}
+我们要证明的是：
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]=0
+\]
+
+\Needspace{5\baselineskip}
+证明步骤如下：
+
+\textbf{第一步：展开期望的定义}。期望 \(\mathbb{E}\) 就是对所有可能的 \(y\) 进行加权求和（对于离散的 LLM token 序列是求和，连续空间是积分）。
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]
+=\sum_y \pi_\theta(y)\cdot\nabla_\theta\log\pi_\theta(y)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{第二步：应用对数求导法则（Log-Derivative Trick）}。根据微积分中的链式法则，\(\nabla\log f(x)=\frac{\nabla f(x)}{f(x)}\)。将其应用到 \(\log\pi_\theta(y)\) 上：
+
+\[
+\nabla_\theta\log\pi_\theta(y)
+=\frac{\nabla_\theta\pi_\theta(y)}{\pi_\theta(y)}
+\]
+
+\Needspace{5\baselineskip}
+\textbf{第三步：代回并约分}。将第二步的结果代回第一步的式子中：
+
+\[
+\sum_y \pi_\theta(y)\cdot
+\frac{\nabla_\theta\pi_\theta(y)}{\pi_\theta(y)}
+=\sum_y \nabla_\theta\pi_\theta(y)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{第四步：交换求和与求导的顺序}。在满足一定正则性条件下，我们可以交换求和符号 \(\sum\) 和梯度符号 \(\nabla_\theta\)：
+
+\[
+\sum_y \nabla_\theta\pi_\theta(y)
+=\nabla_\theta\left(\sum_y \pi_\theta(y)\right)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{第五步：利用概率归一化性质}。这是最关键的一步。对于任何概率分布，其所有可能事件的概率之和必须恒等于 1：
+
+\[
+\sum_y \pi_\theta(y)=1
+\]
+
+\Needspace{5\baselineskip}
+因此：
+
+\[
+\nabla_\theta\left(\sum_y \pi_\theta(y)\right)
+=\nabla_\theta(1)=0
+\]
+
+\Needspace{5\baselineskip}
+所以：
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]=0
+\]
+
+\textbf{2. 直观理解（The Intuition）}
+
+``概率质量守恒''梯度 \(\nabla_\theta\pi_\theta(y)\) 代表当我们微调参数 \(\theta\) 时，样本 \(y\) 出现的概率是增加还是减少。
+
+\begin{itemize}
+\tightlist
+\item
+  如果我们让某些样本的概率增加了（梯度为正），那么为了保持总概率之和永远为 1，必然有另一些样本的概率要减少（梯度为负）。
+\item
+  这个式子 \(\mathbb{E}[\nabla\log\pi]=\sum\nabla\pi\) 实际上就是在计算所有可能样本的概率变化量的总和。
+\item
+  因为总概率（这个``蛋糕''的大小）是固定的 1，所以所有变化的加和必须为 0。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-86}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-86}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schulman, J. (2020). \href{http://joschu.net/blog/kl-approx.html}{Approximating KL Divergence}.
+\item
+  Liu, K., Liu, J. K., Chen, M., \& Liu, Y. (2025). \href{https://arxiv.org/abs/2510.01555}{Rethinking KL Regularization in RLHF: From Value Estimation to Gradient Optimization}. arXiv:2510.01555.
+\item
+  Ziegler, D. M., Stiennon, N., Wu, J., et al.~(2019). \href{https://arxiv.org/abs/1909.08593}{Fine-Tuning Language Models from Human Preferences}. arXiv:1909.08593.
+\item
+  Ouyang, L., Wu, J., Jiang, X., et al.~(2022). \href{https://arxiv.org/abs/2203.02155}{Training language models to follow instructions with human feedback}. NeurIPS 2022.
+\item
+  Ahmadian, A., Cremer, C., Gallé, M., et al.~(2024). \href{https://arxiv.org/abs/2402.14740}{Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs}. ACL 2024.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,194 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{just-image-transformers}{%
+\section{Just Image Transformers}\label{just-image-transformers}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-7}{%
+\subsection{I. Core Idea}\label{i.-core-idea-7}}
+
+Today's mainstream diffusion models (such as DDPM) and flow-matching models usually train neural networks to predict noise \(\epsilon\) or velocity \(v\). JiT points out that predicting clean data (x-prediction) and predicting noisy quantities (\(\epsilon\)- or v-prediction) are fundamentally different mathematically.
+
+\Needspace{5\baselineskip}
+This conclusion rests on the \textbf{manifold assumption}:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Clean images}: denoted by \(x\), natural images are not distributed uniformly throughout the high-dimensional pixel space \(\mathbb{R}^D\), but are highly concentrated on a very low-dimensional manifold \(\mathcal{M}\) (\(d\ll D\)).
+\item
+  \textbf{Noise}: denoted by \(\epsilon\), Gaussian noise is isotropic, lies off the manifold, and is spread throughout the high-dimensional space \(\mathbb{R}^D\).
+\item
+  \textbf{Velocity}: denoted by \(v\), in flow matching \(v=\epsilon-x\), which is likewise an off-manifold quantity in high-dimensional space.
+\end{itemize}
+
+When a network is asked to predict \(\epsilon\) or \(v\), it is forced to fit an unstructured mapping spanning the entire high-dimensional space. When it is asked to predict \(x\) directly, its prediction target is strictly restricted to the low-dimensional natural-image manifold \(\mathcal{M}\). This reduction in target dimensionality greatly reduces the difficulty of fitting the neural network, allowing the model to operate efficiently in high-resolution pixel space (such as \(512\times512\)) without relying on dimensionality reduction in latent space.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-model-architecture-1}{%
+\subsection{II. Model Architecture}\label{ii.-model-architecture-1}}
+
+JiT's architecture can be described as ``nothing but a standard image Transformer.''
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{No tokenizer and no latent space}: it completely discards the pretrained VAE used by mainstream architectures and operates directly on raw pixels.
+\item
+  \textbf{Large patch sizes}: to address the explosion in sequence length caused by high-resolution images, JiT uses very large patch sizes (such as \(16\times16\), or even \(32\times32\) and \(64\times64\)).
+\item
+  \textbf{Bottleneck design}: experiments show that, in x-prediction mode, substantially compressing the Transformer's linear embedding dimension does not cause collapse and instead preserves robustness. This indirectly supports the manifold assumption: because the target \(x\) is intrinsically low-dimensional, a low-capacity network bottleneck is sufficient to capture its features; reducing network capacity when predicting high-dimensional noise \(\epsilon\), by contrast, causes catastrophic failure.
+\item
+  \textbf{No pretraining and no additional losses}: no form of pretraining is required, and neither perceptual loss nor adversarial loss is needed.
+\end{enumerate}
+
+The only additional module is a fully connected layer after the Transformer, which maps the generated low-dimensional embedding vectors into a high-dimensional image. This works because high-dimensional image patches from the real world are not random and disordered: they exhibit strong spatial coherence and regularity and are therefore tightly constrained to a very low-dimensional ``manifold.'' The low-dimensional hidden variables inside the Transformer are already sufficient to capture this low-dimensional structure. The final fully connected layer essentially just ``rotates'' and ``maps'' this structure back to the corresponding manifold location in high-dimensional space.
+
+As in Diffusion Transformer, the time step is injected through adaptive layer normalization.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+\Needspace{5\baselineskip}
+  \textbf{Time embedding}:
+
+  First, the scalar time step \(t\) is mapped to a high-dimensional vector through sinusoidal positional encoding. An MLP then extracts features from it, producing a global time-feature vector \(E_t\).
+\item
+\Needspace{5\baselineskip}
+  \textbf{Generate modulation parameters}:
+
+  A simple linear regression layer is placed outside each Transformer block. It takes \(E_t\) as input and directly regresses the sets of modulation parameters needed by that block (usually a scale factor \(\gamma\), a shift factor \(\beta\), and a gating factor \(\alpha\) for the residual connection).
+\item
+\Needspace{5\baselineskip}
+  \textbf{Adaptive modulation}:
+
+  Before the input visual-token sequence enters the multi-head self-attention (MSA) layer or feedforward network (FFN), standard layer normalization is applied to the tokens. The regressed \(\gamma\) and \(\beta\) then apply an elementwise affine transformation to the normalized features:
+\end{enumerate}
+
+\[
+\mathrm{AdaLN}(x,t)=\gamma(t)\cdot\mathrm{LayerNorm}(x)+\beta(t)
+\]
+
+Here, the normalization scale and offset are determined dynamically and entirely by the current time step \(t\).
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\item
+\Needspace{5\baselineskip}
+  \textbf{Zero initialization}:
+
+  This is the central innovation of adaLN-Zero. The weights and biases of the linear layer that regresses \(\gamma,\beta,\alpha\) are set strictly to \(0\) at network initialization. At the start of training, the scale factor therefore has no effect, the shift is zero, and the residual-block gating factor is \(\alpha=0\). This makes every Transformer block equivalent to an identity mapping at initialization. This design greatly stabilizes gradient flow in the early training of deep networks, which is especially important when training large Transformers directly in raw high-dimensional pixel space.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-why-does-industry-still-use-conventional-diffusion-models}{%
+\subsection{III. Why Does Industry Still Use Conventional Diffusion Models?}\label{iii.-why-does-industry-still-use-conventional-diffusion-models}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Latent space already avoids the curse of dimensionality
+\end{enumerate}
+
+Kaiming He's paper primarily addresses the curse of dimensionality in \textbf{raw pixel space}, whereas almost all current industrial world models use latent diffusion architectures.
+
+\textbf{Latent space already avoids the ``curse of dimensionality.''} These models use a variational autoencoder (VAE) to compress extremely high-dimensional visual/image frames into a very low-dimensional latent space \(z\in\mathbb{R}^k\).
+
+Because a VAE is itself a highly capable manifold learner, latent space is already a heavily compressed low-dimensional manifold. In such a relatively low-dimensional space, the difficulty and dimensionality penalty of predicting noise \(\epsilon\) or velocity \(v\) are greatly reduced.
+
+\Needspace{5\baselineskip}
+If diffusion is performed directly on raw pixels, even a \(1\)-minute \(1080\)P video has a dimensionality as high as:
+
+\[
+1920\times1080\times3\times60\times60\times2.2\times10^{10}
+\]
+
+Computing gradients and performing Markov-chain sampling in such a remarkably high-dimensional space is not only prohibitively expensive but also encounters a severe ``curse of dimensionality.''
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Diversity of the action space
+\end{enumerate}
+
+To solve these problems, embodied AI introduced Diffusion Policy. The diffusion model completely abandons the direct output of action values and instead learns the energy field or score function of the action distribution.
+
+\Needspace{5\baselineskip}
+Workflow and the Langevin dynamics mechanism:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Learn the score function (score matching)}: the core training task of the diffusion model is to train a network to fit the gradient of the real data distribution with respect to the data itself; the score is \(\nabla_a\log p(x)\). It can also be imagined as a compass pointing toward the ``most reasonable action.''
+\item
+\Needspace{5\baselineskip}
+  \textbf{Reverse denoising sampling (Langevin dynamics)}: during inference, the model starts with pure Gaussian random noise \(x_T\sim\mathcal{N}(0,I)\) and updates the state step by step as follows:
+\end{enumerate}
+
+\[
+x_{t-\Delta t}=x_t+\frac{1}{2}\Delta t\nabla_x\log p(x_t)+\sqrt{\Delta t}z
+\]
+
+Here, \(z\sim\mathcal{N}(0,I)\) is the injected random noise.
+
+Why does it not fall into the valley (gap)?
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Gradient ascent (seeking a mode)}: \(\nabla_x\log p(x_t)\) in the formula pulls the sample toward regions of high probability, where the actions are optimal, moving it from low-density regions toward high-density ones.
+\item
+  \textbf{Noise injection (breaking symmetry)}: \(\sqrt{\Delta t}z\) at the end of the formula is the source of noise. The ``mean point'' (gap point) between the left and right peaks is actually a probabilistic saddle point or local valley. The randomly injected noise breaks the balance and pushes the generated trajectory randomly toward the left or right ``basin of attraction,'' eventually placing it in a definite, safe mode (action \(A\) or action \(B\)), thereby achieving iterative refinement and multimodal decision-making perfectly.
+\end{itemize}
+
+Note: p(x) here is not the joint probability density of the training data, but the probability distribution of the new data itself.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Stability under high-noise conditions
+\end{enumerate}
+
+At the beginning of diffusion (as \(t\to T\)), the image is almost pure Gaussian noise. Information about \(x_0\) is then heavily obscured in \(x_t\). Mathematically, asking the model to predict an extremely clear \(x_0\) directly from pure noise causes severe numerical instability because of excessive variance, and the model often outputs an extremely blurry average image. Predicting noise \(\epsilon\) or velocity \(v\) at this stage has been shown to be more stable in terms of numerical gradients and loss weighting (SNR weighting), which is also why flow matching is so widely used in industry.
+
+\[
+v=x_1-x_0
+\]
+
+Here, \(x_1\) is pure noise and \(x_0\) is a clear image.
+
+Algebraic manipulation reveals that predicting \(v\) is effectively a dynamic, automatic interpolation between ``predicting noise'' and ``predicting the original image,'' according to the signal-to-noise ratio at the current time step.
+
+It avoids both the variance explosion of early \(x_0\) prediction and the signal-to-noise problem of late \(\epsilon\) prediction. Moreover, because the trajectory is direct (an ODE), it greatly reduces the number of inference steps. These are the properties that world models (generating high-frame-rate video) truly need.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-133}{%
+\subsection{References}\label{references-133}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Li, T., \& He, K. (2025). \href{https://arxiv.org/abs/2511.13720}{Back to Basics: Let Denoising Generative Models Denoise}. arXiv:2511.13720.
+\item
+  Ho, J., Jain, A., \& Abbeel, P. (2020). \href{https://arxiv.org/abs/2006.11239}{Denoising Diffusion Probabilistic Models}. NeurIPS.
+\item
+  Chi, C., Xu, Z., Feng, S., et al.~(2023). \href{https://arxiv.org/abs/2303.04137}{Diffusion Policy: Visuomotor Policy Learning via Action Diffusion}. Robotics: Science and Systems.
+\item
+  Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). \href{https://arxiv.org/abs/2210.02747}{Flow Matching for Generative Modeling}. ICLR.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,203 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e13ux5bb6ux8fedux4ee3ux4e0eux62d2ux7eddux91c7ux6837}{%
+\section{专家迭代与拒绝采样}\label{ux4e13ux5bb6ux8fedux4ee3ux4e0eux62d2ux7eddux91c7ux6837}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4e13ux5bb6ux8fedux4ee3expert-iterationux7684ux57faux672cux601dux60f3}{%
+\subsection{一、专家迭代（Expert Iteration）的基本思想}\label{ux4e00ux4e13ux5bb6ux8fedux4ee3expert-iterationux7684ux57faux672cux601dux60f3}}
+
+\Needspace{5\baselineskip}
+专家迭代由两个角色组成，它们在一个循环中互相促进：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  学徒（Apprentice）：即我们要训练的神经网络（Policy \(\pi_\theta\)）。它的特点是推理速度快，但决策质量受限于当前权重。
+\item
+  专家（Expert）：这通常不是一个外部的人类或更强的模型，而是一个基于当前学徒能力之上的搜索算子（Search Operator）。例如，当前策略加上蒙特卡洛树搜索（MCTS），或者当前策略加上自我采样、重排序、验证器等。专家的特点是计算成本高、速度慢，但通过多步搜索或验证，能产出比学徒质量更高的决策。
+\end{enumerate}
+
+算法本质是：学徒通过模仿学习（SFT），学习``如何像专家一样做决策''，从而不需要搜索也能快速得到高质量结果。而在下一轮迭代中，能力变强的学徒又能支撑专家进行更深层的搜索。
+
+阶段 I 是专家生成数据（Expert Improvement）。在这个阶段，我们在固定参数 \(\theta\) 的基础上，利用更消耗计算资源的算法（Expert）来生成优于当前模型直接输出的数据。
+
+\Needspace{5\baselineskip}
+假设当前状态为 \(x\)（Prompt），当前模型策略为 \(\pi_\theta\)。我们定义专家算子 \(\Phi\)，它基于 \(\pi_\theta\) 进行增强：
+
+\[
+\pi_{expert}(y|x)=\Phi(\pi_\theta,x)
+\]
+
+\Needspace{5\baselineskip}
+在 LLM 推理场景中，\(\Phi\) 的具体实现通常是：
+
+\begin{itemize}
+\tightlist
+\item
+  搜索（Search）：对同一个 \(x\) 采样 \(N\) 次（Majority Voting），或者进行集束搜索（Beam Search）。
+\item
+  验证（Verification）：利用单元测试（代码）、或者强化打分器对这些输出正确路径。
+\item
+  构建数据集（MCTS）：让 AlphaZero 通过构建搜索树来评估每个动作的价值 \(Q(s,a)\) 最高。
+\end{itemize}
+
+产出是一批高质量的轨迹数据 \(\mathcal{D}_{new}=\{(x,y_{expert})\}\)，其中 \(y_{expert}\) 是经过搜索验证后的正确推理路径。
+
+阶段 II 是模仿学习（Imitation Learning / Distillation）。在这个阶段，我们将阶段 I 生成的数据 \(\mathcal{D}_{new}\) 视为``标准答案''（Ground Truth），使用监督学习（SFT）来更新模型参数。
+
+\Needspace{5\baselineskip}
+目标是最小化 KL 散度，也就是交叉熵损失，让模型的``直觉'' \(\pi_\theta\) 去逼近专家搜索后的分布 \(\pi_{expert}\)：
+
+\[
+\theta_{new}=\arg\min_\theta \mathbb{E}_{x\sim D}\left[-\log\pi_\theta(y_{expert}|x)\right]
+\]
+
+在 AlphaZero 中，不仅要拟合动作（Policy Head），还要拟合胜率（Value Head）。但在 LLM 推理中，目前主流是只拟合生成的 Token 序列（Policy）。
+
+更新参数的式子看起来是监督学习，实际上却完成了``策略提升''的过程，是给定环境和奖励下的强化学习。当然，前面讲蒙特卡洛树搜索时也讲到过专家迭代思想下不用监督微调的更新方式的方法。
+
+这是一个关键的数学原理：多步搜索通常优于单步预测。
+
+令 \(V(x)\) 为状态 \(x\) 的真实价值（能否解题）。学徒策略 \(\pi_\theta\) 是对最优策略的参数化近似；专家策略 \(\pi_{expert}\) 是基于 \(\pi_\theta\) 进行了 Lookahead（向前看多步）后的改进策略。
+
+\Needspace{5\baselineskip}
+根据贝尔曼方程（Bellman Equation）的性质，只要搜索算子 \(\Phi\) 是关于价值函数的``改善算子''（Improvement Operator），那么：
+
+\[
+\mathrm{Performance}(\Phi(\pi_\theta))\ge \mathrm{Performance}(\pi_\theta)
+\]
+
+\Needspace{5\baselineskip}
+Exit 的训练过程就是：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(\pi_{t+1}\approx\Phi(\pi_t)\)（策略更新：让学徒追上专家）。
+\item
+  \(\pi_{expert}=\Phi(\pi_{t+1})\)（专家基于新学徒再次提升）。
+\end{enumerate}
+
+这种螺旋上升的过程，理论上可以让模型最终收敛到该任务的最优解。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux62d2ux7eddux91c7ux6837ux5faeux8c03rejection-sampling-fine-tuningrft}{%
+\subsection{二、拒绝采样微调（Rejection Sampling Fine-Tuning，RFT）}\label{ux4e8cux62d2ux7eddux91c7ux6837ux5faeux8c03rejection-sampling-fine-tuningrft}}
+
+当 SFT 模型具备一定能力后，利用它自己生成数据来进一步提升性能，这被称为专家迭代（Expert Iteration）。
+
+原理：利用 SFT 后的模型对同一个问题 \(x\) 生成 \(k\) 个不同的推理路径 \(\{y_1,y_2,\ldots,y_k\}\)，再利用外部验证器（Rule-based Checker，如 Python 解释器或答案匹配）过滤出结果正确的路径，将这些``模型自己生成的正确路径''加入训练集进行再次微调。
+
+\Needspace{5\baselineskip}
+算法工作流：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  生成（Rollout）：对于数据集中的问题 \(x\)，使用当前策略 \(\pi_\theta\) 采样 \(k\) 个解。设置较高的 temperature 以增加多样性。
+\item
+  验证（Evaluation）：对于数学题，提取最终答案，与 Ground Truth 比对（Exact Match）；对于代码题，运行 Unit Test。
+\item
+  过滤与构造：保留通过验证的样本 \((x,y_{correct})\)。
+\item
+  再训练：将新样本混合入原始 SFT 数据，进行新一轮 SFT。
+\item
+  迭代：重复上述过程。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09starself-taught-reasonerux4eceux9519ux8befux540eux4feeux6b63ux7684ux63a8ux7406ux4e2dux5b66ux4e60}{%
+\subsection{三、STaR（Self-Taught Reasoner）：从错误后修正的推理中学习}\label{ux4e09starself-taught-reasonerux4eceux9519ux8befux540eux4feeux6b63ux7684ux63a8ux7406ux4e2dux5b66ux4e60}}
+
+模型生成推理过程和答案。如果答案错误，向模型注入正确答案（Hint），要求模型生成能够推导出正确答案的推理过程（Rationalization）。将这些``后视修正''的推理数据加入训练集，进行监督微调。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux4e13ux5bb6ux8fedux4ee3ux601dux60f3ux7684ux5e94ux7528}{%
+\subsection{四、专家迭代思想的应用}\label{ux56dbux4e13ux5bb6ux8fedux4ee3ux601dux60f3ux7684ux5e94ux7528}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  LLM
+\end{enumerate}
+
+一般如果后续还要用PPO进行针对推理的优化，通常会先跑几轮专家迭代。PPO对初始策略（Initial Policy）很敏感，我们需要一种方式把模型的分布拉到一个较高的水平（SFT后的模型往往还是不够强），再上PPO去优化那些极其困难的Case或进行对齐。专家迭代就适合作为这种方式。而对于GRPO，它是基于组内相对优势更新的，这几个对的样本会产生极大的正向梯度，每一轮更新，模型都在对自己生成的``好样本''进行强化，对``坏样本''进行抑制，实质上起到了专家迭代的作用，免去了``评估搜索结果''这个消耗额外算力的环节。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  AlphaZero
+\end{enumerate}
+
+通过原始蒙特卡洛树搜索（而不是针对LLM的改进版本），探索可能的路径。通过交叉熵损失，让策略网络的输出接近蒙特卡洛树搜索方法采样的结果；价值网络拟合的目标价值则直接是最终的输赢结果（只有最终奖励1或-1），即希望输出的预测值v能准确预测最终结果z。
+
+我们希望神经网络输入某个历史状态 \(s_t\) 时，输出的预测值 \(v_t\) 能无限接近最终结果 \(z_t\)。
+
+\Needspace{5\baselineskip}
+AlphaZero 的总损失函数包含三部分：价值项、策略项、正则项。其中关于价值更新的部分为均方误差（Mean Squared Error, MSE）：
+
+\[
+l_{\mathrm{value}} = (z - v)^2
+\]
+
+\Needspace{5\baselineskip}
+完整的损失函数为：
+
+\[
+\mathcal{L} = \underbrace{(z - v)^2}_{\mathcjk{价值损失}}
+- \underbrace{\pi^{T}\log p}_{\mathcjk{策略损失}}
++ \underbrace{c\|\theta\|^2}_{\mathcjk{正则化}}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \(z\)：这一盘棋最终是谁赢了，是真实结果。
+\item
+  \(v\)：神经网络在当前状态 \(s\) 预测的赢面。
+\end{itemize}
+
+你可能会问：MCTS 搜索得出的 \(Q\) 值不是比网络直接预测的 \(v\) 更准吗？为什么不用 \(Q\) 作为标签来更新 \(v\)？
+
+\Needspace{5\baselineskip}
+这是一个很好的直觉，但在 AlphaZero 中：
+
+\begin{itemize}
+\tightlist
+\item
+  Policy Network 的目标是拟合 MCTS 的搜索概率 \(\pi\)，也就是 MCTS 觉得哪一步更好。
+\item
+  Value Network 的目标是拟合真实结果 \(z\)。
+\end{itemize}
+
+原因是：MCTS 的 \(Q\) 值虽然比 \(v\) 准，但它仍然是基于网络预测的 \(v\) 聚合出来的，存在偏差（Bias）。如果让网络去拟合 \(Q\)，相当于``左脚踩右脚''，可能会导致偏差累积。而真实结局 \(z\) 是无偏的（Unbiased），虽然方差大（例如一盘棋赢了不代表这步棋一定好），但只要数据量足够大，网络就能学到最准确的局势判断。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-81}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-81}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Silver, D., Hubert, T., Schrittwieser, J., et al.~(2018). \href{https://www.science.org/doi/10.1126/science.aar6404}{A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play}. Science.
+\item
+  Anthony, T., Tian, Z., \& Barber, D. (2017). \href{https://arxiv.org/abs/1705.08439}{Thinking Fast and Slow with Deep Learning and Tree Search}. arXiv:1705.08439.
+\item
+  Zelikman, E., Wu, Y., Mu, J., \& Goodman, N. (2022). \href{https://arxiv.org/abs/2203.14465}{STaR: Bootstrapping Reasoning With Reasoning}. NeurIPS 2022.
+\item
+  Silver, D., Huang, A., Maddison, C. J., et al.~(2016). \href{https://www.nature.com/articles/nature16961}{Mastering the game of Go with deep neural networks and tree search}. Nature.
+\end{itemize}
+
+\clearpage

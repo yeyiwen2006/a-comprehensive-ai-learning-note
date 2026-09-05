@@ -1,0 +1,171 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{multi-head-latent-attention}{%
+\section{Multi-Head Latent Attention}\label{multi-head-latent-attention}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-basic-idea}{%
+\subsection{I. The Basic Idea}\label{i.-the-basic-idea}}
+
+Multi-head latent attention (MLA), proposed by DeepSeek, aims to address excessive KV-cache memory consumption under the limited GPU-memory bandwidth of modern GPUs. Through low-rank matrix factorization and matrix absorption, it greatly compresses the KV cache during inference without the losses associated with MQA and GQA.
+
+In linear algebra, the ``rank'' of a matrix represents the amount of genuinely independent, uncorrelated information it contains. Suppose we have a \(100\times100\) matrix whose second row is twice the first, third row is three times the first, and so on. Although it has 100 rows, only one row actually contains useful information. Its rank is 1.
+
+In standard multi-head attention, we have \(H\) heads (for example, 32). Each head backpropagates separately, and the model learns different projection matrices \(W_K\) and \(W_V\) for each head. In fact, the keys and values learned by these 32 heads are not completely independent; they are highly correlated. For example, when processing the word ``apple,'' head 1 attends to its ``color (red),'' head 2 to its ``shape (round),'' and head 3 to its ``category (fruit).'' Although these features differ, they all originate from the same semantic core, ``apple.'' The \(W_K\) and \(W_V\) matrices reorganize features. What they actually focus on is how a head's feature vector can be regarded as a weighting of the different dimensions of the original feature vector. Since the features are strongly correlated, these weight vectors are also strongly correlated. Thus, DeepSeek MLA's core assumption is that, although the key--value matrices in multi-head attention (MHA) are high-dimensional, they are mathematically low-rank. In other words, most parameters are redundant.
+
+Mathematically, if a large matrix \(W_{\mathrm{full}}\) is low-rank, it can be factorized without loss (or with very little loss) into the product of two low-rank matrices, \(W_{\mathrm{down}}W_{\mathrm{up}}\). In MLA, these are called the down-projection and up-projection matrices, respectively. We can therefore perform the following MLA operations.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-step-1-generate-c_kv}{%
+\subsection{\texorpdfstring{II. Step 1: Generate \(C_{KV}\)}{II. Step 1: Generate C\_\{KV\}}}\label{ii.-step-1-generate-c_kv}}
+
+In standard multi-head attention with a KV cache, every time we read a token (\(x_t\)), we generate vectors \(k_t\) and \(v_t\) of dimension \(d_{\mathrm{model}}\) (a high dimension, such as 1024). These include all heads, for example, dimensions 1--32 belong to head 1, and so on. They are stored in GPU memory:
+
+\Needspace{5\baselineskip}
+In standard MHA, the current token's key and value are obtained by directly projecting the input vector:
+
+\[
+k_t = x_t W_K,\qquad v_t = x_t W_V
+\]
+
+MLA considers many of these dimensions ``wasted'' because the vectors of different heads are highly correlated. We only need a shared down-projection matrix \(W_{DKV}\) to store the genuinely useful information in an extremely low-dimensional vector \(c_{KV,t}\) (such as 64 dimensions), shared by all heads. Each head can subsequently multiply it by different columns of the up-projection matrix, preserving head diversity. The expression for \(c_{KV,t}\) is:
+
+\[
+c_{KV,t} = x_t W_{DKV}
+\]
+
+\Needspace{5\baselineskip}
+Positional information is stored separately:
+
+\[
+k_t^R = \mathrm{RoPE}(x_t W_{KR})
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-step-2-optimize-attention-computation-using-associativity}{%
+\subsection{III. Step 2: Optimize Attention Computation Using Associativity}\label{iii.-step-2-optimize-attention-computation-using-associativity}}
+
+\Needspace{5\baselineskip}
+The original attention score can be regarded as the dot product of a query and an up-projected, decompressed key:
+
+\[
+\mathrm{Score} \propto q_t \cdot (c_{KV} \cdot W_{UK})^T
+\]
+
+\Needspace{5\baselineskip}
+Using the associativity of matrix multiplication, \((AB)C=A(BC)\), we can move the key-side up-projection matrix \(W_{UK}\) to the query side:
+
+\[
+\mathrm{Score} \propto (q_t \cdot W_{UK}^T) \cdot c_{KV}^T
+\]
+
+We first multiply the query by the fixed parameter matrix \(W_{UK}^T\) to obtain a new, transformed query, denoted \(Q_{\mathrm{absorbed}}\). For attention head \(i\), the attention weight between the current (the \(t\)th) token and the \(j\)th token is then:
+
+\[
+\mathrm{Score}_{t,j}^{(i)}
+=
+\frac{Q_{\mathrm{absorbed}}^{(i)} \cdot (c_{KV,j})^T}{\sqrt{d}}
+\]
+
+Because \(Q_{\mathrm{absorbed}}\) pertains to the current token, this step involves computation for only one token and has very little overhead. Next, when multiplying by \(C_{KV}^T\), we only need to store the compressed vectors \(C_{KV}\) of size \(t*64\), and never need to reconstruct the huge K matrix of size \(t*1024\) in GPU memory. After ``matrix absorption,'' this step becomes an MQA-like operation of \(Q_{\mathrm{absorbed}}^{(i)}\) on \(C_{KV}^T\), while retaining the expressive power of different heads in MHA.
+
+\Needspace{5\baselineskip}
+We also need to add decoupled positional encoding, calculating the RoPE score component separately. Thus, for attention head \(i\), the attention weight between the current (the \(t\)th) token and the \(j\)th token is:
+
+\[
+\mathrm{Score}_{t,j}^{(i)}
+=
+\frac{
+\left(q_t^{C,(i)} \cdot (W_{UK}^{(i)})^T\right) \cdot c_{KV,j}
++
+q_t^{R,(i)} \cdot (k_j^R)^T
+}{\sqrt{d}}
+\]
+
+Here, the first term, \(\left(q_t^{C,(i)} \cdot (W_{UK}^{(i)})^T\right) \cdot c_{KV,j}\), is the content score, comparing the semantic content of the current and historical tokens. The second term, \(q_t^{R,(i)} \cdot (k_j^R)^T\), is the RoPE positional score, comparing their relative positional information.
+
+\(R_{lt}^{(i)}\) is a query vector unique to head \(i\) that carries positional information and can be understood as \(q_t^{R,(i)}\) in the expression above; \(k_j^R\) is usually a RoPE key vector shared across heads. Their dot product preserves the positional matching capability of standard attention, allowing the model to continue judging relative distances between tokens.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-optimize-information-aggregation-attention-weights-v-using-distributivity}{%
+\subsection{IV. Optimize Information Aggregation (Attention Weights * V) Using Distributivity}\label{iv.-optimize-information-aggregation-attention-weights-v-using-distributivity}}
+
+\Needspace{5\baselineskip}
+Let the dimension of the vector \(c_{KV,j}\) be \(d_c\) and each head's feature dimension after up-projection be \(d_h\). In head \(i\), the attention distribution, compressed latent vector, and value up-projection matrix are:
+
+\[
+P_{t,:}^{(i)} = \mathrm{Softmax}(\mathrm{Score}_{t,:}^{(i)}),\qquad
+P_{t,j}^{(i)} =
+\frac{\exp(\mathrm{Score}_{t,j}^{(i)})}{\sum_{r=1}^{t}\exp(\mathrm{Score}_{t,r}^{(i)})},\qquad
+c_{KV,j}\in \mathbb{R}^{d_c},\qquad
+W_{UV}^{(i)}\in \mathbb{R}^{d_c \times d_h}
+\]
+
+\Needspace{5\baselineskip}
+If we follow the standard path of first up-projecting every historical token's compressed latent vector into a value and then performing the weighted sum, the output of head \(i\) is:
+
+\[
+y_t^{(i)}
+=
+\sum_{j=1}^{t}
+\left(P_{t,j}^{(i)} \cdot (c_{KV,j} \cdot W_{UV}^{(i)})\right)
+\]
+
+This formulation requires the up-projection \(c_{KV,j} \cdot W_{UV}^{(i)}\) for every historical position \(j\), followed by multiplication by the scalar weight \(P_{t,j}^{(i)}\) and summation. The main complexity for a single head is approximately \(O(t \cdot d_c \cdot d_h)\).
+
+\Needspace{5\baselineskip}
+DeepSeek uses the distributivity of matrix multiplication to move the fixed up-projection matrix \(W_{UV}^{(i)}\) outside the summation:
+
+\[
+\begin{aligned}
+y_t^{(i)}
+&= \sum_{j=1}^{t}\left(P_{t,j}^{(i)} \cdot c_{KV,j} \cdot W_{UV}^{(i)}\right) \\
+&= \left(\sum_{j=1}^{t}P_{t,j}^{(i)} \cdot c_{KV,j}\right) \cdot W_{UV}^{(i)}
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+The computation can therefore be split into two stages. The first aggregates in the compressed space:
+
+\[
+\tilde c_{sum}^{(i)}
+=
+\sum_{j=1}^{t}\left(P_{t,j}^{(i)} \cdot c_{KV,j}\right)
+\]
+
+\(\tilde c_{sum}^{(i)}\) is a low-dimensional vector of dimension \(d_c\). Although \(c_{KV,j}\) comes from a shared KV cache, each head has different attention weights \(P_{t,j}^{(i)}\), so each head also produces a different aggregated \(\tilde c_{sum}^{(i)}\). This stage only multiplies scalars by low-dimensional vectors and sums them, with complexity approximately \(O(t \cdot d_c)\).
+
+\Needspace{5\baselineskip}
+The second stage performs delayed up-projection:
+
+\[
+y_t^{(i)} = \tilde c_{sum}^{(i)} \cdot W_{UV}^{(i)}
+\]
+
+This step maps the aggregated low-dimensional result back to the \(d_h\)-dimensional feature space of head \(i\). Because up-projection is performed once on the aggregated result, rather than separately \(t\) times for \(t\) historical tokens, this part has complexity approximately \(O(d_c \cdot d_h)\) per head.
+
+\Needspace{5\baselineskip}
+After calculating \(y_t^{(i)}\) for all \(H\) heads, concatenate them and pass them through the output projection matrix \(W_O\) to obtain the final hidden-state output:
+
+\[
+y_t
+=
+\mathrm{Concat}\left(y_t^{(1)}, y_t^{(2)}, \ldots, y_t^{(H)}\right) \cdot W_O
+\]
+
+Overall, MLA replaces ``up-project each token, then aggregate'' with ``aggregate in the compressed space, then up-project.'' The main complexity changes from \(O(t \cdot d_c \cdot d_h)\) to \(O(t \cdot d_c + d_c \cdot d_h)\), which can be approximately understood as a reduction by a factor of \(d_h\) when the history length \(t\) is large.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-95}{%
+\subsection{References}\label{references-95}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  DeepSeek-AI. (2024). \href{https://arxiv.org/abs/2405.04434}{DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model}. arXiv:2405.04434.
+\end{itemize}
+
+\clearpage

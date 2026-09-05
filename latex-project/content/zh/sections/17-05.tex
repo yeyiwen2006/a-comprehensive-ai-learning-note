@@ -1,0 +1,318 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux5956ux52b1ux51fdux6570ux7684ux6539ux8fdb}{%
+\section{奖励函数的改进}\label{ux5956ux52b1ux51fdux6570ux7684ux6539ux8fdb}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux9488ux5bf9ux7a00ux758fux5956ux52b1ux95eeux9898ux7684ux4f18ux5316}{%
+\subsection{一、针对稀疏奖励问题的优化}\label{ux4e00ux9488ux5bf9ux7a00ux758fux5956ux52b1ux95eeux9898ux7684ux4f18ux5316}}
+
+\Needspace{5\baselineskip}
+RLVR依赖可验证的奖励信号（如数学题的答案、编程题的输出结果）来指导，这是非常稀疏的。只有当智能体生成的代码从头到尾（数据加载、训练、预测、生成提交文件）完美运行时，才能得到一个非零的分数。一个因为数据加载失败的程序和一个几乎成功、仅在最后保存文件时出错的程序，得到的奖励都是零（或者是一个表示失败的固定负值）。这使得智能体难以获得有效梯度（特别是难题），即很难区分``错得离谱''和``就差一点''这两种情况，导致学习效率低下。可能的优化方案：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  融合步骤分解与密集反馈
+\end{enumerate}
+
+核心思想是给AI的每一步操作都打上``进度条''，让其输出中间变量，从而可以更密集地给予奖励，使得AI不至于在前期完全没有梯度。
+
+但注意：一般后期正确率达到一定水平后会切换回纯结果奖励，确保AI不会止步于局部最优，而是探索完全正确的答案。
+
+\Needspace{8\baselineskip}
+（1）中间步骤输出（硬性打分）
+
+自动注入代码：在智能体生成的代码执行前，利用一个独立的静态语言模型，自动向代码中插入一系列中间输出语句，例如：print(``loaded data''), print(``trained model'')。
+
+解析输出以计分：代码执行后，系统通过正则表达式（Regex）扫描终端输出日志，检测哪些中间变量被成功打印。
+
+分级奖励结构：每输出一个正确中间变量，智能体获得一小部分奖励（如+0.1分）。
+
+优势：即使程序最终失败，智能体也能获得有指导性的反馈，被逐步引导先学会加载数据，再学会构建模型，最终完成任务。而且这里的奖励一般情况下较为可验证、客观。
+
+\Needspace{8\baselineskip}
+（2）过程思路评分（LLM打分）
+
+不要只依赖结果，也需要关注过程思路，如果思维链（CoT）合理但计算错误，仍可给予部分分数。这种方法就像高考数学大题阅卷一样，即便答案错，只要思路对，仍然可以得到大部分分数，也就是按思路过程评分；只有结果没有过程，不能得到大部分分数。
+
+在过程的评分中，可以引入结构性检查，如数学任务检查是否包含关键的中间变量、还原步骤，程序任务检测是否使用了题目规定的函数名、变量名等。
+
+但注意，这种思路可能要谨慎使用。因为它不是有明确标准的RLVR。LLM的泛化能力不是无限的，在评价标准比较主观灵活的情况下（如按过程思路而非单纯按答案给分），在RL的范式智能体很可能找到一个``Reward Hacking''的方式，而且这种对抗性样本的漏洞不可能全部被完美堵上。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  为什么要慎用（如只能在前期使用）过程奖励
+\end{enumerate}
+
+前面的方法虽然能解决训练难的问题，但解决真实问题时或在真实环境中，奖励信号稀疏本就是内在特征（如生物进化以存活数量为奖励），我们人为把奖励改得更密集，从原理上无法根避开优化目标发生了变化这一根本问题。如果AI用了一种人类根本不懂的绝妙方法（比如AlphaGo的第37手），反而可能被错误地打低分。
+
+另外，奖励过于密集，也容易让模型过度看重即时奖励，陷入局部最优，降低在依赖长期规划和一致性的任务上的效果，就如同对科研人员的考核如果过于频繁，会引导人们一味做短平快研究，降低出重大成果的可能性一样。具有一定程度稀疏性的奖励本来就是更为本质的。
+
+综上，一般而言如果希望通过过程奖励解决奖励稀疏问题，一般只在前期运用过程奖励。当奖励达到阈值后，切换为纯结果奖励。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  SRL（监督式强化学习）（Google，2025）
+\end{enumerate}
+
+对于不够聪明的模型，让它死记硬背高质量答案（SFT）反而会把它教傻；相反，可以像一位耐心导师一样，把难题拆解成小步骤，模型每做一步就对照标准答案给``相似分''，通过这种``手把手+鼓励式''教学，成功让小模型学会了它本不可能掌握的复杂推理。
+
+SRL不再把一个完整的解题过程看作一个整体，而是将其分解为一系列关键的``动作''（Action）。在生成每个``动作''之前，模型会先生成一段``内心独白''，放在 \texttt{\textless{}think\textgreater{}} 标签里。这个设计非常巧妙，它把灵活的思考过程和需要被评估的、结构化的执行步骤分开了。
+
+在模型完成每一步``动作''后，系统会将其与专家示范中的对应``动作''进行文本相似度比较，得出一个0到1之间的分数作为奖励。这意味着即使模型的一步做得不完美，只要方向大致正确，也能得到正向的反馈。这种``差不多就行，有点像就好''的奖励机制，为模型在复杂的探索空间中提供了一个平滑的、连续的学习信号。
+
+为了提高训练效率，SRL会过滤掉那些几乎所有尝试的相似度分数都差不多、学习信号很弱的训练样本。
+
+该方法一般在强化微调前期应用，或者在借助大模型训练小模型时应用。大模型强化学习后期仍采取RLVR，以激发更大的潜能，让它探索和发现新方法。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  目标导向的强化学习
+\end{enumerate}
+
+具体介绍见目标导向的强化学习一节。这里举一些在强化微调中应用的例子。
+
+\Needspace{5\baselineskip}
+数学题求解中：
+
+\begin{itemize}
+\tightlist
+\item
+  原始目标 \(g\)：计算 \(\int x^2 dx\)。
+\item
+  模型行为：模型错误地计算成了 \(\frac{1}{2}x^2\)，可能忘记了系数 \(\frac{1}{3}\)，或者是对 \(x\) 求导了。
+\item
+  传统方法：判断错误，奖励为 0。
+\item
+\Needspace{5\baselineskip}
+  Goal-Oriented 方法：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    分析模型输出 \(\frac{1}{2}x^2\)。
+  \item
+    逆向推导或重标记：这其实是问题``计算 \(\int x dx\)''的正确答案，或者是``计算 \(\frac{1}{6}x^3\) 的导数''的答案。
+  \item
+    更新：告诉模型，``如果你想解决计算 \(\int x dx\) 这个问题，你的刚才的推导是完美的。''
+  \item
+    效果：模型学会了正确的积分逻辑，只是最初用错了地方。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+代码生成中：
+
+\begin{itemize}
+\tightlist
+\item
+  原始目标 \(g\)：加载数据并训练模型。
+\item
+  模型行为：成功加载了数据，但在训练模型时报错崩溃。
+\item
+  重标记 \(g'\)：将目标修改为``编写一个数据加载脚本''。
+\item
+  结果：在这条新轨迹下，模型获得了满分。它强化了``如何正确加载数据''的能力。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  从中间状态开始推理
+\end{enumerate}
+
+在 RLVR 训练中，模型经常会产生一些接近成功的推理组。HiPO 从这些近失误组中的成功轨迹提取中间状态作为``提示（Hint）''，让一部分新轨迹以原问题和提示为条件继续生成。这样做旨在提高同组结果的多样性，缓解全错样本导致相对优势为零的问题；它可以增加获得非零学习信号的机会，但并不保证每个提示都能带来更好的最终策略。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  改进RL算法
+\end{enumerate}
+
+RL算法的改进也能让稀疏的奖励信号更好地回传，如GRPO在这点上优于PPO（后者的Critic网络可能在稀疏奖励下训练极不稳定）。这样也能让模型更好地适配真实世界中往往本就奖励稀疏的实际情况。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7b54ux6848ux683cux5f0fux7684ux8c03ux6574}{%
+\subsection{二、答案格式的调整}\label{ux4e8cux7b54ux6848ux683cux5f0fux7684ux8c03ux6574}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  HERO：将结果奖励与格式奖励结合（Meta FAIR，2025）
+\end{enumerate}
+
+先定性，由0-1二值分类的验证器，将所有答案分为``正确''和``错误''两组（定性阶段），通过分层归一化将所有模型输出按对错分组，确保奖励分数不越界。然后再定量，让奖励模型在每个组的内部，对答案的质量进行精细的排序，给出质量的细微分数，通过方差感知加权，让模型在训练时更关注那些信息量最大的难题。这样，``格式差的正确答案''的得分高于一个``格式好的错误答案''，优先保证训练的方向正确。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux8f93ux51faux7ed3ux679cux7684ux7b49ux4ef7ux6027ux5206ux6790}{%
+\subsection{三、输出结果的等价性分析}\label{ux4e09ux8f93ux51faux7ed3ux679cux7684ux7b49ux4ef7ux6027ux5206ux6790}}
+
+针对数学推导任务（特别是化简表达、解题过程不唯一的场景），我们不能单纯比较输出字符串与答案是否匹配，需要更贴近数学本质的奖励定义方式。如Symbolic Equivalence（符号等价）调用符号计算工具（如Python的SymPy库）判断两个表达式在数学上是否等价。相较于直接比较模型输出与标准答案是否完全一致，符号等价具有更强的泛化性，更能反映数学推理的正确性。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux89e3ux51b3ux6a21ux578bux4f5cux5f0aux8499ux7b54ux6848ux95eeux9898}{%
+\subsection{四、解决模型``作弊''蒙答案问题}\label{ux56dbux89e3ux51b3ux6a21ux578bux4f5cux5f0aux8499ux7b54ux6848ux95eeux9898}}
+
+适当加入对过程的检查。在代码执行环境中，禁止import某些危险函数（如eval），禁止直接打印答案等。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux5197ux4f59ux8f93ux51faux95eeux9898}{%
+\subsection{五、冗余输出问题}\label{ux4e94ux5197ux4f59ux8f93ux51faux95eeux9898}}
+
+在推理中，模型常会出现``过度思考''问题，为了得出一个简单的结论，生成大量冗余Token，甚至在多种错误的路径上反复横跳，或者不断回溯。这不仅浪费了宝贵的算力，还增加了推理延迟。
+
+\Needspace{5\baselineskip}
+可能的解决方案：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  直接修改RL算法的目标函数
+\end{enumerate}
+
+有时模型输出冗余 token，可能与奖励、损失聚合和长度归一化设计有关。按序列长度 \(T\) 归一化的目标会改变不同长度样本的梯度权重，因此修改损失聚合方式或长度惩罚有可能缓解冗余生成。但 DeepSeek-V3.2 的公开技术报告并不足以把冗余 token 单因果地归结为 GRPO 中的 \(1/T\) 归一化；实际结果还会受到训练数据、采样策略和解码设置等因素影响，需要结合具体消融实验判断。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  RePro（上海AI Lab，2025）
+\end{enumerate}
+
+\Needspace{8\baselineskip}
+（1）核心观察：推理即优化
+
+RePro的核心思想是将模型的推理轨迹看作是在损失曲面上寻找最优解的路径。
+
+每一个推理步骤（Step），都相当于一次梯度更新。优化的目标，是最大化生成正确答案（Ground Truth）的概率。好的推理，应该每一步都能显著提升模型对正确答案的信心（Loss下降），且推理方向坚定，不反复横跳，不震荡。过度思考，则体现为陷入鞍点（生成了大量Token，但对正确答案概率提升的贡献微乎其微），或梯度震荡（思路混乱，信心忽高忽低）。
+
+基于上述视角，RePro设计了一套过程奖励机制，直接嵌入到RLVR（如PPO，GRPO）流程中。
+
+\Needspace{8\baselineskip}
+（2）代理目标函数
+
+RePro设计了一个目标函数，用于量化模型当前的置信度。具体来说，即模型在当前推理上下文下，生成正确答案各个token的平均对数概率。（和监督学习中的分类损失有相似之处）
+
+\[
+\tilde{J}(\pi_\theta, q, \tau_{\le t}, a)
+\triangleq
+\frac{1}{|a|}\sum_{i=1}^{|a|}
+\log \pi_\theta(a_{(i)} \mid q, \tau_{\le t})
+\]
+
+当模型还没开始思考时，直接猜出答案的概率很低，J̃很小。随着模型一步步推理，排除错误选项，锁定逻辑链路，模型对最终答案的信心应该越来越强，J̃应该逐渐增大。当模型完成推理得出结论时，J̃应该达到峰值。这个指标越高，说明模型越``自信''答案正确，是一个合理的优化指标。
+
+\Needspace{8\baselineskip}
+（3）基于J序列引入的两个评分
+
+\Needspace{5\baselineskip}
+相较于传统强化学习仅关注最终结果（Outcome Reward）的稀疏反馈机制，REPRO引入了过程感知的轨迹优化范式。为了量化推理质量，RePro将J̃的变化拆解为两个维度：
+
+Magnitude Score（强度评分）衡量目标函数变化幅度，旨在回答``这一段思考，到底让模型离答案近了多少''。在优化理论中，梯度的大小决定了下降的快慢。在推理中，这意味着一段有效的CoT应该显著提升模型对答案的信心。REPRO通过比较当前步骤后的目标函数值J̃与基线值J̅（即不进行任何思考直接回答的信心）来计算这一增益。
+
+\[
+\Delta(\pi_\theta, q, \tau_{\le t}, a)
+=
+\frac{
+\tilde{J}(\pi_\theta, q, \tau_{\le t}, a) - \bar{J}_b(q)
+}{
+\bar{J}_b(q)
+}
+\]
+
+\[
+S_{\mathrm{magn},(t)}
+\triangleq
+\tanh\left(\Delta(\pi_\theta, q, \tau_{\le t}, a) + 1\right) + 1
+\]
+
+这里使用tanh函数的目的是将分数归一化到(0,1{]}区间。在实际训练中，某些步骤可能会导致对答案的信心指数级暴涨（例如终于算出了关键中间变量），如果不加限制，这种巨大的奖励信号可能会导致梯度爆炸或训练不稳定。
+
+Stability Score（稳定性评分）衡量J是否平滑上升。如果将J̃的变化看作一条曲线，理想的推理应该是一条单调上升的曲线。如果曲线上下波动，说明模型陷入了自我怀疑或逻辑混乱。为了量化这种``波动''，RePro利用了Kendall's Tau相关系数。
+
+\[
+S_{\mathrm{stab},(t)}
+=
+\frac{
+\sum_{i < j}
+\mathrm{sign}(\tilde{J}_i - \tilde{J}_j)\cdot \mathrm{sign}(i - j)
+}{
+|\tau|(|\tau| - 1)
+}
++
+\frac{1}{2}
+\]
+
+这一公式计算的是J̃值序列与时间步序列\{1,\ldots,t\}之间的秩相关性。高稳定性（接近1）意味着每一步的J̃值都比前一步高，这表明模型每一步都在进步，没有回撤。这对应于优化过程中沿着最速下降方向的平滑移动。低稳定性（接近0或负值）意味着序列杂乱无章，进两步退一步，甚至出现严重的逻辑倒退。这对应于模型在鞍点附近的随机摆动，消耗了步数（Token）但未取得实质进展。
+
+Magnitude Score和Stability Score两者加权构成最终过程评分S，可用于判断某段思维路径是否值得强化或惩罚。
+
+\Needspace{8\baselineskip}
+（4）流程级奖励
+
+\Needspace{5\baselineskip}
+RePro采用熵值筛选策略：
+
+分段：将推理链按逻辑段落（如换行符\n\n）分割为\{c1, c2,\ldots, cN\}。
+
+熵计算：计算每个段落首 Token 的熵 \(\mathcal{H}(c_i^{(0)})\)。
+
+Top-k 筛选：只选择熵最高的前 \(k\) 个段落（Top-k Segments）进行 REPRO 奖励计算。
+
+这种策略不仅大幅降低了计算开销（从全序列计算变为只计算 \(k\) 个点），还起到了``好钢用在刀刃上''的效果------只在模型最迷茫、最关键的时刻给予指引，而在其自信流畅的时刻（低熵区域）保持静默，避免过度干预。
+
+然后，通过计算过程评分的提升量 \(\Delta S\)，作为这一片段的``过程级奖励''，与最终正确与否结合，作为 RL 的优势函数输入。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-83}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-83}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  温睦宁、林江浩、张伟楠、俞勇（2025）。\href{https://haa.boyuai.com/}{《动手学大模型智能体》}。人民邮电出版社。ISBN 978-7-115-68638-1。
+\item
+  Andrychowicz, M., Wolski, F., Ray, A., et al.~(2017). \href{https://arxiv.org/abs/1707.01495}{Hindsight Experience Replay}. NeurIPS 2017.
+\item
+  Deng, Q., Chen, K., Zhang, M., \& Xu, Z. (2026). \href{https://openreview.net/forum?id=rcb20pHmT1}{HiPO: Self-Hint Policy Optimization for RLVR}. ICLR 2026.
+\item
+  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2512.02556}{DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models}. arXiv:2512.02556.
+\item
+  Deng, Y., Hsu, I.-H., Yan, J., et al.~(2025). \href{https://arxiv.org/abs/2510.25992}{Supervised Reinforcement Learning: From Expert Trajectories to Step-wise Reasoning}. arXiv:2510.25992.
+\item
+  Tao, L., Kulikov, I., Saha, S., et al.~(2025). \href{https://arxiv.org/abs/2510.07242}{Hybrid Reinforcement: When Reward Is Sparse, It's Better to Be Dense}. arXiv:2510.07242.
+\item
+  Liu, J., Liu, H., Zhang, S., \& Chen, K. (2025). \href{https://arxiv.org/abs/2512.01925}{Rectifying LLM Thought from Lens of Optimization}. arXiv:2512.01925.
+\end{itemize}
+
+\clearpage

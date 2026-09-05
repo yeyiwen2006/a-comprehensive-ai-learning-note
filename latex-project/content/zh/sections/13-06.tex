@@ -1,0 +1,440 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{sacux7b97ux6cd5}{%
+\section{SAC算法}\label{sacux7b97ux6cd5}}
+
+SAC（Soft Actor-Critic）是目前在连续动作控制中（如机器人控制、自动驾驶）应用最广泛的强化学习算法之一。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-4}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-4}}
+
+\Needspace{5\baselineskip}
+传统 RL 的目标是：
+
+\[
+\max_\pi
+\sum_t
+\mathbb{E}[r_t]
+\]
+
+也就是说，只要分数高就行，不关心你怎么走，也不关心你的动作是否单一。这通常导致策略坍缩到某一条特定路径，一旦环境微变，策略就可能失效，鲁棒性差。
+
+\Needspace{5\baselineskip}
+SAC 的目标是：
+
+\[
+\max_\pi
+\sum_t
+\mathbb{E}
+\bigl[
+r_t+\alpha\mathcal{H}(\pi(\cdot\mid s_t))
+\bigr]
+\]
+
+也就是说，既要分数高，又要熵 \(\mathcal{H}\) 最大。
+
+SAC 鼓励Actor在保持高回报的同时，尽可能让动作分布更``宽''、更随机。直观例子：假设有两条路都能通往终点拿到100分。DDPG/PPO通常会随机收敛到其中一条，并不再探索另一条，SAC会根据概率同时走这两条路。好处在于极强的探索能力（不需要像DDPG那样手动加噪声，策略本身就是随机的）和鲁棒性（面对干扰时，智能体掌握了多种解决方案），适合需要保留更多可能性的场景。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux67b6ux6784}{%
+\subsection{二、架构}\label{ux4e8cux67b6ux6784}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Actor：和 DDPG 的``逼近 \(Q\) 值最大的策略''（DQN 变体）不同，SAC 的 Actor 在整个概率分布（高斯分布）范围内随机采样（一般会先输出均值和标准差再采样）。Actor 希望自身输出的概率分布能使期望总奖励最大，这里奖励的估计运用了 Critic。
+\item
+  Critic：运用贝尔曼期望方程。
+\end{enumerate}
+
+由于 Actor 会选择 \(Q\) 值大的策略，在更新某个状态时，在下一个状态选取的策略很可能就是那个 \(Q\) 被高估的策略，这样就会导致 \(Q\) 值的偏高不断向前传播。为解决这个问题，采用双 \(Q\) 网络架构，使用两个 Critic 网络（\(Q_1,Q_2\)）来计算价值，取最小值以缓解过估计问题。同时，在考量``状态的价值''时，不仅考虑动作的价值，也考虑当前位置策略的随机性。
+
+\Needspace{5\baselineskip}
+普通时序差分更新可以写成：
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t+\gamma Q(s_{t+1},a_{t+1})-Q(s_t,a_t)
+\bigr]
+\]
+
+SAC 的 Critic 更新可以理解为在这类动作价值递推中加入熵项，让策略在追求高回报的同时保留足够随机性。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux76eeux6807ux51fdux6570}{%
+\subsection{三、目标函数}\label{ux4e09ux76eeux6807ux51fdux6570}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Critic 的目标函数
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+在 SAC 的推导中，状态价值 \(V(s)\) 和动作价值 \(Q(s,a)\) 的关系是：
+
+\[
+V(s_t)
+=
+\mathbb{E}_{a_t\sim\pi}
+\bigl[
+Q(s_t,a_t)
+-
+\alpha\log\pi(a_t\mid s_t)
+\bigr]
+\]
+
+这句话的人话翻译是：站在状态 \(s_t\)，还没做动作，我现在的身价 \(V\) 是多少？答案是：等于我接下来随便做一个动作 \(a_t\)，这个动作带来的后续总回报 \(Q(s_t,a_t)\)，加上我做这个动作本身带来的随机性快乐，也就是当前熵奖励。
+
+\Needspace{5\baselineskip}
+从而 Critic 的训练目标为让 \(Q(s_t,a_t)\) 趋近于下面的值：
+
+\[
+y
+=
+r_t
++
+\gamma
+\bigl(
+Q(s_{t+1},a_{t+1})
+-
+\alpha\log\pi(a_{t+1}\mid s_{t+1})
+\bigr)
+\]
+
+\Needspace{5\baselineskip}
+这是一个递归的过程，可以展开为：
+
+\[
+Q(s_t,a_t)
+\approx
+\mathbb{E}
+\bigl[
+r_t
++
+\gamma(r_{t+1}+\alpha\mathcal{H}_{t+1})
++
+\gamma^{2}(r_{t+2}+\alpha\mathcal{H}_{t+2})
++
+\cdots
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+关键点：
+
+\begin{itemize}
+\tightlist
+\item
+  它包含了 \(r_t\) 以及从 \(t+1\) 时刻开始的所有未来奖励和熵。
+\item
+  它不包含当前时刻 \(t\) 的熵 \(-\alpha\log\pi(a_t\mid s_t)\)。
+\end{itemize}
+
+也就是说，\(Q(s_t,a_t)\) 事实上包含了 \(r_t\)，以及从 \(t+1\) 时刻开始未来的所有奖励和熵。但需要注意的是，它不包括当前时刻 \(t\) 的熵，因为对于同一状态 \(s_t\)，当前状态 \(t\) 下的随机性是定值（不同策略下未来的随机性才不同），比较不同动作 \(a_t\) 的在 \(t\) 时刻的熵没有意义。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Actor 的目标函数
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+对于给定状态s，Actor的目标是选择一个策略，使得下面的表达式值最大：
+
+\[
+J(\theta)
+=
+\mathbb{E}_{a\sim\pi}
+\bigl[
+Q(s,a)
+-
+\alpha\log\pi(a\mid s)
+\bigr]
+\]
+
+它的实际意义是，既希望动作价值（未来期望获得的奖励，以及未来状态的期望熵值）尽可能大，也希望当下状态下自己策略的熵值尽可能大。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbsacux8badux7ec3ux4e2dux7684ux4e24ux4e2aux95eeux9898ux4e0eux89e3ux51b3ux65b9ux6848}{%
+\subsection{四、SAC训练中的两个问题与解决方案}\label{ux56dbsacux8badux7ec3ux4e2dux7684ux4e24ux4e2aux95eeux9898ux4e0eux89e3ux51b3ux65b9ux6848}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Actor 的更新中，目标函数 \(J(\theta)\) 表达式中涉及动作 \(a\)。动作 \(a\) 是采样获得的，采样操作不可导。也就是说我们无法计算 \(a\) 对 \(u\) 的导数。因为在采样操作中，\(u\) 只是改变了概率密度，而不是直接参与了生成 \(a\) 的算术运算，我们无法回答``\(u\) 增加一个小量，会让 \(a\) 增加多少''。这样，梯度传不过去，就无法反向传播。但是我们客观上又需要通过梯度来更新采样分布。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+解决方案是重参数化（Reparameterization）：不直接从 \(\mathcal{N}(\mu,\sigma)\) 采样，而是从标准正态分布 \(\epsilon\sim\mathcal{N}(0,1)\) 采样，然后变换：
+
+\[
+a
+=
+\tanh\bigl(
+\mu_\theta(s)+\sigma_\theta(s)\cdot\epsilon
+\bigr)
+\]
+
+这样，我们要调整的变量（均值、方差）都回到了计算图里，\(\epsilon\) 的分布则被确定为 \(\mathcal{N}(0,1)\)，相当于变成了一个普通的、与参数无关的、不需要我们调整的随机噪声，把随机性从计算图的内部踢到了计算图的外部（输入端）。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \(\alpha\) 的调整：早期的 SAC 需要手动调整，很难调。后来作者提出了自动调整方案，原理是设定一个目标熵，如果当前策略太随机（实际熵 \(>\) 目标熵），就减小 \(\alpha\)，让它收敛一点；如果当前策略太确定（实际熵 \(<\) 目标熵），就增大 \(\alpha\)，逼它去探索。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94sacux66f4ux65b0ux7684ux76eeux6807ux4e0eux7b56ux7565ux6709ux5173ux90a3ux4e3aux4ec0ux4e48sacux662foff-policy}{%
+\subsection{五、SAC更新的目标与策略有关，那为什么SAC是Off-Policy？}\label{ux4e94sacux66f4ux65b0ux7684ux76eeux6807ux4e0eux7b56ux7565ux6709ux5173ux90a3ux4e3aux4ec0ux4e48sacux662foff-policy}}
+
+SAC的确会利用经验回放里自身走过的路，但是在计算目标值时，抛弃了回放池里存储的``旧的下一步动作''，而是利用当前的策略在``旧的下一步状态''上重新采样了一个``新的下一步动作''。
+
+\Needspace{5\baselineskip}
+假设 Replay Buffer 里存的一条旧数据是：
+
+\[
+(s_t,a_t,r_t,s_{t+1})
+\]
+
+这条数据可能是 1 小时前采集的，那时的策略是 \(\pi_{\mathrm{old}}\)。
+
+\textbf{A. 左边项（预测值）：\(Q(s_t,a_t)\)}
+
+这里用的 \(s_t\) 和 \(a_t\) 都是 Buffer 里的旧数据。
+
+\begin{itemize}
+\tightlist
+\item
+  逻辑：Critic 的任务是记住历史。它需要学习``在状态 \(s_t\) 执行动作 \(a_t\)，确实得到了 \(r_t\) 的奖励并跳到了 \(s_{t+1}\)''。
+\item
+  这部分没问题：Q 函数的学习本身就是为了拟合环境动力学，和策略无关。
+\end{itemize}
+
+\textbf{B. 右边项（目标值）：\(y\)}
+
+\Needspace{5\baselineskip}
+问题出在这里。我们需要计算下一时刻的价值：
+
+\[
+y
+=
+r_t
++
+\gamma
+\bigl(
+Q(s_{t+1},\tilde{a}_{t+1})
+-
+\alpha\log\pi(\tilde{a}_{t+1}\mid s_{t+1})
+\bigr)
+\]
+
+注意这个 \(\tilde{a}_{t+1}\)，也就是新的下一步动作。它从哪里来？
+
+\begin{itemize}
+\tightlist
+\item
+  如果是 Sarsa（On-policy）：Sarsa 会直接使用 Buffer 里存的那个旧动作 \(a_{t+1}\)，因为 Sarsa 评估的是``生成这条数据的那个旧策略''。所以一旦策略变了，旧数据的 \(a_{t+1}\) 就不能代表新策略行为了，数据作废。
+\item
+  如果是 SAC（Off-policy）：SAC 无视 Buffer 里原本存的那个 \(a_{t+1}\)。它看着 Buffer 里的 \(s_{t+1}\)，然后问当前的 Actor（新策略 \(\pi_{\mathrm{new}}\)）：如果现在的你站在 \(s_{t+1}\) 这个位置，你会做什么动作？
+\end{itemize}
+
+Actor 会根据当前的参数，重新采样出一个动作 \(\tilde{a}_{t+1}\sim\pi_{\mathrm{new}}(\cdot\mid s_{t+1})\)。然后 Critic 用这个新动作 \(\tilde{a}_{t+1}\) 去计算未来的价值。
+
+在这个重新采样 \(a_{t+1}\) 的过程中，我们并不需要与环境交互，因为我们只需要根据当前的采样策略采样动作即可，不需要从环境中获得奖励或进行状态转移。
+
+让我们回顾 Off-policy 的定义：用于优化的数据生成策略（Behavior Policy）与当前待评估或优化的策略（Target Policy）不一致。
+
+\Needspace{5\baselineskip}
+在 SAC 中：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  数据的提供者是旧策略，因为它提供了 \(s_t,a_t,r_t,s_{t+1}\)，特别是状态转移的物理事实。
+\item
+  价值的评估者是新策略，因为我们在 \(s_{t+1}\) 上假想了新策略会怎么做，即重采样了 \(\tilde{a}_{t+1}\)。
+\end{enumerate}
+
+这种``移花接木''的操作，正是 Off-policy 的精髓：利用旧策略走过的路 \((s\to s')\) 来了解世界，但用新策略的脑子来判断未来值多少钱。
+
+理论上其实还有一个问题：Replay Buffer里的s是旧策略访问过的状态。新策略可能会访问完全不同的状态区域。但深度学习的泛化能力通常能缓解这个问题，所以DDPG/SAC在实践中效果很好。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux516dsarsaa2cux548cppoux80fdux7528ux8fd9ux79cdux65b9ux5f0fux53d8ux6210off-policyux5417}{%
+\subsection{六、Sarsa、A2C和PPO能用这种方式变成off-policy吗？}\label{ux516dsarsaa2cux548cppoux80fdux7528ux8fd9ux79cdux65b9ux5f0fux53d8ux6210off-policyux5417}}
+
+\Needspace{5\baselineskip}
+在标准Sarsa中：
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t
++
+\gamma Q(s_{t+1},a_{t+1})
+-
+Q(s_t,a_t)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+我们用类似的思路，舍弃历史数据中的 \(a_{t+1}\)，用当前策略 \(\pi_{\mathrm{new}}\) 重新采样一个 \(a_{t+1}\)：
+
+\Needspace{5\baselineskip}
+也就是抛弃历史数据中的 \(a_{t+1}\)，用当前的策略 \(\pi_{\mathrm{new}}\) 在 \(s_{t+1}\) 上重新采样一个 \(\tilde{a}_{t+1}\)：
+
+\[
+Q(s_t,a_t)
+\leftarrow
+Q(s_t,a_t)
++
+\alpha
+\bigl[
+r_t
++
+\gamma Q(s_{t+1},\tilde{a}_{t+1})
+-
+Q(s_t,a_t)
+\bigr],
+\quad
+\tilde{a}_{t+1}\sim\pi_{\mathrm{new}}(\cdot\mid s_{t+1})
+\]
+
+这里的数据来源 \((s_t,a_t,s_{t+1})\) 来自旧的行为策略，也就是 Replay Buffer；未来的估算 \(Q(s_{t+1},\tilde{a}_{t+1})\) 使用的是当前的新策略 \(\pi_{\mathrm{new}}\)。因此行为策略和目标策略解耦了，你利用旧的经验到达 \(s_{t+1}\)，再评估如果当前策略接管后续操作会发生什么。这正是 Off-policy 的定义。
+
+因此，这是可以的。事实上，正如DDPG可以视为连续动作中的DQN一样，SAC也可以视为深度网络、连续动作、含熵版本的``进化版Sarsa''。
+
+但A2C和PPO就不行。A2C中Critic网络V(s)的输入只有状态s，更新方式对于用按当前策略采样动作a后的下一状态s'，用V(s')更新V(s)。当我们从Replay Buffer中取出旧数据，改变策略为当前策略，动作变为a'，我们就不知道下一状态是什么了，无法更新。
+
+在 A2C 中，Critic 是一个 V 网络 \(V(s)\)。
+
+\begin{itemize}
+\tightlist
+\item
+  \(V(s)\) 的输入只有状态 \(s\)。
+\item
+  \(V(s)\) 的输出代表在这个状态下，遵循当前策略的平均期望回报。
+\end{itemize}
+
+如果你在 \(s'\) 采样了一个新动作 \(\tilde{a}'\)，你想问 Critic：在这个状态做这个新动作 \(\tilde{a}'\) 好不好？V 网络会回答：我不知道。我只能告诉你 \(s'\) 这个状态整体好不好，也就是 \(V(s')\)。我无法区分动作 \(\tilde{a}_1\) 和 \(\tilde{a}_2\) 谁更好，因为我不接受动作作为输入。
+
+如果坚持要用``重采样''的思路，即 Off-policy，你就必须让 Critic 有能力评估具体的动作。这意味着必须把 Critic 从 \(V(s)\) 升级为 \(Q(s,a)\)。
+
+\Needspace{5\baselineskip}
+一旦做出这个改变：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  引入 \(Q(s,a)\) 网络。
+\item
+  使用 Replay Buffer。
+\item
+  使用 \(y=r+\gamma Q(s',\tilde{a}')\)，其中 \(\tilde{a}'\) 是重采样的。
+\end{enumerate}
+
+这就不再是 A2C，而是重新发明了 SAC（Soft Actor-Critic）。
+
+\Needspace{5\baselineskip}
+而 PPO 中的优势函数 \(A_t\) 是用 GAE 计算出来的：
+
+\[
+\hat{A}_t
+\approx
+\sum_{k=0}^{\infty}
+\gamma^{k} r_{t+k}
+-
+V(s_t)
+\]
+
+\Needspace{5\baselineskip}
+现在的困境是：如果你在 PPO 中使用 Replay Buffer 中的旧状态 \(s_t\)，然后用新策略采样了一个新动作 \(\tilde{a}_t\)：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  你不知道环境给 \(\tilde{a}_t\) 的即时奖励 \(r(s_t,\tilde{a}_t)\) 是多少，因为你没有在环境里真跑。
+\item
+  你不知道执行 \(\tilde{a}_t\) 后的下一个状态 \(s_{t+1}\) 是什么。
+\item
+  没有 \(r\) 和 \(s'\)，就无法计算 \(\hat{A}_t\)。
+\item
+  没有 \(\hat{A}_t\)，PPO 的梯度就无法计算。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e03ddpgux4e0esacux7684ux6bd4ux8f83}{%
+\subsection{七、DDPG与SAC的比较}\label{ux4e03ddpgux4e0esacux7684ux6bd4ux8f83}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76f8ux540cux70b9}{%
+\subsubsection{（一）相同点}\label{ux4e00ux76f8ux540cux70b9}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  架构相同：两者都有明确的 Actor（负责动作）和 Critic（负责打分）。
+\item
+  数据利用方式相同：都为 Off-policy，可以从过去的历史数据中提取知识，都使用经验回放池（Replay Buffer）。
+\item
+  训练稳定性技巧相同：为了防止 Critic 追逐一个快速变化的目标，两者都使用了目标网络（Target Networks）。两者都使用软更新（Soft Update），让目标网络缓慢跟随主网络。
+\item
+  应用领域相同：都用于解决连续动作空间的问题（如机械臂、自动驾驶）。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux4e0dux540cux70b9}{%
+\subsubsection{（二）不同点}\label{ux4e8cux4e0dux540cux70b9}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  数学原理不同：DDPG基于贝尔曼最优方程，更像 Q-learning 和 DQN 的变体；SAC 基于贝尔曼期望方程（准确说是软贝尔曼期望方程），更像 Sarsa 的变体。
+\item
+  策略的确定性 vs 随机性：DDPG 输入状态，输出一个固定（准确说是拟合定值）的动作值，其 Actor 不会探索，必须手动在输出动作上加噪声，如果在训练后期去掉噪声，策略可能非常僵硬，容易过拟合到某条单一路径；SAC 输入状态，输出高斯分布的均值和方差，然后采样得到动作，故内生探索，策略本身就是随机的，方差决定了探索力度，训练和探索融为一体，鲁棒性极强。
+\item
+  优化目标不同：DDPG 只在乎累积奖励，容易收敛到局部最优，且对超参数极度敏感；SAC 既关注累积奖励，也关注策略的多样性，不容易陷入局部最优，具有很好的容错性和抗干扰能力。
+\item
+  Critic的结构不同：DDPG通常只用1个Q网络，容易出现Q值过估计；SAC使用了2个Q网络，抑制了过估计。
+\item
+  Actor的梯度获取方式不同：DDPG直接用链式法则；SAC必须重参数化，剥离随机变量。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-61}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-61}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Haarnoja, T., Zhou, A., Hartikainen, K., et al.~(2018). \href{https://arxiv.org/abs/1812.05905}{Soft Actor-Critic Algorithms and Applications}. arXiv:1812.05905.
+\end{itemize}
+
+\clearpage

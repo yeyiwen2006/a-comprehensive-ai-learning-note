@@ -1,0 +1,195 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{gspo}{%
+\section{GSPO}\label{gspo}}
+
+\begin{quote}
+This article is a paper-reading note. Its content represents the corresponding paper's method or the author's understanding and should not be treated directly as field consensus or engineering best practice.
+\end{quote}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-sequence-level-optimization}{%
+\subsection{I. Sequence-Level Optimization}\label{i.-sequence-level-optimization}}
+
+\Needspace{5\baselineskip}
+GRPO has a mismatch between ``evaluation'' and ``optimization'':
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Global reward}: in most tasks (such as mathematical reasoning and code generation), the environment provides a score only after the model generates a complete answer. For example, ``this sentence is correct'' or ``this answer is wrong.'' The score evaluates the entire sequence, not an individual token.
+\item
+\Needspace{5\baselineskip}
+  \textbf{Local optimization}: although the reward applies to the whole, importance sampling in the GRPO formula occurs at the token level. Recall its core term:
+\end{itemize}
+
+\[
+\rho_{i,t}
+=
+\frac{\pi_\theta(\mathrm{token}_t)}
+{\pi_{\mathrm{old}}(\mathrm{token}_t)}.
+\]
+
+This means that when updating parameters, the model examines every token individually. Even if the entire sentence scores highly, an update for a particular token \(t\) may still be suppressed if its probability under the new policy has decreased (\(\rho<1\)).
+
+Consequently, this mechanism assumes that every token contributes independently to the final outcome. In a long logical chain, however, many tokens have meaning only in combination. Independently fine-tuning individual tokens often ignores overall contextual coherence and readily introduces high-variance noise.
+
+\Needspace{5\baselineskip}
+GSPO unifies the two:
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{Global optimization}: GSPO abandons token-by-token ratios and instead calculates the joint probability ratio of the entire sequence:
+\end{itemize}
+
+\[
+s_i(\theta)
+\approx
+\frac{P_\theta(y_i)}
+{P_{\mathrm{old}}(y_i)}.
+\]
+
+This means the model no longer focuses on probability changes of individual tokens, but on whether the probability of generating the entire sentence has increased or decreased.
+
+\begin{itemize}
+\tightlist
+\item
+  If the entire sentence receives a high reward, GSPO uniformly strengthens the weights of all its tokens; otherwise, it uniformly suppresses them.
+\item
+  Clipping also occurs at the sequence level: once the change in the entire sentence's probability exceeds the limit, updating stops. This ensures the model does not collapse from learning too aggressively from one sentence.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii-length-normalization}{%
+\subsubsection{(II) Length Normalization}\label{ii-length-normalization}}
+
+\Needspace{5\baselineskip}
+Without normalization, sequence probability is the product of all token probabilities:
+
+\[
+P(\mathrm{sequence})
+=
+p_1\times p_2\times\cdots\times p_L.
+\]
+
+\Needspace{5\baselineskip}
+This creates two fatal problems:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Numerical underflow}: every token probability \(p_t\) is less than 1. For example, with 0.9, when sequence length \(L\) reaches hundreds or thousands, the product quickly approaches 0; \(0.9^{1000}\approx 1.7\times 10^{-46}\). Computers cannot accurately handle such small numbers, making the ratio between new and old probabilities extremely unstable numerically.
+\item
+  \textbf{Length bias}: long sequences naturally have much lower joint probabilities than short ones. A short answer (5 words) may have joint probability \(10^{-5}\), while a long answer (100 words) may have probability \(10^{-100}\). Without normalization, the importance ratios of long answers fluctuate extremely strongly, encouraging the model to generate only short sentences because their probabilities are easier to optimize.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+GSPO uses a geometric mean:
+
+\[
+s_i(\theta)
+=
+\left(
+\prod_{t=1}^{L}
+\frac{\pi_\theta(t)}
+{\pi_{\mathrm{old}}(t)}
+\right)^{1/L}.
+\]
+
+\Needspace{5\baselineskip}
+Taking the logarithm yields the arithmetic mean of the log-probability ratios:
+
+\[
+\log s_i(\theta)
+=
+\frac{1}{L}
+\sum_{t=1}^{L}
+\log\left(
+\frac{\pi_\theta(t)}
+{\pi_{\mathrm{old}}(t)}
+\right).
+\]
+
+Thus, the \(1/L\) power of the product of a sequence's L probability ratios (whose magnitude is of order L in the exponent) returns to the same magnitude scale as a first-power probability. This effectively measures ``how much the generation quality improves per token on average'' (after taking logarithms, the arithmetic mean of the log-probability ratios), putting long answers (detailed reasoning) and short answers (direct answers) on an equal footing for comparison and eliminating unfair effects of length.
+
+\Needspace{5\baselineskip}
+Therefore, GSPO's gradient update differs from GRPO's. When unclipped, the GSPO objective is:
+
+\[
+\mathcal{J}_{\mathrm{GSPO}}(\theta)
+=
+\mathbb{E}
+\left[
+s_i(\theta)\cdot \hat{A}_i
+\right].
+\]
+
+\Needspace{5\baselineskip}
+The policy gradient is then:
+
+\[
+\nabla \mathcal{J}_{\mathrm{GSPO}}
+\approx
+\sum_{t=1}^{|y_i|}
+\left[
+s_i(\theta)
+\cdot
+\frac{\hat{A}_i}{|y_i|}
+\cdot
+\nabla_\theta \log \pi_\theta(t)
+\right].
+\]
+
+The constant term has been moved inside the summation for comparison with GRPO. The key observation is that the scale factor is \(s_i(\theta)\cdot \hat{A}_i\). Note that \(s_i(\theta)\) is calculated from the entire sequence; the value of \(s_i(\theta)\) is exactly the same for the first word and the hundredth.
+
+\Needspace{5\baselineskip}
+The result is uniform reinforcement or suppression:
+
+\begin{itemize}
+\tightlist
+\item
+  If the entire sentence has a high reward (\(\hat{A}_i>0\)) and its sequence probability ratio is normal (\(s_i\approx 1\)), the log-probability gradient of every token is multiplied by the same positive coefficient. The model ``treats all words equally'' and increases their generation probabilities.
+\item
+  When clipping occurs, GSPO checks whether \(s_i(\theta)\) exceeds the bounds. Once \(s_i\) goes out of bounds, clipping makes the gradient of the entire sequence 0 (or limits it). This means either everything is updated or nothing is, avoiding a split where ``the first half is updated aggressively while the second half is not.''
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Compare GRPO's policy gradient:
+
+\Needspace{5\baselineskip}
+GRPO's gradient takes a local perspective:
+
+\[
+\nabla \mathcal{J}_{\mathrm{GRPO}}
+\approx
+\sum_{t=1}^{|y_i|}
+\left[
+\rho_{i,t}(\theta)
+\cdot
+\hat{A}_i
+\cdot
+\nabla_\theta \log \pi_\theta(t)
+\right].
+\]
+
+Its scale factor contains \(\rho_{i,t}\), the probability ratio of an individual token. Even if the entire sentence has positive advantage \(\hat{A}_i\), if \(\rho_{i,5}\) for the fifth word is very small (the new model is reluctant to generate it), that word's update becomes smaller, and its direction may even be cut off by clipping. In other words, each token receives a different push.
+
+Therefore, if the entire sentence receives a high reward, GSPO uniformly strengthens the weights of all its tokens; otherwise, it uniformly suppresses them. This makes rewards and penalties more holistic, enabling more accurate global judgments of different reasoning chains without excessive interference from local details.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-111}{%
+\subsection{References}\label{references-111}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zheng, C., et al.~(2025). \href{https://arxiv.org/abs/2507.18071}{Group Sequence Policy Optimization}. arXiv:2507.18071.
+\end{itemize}
+
+\clearpage

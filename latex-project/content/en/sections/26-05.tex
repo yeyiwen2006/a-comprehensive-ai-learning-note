@@ -1,0 +1,116 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{how-diffusion-models-solve-the-compromise-problem}{%
+\section{How Diffusion Models Solve the ``Compromise Problem''}\label{how-diffusion-models-solve-the-compromise-problem}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-compromise-problem}{%
+\subsection{I. The Compromise Problem}\label{i.-the-compromise-problem}}
+
+Suppose our action space is one-dimensional (for example, the steering-wheel angle). According to expert driving data, when a tree is ahead, the probability of swerving left (corresponding to \(x=-1\)) is 50\%, and the probability of swerving right (corresponding to \(x=1\)) is 50\%. The probability of driving straight ahead (corresponding to \(x=0\), or hitting the tree) is 0\%.
+
+\Needspace{5\baselineskip}
+Under this definition, the true probability density function \(p(x)\) is a \textbf{bimodal distribution}:
+
+\begin{itemize}
+\tightlist
+\item
+  At \(x=-1\) and \(x=1\), \(p(x)\) reaches local maxima (peaks).
+\item
+  At \(x=0\), \(p(x)\approx 0\) (a deep valley or saddle point).
+\end{itemize}
+
+\Needspace{5\baselineskip}
+If you train a neural network \(f_\theta(s)\) to output the action \(x\) directly and use an MSE loss:
+
+\[
+Loss=\mathbb{E}_{x\sim p(x)}\left[\lVert f_\theta(s)-x\rVert^2\right]
+\]
+
+\Needspace{5\baselineskip}
+Minimizing this loss is then equivalent to maximizing the joint probability density of all training data. In this problem, the optimal solution is to output the mathematical expectation of the entire distribution:
+
+\[
+\hat{x}=\int x\cdot p(x)dx=0.5\times(-1)+0.5\times(1)=0
+\]
+
+Although the true probability density \(p(0)\) at \(x=0\) is 0, MSE forces the output to this ``compromise point.'' \textbf{This is because MSE fits the distribution's mean and does not care about the shape of the probability density itself.}
+The same issue occurs in image generation: it can easily average pixels from different images and generate something that resembles none of them.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-how-do-diffusion-models-avoid-this-compromise}{%
+\subsection{II. How Do Diffusion Models Avoid This ``Compromise''?}\label{ii.-how-do-diffusion-models-avoid-this-compromise}}
+
+A diffusion model learns the gradient of the log probability density, namely the score function \(\nabla_x\log p(x)\).
+
+\Needspace{5\baselineskip}
+Imagine standing on the bimodal terrain of \(p(x)\). Langevin dynamics proceeds as follows:
+
+{[}Algorithmic workflow for multimodal sampling with Langevin dynamics{]}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Step 1: Random initialization.} Sample an initial point \(x_T\) from Gaussian noise. Suppose we are extremely unlucky and the point lands exactly at \(x=0\) (the tree-hitting mean point). At this saddle point, the theoretical gradient is \(\nabla_x\log p(0)=0\).
+\item
+  \textbf{Step 2: Inject noise (break the balance).} The model now adds random noise \(\sqrt{\Delta t}z\). The point originally at \(x=0\) receives a random push and becomes \(x=0.01\) (slightly to the right).
+\item
+  \textbf{Step 3: Gradient guidance (climb uphill).} Once the point leaves the exact central saddle point, the attraction of the right-hand peak begins to appear at \(x=0.01\). \(\nabla_x\log p(0.01)\) produces a strong gradient vector \textbf{to the right (in the positive direction)}.
+\item
+  \textbf{Step 4: Iterative collapse.} In subsequent iterations, the gradient continues to point uphill (to the right). Although noise is still injected, its variance becomes progressively smaller because of annealing. The point quickly ``climbs'' along the gradient to the peak at \(x=1\) and stabilizes there.
+\end{itemize}
+
+\textbf{Conclusion}: Langevin dynamics searches for local maxima (modes) on the probability-density surface. Because \(x=0\) is a low-density valley (or saddle point), the gradient pushes the point away from the mean, eventually causing it to collapse randomly (depending on the initial and injected noise) to a definite peak on either the left (corresponding to \(x=-1\)) or the right (corresponding to \(x=1\)). \textbf{It will never remain at the extremely low-density compromise point.}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-can-autoregressive-models-handle-such-a-distribution}{%
+\subsection{III. Can Autoregressive Models Handle Such a Distribution?}\label{iii.-can-autoregressive-models-handle-such-a-distribution}}
+
+Yes, but they are only suitable for discretized distributions.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Autoregressive models in ``discrete spaces'' (such as language generation)}
+\end{enumerate}
+
+When GPT predicts the next word, it outputs a probability distribution over the entire vocabulary (through softmax and cross-entropy loss).
+
+If the correct next word is ``left'' or ``right,'' the model assigns a probability of 0.5 to each. During inference, \textbf{sampling or greedy search} necessarily selects one of the two tokens, ``left'' or ``right.'' It never outputs a nonexistent ``in-between word,'' because the vocabulary is discrete. Thus, AR models solve the multimodality problem perfectly in discrete spaces.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  \textbf{The difficulty of autoregressive models in ``high-dimensional continuous spaces'' (such as embodied actions or pixels)}
+\end{enumerate}
+
+The action space of embodied AI (such as a robotic arm's joint-torque vector \([0.12, -0.45, 1.23, \ldots]\)) or the pixel space of a high-resolution image is continuous and high-dimensional.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{If AR uses MSE regression}: it immediately degenerates into the ``compromise mean (hitting the tree)'' described earlier and cannot express multimodality.
+\item
+  \textbf{If the continuous space is forcibly discretized before using AR}: this resembles VQ-VAE turning images into discrete tokens followed by autoregressive generation with a Transformer (such as early VideoPoet or Parti). This approach avoids the compromise, but introduces an extremely large computational burden and the \textbf{exposure bias} mentioned above, causing errors to multiply during long-sequence generation.
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-132}{%
+\subsection{References}\label{references-132}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Song, J., Meng, C., \& Ermon, S. (2021). \href{https://arxiv.org/abs/2010.02502}{Denoising Diffusion Implicit Models}. ICLR.
+\item
+  Karras, T., Aittala, M., Aila, T., \& Laine, S. (2022). \href{https://arxiv.org/abs/2206.00364}{Elucidating the Design Space of Diffusion-Based Generative Models}. NeurIPS.
+\end{itemize}
+
+\clearpage

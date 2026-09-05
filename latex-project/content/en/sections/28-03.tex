@@ -1,0 +1,572 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{representation-learning-and-tokenizers-for-video-generation-models}{%
+\section{Representation Learning and Tokenizers for Video Generation Models}\label{representation-learning-and-tokenizers-for-video-generation-models}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-vae-training}{%
+\subsection{I. VAE Training}\label{i.-vae-training}}
+
+\Needspace{5\baselineskip}
+\hypertarget{decoupling-from-the-main-model}{%
+\subsubsection{(1) Decoupling from the main model}\label{decoupling-from-the-main-model}}
+
+In current mainstream diffusion models, the VAE and main network are highly decoupled and trained in separate stages, for the following reasons.
+
+First, the VAE provides a stable target distribution. The diffusion network (DiT) learns how to denoise in a latent space. If VAE and DiT weights were updated simultaneously, the latent space would continually drift and deform. DiT would face a constantly moving target, making convergence difficult.
+
+Second, the VAE provides computational efficiency and engineering decoupling. Its core role is dimensionality reduction: Seedance, for example, compresses spatiotemporal resolution by a very large factor. In practice, teams usually first train the VAE separately to convergence, freeze its weights, and process all offline raw videos into very small VAE feature tensors stored on disk. The subsequent, extremely compute-intensive DiT training only needs to read these lightweight features directly.
+
+\Needspace{5\baselineskip}
+\hypertarget{loss-functions-1}{%
+\subsubsection{(2) Loss functions}\label{loss-functions-1}}
+
+\hypertarget{l1-reconstruction-loss}{%
+\paragraph{1. L1 reconstruction loss}\label{l1-reconstruction-loss}}
+
+L1 reconstruction loss is the most basic pixel-level error measure. It directly computes the absolute difference at each pixel between original video frames and frames output by the VAE decoder. Compared with L2 loss (mean squared error), L1 is less sensitive to outliers, better preserving clear edges and avoiding excessive global blur. Its role is to ensure that the broad outlines and overall color tones of reconstructed frames strictly match the originals.
+
+\hypertarget{kl-divergence-loss}{%
+\paragraph{2. KL divergence loss}\label{kl-divergence-loss}}
+
+KL divergence loss is a distributional regularizer. To prevent the VAE from memorizing samples, or overfitting to isolated points, it forces the latent-feature distribution \(q(z|x)\) output by the encoder to approach the standard multivariate normal distribution \(p(z)\sim\mathcal{N}(0,I)\). Like a gravitational field, it organizes all video features into a continuous, compact mathematical space, ensuring that later DiT sampling does not enter undecodable dead zones.
+
+\Needspace{5\baselineskip}
+The KL term is often written as:
+
+\[
+\begin{aligned}
+L_{\mathrm{KL}}
+&=
+D_{\mathrm{KL}}(q(z|x)\|p(z))
+\\
+&=
+{}-\frac{1}{2}\sum_{j=1}^{J}
+\left(1+\log(\sigma_j^2)-\mu_j^2-\sigma_j^2\right)
+\end{aligned}
+\]
+
+Here, \(\mu_j\) and \(\sigma_j\) are the mean and standard deviation predicted by the encoder in latent dimension \(j\).
+
+\hypertarget{lpips-perceptual-loss}{%
+\paragraph{3. LPIPS perceptual loss}\label{lpips-perceptual-loss}}
+
+Learned Perceptual Image Patch Similarity (LPIPS) bridges the gap between machine and human visual perception. Pure L1 pixel error is rigid: shifting an entire image one or two pixels to the right, for example, makes almost no difference to a human but incurs a large penalty when the pixel matrices are subtracted. LPIPS sends both original and reconstructed images into a pretrained convolutional image-classification network (such as VGG) and measures their distance at the level of deep feature maps, forcing the VAE to focus on semantic structure and high-level visual features.
+
+\Needspace{5\baselineskip}
+It can be written as:
+
+\[
+L_{\mathrm{LPIPS}} =
+\sum_l
+\frac{1}{H_l W_l}
+\sum_{h,w}
+\left\|
+w_l\odot
+\left(
+\phi_l(x)_{h,w}-\phi_l(\hat{x})_{h,w}
+\right)
+\right\|_2^2
+\]
+
+Here, \(\phi_l\) is the feature-activation matrix at layer \(l\) of the pretrained network, and \(w_l\) is a learned weight measuring the importance of that layer.
+
+\hypertarget{adversarial-training-loss}{%
+\paragraph{4. Adversarial training loss}\label{adversarial-training-loss}}
+
+Adversarial loss / GAN loss drives super-resolution of details and high-frequency textures. L1, L2 and KL are fundamentally forms of mathematical smoothing or averaging, and using them alone leaves VAE outputs without very high-frequency detail. Seedance therefore introduces the game-theoretic idea of a generative adversarial network (GAN), using a hybrid discriminator similar to PatchGAN. The discriminator tries to identify unnatural artifacts in reconstructed frames, while the VAE decoder tries to fool it. This adversarial mechanism imposes finer-grained supervision on local textures and fine structures, improving sharpness and physical realism.
+
+\Needspace{5\baselineskip}
+The workflow is:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The VAE decoder acts as the generator and outputs reconstructed video frames.
+\item
+  Real and reconstructed frames are separately fed into the hybrid discriminator.
+\item
+  The discriminator outputs real/fake probabilities. After cross-entropy loss is computed, gradients are backpropagated to the VAE decoder, forcing it to generate details that even the discriminator struggles to distinguish.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Together, a common training objective is:
+
+\[
+\begin{aligned}
+\mathcal{L}
+&= \mathcal{L}_{\mathrm{L2}}
+\\
+&\quad + \mathcal{L}_{\mathrm{perceptual}}
+\\
+&\quad + \mathcal{L}_{\mathrm{GAN}}
+\\
+&\quad + \beta\,\mathcal{L}_{\mathrm{KL}}
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-prompt-processing}{%
+\subsection{II. Prompt Processing}\label{ii.-prompt-processing}}
+
+\Needspace{5\baselineskip}
+\hypertarget{expansion-with-an-llm}{%
+\subsubsection{(1) Expansion with an LLM}\label{expansion-with-an-llm}}
+
+Overly short prompts often harm generation quality. A short user prompt is sent to a lightweight LLM, which expands it into a dense caption containing dynamic features (character actions and camera motion) and static features (appearance, style and aesthetics).
+
+\Needspace{5\baselineskip}
+This LLM is trained separately rather than jointly with the video generation or world model:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Stage 1: supervised fine-tuning (SFT). The team fully fine-tunes the LLM using many human-annotated pairs of ``user prompt -- dense caption representation,'' with prompt styles specifically differentiated for image-to-video (I2V) and text-to-video (T2V). This gives the model basic expansion and restatement capabilities.
+\item
+  Stage 2: reinforcement learning (RL). To address hallucinations potentially introduced by SFT, where the rewritten semantics deviate from the user's intent, direct preference optimization (DPO) is subsequently applied. Unlike full fine-tuning in the first stage, this stage applies low-rank adaptation (LoRA) to the SFT model and uses pairs of correct and incorrect rewrites to improve semantic alignment.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{eventaction-decoupling}{%
+\subsubsection{(2) Event--action decoupling}\label{eventaction-decoupling}}
+
+In some interactive world models, prompts can be split into event and action descriptions. The LLM processes an event description once at initial generation or when the event is triggered, and all subsequent tokens reuse it. Action descriptions may appear in every frame, so the relationship between high-frequency action embeddings and the corresponding prompts or keyboard inputs can be cached directly.
+
+Ideally, for each frame, the model simply concatenates the cached action embedding with the reusable initial event embedding and computes the next frame directly, avoiding repeated real-time LLM computation and reducing inference latency.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-parallelizing-generation-and-vae-decoding}{%
+\subsection{III. Parallelizing Generation and VAE Decoding}\label{iii.-parallelizing-generation-and-vae-decoding}}
+
+The conventional serial process is to denoise and predict the latent variables for block \(N\), then decode block \(N\) into RGB pixels with the VAE; next, denoise and predict block \(N+1\), then decode block \(N+1\). In streaming playback, video stutters if the combined denoising and decoding time exceeds the playback interval.
+
+The key to a parallel pipeline is that autoregressive video diffusion operates in latent space. Predicting block \(N+1\) requires only block \(N\)'s latent cache (KV cache), not block \(N\)'s RGB pixels.
+
+\Needspace{5\baselineskip}
+After denoising the latent variables for block \(N\), the model therefore sends them down two paths:
+
+\begin{itemize}
+\tightlist
+\item
+  Thread A (VAE decoder): immediately decodes block \(N\)'s latent variables into RGB video frames visible to the user.
+\item
+  Thread B (diffusion generator): without waiting for VAE decoding, immediately uses block \(N\)'s latent variables as autoregressive context to start predicting block \(N+1\)'s latent variables.
+\end{itemize}
+
+Denoising and decoding thus overlap in time. The per-block processing latency falls from their sum to the larger of the two, significantly improving throughput while still respecting blockwise autoregressive causality in latent space.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-using-a-diffusion-model-as-the-decoder}{%
+\subsection{IV. Using a Diffusion Model as the Decoder}\label{iv.-using-a-diffusion-model-as-the-decoder}}
+
+Because diffusion directly in pixel space is too computationally expensive, modern diffusion-based generative world models generally diffuse in latent space. Inputs are reduced in dimensionality by the VAE encoder before entering the diffusion model, whose outputs then pass through the VAE decoder.
+
+\Needspace{5\baselineskip}
+The conventional VAE loss is:
+
+\[
+\mathcal{L}(x)=|x-D_\theta(z)|^2+\mathrm{KL}(q_\phi(z|x)\|p(z))
+\]
+
+Here, \(p(z)\) is the prior \(\mathcal{N}(0,I)\), and the posterior \(q_\phi(z|x)\) is computed from the current input. KL constrains information in the latent variables: it bounds how much information \(z\) carries about input \(x\), making the VAE learn a constrained compressed representation rather than memorize samples.
+
+\Needspace{5\baselineskip}
+Current video generation or generative world models often use a hybrid loss to improve generation quality:
+
+\[
+\begin{aligned}
+\mathcal{L}
+&= \mathcal{L}_{\mathrm{L2}}
+\\
+&\quad + \mathcal{L}_{\mathrm{perceptual}}
+\\
+&\quad + \mathcal{L}_{\mathrm{GAN}}
+\\
+&\quad + \beta\,\mathcal{L}_{\mathrm{KL}}
+\end{aligned}
+\]
+
+This is not a strictly likelihood-based objective. The KL weight must be set manually, making it difficult to reason precisely about and control the actual information content, or bitrate, of the latent space.
+
+\Needspace{5\baselineskip}
+\hypertarget{the-core-architecture-of-unified-latents}{%
+\subsubsection{(1) The core architecture of Unified Latents}\label{the-core-architecture-of-unified-latents}}
+
+Unified Latents (UL) aims to address these trade-offs systematically. Its core idea is to train a diffusion prior and a diffusion decoder jointly over latent space. It rests on three key designs.
+
+\hypertarget{stage-1-jointly-train-the-autoencoder}{%
+\paragraph{Stage 1: Jointly train the autoencoder}\label{stage-1-jointly-train-the-autoencoder}}
+
+\Needspace{5\baselineskip}
+In a conventional VAE, a variational lower bound on the log-likelihood based on latent variable \(z_0\) can be derived:
+
+\[
+\begin{aligned}
+{}-\log p_\theta(x)
+&\le
+\mathbb{E}_{z_0\sim q_\phi(z_0|x)}
+\left[-\log p_\theta(x|z_0)\right]
+\\
+&\quad +
+\mathrm{KL}(p_\theta(z_0|x)\|p_\theta(z_0))
+\\
+&=
+\mathcal{L}(x)
+\end{aligned}
+\]
+
+The first term measures the accuracy of decoded \(x\), while the second measures the gap between the latent posterior for input \(x\) and the prior. UL replaces both the decoder in the first term and the prior in the second with diffusion models.
+
+\Needspace{5\baselineskip}
+Given a clean sample \(x\) drawn from the data distribution \(p_{\mathrm{data}}\), encoder network \(E_\theta\) produces a deterministic clean latent representation:
+
+\[
+z_{\mathrm{clean}}=E_\theta(x)
+\]
+
+\Needspace{5\baselineskip}
+Forward noise is then added to \(z_{\mathrm{clean}}\). The team fixes the final log signal-to-noise ratio (log-SNR) at \(\lambda(0)=5\), yielding the slightly noisy latent representation \(z_0\):
+
+\[
+z_0=\alpha_z(0)z_{\mathrm{clean}}+\sigma_z(0)\epsilon_z
+\]
+
+Here, \(z_{\mathrm{clean}}\) is deterministic, while \(z_0\) is an intermediate value between \(z_{\mathrm{clean}}\) and Gaussian noise, similar to a VAE output, serving as the input to the subsequent base generative model.
+
+For the diffusion prior, model \(P_\theta\) is first trained to learn the denoising path from pure noise \(z_1\) to the slightly noisy state \(z_0\). To prevent the encoder from cheating by hiding information at low-frequency noise levels, the prior loss \(L_z(\theta)\) uses an unweighted ELBO:
+
+\[
+\mathcal{L}_z(\theta)=
+\mathbb{E}_t
+\left[
+\frac{d\lambda_z(t)}{dt}
+\frac{\exp(\lambda_z(t))}{2}
+\left\|
+z_{\mathrm{clean}}-\hat{z}(z_t,\theta)
+\right\|^2
+\right]
+\]
+
+This diffusion prior fits the encoder's output \(z_{\mathrm{clean}}\). If the encoder makes \(z_{\mathrm{clean}}\) extremely complex and full of abrupt high-frequency changes to satisfy the decoder, the prior incurs a large mean squared prediction error.
+
+The diffusion decoder is also a diffusion model, but operates in pixel space. Through conditioning, it predicts clean data from both noisy pixel data \(x_t\) and the low-noise latent representation \(z_0\). To prevent the powerful decoder from ignoring the latents entirely and causing posterior collapse, it uses a reweighted ELBO:
+
+\[
+\mathcal{L}_x(\theta)=
+\mathbb{E}_{x_t,z_0,t}
+\left[
+\frac{d\lambda_x(t)}{dt}
+\frac{\exp(\lambda_x(t))}{2}
+w_x(\lambda_x(t))
+\left\|
+x-\hat{x}(x_t,z_0,\theta)
+\right\|^2
+\right]
+\]
+
+\Needspace{5\baselineskip}
+The system adds the prior and decoder losses and backpropagates end to end:
+
+\[
+\mathcal{L}(\theta)=\mathcal{L}_z(\theta)+\mathcal{L}_x(\theta)
+\]
+
+\hypertarget{stage-2-train-the-base-model}{%
+\paragraph{Stage 2: Train the base model}\label{stage-2-train-the-base-model}}
+
+Once the autoencoder (encoder and decoder) converges, it is frozen. With rigorously regularized, bitrate-constrained latent representations, researchers train a high-capacity base generative model using a standard diffusion loss with sigmoid loss weighting, producing high-quality images or videos.
+
+\Needspace{5\baselineskip}
+Generation differs from training: new images must be generated without an original image, so \(x_t\) cannot be obtained by adding noise to an original. The decoder's generation inputs come from two parts:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Pure-noise starting point \(x_1\): the pixel-space diffusion starting point is a pure white-noise image sampled directly from the standard Gaussian distribution \(\mathcal{N}(0,I)\).
+\item
+  Iterative denoising generation: conditioned on the base model's generated latent representation \(z_0\), the decoder iteratively denoises backward from \(x_1\), ultimately forming the clear pixel image \(x_0\).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{why-the-prior-loss-uses-clean-latents}{%
+\subsubsection{(2) Why the prior loss uses clean latents}\label{why-the-prior-loss-uses-clean-latents}}
+
+The clean latent here is \(z_{\mathrm{clean}}\). This is the standard paradigm in modern diffusion and variational diffusion models, usually called \(x_0\)-prediction.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The network always aims to recover the underlying clean content: at any diffusion time step, regardless of how much noise is added to the latents, it must predict the original, cleanest data, namely \(z_{\mathrm{clean}}\).
+\item
+  Predicting the endpoint does not mean reaching it in one step: although the network directly predicts clean \(z_{\mathrm{clean}}\), sampling does not use that prediction immediately as the result. Instead, it computes the current score from it and guides the noisy variable one small step in the correct direction to \(t-\Delta t\).
+\item
+  Why not predict \(z_0\): because \(z_0=\alpha_z(t)z_{\mathrm{clean}}+\sigma_z(t)\epsilon\), it is the relative starting point obtained by adding noise to \(z_{\mathrm{clean}}\). Computing mean squared error with \(z_{\mathrm{clean}}\) as the absolute ground-truth reference enables a closed-loop derivation of the ELBO.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{reweighting-to-avoid-posterior-collapse}{%
+\subsubsection{(3) Reweighting to avoid posterior collapse}\label{reweighting-to-avoid-posterior-collapse}}
+
+A weak decoder, such as a simple linear layer or shallow MLP, cannot memorize a complex image distribution. It must rely on information extracted by the encoder and compressed into \(z\) for reconstruction. To reduce reconstruction loss, the model is then willing to tolerate some KL penalty.
+
+A powerful decoder, such as an autoregressive or diffusion model, can instead ignore the latent condition and fit the data distribution well using its own capacity. The optimizer finds that making encoder outputs approach the prior \(p(z)\) greatly reduces KL, while the strong decoder can still reconstruct images independently. The encoder then stops working: it outputs pure Gaussian noise with no input information, and the decoder ignores \(z\) completely. This is posterior collapse.
+
+Unified Latents addresses this through \(w_x(\lambda_x(t))\) in the decoder loss. The authors introduce a loss factor (LF) that manually amplifies the reconstruction-loss weight, for example to between 1.3 and 1.7. Mathematically, this is equivalent to reducing the relative KL weight.
+
+With the amplified loss, the decoder must reconstruct as perfectly as possible. Even a strong diffusion decoder cannot perfectly recover high-frequency image details without \(z_0\) as a latent blueprint. To counter the larger penalty, it is forced to read information from \(z_0\), which in turn forces the encoder to pack more useful image bitrate into \(z_0\).
+
+\Needspace{5\baselineskip}
+\hypertarget{gpu-memory-and-cost-constraints}{%
+\subsubsection{(4) GPU-memory and cost constraints}\label{gpu-memory-and-cost-constraints}}
+
+The authors explicitly note that sampling from a diffusion decoder costs an order of magnitude more than from a GAN decoder. Without additional distillation to reduce sampling steps, Unified Latents costs significantly more than standard LDM.
+
+\Needspace{5\baselineskip}
+To reduce experimental memory and compute costs, the authors use three approaches:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Patching: both encoder and decoder use \(2\times2\) patching to reduce spatial resolution early in the network, saving compute and GPU memory.
+\item
+  Controlled decoder size: the decoder uses UViT, whose core Transformer has only 8 blocks and 1024 channels, remaining relatively lightweight rather than adding parameters without limit.
+\item
+  Information transfer: the paper finds that letting \(z_0\) carry more information (bitrate) makes reconstruction easier for the decoder. Hyperparameters can shift some pressure for generating high-frequency details into latent space, avoiding a huge, memory-intensive pixel-level decoder.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-visual-causal-flow-encoder}{%
+\subsection{V. Visual Causal-Flow Encoder}\label{v.-visual-causal-flow-encoder}}
+
+When feeding visual features into an LLM, conventional VLMs usually use a fixed raster-scan order, row by row from the top left to the bottom right, with fixed positional embeddings. This conflicts with actual human visual perception: when reading complex document layouts, tables or equations, eye movements are coherent scans driven causally by semantic and logical structure, not mechanical shifts in physical coordinates.
+
+Visual causal flow, proposed in DeepSeek OCR 2, transforms visual tokens into a causally related token sequence and feeds it into a Transformer for unified next-token prediction, moving beyond the conventional top-left-to-bottom-right order.
+
+\Needspace{5\baselineskip}
+\hypertarget{core-workflow}{%
+\subsubsection{(1) Core workflow}\label{core-workflow}}
+
+\Needspace{5\baselineskip}
+The visual causal-flow encoder works as follows:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Feature extraction and compression: input image \(I\in\mathbb{R}^{H\times W\times 3}\) passes through a visual tokenizer and is mapped into \(m\) visual tokens:
+\end{enumerate}
+
+\[
+V\in\mathbb{R}^{m\times d}
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Sequence concatenation: concatenate visual tokens \(V\) with \(n\) preset learnable causal-query vectors \(Q_0\in\mathbb{R}^{n\times d}\), forming a joint sequence of length \(m+n\).
+\item
+  Causal-flow reordering: the joint sequence enters an \(L\)-layer self-attention Transformer module \(T_L\). Features interact under mask \(M\in\{0,1\}^{2n\times2n}\), and the queries implicitly reorder and extract visual semantics.
+\item
+  Feature truncation: projection operator \(T_Q\) retains only the final \(n\) query outputs, namely \(Z=X_{m+1:m+n}\), because these features now encode visual information in logical order.
+\item
+  Large-model decoding: feed the truncated, reordered features into an approximately 3B MoE language decoder \(D\) for autoregressive prediction, producing the final token-probability distribution \(O\in\mathbb{R}^{n\times |V|}\).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{core-architecture}{%
+\subsubsection{(2) Core architecture}\label{core-architecture}}
+
+\hypertarget{vision-tokenizer-patching-and-compression}{%
+\paragraph{1. Vision tokenizer: patching and compression}\label{vision-tokenizer-patching-and-compression}}
+
+The model first uses an 80M-parameter SAM-base model with two convolutional layers (SAM-Conv) as the tokenizer. With relatively few parameters, it provides 16-fold visual-token compression and substantially reduces the computation and activation memory of the subsequent global-attention module. Its final feature dimension is 896.
+
+\hypertarget{vision-encoder-obtaining-visual-causal-flow}{%
+\paragraph{2. Vision encoder: obtaining visual causal flow}\label{vision-encoder-obtaining-visual-causal-flow}}
+
+DeepEncoder V2's main innovation is replacing the conventional CLIP ViT module with a decoder-only language-model architecture based on Qwen2 0.5B, with approximately 500M parameters. Visual tokens and newly introduced causal-flow queries are concatenated and fed into this LLM-like encoder.
+
+\Needspace{5\baselineskip}
+To reorder tokens, the model appends an equal number of learnable queries after the visual tokens. A multi-crop strategy supports different resolutions:
+
+\begin{itemize}
+\tightlist
+\item
+  The global view has fixed resolution \(1024\times1024\), corresponding to 256 queries (queryglobal).
+\item
+  Local views have fixed resolution \(768\times768\), producing 0 to 6 local crops, each sharing 144 queries (querylocal).
+\end{itemize}
+
+The total number of reordered visual tokens fed to the LLM is strictly controlled within \([256,1120]\), matching Gemini-3-Pro's maximum visual-token budget and offering substantial practical deployment value.
+
+\Needspace{5\baselineskip}
+DeepEncoder V2 combines two mechanisms in its attention mask:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The left half, for original visual tokens, uses ViT-like bidirectional attention, allowing all visual tokens to see one another and maintaining a global receptive field.
+\item
+  The right half, for causal queries, uses LLM-decoder-like causal attention (a lower-triangular mask), allowing each query to attend only to all visual tokens and preceding queries.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+The mask can be written as:
+
+\[
+M=
+\begin{bmatrix}
+\mathbf{1}_{m\times m} & \mathbf{0}_{m\times n} \\
+\mathbf{1}_{n\times m} & \mathrm{LowerTri}(n)
+\end{bmatrix}
+\]
+
+Here, \(m\) is the number of original visual tokens and \(n\) the number of causal queries; this design uses \(m=n\). \(1\) allows attention interaction, \(0\) masks it, and \(\mathrm{LowerTri}(n)\) is a lower-triangular matrix (1 on and below the diagonal, 0 above).
+
+\Needspace{5\baselineskip}
+\hypertarget{vi.-infotok-an-information-theoretic-dynamic-visual-tokenizer}{%
+\subsection{VI. InfoTok: An Information-Theoretic Dynamic Visual Tokenizer}\label{vi.-infotok-an-information-theoretic-dynamic-visual-tokenizer}}
+
+Accurate, efficient discrete video tokenization is crucial for long video sequences. Most existing video tokenizers, such as Cosmos and OmniTokenizer, use a fixed compression ratio. This creates a significant bottleneck because video complexity and information density vary continuously.
+
+\begin{itemize}
+\tightlist
+\item
+  Simple or static scenes: fixed length allocates too many tokens, creating severe information redundancy.
+\item
+  Complex or dynamic scenes: fixed length allocates too few tokens, losing key information.
+\end{itemize}
+
+Recent adaptive-tokenization attempts include ElasticTok, which changes sequence length through heuristic random masking. Starting from Shannon information theory, however, the authors rigorously prove that such data-independent training methods are suboptimal in representation length and inefficient because inference requires repeated trial and error.
+
+\Needspace{5\baselineskip}
+\hypertarget{suboptimality-of-existing-methods}{%
+\subsubsection{(1) Suboptimality of existing methods}\label{suboptimality-of-existing-methods}}
+
+\Needspace{5\baselineskip}
+According to Shannon's source coding theorem, for any tokenizer \(T\) that perfectly reconstructs video \(x\) distributed as \(p(x)\) with a codebook of size \(C\), its expected token length \(N_x\) is lower-bounded by entropy:
+
+\[
+\mathbb{E}_{x\sim p(x)}[N_x]\ge H_C(D)
+\triangleq
+\mathbb{E}_{x\sim p(x)}[-\log_C p(x)]
+\]
+
+Theorem 2.2 proves that, if a uniform random distribution \(r(\cdot|x)\) similar to ElasticTok is used, uniformly sampling lengths from \(\{1,\ldots,N\}\) as a router, the expected sequence length of the optimized tokenizer deviates from the theoretical optimum:
+
+\[
+\mathbb{E}[N_x]\ge kH_C(D)
+\]
+
+Here, \(k\gt 1\). Heuristic adaptive methods therefore have an inherent bias.
+
+\Needspace{5\baselineskip}
+\hypertarget{information-theoretic-adaptive-routing}{%
+\subsubsection{(2) Information-theoretic adaptive routing}\label{information-theoretic-adaptive-routing}}
+
+To approach the theoretically optimal compression ratio, \(N_x\) should be proportional to the video's negative log-likelihood, namely \(N_x=-\log p(x)\). Since a video's true log-likelihood is difficult to compute directly, the authors use the ELBO as a surrogate:
+
+\[
+\mathrm{ELBO}(x) =
+\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] -
+D_{\mathrm{KL}}(q_\phi(z|x)\|p(z))
+\]
+
+\Needspace{5\baselineskip}
+ELBO is a provable lower bound on the data log-likelihood. InfoTok therefore uses the following router to determine video-token length:
+
+\[
+r_\beta(N_x|x) =
+\delta\left(
+\beta\cdot
+\frac{\mathrm{ELBO}(x)}
+{\mathbb{E}[\mathrm{ELBO}(x)]}
+\right)
+\]
+
+Here, \(\beta\) is the average compression factor, determining the average token count; \(\delta(\cdot)\) denotes a Dirac distribution, meaning a deterministic output; and \(\mathbb{E}[\mathrm{ELBO}(x)]\) provides normalization.
+
+Theorem 3.1 proves that, as long as this tokenizer successfully minimizes reconstruction loss, InfoTok's expected length at inference is strictly entropy-bounded and approaches the theoretically optimal compression ratio.
+
+\Needspace{5\baselineskip}
+\hypertarget{compression-workflow}{%
+\subsubsection{(3) Compression workflow}\label{compression-workflow}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Determine the total token budget \(N_x\) for the current clip. For long videos, the model first divides the video into clips, for example 33 frames each. The router calculates how many tokens to retain based on the clip's overall information complexity.
+\item
+  Compute ELBO values at all positions. A fast decoder forward pass computes the pixel-level ELBO of the spatiotemporal patch corresponding to each token.
+\item
+  Global sorting and masking. Rather than processing frame by frame, the algorithm globally sorts all \(N\) original tokens by their ELBO values. The adaptive compressor generates a binary mask \(m\in\{0,1\}\), discarding background or static-scene tokens with the highest log-likelihood, lowest information content and greatest predictability, while retaining the top-\(N_x\) tokens with the highest information complexity.
+\item
+  Token counts naturally differ between frames. Because frames compete globally for the budget, retained token counts vary dynamically. Appendix A of the paper, for example, shows that during vigorous motion, a frame may use about 65\% of tokens to capture dynamics; during static or locally focused scenes, later frames may use only about 17\%. Tokens for large static backgrounds are masked because the decoder can infer them from context.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{overall-workflow}{%
+\subsubsection{(4) Overall workflow}\label{overall-workflow}}
+
+\Needspace{5\baselineskip}
+InfoTok builds on an existing fixed-length tokenizer (such as Cosmos), using its encoder \(E_0\) and decoder \(D_0\) while introducing a router and an adaptive compressor/decompressor. Training proceeds as follows:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Sample input: sample video \(x\) from video distribution \(\mathcal{D}\).
+\item
+  Initial encoding: map the video into fixed-length continuous latent embeddings, \(h\leftarrow E_0(x)\).
+\item
+  Compute ELBO and route: a base-model forward pass computes reconstruction error, an approximation to negative ELBO. The router uses this to determine the required sequence length \(N_x\), namely \(N_x\sim r(N|x)\).
+\item
+  Adaptive compression: adaptive compressor \(\mathcal{M}_\phi\) extracts the ELBO values above and generates a binary mask. It masks the least informative tokens and retains the \(N_x\) most informative: \(h'\leftarrow\mathcal{M}_\phi(h,N_x)\).
+\item
+  Quantize to discrete tokens: the quantizer converts the compressed continuous representation into a discrete token sequence \(z\leftarrow Q(h')\).
+\item
+  Dequantize and decompress: during decoding, first dequantize to obtain \(h'\leftarrow Q^{-1}(z)\). Adaptive decompressor \(\mathcal{M}^{-1}\) then uses the mask information to restore the length-\(N_x\) sequence to the original fixed length \(N\): \(h\leftarrow \mathcal{M}^{-1}(h',N_x)\).
+\item
+  Video reconstruction: reconstruct video frames with the decoder, \(\hat{x}\leftarrow D_0(h)\).
+\item
+  Compute loss and optimize: train the network end to end by optimizing a reconstruction loss, such as MSE.
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-140}{%
+\subsection{References}\label{references-140}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  van den Oord, A., Vinyals, O., \& Kavukcuoglu, K. (2017). \href{https://arxiv.org/abs/1711.00937}{Neural Discrete Representation Learning}. NeurIPS.
+\item
+  Esser, P., Rombach, R., \& Ommer, B. (2021). \href{https://arxiv.org/abs/2012.09841}{Taming Transformers for High-Resolution Image Synthesis}. CVPR.
+\item
+  Rombach, R., Blattmann, A., Lorenz, D., Esser, P., \& Ommer, B. (2022). \href{https://arxiv.org/abs/2112.10752}{High-Resolution Image Synthesis with Latent Diffusion Models}. CVPR.
+\item
+  Gao, Y., Guo, H., Hoang, T., et al.~(2025). \href{https://arxiv.org/abs/2506.09113}{Seedance 1.0: Exploring the Boundaries of Video Generation Models}. arXiv:2506.09113.
+\item
+  Zhang, R., Isola, P., Efros, A. A., Shechtman, E., \& Wang, O. (2018). \href{https://arxiv.org/abs/1801.03924}{The Unreasonable Effectiveness of Deep Features as a Perceptual Metric}. CVPR.
+\item
+  Heek, J., Hoogeboom, E., Mensink, T., \& Salimans, T. (2026). \href{https://arxiv.org/abs/2602.17270}{Unified Latents (UL): How to train your latents}. arXiv:2602.17270.
+\item
+  Ye, H., He, Q., Han, J., et al.~(2025). \href{https://arxiv.org/abs/2512.16975}{InfoTok: Adaptive Discrete Video Tokenizer via Information-Theoretic Compression}. arXiv:2512.16975.
+\item
+  Wei, H., Sun, Y., \& Li, Y. (2026). \href{https://arxiv.org/abs/2601.20552}{DeepSeek-OCR 2: Visual Causal Flow}. arXiv:2601.20552.
+\end{itemize}
+
+\clearpage

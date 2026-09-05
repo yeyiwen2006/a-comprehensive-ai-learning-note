@@ -1,0 +1,75 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{graph-neural-networks-1}{%
+\section{Graph Neural Networks}\label{graph-neural-networks-1}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-basic-principles-of-graph-neural-networks-gnns}{%
+\subsection{I. Basic Principles of Graph Neural Networks (GNNs)}\label{i.-basic-principles-of-graph-neural-networks-gnns}}
+
+\Needspace{5\baselineskip}
+\hypertarget{forward-algorithm}{%
+\subsubsection{(1) Forward Algorithm}\label{forward-algorithm}}
+
+\Needspace{5\baselineskip}
+The core of a GNN is message passing, analogous to ``neighbors exchanging information to update their understanding.'' Its mathematical workflow has three steps:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Message generation: for an edge e(u,v) connecting nodes u and v, a ``message'' m\_uv can be generated. The message-generation function usually considers node u's features h\_u, node v's features h\_v, and edge e(u,v)'s features f\_e(u,v) together. For example, m\_uv = Message(h\_u, f\_e(u,v), h\_v).
+\item
+  Message aggregation: each node v receives messages m\_uv from all neighboring nodes u and aggregates them into M\_v=Aggregate(\{m\_uv\textbar u∈N(v)\}). Aggregate is usually a sum, mean, maximum, or similar function.
+\item
+  Node update: node v's features h\_v are updated using its previous features h\_v and aggregated message M\_v. The update function can be written h\_v(t+1) = Update(h\_v(t), M\_v(t)).
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iterative-process}{%
+\subsubsection{(2) Iterative Process}\label{iterative-process}}
+
+\Needspace{5\baselineskip}
+The steps above repeat K times (K GNN layers), allowing nodes to capture K-hop neighborhood information:
+
+Layer 1: learns direct neighbors' features.
+
+Layer 2: neighbors learned their own neighbors' features in layer 1, so this layer learns about ``neighbors of neighbors.''
+
+Note: too many layers can cause oversmoothing (all node representations become similar).
+
+\Needspace{5\baselineskip}
+\hypertarget{backpropagation}{%
+\subsubsection{(3) Backpropagation}\label{backpropagation}}
+
+Message-generation, aggregation, and update functions are usually implemented by neural networks (such as multilayer perceptrons, MLPs) with learnable parameters (weight matrices and biases). During backpropagation, gradients for these parameters are computed according to the loss function's effect on model outputs, and node features are updated.
+
+Some advanced models also allow edge features to be updated dynamically during message passing. For example, when a multiscale cross-attention Transformer learns molecular features, both node and edge features of the molecular graph are converted into input embeddings that Transformer layers can process, and are processed through multiple Transformer layers. Another example is intramolecular message passing, whose initial state includes node features and edge features related to bond stretching and bond angles; both node and edge features are updated at every message-passing layer. Edge updates usually resemble node updates: a function may generate new edge features from connected nodes' features and previous edge features, or a dedicated edge-attention mechanism may weight and update edge features.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-applications-of-graph-neural-networks}{%
+\subsection{II. Applications of Graph Neural Networks}\label{ii.-applications-of-graph-neural-networks}}
+
+Graph neural networks are particularly suited to drug molecular graphs and protein structure graphs, effectively capturing complex structural information and higher-order relationships. Drugs consist of atoms (nodes) and chemical bonds (edges), while proteins can be represented by amino acid residues (nodes) and their interactions (edges). GNNs can be combined with other networks to predict interactions between drugs and molecules. For example, a GNN first learns molecular features, and fully connected layers then predict possible drug structures.
+
+GNNs and models combining Transformers and convolutional neural networks (such as TC-DTA) also perform well in DTA prediction. They learn nonlinear mappings from complex drug and target features to predict affinity values. For example, the G-K BertDTA framework combines graph representation learning and semantic embeddings for drug--target affinity prediction.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-41}{%
+\subsection{References}\label{references-41}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Scarselli, F., Gori, M., Tsoi, A. C., Hagenbuchner, M., \& Monfardini, G. (2009). \href{https://doi.org/10.1109/TNN.2008.2005605}{The Graph Neural Network Model}. IEEE Transactions on Neural Networks.
+\item
+  Gilmer, J., Schoenholz, S. S., Riley, P. F., Vinyals, O., \& Dahl, G. E. (2017). \href{https://proceedings.mlr.press/v70/gilmer17a.html}{Neural Message Passing for Quantum Chemistry}. ICML 2017.
+\item
+  Tang, X., Zhou, Y., Yang, M., \& Li, W. (2024). \href{https://doi.org/10.1109/TNB.2024.3441590}{TC-DTA: Predicting Drug-Target Binding Affinity With Transformer and Convolutional Neural Networks}. \emph{IEEE Transactions on NanoBioscience}, 23(4), 572--578.
+\item
+  Qiu, X., Wang, H., Tan, X., \& Fang, Z. (2024). \href{https://doi.org/10.1016/j.compbiomed.2024.108376}{G-K BertDTA: A Graph Representation Learning and Semantic Embedding-Based Framework for Drug-Target Affinity Prediction}. \emph{Computers in Biology and Medicine}, 173, 108376.
+\end{itemize}
+
+\clearpage

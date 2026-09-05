@@ -1,0 +1,219 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4f4dux7f6eux7f16ux7801}{%
+\section{位置编码}\label{ux4f4dux7f6eux7f16ux7801}}
+
+Transformer的标准处理流程中，并没有考虑token在序列的不同位置带来的差异。为了打上这个``补丁''，一般我们会运用基于正余弦的位置编码。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux7ecfux5178transformerux7684ux6b63ux4f59ux5f26ux4f4dux7f6eux7f16ux7801}{%
+\subsection{一、经典Transformer的正余弦位置编码}\label{ux4e00ux7ecfux5178transformerux7684ux6b63ux4f59ux5f26ux4f4dux7f6eux7f16ux7801}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux516cux5f0fux5f62ux5f0f}{%
+\subsubsection{（一）公式形式}\label{ux4e00ux516cux5f0fux5f62ux5f0f}}
+
+\Needspace{5\baselineskip}
+假设我们有一个输入序列，其长度为 \(L\)，模型的隐藏层维度（Embedding Dimension）为 \(d_{model}\)。对于序列中位置为 \(pos\) 的词（\(0 \le pos < L\)），以及该词向量中的第 \(i\) 个维度（\(0 \le i < d_{model}\)），其位置编码 \(PE\) 的计算公式如下：
+
+\[
+PE_{(pos,2i)}=\sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]
+
+\[
+PE_{(pos,2i+1)}=\cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]
+
+对于每个位置，利用上面的函数可以生成一个位置向量，这个向量会和词的嵌入向量相加。``相加''意味着融合，模型在学习 token 的信息时，也同时学习到了位置信息。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux539fux7406ux89e3ux91ca}{%
+\subsubsection{（二）原理解释}\label{ux4e8cux539fux7406ux89e3ux91ca}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  为什么使用正余弦？
+\end{enumerate}
+
+（1）有界性：位置编码向量的每一维都被控制在 \([-1,1]\)，不至于``喧宾夺主''压倒语义信息。
+
+\Needspace{8\baselineskip}
+\Needspace{5\baselineskip}
+（2）对不同长度序列的适应性：
+
+\Needspace{5\baselineskip}
+假设我们设定一个最大长度 \(L_{max}\)，位置 \(pos\) 的编码为：
+
+\[
+PE(pos)=\frac{pos}{L_{max}}
+\]
+
+如果 \(L_{max}\) 是针对当前句子长度动态设定的，就会出现致命缺陷：步长不一致。例如句子 A 长度为 5，第 1 个词是 0.0，第 2 个词是 0.2，相邻距离是 0.2；句子 B 长度为 100，第 1 个词是 0.0，第 2 个词是 0.01，相邻距离是 0.01。模型无法稳定学习``相邻''这个概念。
+
+如果 \(L_{max}\) 是全局固定的极大值（比如 10000），当 \(L_{max}\) 很大时，相邻两个位置的差异 \(\Delta=\frac{1}{10000}\) 会非常微小。在深层神经网络中，这样微小的数值差异很容易被噪声淹没，导致模型很难区分位置 100 和位置 101。相比之下，正弦编码在高频分量上的数值变化非常剧烈，更容易区分相邻位置。
+
+\Needspace{8\baselineskip}
+（3）位置可加性：由三角函数的性质
+
+\[
+\sin(\alpha+\beta)=\sin\alpha\cos\beta+\cos\alpha\sin\beta
+\]
+
+\[
+\cos(\alpha+\beta)=\cos\alpha\cos\beta-\sin\alpha\sin\beta
+\]
+
+\Needspace{5\baselineskip}
+因此：
+
+\[
+\begin{pmatrix}
+PE_{(pos+k,2i)} \\
+PE_{(pos+k,2i+1)}
+\end{pmatrix}
+=
+\begin{pmatrix}
+\cos(\omega_i k) & \sin(\omega_i k) \\
+-\sin(\omega_i k) & \cos(\omega_i k)
+\end{pmatrix}
+\begin{pmatrix}
+PE_{(pos,2i)} \\
+PE_{(pos,2i+1)}
+\end{pmatrix}
+\]
+
+这是一个标准的旋转矩阵（Rotation Matrix）。结论是，\(PE_{(pos+k)}\) 确实可以由 \(PE_{(pos)}\) 乘以一个与 \(pos\) 无关、仅与 \(k\) 有关的线性变换矩阵得到。这使得 Self-Attention 机制能够很容易地学会关注``距离当前词 \(k\) 个单位''的词，即具备了捕捉相对位置的能力。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  为什么位置编码是一个 \(d_{model}\) 维的向量，对于每一个特征维度 \(i\) 都不一样？
+\end{enumerate}
+
+首先明确：虽然语义编码和位置编码维数相同，但二者的第i维之间没有物理意义上的一一对应。
+
+为什么位置编码需要 \(d_{model}\) 维呢？这是因为在一个长序列中，如果只用一维表征信息，会出现严重的问题。比如序列有一百万个 token，那么在一圈弧度为 \(2\pi\) 的情况下，第 5 个和第 15 个 token 之间的角度就是 \(2 \times 10^{-5}\pi\)，在三角函数运算后差距几乎为零，淹没在随机噪声中。
+
+\Needspace{5\baselineskip}
+同时，让所有维度的位置编码都用同一个值还会带来两个问题。首先是会让语义向量沿 \((1,1,\ldots)\) 的统一方向移动，而这个方向可能本来要表征其他语义。其次是 Layer Normalization 过程中会对每个向量进行归一化：
+
+\[
+\mathrm{LN}(x)=\frac{x-\mu}{\sigma}\cdot\gamma+\beta
+\]
+
+这会直接把位置编码``清洗''掉。
+
+\Needspace{5\baselineskip}
+因此，我们需要增加维度。就像一个一位布尔值只能表示 0 或 1，但是八位编码却能表示 256 个数值。利用三角函数的旋转特性，我们想到可以用一个有 \(d_{model}\) 根指针的``时钟''，将编码的高位数存在低频率旋转的``时针''中，低位数存在高频率旋转的``秒针''中：
+
+\Needspace{5\baselineskip}
+我们可以将分母 \(10000^{2i/d_{model}}\) 理解为波长，或者将其倒数理解为频率。令频率 \(\omega_i=\frac{1}{10000^{2i/d_{model}}}\)，则公式可简化为：
+
+\[
+PE_{(pos,2i)}=\sin(\omega_i\cdot pos)
+\]
+
+\[
+PE_{(pos,2i+1)}=\cos(\omega_i\cdot pos)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  低维度（\(i\) 较小）：\(\omega_i\) 较大，波长短，变化频率高。
+\item
+  高维度（\(i\) 较大）：\(\omega_i\) 极小，波长极长，变化频率低。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+在 Transformer 的公式中，分母 \(10000^{2i/d}\) 就是波长 \(\lambda_i\)。例如：
+
+\begin{itemize}
+\tightlist
+\item
+  当 \(i=0\)（第 0 维）时，分母是 \(10000^0=1\)。这是一个超短波，\(pos\) 每增加 \(2\pi\)（约 6 个词），正弦波就跑完一整圈。作用：它像一把``游标卡尺''，负责精确区分相邻的、微小的位置变化（比如 \(pos=5\) 和 \(pos=6\)）。
+\item
+  当 \(i=256\)（第 512 维）时，分母是 \(10000^1=10000\)。这是一个超长波，\(pos\) 需要增加 \(10000\cdot2\pi\)（约 6 万个词），正弦波才跑完一圈。作用：它像一把``公里计数器''，在短句子里几乎是一条直线，负责提供宏观的、全局的定位。
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  为什么波长不能线性增长，而要用 \(10000^{2i/d}\) 这种指数形式？
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+想象你要用几个数字转盘来表示从 0 到 10000 的数字：
+
+\begin{itemize}
+\tightlist
+\item
+  线性方案（极低效）：如果你有 3 个转盘，分别代表 1s、2s、3s，你能表示的范围非常窄，或者你需要成千上万个转盘才能数到 10000。
+\item
+\Needspace{5\baselineskip}
+  指数方案（十进制/位值制）：你有 3 个转盘，分别代表：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    转盘 A：\(10^0=1\)（个位）
+  \item
+    转盘 B：\(10^1=10\)（十位）
+  \item
+    转盘 C：\(10^2=100\)（百位）
+  \end{itemize}
+\end{itemize}
+
+注意到了吗？1、10、100 就是指数级增长的。仅仅用 3 个维度（个、十、百），我们就能覆盖很大的范围，而且每个数字的表示都是唯一的。
+
+Transformer 的 512 个维度也是这个道理：我们不希望第 10 维和第 11 维的波长差不多（比如 50 和 51），那样太浪费了。我们希望它们成倍增长。通过指数级的波长分配，512 个维度均匀地覆盖了从 \(2\pi\) 到 \(10000\cdot2\pi\) 的巨大范围，这让模型在对数尺度（Log Scale）上拥有了均匀的分辨率。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux65cbux8f6cux4f4dux7f6eux7f16ux7801rope}{%
+\subsection{二、旋转位置编码（RoPE）}\label{ux4e8cux65cbux8f6cux4f4dux7f6eux7f16ux7801rope}}
+
+RoPE 是目前各大主流语言模型（如 LLaMA、Qwen）标配的位置编码方式。它不像上面那样直接``加上''一个位置向量，而是通过在复平面上的``旋转''来注入位置信息，从而自带相对位置信息的感知能力。
+
+\Needspace{5\baselineskip}
+对于一个位置为 \(m\) 的输入向量 \(x=[x_1,x_2,\ldots,x_d]^T\)，RoPE 将相邻的两个维度视为一组二维坐标，并根据位置 \(m\) 乘以一个旋转矩阵。其完整的块对角旋转矩阵 \(R_{\Theta,m}^{d}\) 表达式如下：
+
+\[
+\begin{pmatrix}
+\cos(m\theta_1) & -\sin(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+\sin(m\theta_1) & \cos(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & \cos(m\theta_2) & -\sin(m\theta_2) & \cdots & 0 & 0 \\
+0 & 0 & \sin(m\theta_2) & \cos(m\theta_2) & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & \cos(m\theta_{d/2}) & -\sin(m\theta_{d/2}) \\
+0 & 0 & 0 & 0 & \cdots & \sin(m\theta_{d/2}) & \cos(m\theta_{d/2})
+\end{pmatrix}
+\]
+
+其中，旋转角 \(\theta_i=10000^{-2(i-1)/d}\)。最终注入了位置信息的特征向量即为 \(x'_m=R_{\Theta,m}^{d}x\)。
+
+对于非一维的序列（如视频），既然视频是 3D 数据（时间、高度、宽度），V-JEPA 2 采用的是 1D-RoPE 的 3D 扩展版本。具体的做法是：将总的特征维度 \(d\) 平分为三个大致相等的部分：\(d_t\)（时间轴）、\(d_h\)（高度轴）和 \(d_w\)（宽度轴）。对于视频中的某一个 Patch，假设它在时间帧上的坐标为 \(t\)，空间坐标为 \((h,w)\)，则分别对这三个特征分段应用对应维度的 1D 旋转。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-70}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-70}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Vaswani, A., Shazeer, N., Parmar, N., et al.~(2017). \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need}. NeurIPS 2017.
+\item
+  Su, J., Lu, Y., Pan, S., Murtadha, A., Wen, B., \& Liu, Y. (2021). \href{https://arxiv.org/abs/2104.09864}{RoFormer: Enhanced Transformer with Rotary Position Embedding}. arXiv:2104.09864.
+\item
+  Assran, M., Bardes, A., Fan, D., et al.~(2025). \href{https://arxiv.org/abs/2506.09985}{V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}. arXiv:2506.09985.
+\end{itemize}
+
+\clearpage

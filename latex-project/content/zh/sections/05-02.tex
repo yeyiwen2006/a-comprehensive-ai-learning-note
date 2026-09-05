@@ -1,0 +1,97 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux52a8ux91cfux6cd5momentum}{%
+\section{动量法（Momentum）}\label{ux52a8ux91cfux6cd5momentum}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00momentum-ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}{%
+\subsection{一、Momentum 解决了什么问题？}\label{ux4e00momentum-ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}}
+
+Momentum主要解决了SGD在特定地形下的收敛速度和稳定性问题。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  狭窄``峡谷''地形的震荡
+\end{enumerate}
+
+描述： 想象一个损失函数的等高线图，它像一个狭长的山谷。在``山谷''的陡峭方向（两侧峭壁），梯度很大；但在``山谷''的平缓方向（通向谷底的最优解），梯度很小。
+
+SGD的问题：SGD在陡峭方向上会因为梯度过大而来回震荡（Overshooting），这导致它在平缓方向上的前进速度非常缓慢。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  鞍点和平坦区域
+\end{enumerate}
+
+描述： 在高维空间中，局部最小值（Local Minima）其实较少，更常见的是鞍点。在鞍点处，所有方向的梯度都接近于零。
+
+SGD的问题：当梯度趋于0时，SGD的更新步骤也会接近于零，导致优化器``卡住''，停止更新。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cmomentum-ux5982ux4f55ux89e3ux51b3ux95eeux9898}{%
+\subsection{二、Momentum 如何解决问题？}\label{ux4e8cmomentum-ux5982ux4f55ux89e3ux51b3ux95eeux9898}}
+
+Momentum引入了物理学中``动量''或``惯性''的概念。想象一个球从山上滚下：它不仅仅受当前位置的坡度影响，还携带着过去积累的速度（即``动量''）。
+
+在陡峭方向，梯度 \(g_t\) 来回反向（\(+C, -C, +C, -C, \ldots\)）。当它们被累积到动量 \(m_t\) 中时，这些正负梯度会相互抵消，使得 \(m_t\) 在该方向上的分量减小，从而抑制了震荡。
+
+在平缓方向，梯度 \(g_t\) 始终指向同一个方向（\(-c, -c, -c, \ldots\)）。动量 \(m_t\) 会持续累积这些同向的梯度，使得 \(m_t\) 在该方向上的分量增大，从而加速了前进。
+
+当小球滚到一个鞍点时，虽然当前梯度 \(g_t\) 接近 \(0\)，但只要它携带着过去的动量（\(m_{t-1}>0\)），它就能凭借这股``惯性''``冲''过这个平坦区域，继续向最优解前进。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6570ux5b66ux8868ux8fbe}{%
+\subsection{三、数学表达}\label{ux4e09ux6570ux5b66ux8868ux8fbe}}
+
+Momentum引入了一个接近1的超参数β1，代表``惯性''的衰减率。不直接用梯度更新参数，而是用``过去梯度\emph{β1+当下梯度}（1-β1）''这个移动平均乘以学习率来更新参数。
+
+\Needspace{5\baselineskip}
+计算梯度：
+
+\[
+g_t = \nabla_\theta J(\theta_{t-1})
+\]
+
+\Needspace{5\baselineskip}
+更新动量（一阶矩估计）：
+
+\[
+m_t = \beta_1 \cdot m_{t-1} + (1-\beta_1)\cdot g_t
+\]
+
+\(m_t\) 是 \(g_t\) 的指数移动平均值。\(\beta_1\) 决定了过去梯度的``遗忘''速度；\(\beta_1=0.9\) 意味着当前的 \(m_t\) 大约 \(90\%\) 来自过去的动量，\(10\%\) 来自当前梯度。
+
+注：在一些经典实现中，也写作 \(m_t=\beta_1\cdot m_{t-1}+g_t\)。Adam 采用的是 EMA 形式，我们在此统一使用 EMA 形式。
+
+\Needspace{5\baselineskip}
+更新参数：
+
+\[
+\theta_t = \theta_{t-1} - \alpha \cdot m_t
+\]
+
+参数更新的方向不再是 \(g_t\)，而是平滑后的 \(m_t\)。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-26}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-26}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Polyak, B. T. (1964). \href{https://doi.org/10.1016/0041-5553(64)90137-5}{Some methods of speeding up the convergence of iteration methods}. USSR Computational Mathematics and Mathematical Physics.
+\item
+  Sutskever, I., Martens, J., Dahl, G., \& Hinton, G. (2013). \href{https://proceedings.mlr.press/v28/sutskever13.html}{On the importance of initialization and momentum in deep learning}. ICML 2013.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,109 @@
+---
+title: "7.1 Hardware Components"
+chapter_title: "Computational Performance and AI Infra"
+section_id: "07-01"
+language: en
+source_language: zh
+source_docx: "第1部分 深度学习/7.计算性能与AI Infra/7.1 硬件部件.docx"
+status: "translated"
+ocr: "no pending image placeholders in public Markdown"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 7.1 Hardware Components
+
+## I. Basic Components of a Computer
+
+A computer consists of a central processing unit (CPU), memory (RAM), solid-state storage (external storage), a graphics processing unit (GPU), networking, and other components. Memory connects directly to the CPU, while external storage and the GPU connect to the CPU through the high-speed expansion bus (PCIe). To improve performance, we do not want any part of the system to become a bottleneck; both computation and communication need to become faster.
+
+## II. Memory
+
+Memory is the “workbench” on which the CPU/GPU works with data. Memory bandwidth is important, but the access pattern is even more important. There are two memory access patterns: random reads and burst mode. The former means continually jumping between memory locations (random access), whereas the latter reads a batch of data after a single addressing operation.
+
+The bottleneck: although memory bandwidth appears high (40–100 GB/s), this is based on ideal conditions. Sending a read request (addressing) takes 100 ns, while transferring the data takes only 0.2 ns. This means that initiating a read request costs 500 times as much time as transferring the data.
+
+Performance optimization strategy: avoid random reads and use burst mode whenever possible. This explains why tensors in deep learning are usually stored contiguously and why batch processing is so important. Data structures should also be aligned with the hardware's physical memory-bank boundaries.
+
+GPU memory (GDDR6/HBM) resembles CPU memory, but to feed thousands of compute cores, it generally provides much greater bandwidth (a wider bus), at the cost of smaller capacity and extremely high expense.
+
+## III. Storage
+
+1. Hard disk drives: reliance on mechanical rotation and head movement results in extremely high latency (milliseconds) and very low throughput (100 IOPs). They are suitable only for archiving and absolutely unsuitable for directly reading data to train deep learning models; otherwise, the GPU will continually wait for the drive, severely wasting compute resources.
+
+2. Solid-state drives: without mechanical structures, IOPs improve by three orders of magnitude and bandwidth by one order of magnitude. Because of the characteristics of NAND Flash (a block must be erased before it can be written), random-write performance is poor. Traditional SATA interfaces are too slow; the NVMe protocol connects directly to the CPU through PCIe lanes, removing bandwidth constraints (up to 8 GB/s), and is currently standard in high-performance AI servers.
+
+3. Cloud storage: highly flexible, allowing users to adjust IOPs dynamically according to the training task (whether it involves large files or many small files).
+
+## IV. CPU
+
+Although deep learning primarily relies on GPUs, the CPU remains responsible for control flow, instruction decoding, and data preprocessing. CPUs often have multiple cores.
+
+1. Caching: memory is approximately 200–500 times slower than the CPU. Without a cache, the CPU would have to wait hundreds of cycles for memory whenever it executed an instruction. We therefore use caching.
+
+Caching reduces memory reads and writes because it “anticipates” what data may be needed next and stores them in advance. It exploits temporal and spatial locality. The former means that if you have just accessed some data, you are likely to access them again immediately, such as the counter variable i in a for loop; recently used data are retained in the L1 cache for reuse. The latter means that if you access data at address X, you are likely to access data at address X+1 next. For example, when reading Array[0], the CPU performs a “burst read” of 64 values through Array[63] at once; this is called a cache line. Reading Array[1] next is then “instantaneous.” We therefore want elements placed close together in memory to be used consecutively, rather than being unrelated (unrelated elements may instead cause trouble, as discussed later).
+
+Modern CPUs use a pyramid-shaped cache hierarchy:
+
+| Level | Location | Size (typical) | Speed (latency) | Characteristics |
+| --- | --- | --- | --- | --- |
+| Registers | Inside a CPU core | A few hundred bytes | 0 latency | Not actually a cache, but the CPU's “hands.” Data must be here to be processed. |
+| L1 cache (level 1) | Immediately adjacent to the core | 32 KB–64 KB | ~1 ns (3–4 cycles) | Fastest but smallest. Usually divided into L1d (data) and L1i (instructions). Private to each core. |
+| L2 cache (level 2) | Near the core | 256 KB–2 MB | ~3–10 ns | Larger and slower than L1. Usually also private to each core (or shared by two cores). |
+| L3 cache (level 3) | Shared region of the chip | 4 MB–256 MB+ | ~10–20 ns | Shared by all cores. Searched if L1/L2 miss. Main memory is read only if this also misses. |
+| Main memory (RAM) | Separate module/slot level | 16 GB–TB | ~100 ns | The final line of defense. |
+
+Cache coherence protocol: ensures that in a multicore system, whenever one core changes data, the other cores can immediately “sense” the change, so that everyone always reads the latest data. For example, suppose main memory contains X = 0, and A and B each load X into their own L1 caches. A changes X to 1 in its cache. At this point, main memory and core B's cache still contain X = 0. If core B now uses the old X in a calculation, the program's logic will be wrong. Therefore, when core A changes the data, it must notify core B: “Your data are outdated; stop using them.”
+
+Performance pitfall: suppose core A modifies variable X while core B modifies variable Y. They are logically unrelated but occupy the same 64-byte cache line in physical memory. When core A modifies X, the cache coherence protocol forces that line in core B's cache (including Y) to become invalid. When core B wants to write Y, it discovers the invalid cache and must reload the data from memory. Its write then invalidates core A's cache. The two cores repeatedly fight for control of the cache line, resulting in performance worse than that of a single core. Solution: use padding for memory alignment when programming to force X and Y into different cache lines. (Padding must not be overused, because it can reduce efficiency to that of random memory access. It should be used only when multithreading, frequent writes, and proximity in physical memory all apply.)
+
+2. Vectorization: the key to accelerating CPUs. The AVX2/NEON instruction sets allow a CPU to operate on a group of data (such as 128 bits) simultaneously within one clock cycle. Although CPUs support vectorization, their parallel capabilities remain far below those of the thousands of cores in a GPU.
+
+## V. GPU
+
+1. Why use GPUs rather than CPUs to train neural networks?
+
+GPUs are better suited to neural network training mainly because their massively parallel architecture, high memory bandwidth, and specialized compute units can greatly improve deep learning training efficiency. The key differences are as follows:
+
+- Core architecture: a CPU consists of a small number of high-performance cores and excels at complex logic and serial tasks; a GPU has thousands of small compute cores designed specifically for massively parallel computation. Matrix multiplication, convolution, and other deep learning operations can be decomposed into many identical tasks, processed simultaneously by thousands of GPU cores.
+- Memory bandwidth: CPUs rely on DDR memory with relatively low bandwidth, usually tens of GB/s; GPUs use high-bandwidth memory such as HBM, providing hundreds of GB/s to several TB/s, typically more than 10 times CPU bandwidth. This rapidly feeds enormous amounts of training data to compute cores, avoiding “data starvation” and greatly improving throughput.
+- Compute units: CPUs use general-purpose compute units; GPUs integrate specialized units such as Tensor Cores, heavily optimized for low-precision matrix operations. GPUs are therefore better suited to mixed-precision training, further improving computation speed and efficiency while maintaining model accuracy.
+- Energy efficiency: CPUs have relatively low energy efficiency on massively parallel tasks; GPUs deliver higher performance per watt and are more cost-effective for the same AI training task.
+
+Fundamentally, the architectural differences between CPUs and GPUs stem from their different design goals. CPUs aim for strong general-purpose capabilities and low latency, efficiently handling diverse serial tasks such as operating systems, office applications, and databases to keep computers responsive. A CPU resembles a knowledgeable professor who can solve many complex problems but can concentrate on only one at a time. GPUs originated in graphics rendering (parallel computation over millions of pixels), with high throughput as their design goal. They excel at completing enormous numbers of simple, repetitive calculations in a short time but are unsuited to complex logic such as if-else statements. A GPU resembles an assembly-line factory with thousands of workers (cores): each worker performs only simple work, but their collaboration enables efficient large-scale production. Deep learning training mainly involves extensive calculations of linear matrices, activation functions, and gradients, precisely fitting the pattern of “enormous numbers of simple, repetitive calculations” and thus matching the GPU's architectural strengths perfectly.
+
+GPUs strongly dislike sparse data (noncontiguous data) and interruptions. Sparse structures such as graph neural networks (GNNs) often cannot fully exploit GPU performance.
+
+2. GPU structure and bottlenecks
+
+A GPU consists of compute cores (including their registers), HBM (device memory), and L1/L2 caches between them. During computation, a large batch of data moves from device memory to L2, a smaller subset moves from L2 to L1, and an even smaller subset moves into registers in the compute cores. Whenever the cores finish computing, they return data and fetch more from L1. When the L1 data are exhausted, a new small batch is loaded from L2; when the L2 data are exhausted, a large batch is loaded from device memory. This forms a hierarchy in which inner levels store less data and are updated more quickly.
+
+In LLM inference, the prefill stage processes all input tokens in parallel. Matrix multiplication has high arithmetic intensity, so compute capacity is the main bottleneck. During autoregressive generation, however, limited storage in the compute cores means that model weights must move in batches from device memory to the cores. After one batch is processed, the next must replace it; generating every token requires moving the entire model's weights once. Because computation is much faster than data transfer over device-memory bandwidth, the GPU actually spends the vast majority of its time waiting for data to arrive from device memory, yielding extremely low compute utilization.
+
+Why can compute cores and device memory not be integrated into in-memory computation? The registers in compute cores and their nearby L1/L2 caches use static random-access memory (SRAM), which is extremely fast but occupies a huge area: storing 1 bit requires six transistors. Storing a model with tens of billions of parameters here would require a chip with an area measured in square meters. Device memory uses dynamic random-access memory (DRAM), which is extremely compact: storing 1 bit requires only one transistor and one capacitor, but it is slow. It uses one transistor and one capacitor to store charge; charging and discharging the capacitor takes time, making data reads extremely slow. To prevent data loss, DRAM must also read and rewrite all its data every few tens of milliseconds (refresh). When the compute cores urgently need data, DRAM may be busy “refreshing itself,” an uncertainty that is disastrous for logic circuits pursuing maximum determinism.
+
+The root cause is that logic processes and memory processes follow two completely different evolutionary paths. GPU/CPU cores (logic processes) pursue switching speed: transistors must be as fast as possible, with good leakage control. DRAM (memory processes) pursues storage density, constructing high-capacity capacitors in extremely small spaces.
+
+3. Differences between training and inference
+
+Training requires high precision (mixed FP32/FP16) and extremely large device memory to store intermediate gradients, with hardware such as NVIDIA V100/A100. Inference requires only forward propagation, does not need gradient storage, and has low precision requirements (INT8 is sufficient).
+
+## VI. Data Transfer
+
+1. Types of data-transfer channels
+
+PCIe: the main thoroughfare inside the system, connecting the CPU to GPUs and SSDs. However, the number of lanes is limited. If your CPU has only 40 lanes and you install four GPUs (each typically requiring 16x), bandwidth will be constrained, or expensive switch chips will be needed.
+
+NVLink: designed specifically for high-speed interconnection between GPUs. Its bandwidth (300 Gbit/s) far exceeds PCIe. In model-parallel training, GPUs must exchange parameters frequently. Without NVLink, PCIe becomes a severe bottleneck, yielding extremely poor multi-GPU speedup.
+
+2. How can data-transfer bottlenecks be addressed?
+
+(1) Reduce the number of copies: transferring data between devices (CPUs, GPUs, and other machines) is much slower than computing. We must wait for data to be sent (or received), so we need to minimize copying.
+
+(2) Group operations together: many small operations are much worse than one large operation. Executing several operations together is far better than scattering many individual operations throughout the code.
+
+(3) Avoid excessive format conversion: when we print tensors or convert them to NumPy format, if the data are not in main memory, the framework first copies them there. This creates extra transfer overhead and can sometimes become a bottleneck.
+
+## References
+
+- Zhang, A., Lipton, Z. C., Li, M., & Smola, A. J. (2023). [Dive into Deep Learning](https://D2L.ai). Cambridge University Press.

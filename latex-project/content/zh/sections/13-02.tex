@@ -1,0 +1,452 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{trpoux7b97ux6cd5ux4e0eux91cdux8981ux6027ux91c7ux6837}{%
+\section{TRPO算法与重要性采样}\label{trpoux7b97ux6cd5ux4e0eux91cdux8981ux6027ux91c7ux6837}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux63d0ux51faux80ccux666f}{%
+\subsection{一、提出背景}\label{ux4e00ux63d0ux51faux80ccux666f}}
+
+在强化学习中，尤其是在策略梯度方法中，我们通过不断更新策略网络（一个概率分布）来让智能体表现得更好。但这里有一个巨大的风险：如果一次更新步子迈得太大，新策略可能会彻底``跑偏''，选择一个很差的动作，进而采样到差的数据，算出不准的梯度，恶性循环，导致训练崩溃、性能急剧下降，并且很难恢复。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6570ux5b66ux8868ux8fbe-1}{%
+\subsection{二、数学表达}\label{ux4e8cux6570ux5b66ux8868ux8fbe-1}}
+
+在机器学习中，KL散度 \(D_{\mathrm{KL}}(P\Vert Q)=H(P,Q)-H(P)\) 可以表示预测分布 \(Q\) 和标签分布 \(P\) 之间的差异，这里 \(H(P,Q)\) 是交叉熵，即用 \(Q\) 的编码系统去编码 \(P\) 的数据所需的平均长度。准确地说，这是前向KL散度，衡量了使用了错误的编码系统（\(Q\)）而导致与正确编码系统（\(P\)）相比额外多出的信息量，也就是 \(Q\) 偏离 \(P\) 的程度，在旧策略 \(P\) 概率高而新策略 \(Q\) 概率低的时候，惩罚会很大，这保证了新策略覆盖原策略，不会过度收缩（Collapse），避免忽略了真实分布的某些模式。还有一种KL散度是反向KL散度，即 \(D_{\mathrm{KL}}(Q\Vert P)\)，它在旧策略 \(P\) 概率低而新策略 \(Q\) 概率高的时候，惩罚很大。
+
+将KL散度运用到强化学习中，则是像一个~``稳定器''或``刹车''~。大模型一般均用反向KL散度），因为反向KL散度会对新策略高概率、原策略低概率的区域给出较大惩罚，进而让新的概率空间不跳出预训练后概率较大的空间（如果跳出空间往往表现为输出乱码、不符合正常语义的内容等，即``模式崩塌''）。RL获得的空间往往是预训练的子集（这也可能是RL难以让模型获得预训练完全没见过的技能的原因之一）。
+
+我们知道，KL散度 \(D_{\mathrm{KL}}(P\Vert Q)=H(P,Q)-H(P)\)，其中 \(H(P,Q)\) 为交叉熵。在 TRPO 或 PPO 这类算法中，我们为什么用KL散度而不用交叉熵呢？不是因为梯度不同（它们梯度其实一样），而是因为``标尺''的零点不同。KL散度提供了一个绝对的零点（即 \(D_{\mathrm{KL}}=0\) 代表没变化），这让我们能设定一个通用的安全阈值（Trust Region）；而交叉熵的``零点''是浮动的（等于旧策略的熵 \(H(P)\)），导致无法设定一个固定的阈值来限制更新幅度。
+
+\Needspace{5\baselineskip}
+TRPO算法可以表达为这样一个优化问题：
+
+\[
+\begin{aligned}
+\max_\theta\quad
+& \mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}},\,a\sim\pi_{\theta_{\mathrm{old}}}}
+\bigl[
+\frac{\pi_\theta(a\mid s)}{\pi_{\theta_{\mathrm{old}}}(a\mid s)}
+A^{\pi_{\mathrm{old}}}(s,a)
+\bigr] \\
+\text{subject to}\quad
+& \bar{D}_{\mathrm{KL}}(\pi_{\theta_{\mathrm{old}}}\Vert \pi_\theta)\le \delta
+\end{aligned}
+\]
+
+其中 \(\frac{\pi_\theta(a\mid s)}{\pi_{\theta_{\mathrm{old}}}(a\mid s)}\) 是概率比率，\(A^{\pi_{\mathrm{old}}}(s,a)\) 是优势函数，\(\delta\) 是信赖域半径，也就是允许策略变动的最大幅度。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux76eeux6807ux51fdux6570ux91cdux8981ux6027ux91c7ux6837ux7684ux89e3ux91ca}{%
+\subsection{三、目标函数（重要性采样）的解释}\label{ux4e09ux76eeux6807ux51fdux6570ux91cdux8981ux6027ux91c7ux6837ux7684ux89e3ux91ca}}
+
+TRPO是一个Online Policy，随着策略的更新，从旧策略中采样的数据就无法使用，造成了极大的数据浪费。为了能有效利用旧数据，我们采取了统计学中重要性采样的方法。
+
+假设你的任务是统计全国人民的平均收入。
+
+\begin{itemize}
+\tightlist
+\item
+  目标分布 \(P\)（Target）：全国人民的分布。
+\item
+  采样分布 \(Q\)（Proposal）：你作为采样员，只能在上海陆家嘴街头随机拉人问收入。
+\end{itemize}
+
+直接算平均值的问题：如果你直接拿陆家嘴路人的平均收入，结果肯定远高于全国平均水平，因为你采样的地点（分布 \(Q\)）偏向富人。
+
+\Needspace{5\baselineskip}
+重要性采样的解决方案：你可以继续在陆家嘴采样，但算账时要加权重：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  富人：在陆家嘴很多，但在全国比例没那么高，给他们的收入乘一个小于 \(1\) 的权重（降权）。
+\item
+  普通收入者：在陆家嘴很少，但在全国比例很高；如果你在陆家嘴好不容易遇到一个普通人，这个样本就太珍贵了，它代表了全国那一大群人，给他的收入乘一个大于 \(1\) 的权重（加权）。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+假设我们需要计算某个函数 \(f(x)\) 在目标分布 \(P(x)\) 下的期望，但只能从另一个分布 \(Q(x)\) 采样：
+
+\[
+\mathbb{E}_{x\sim P}[f(x)] = \int P(x)f(x)\,dx
+\]
+
+\Needspace{5\baselineskip}
+做恒等变换：
+
+\[
+\begin{aligned}
+\mathbb{E}_{x\sim P}[f(x)]
+&= \int P(x)f(x)\cdot \frac{Q(x)}{Q(x)}\,dx \\
+&= \int Q(x)(\frac{P(x)}{Q(x)}f(x))\,dx
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+因此：
+
+\[
+\mathbb{E}_{x\sim P}[f(x)]
+=
+\mathbb{E}_{x\sim Q}
+\bigl[
+\frac{P(x)}{Q(x)}f(x)
+\bigr]
+\]
+
+其中 \(\frac{P(x)}{Q(x)}\) 就是重要性权重（Importance Weight）。
+
+这样，我们就能对旧策略Q采样出来的数据进行``再利用''了。
+
+\Needspace{5\baselineskip}
+应用在TRPO中，即：
+
+\[
+\mathbb{E}_{a\sim\pi_{\mathrm{old}}}
+\bigl[
+\frac{\pi_{\mathrm{new}}(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
+A(s,a)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+当然，这个公式是在s给定的条件下的期望，还没有考虑s的占用度量会随着策略变化而变化。考虑后，公式如下：
+
+\[
+J(\theta)=
+\sum_s\rho_{\pi_\theta}(s)
+\sum_a\pi_\theta(a\mid s)r(s,a)
+\]
+
+\Needspace{5\baselineskip}
+利用重要性采样变换后：
+
+\[
+J(\theta)=
+\mathbb{E}_{s\sim\rho_{\theta_{\mathrm{old}}},\,a\sim\pi_{\theta_{\mathrm{old}}}}
+\bigl[
+\frac{\rho_{\pi_\theta}(s)}{\rho_{\pi_{\theta_{\mathrm{old}}}}(s)}
+\cdot
+\frac{\pi_\theta(a\mid s)}{\pi_{\theta_{\mathrm{old}}}(a\mid s)}
+\cdot
+A^{\pi_{\mathrm{old}}}(s,a)
+\bigr]
+\]
+
+困难点在于：计算 \(\frac{\rho_{\pi_\theta}(s)}{\rho_{\pi_{\theta_{\mathrm{old}}}}(s)}\) 是极其困难的。\(\rho(s)\) 这种状态占用分布由环境动力学 \(P(s'\mid s,a)\) 和策略 \(\pi\) 经过多步交互共同决定，不像动作概率 \(\pi(a\mid s)\) 那样可以直接从策略网络读出来。除非你知道环境的完整模型并解复杂的流方程，否则很难显式求出这个状态分布比值。
+
+\Needspace{5\baselineskip}
+TRPO 的做法是直接近似令：
+
+\[
+\frac{\rho_{\pi_\theta}(s)}{\rho_{\pi_{\theta_{\mathrm{old}}}}(s)}\approx 1
+\]
+
+也就是说，它假设在我更新策略的一瞬间，遇到的状态分布还没来得及发生剧烈变化。
+
+我们可以看到，重要性采样必须以限制Q相对于P的偏差为前提。否则，就好比你在陆家嘴（Q）好不容易抓到一个极度罕见的贫困户，根据公式，这个人的样本权重会变成几万倍，这一个样本就会主导整个梯度的计算，导致神经网络的更新方向剧烈波动，模型直接训练崩溃。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux4f18ux5316ux95eeux9898ux7684ux6c42ux89e3}{%
+\subsection{四、优化问题的求解}\label{ux56dbux4f18ux5316ux95eeux9898ux7684ux6c42ux89e3}}
+
+\Needspace{5\baselineskip}
+TPRO可以被写成下面的优化问题：
+
+\[
+\begin{aligned}
+\max_\theta\quad
+& L(\theta)=\mathbb{E}
+\bigl[
+\frac{\pi_\theta}{\pi_{\mathrm{old}}}A
+\bigr] \\
+\text{subject to}\quad
+& \bar{D}_{\mathrm{KL}}(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)
+\Vert
+\pi_\theta(\cdot\mid s)
+)\le \delta
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+求解如下：
+
+第一步：泰勒展开（近似化）
+
+\Needspace{5\baselineskip}
+令：
+
+\[
+x=\theta-\theta_{\mathrm{old}}
+\]
+
+由于信赖域很小，可以对目标函数和约束进行泰勒展开。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  对目标函数 \(L(\theta)\) 做一阶展开：
+\end{enumerate}
+
+\[
+L(\theta)\approx
+L(\theta_{\mathrm{old}})
++
+\nabla_\theta L(\theta_{\mathrm{old}})^{T}x
+\]
+
+\Needspace{5\baselineskip}
+其中 \(L(\theta_{\mathrm{old}})\) 是常数，不影响优化；\(\nabla_\theta L(\theta_{\mathrm{old}})\) 就是标准的策略梯度，记为向量 \(\mathbf{g}\)。因此近似目标变为：
+
+\[
+\max_x\ \mathbf{g}^{T}x
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  对约束条件 \(\bar{D}_{\mathrm{KL}}\) 做二阶展开：
+\end{enumerate}
+
+\[
+\bar{D}_{\mathrm{KL}}\bigl(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)
+\Vert
+\pi_{\theta_{\mathrm{old}}+x}(\cdot\mid s)
+\bigr)
+\approx
+\bar{D}_{\mathrm{KL}}\bigl(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)
+\Vert
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)
+\bigr)
++
+(\nabla_\theta \bar{D}_{\mathrm{KL}})^{T} x
++
+\frac{1}{2}x^{T}\nabla_\theta^{2}\bar{D}_{\mathrm{KL}}x
+\]
+
+第一项 \(\bar{D}_{\mathrm{KL}}(\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)\Vert\pi_{\theta_{\mathrm{old}}}(\cdot\mid s))=0\)；第二项在新旧策略分布相等时取极小值，导数为 \(0\)。第三项中的 \(\nabla_\theta^{2}\bar{D}_{\mathrm{KL}}\) 是 KL 散度的二阶导数矩阵，也就是费雪信息矩阵（Fisher Information Matrix, FIM），记为 \(\mathbf{H}\)。因此约束近似为：
+
+\[
+\frac{1}{2}x^{T}\mathbf{H}x\le \delta
+\]
+
+第二步：求解新方向（拉格朗日乘子法）
+
+\Needspace{5\baselineskip}
+现在问题变为：
+
+\[
+\begin{aligned}
+\max_x\quad
+& \mathbf{g}^{T}x \\
+\text{subject to}\quad
+& \frac{1}{2}x^{T}\mathbf{H}x\le \delta
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+构建拉格朗日函数：
+
+\[
+\mathcal{L}(x,\lambda)=
+\mathbf{g}^{T}x
+-\lambda
+\bigl(
+\frac{1}{2}x^{T}\mathbf{H}x-\delta
+\bigr)
+\]
+
+\Needspace{5\baselineskip}
+对 \(x\) 求导并令导数为 \(0\)：
+
+\[
+\mathbf{g}-\lambda\mathbf{H}x=0
+\quad\Longrightarrow\quad
+\mathbf{H}x=\frac{1}{\lambda}\mathbf{g}
+\]
+
+\Needspace{5\baselineskip}
+于是我们得到了更新方向（还没有确定步长）：
+
+\[
+x\propto\mathbf{H}^{-1}\mathbf{g}
+\]
+
+这就是著名的自然梯度（Natural Gradient）方向。它不是沿着普通梯度 \(\mathbf{g}\) 走，而是用曲率矩阵 \(\mathbf{H}\) 的逆去修正方向。
+
+\Needspace{5\baselineskip}
+接下来确定步长（缩放系数）。将：
+
+\[
+x=\beta\mathbf{H}^{-1}\mathbf{g}
+\]
+
+\Needspace{5\baselineskip}
+代入约束条件 \(\frac{1}{2}x^{T}\mathbf{H}x=\delta\)，得到：
+
+\[
+\beta=
+\sqrt{
+\frac{2\delta}{\mathbf{g}^{T}\mathbf{H}^{-1}\mathbf{g}}
+}
+\]
+
+\Needspace{5\baselineskip}
+最终的参数更新公式为：
+
+\[
+x^{*}
+=
+\sqrt{
+\frac{2\delta}{\mathbf{g}^{T}\mathbf{H}^{-1}\mathbf{g}}
+}
+\mathbf{H}^{-1}\mathbf{g}
+\]
+
+第三步：数值求解（共轭梯度法 CG）
+
+虽然公式推出来了，但工程上根本没法直接算。痛点在于 \(\mathbf{H}\) 是 Hessian 矩阵，维度是 \(N\times N\)（\(N\) 是参数量）。如果参数有 100 万，\(\mathbf{H}\) 就有 1 万亿个元素，内存直接爆炸，更别提求逆矩阵 \(\mathbf{H}^{-1}\) 了。
+
+\Needspace{5\baselineskip}
+TRPO 的核心魔法是共轭梯度法（Conjugate Gradient, CG）。我们需要计算的是向量：
+
+\[
+\mathbf{s}=\mathbf{H}^{-1}\mathbf{g}
+\]
+
+\Needspace{5\baselineskip}
+等价于求解线性方程组：
+
+\[
+\mathbf{H}\mathbf{s}=\mathbf{g}
+\]
+
+CG 算法的特点是：求解 \(\mathbf{H}\mathbf{s}=\mathbf{g}\) 不需要显式地写出矩阵 \(\mathbf{H}\)，只需要能够计算矩阵-向量乘积 \(\mathbf{H}v\)。也就是说，只要你能给我一个函数，输入向量 \(v\)，输出 \(\mathbf{H}v\)，我就能迭代解出 \(\mathbf{s}\)。
+
+\Needspace{5\baselineskip}
+\(\mathbf{H}\) 是 KL 散度的二阶导数。计算 \(\mathbf{H}v\) 不需要真的算二阶导，有一个极其高效的技巧（Pearlmutter Trick）：
+
+\[
+\mathbf{H}v
+=
+\nabla_\theta(\nabla_\theta D_{\mathrm{KL}}\cdot v)
+\]
+
+\Needspace{5\baselineskip}
+具体做法是：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  先算 KL 散度的梯度 \(\nabla_\theta D_{\mathrm{KL}}\)。
+\item
+  算这个梯度和向量 \(v\) 的点积，得到一个标量。
+\item
+  再对这个标量求一次梯度。
+\end{enumerate}
+
+在 PyTorch / TensorFlow 这类自动微分框架下，这只需要做两次反向传播，速度很快，且不需要存储矩阵。
+
+第四步：线性搜索（Line Search）
+
+\Needspace{5\baselineskip}
+前面的二阶近似只是近似。真正更新后，实际 KL 散度可能会超过 \(\delta\)，或者真实目标函数反而下降。为了保证万无一失，TRPO 最后会做回溯线性搜索（Backtracking Line Search）：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  算出理想更新量 \(x^{*}\)。
+\item
+\Needspace{5\baselineskip}
+  设实际更新量：
+\end{enumerate}
+
+\[
+\Delta\theta=\alpha^{j} x^{*}
+\quad
+(\alpha \mathcjk{ \mathcjk{初始为} } 1)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  检查两个条件：
+\end{enumerate}
+
+\[
+\bar{D}_{\mathrm{KL}}(
+\pi_{\theta_{\mathrm{old}}}(\cdot\mid s)
+\Vert
+\pi_{\theta_{\mathrm{old}}+\Delta\theta}(\cdot\mid s)
+)\le \delta
+\]
+
+\[
+L(\theta_{\mathrm{old}}+\Delta\theta)\ge L(\theta_{\mathrm{old}})
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  如果不行，就让 \(j\leftarrow j+1\)，比如 \(\alpha\) 变成 \(0.5,0.25,\ldots\)，缩短步长再试。
+\item
+  直到满足条件，才真正更新参数。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+总结 TRPO 的求解流程：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  准备数据：用旧策略收集一批轨迹。
+\item
+  算梯度：计算策略梯度 \(\mathbf{g}\)。
+\item
+  算方向（CG）：利用 Hessian-向量积技巧，跑若干步共轭梯度算法，解出 \(\mathbf{s}\approx\mathbf{H}^{-1}\mathbf{g}\)。
+\item
+  算系数：代入公式算出最大步长系数 \(\beta\)。
+\item
+  线性搜索：沿着 \(\beta\mathbf{s}\) 方向试探，找到满足约束的最大步长。
+\item
+  更新：\(\theta_{\mathrm{new}}=\theta_{\mathrm{old}}+\mathrm{final\_step}\)。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-57}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-57}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schulman, J., Levine, S., Moritz, P., Jordan, M. I., \& Abbeel, P. (2015). \href{https://arxiv.org/abs/1502.05477}{Trust Region Policy Optimization}. ICML 2015.
+\item
+  Pearlmutter, B. A. (1994). \href{https://doi.org/10.1162/neco.1994.6.1.147}{Fast Exact Multiplication by the Hessian}. Neural Computation, 6(1), 147--160.
+\end{itemize}
+
+\clearpage

@@ -68,3 +68,10 @@ jobs:
           git remote add gitee "$GITEE_REPO_SSH"
           git push gitee HEAD:"$target_branch"
           git push gitee --tags
+          expected_sha="$(git rev-parse HEAD)"
+          remote_sha="$(git ls-remote --exit-code gitee "refs/heads/$target_branch" | awk '{print $1}')"
+          if [ "$remote_sha" != "$expected_sha" ]; then
+            echo "::error::Gitee branch does not match the expected GitHub commit."
+            exit 1
+          fi
+          echo "Verified Gitee branch at $remote_sha"

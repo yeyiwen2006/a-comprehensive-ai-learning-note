@@ -1,0 +1,268 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ddpg}{%
+\section{DDPG}\label{ddpg}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-3}{%
+\subsection{I. Core Idea}\label{i.-core-idea-3}}
+
+DDPG can be viewed as an improvement on DQN. We know that DQN cannot output continuous actions because it includes a max operation. When there are infinitely many possible output actions, we cannot directly perform this ``maximum likelihood'' operation, or, in other words, directly obtain an analytical solution to this optimization problem. This suggests training a neural network to learn and output the action that maximizes the value function. Its input is the current state and its output is an action, so it is clearly a policy network.
+
+It therefore becomes an Actor-Critic architecture combining value and policy methods, while still being based on DQN. As we will see later, it incorporates DQN's experience replay, target networks, and other components. Unlike REINFORCE and PPO, whose ``output actions are randomly sampled from a probability distribution,'' DDPG's output action approximates the maximizing point of the probability distribution.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-network-architecture}{%
+\subsection{II. Network Architecture}\label{ii.-network-architecture}}
+
+\Needspace{5\baselineskip}
+DDPG introduces the idea of ``target networks'':
+
+\Needspace{5\baselineskip}
+DDPG contains four networks:
+
+\begin{itemize}
+\tightlist
+\item
+  Actor network \(\mu_\theta\): the current policy network. It takes \(s\) as input and outputs \(a\).
+\item
+  Critic network \(Q_\phi\): the current value network. It takes \(s\) and \(a\) as input and outputs \(Q(s,a)\).
+\item
+  Target Actor \(\mu_{\theta'}\): the target policy network. It has the same structure as the Actor, with delayed parameter updates.
+\item
+  Target Critic \(Q_{\phi'}\): the target value network. It has the same structure as the Critic, with delayed parameter updates.
+\end{itemize}
+
+The uses of the two target networks will be introduced later.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-mathematical-principles-and-update-equations}{%
+\subsection{III. Mathematical Principles and Update Equations}\label{iii.-mathematical-principles-and-update-equations}}
+
+\Needspace{5\baselineskip}
+\hypertarget{updating-the-critic-fitting-the-bellman-optimality-equation}{%
+\subsubsection{1. Updating the Critic (Fitting the Bellman Optimality Equation)}\label{updating-the-critic-fitting-the-bellman-optimality-equation}}
+
+The Critic's task is to estimate \(Q\) values. Because DDPG is off-policy, we use the TD error.
+
+\begin{itemize}
+\tightlist
+\item
+  Calculate the target value: both the Target Actor and Target Critic are used here.
+\end{itemize}
+
+\[
+y_i
+=
+r_i
++
+\gamma Q_{\phi'}\bigl(
+s_{i+1},
+\mu_{\theta'}(s_{i+1})
+\bigr)
+\]
+
+Note: there is no \(\max\) operation here, because the actions are continuous and cannot be exhaustively enumerated. DDPG considers the action \(\mu_{\theta'}(s')\) output by the Target Actor to approximate the optimal action.
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  Loss function:
+\end{itemize}
+
+\[
+L_{\mathrm{critic}}
+=
+\frac{1}{N}
+\sum_i
+\bigl(
+y_i-Q_\phi(s_i,a_i)
+\bigr)^{2}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Update \(Q_\phi\) by minimizing the MSE.
+\end{itemize}
+
+The Critic's task is to fit the Q network and obtain the environment's value features, independently of the policy it follows. Its loss function is therefore similar to DQN's and does not contain the cumulative reward J.
+
+\Needspace{5\baselineskip}
+\hypertarget{updating-the-actor-the-deterministic-policy-gradient-theorem}{%
+\subsubsection{2. Updating the Actor (The Deterministic Policy Gradient Theorem)}\label{updating-the-actor-the-deterministic-policy-gradient-theorem}}
+
+This is the essence of DDPG. We want the action \(a=\mu_\theta(s)\) output by the Actor to receive the highest possible score \(Q(s,a)\) from the Critic.
+
+\Needspace{5\baselineskip}
+The objective function is:
+
+\[
+J(\theta)
+=
+\mathbb{E}\bigl[
+Q(s,\mu_\theta(s))
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+Use the chain rule to calculate the gradient:
+
+\[
+\nabla_\theta J
+\approx
+\mathbb{E}
+\bigl[
+\nabla_a Q_\phi(s,a)
+\big|_{a=\mu_\theta(s)}
+\cdot
+\nabla_\theta \mu_\theta(s)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+Intuitive explanation:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  The Critic tells the Actor how much the \(Q\) value would increase if action \(a\) were increased slightly in state \(s\). This is \(\nabla_a Q\).
+\item
+  After receiving this signal, the Actor calculates how its parameters \(\theta\) should change to increase the output \(a\). This is \(\nabla_\theta\mu\).
+\item
+  Multiply the two and directly update \(\theta\) through backpropagation.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv-techniques-for-improving-training-stability}{%
+\subsubsection{(IV) Techniques for Improving Training Stability}\label{iv-techniques-for-improving-training-stability}}
+
+\textbf{A. Experience Replay}
+
+This is the same as in DQN. DDPG is off-policy: during training, data \((s,a,r,s')\) are stored in a buffer, and a batch is randomly drawn for each update. This eliminates temporal correlations in the data and improves sample efficiency.
+
+\textbf{B. Soft Updates}
+
+\Needspace{5\baselineskip}
+DQN uses hard updates to copy parameters directly into the target network every \(C\) steps. DDPG treats this as too abrupt and instead uses soft updates:
+
+\[
+\theta'
+\leftarrow
+\tau\theta+(1-\tau)\theta'
+\]
+
+Here, \(\tau\) is a very small number, such as \(0.001\). This means that the target network changes very slowly and smoothly follows updates to the main network, greatly improving the stability of Critic training.
+
+\textbf{C. Exploration Noise}
+
+\Needspace{5\baselineskip}
+Because the policy is deterministic, meaning that input \(s\) always produces \(a\), the Actor does not try new actions on its own. To explore, noise must be added manually to actions during training:
+
+\[
+a_{\mathrm{train}}
+=
+\mu_\theta(s)+\mathcal{N}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  The original paper uses OU noise (the Ornstein-Uhlenbeck process), because it has temporal correlations and is suitable for robot control.
+\item
+  Many current implementations find that simple Gaussian noise also works well.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{v-complete-algorithm-workflow}{%
+\subsubsection{(V) Complete Algorithm Workflow}\label{v-complete-algorithm-workflow}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Initialize the Actor \(\mu\), Critic \(Q\), and their corresponding target networks \(\mu'\) and \(Q'\).
+\item
+\Needspace{5\baselineskip}
+  Loop over episodes:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Initialize the noise process \(\mathcal{N}\).
+  \item
+\Needspace{5\baselineskip}
+    Loop over steps:
+
+    \begin{enumerate}
+    \def\labelenumii{\arabic{enumii}.}
+    \tightlist
+    \item
+      Given the current state \(s_t\), select action \(a_t=\mu(s_t)+\mathrm{Noise}\).
+    \item
+      Execute the action and obtain \(r_t,s_{t+1}\).
+    \item
+      Store the transition in buffer \(R\).
+    \item
+      Sample: randomly sample a batch from \(R\).
+    \item
+      Calculate the target: \(y=r+\gamma Q'(s',\mu'(s'))\).
+    \item
+      Update the Critic: minimize \((y-Q(s,a))^{2}\).
+    \item
+      Update the Actor: maximize \(Q(s,\mu(s))\).
+    \item
+      Soft-update the target: \(\theta'\leftarrow\tau\theta+(1-\tau)\theta'\).
+    \end{enumerate}
+  \end{itemize}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{vi-advantages-and-disadvantages-of-ddpg}{%
+\subsubsection{(VI) Advantages and Disadvantages of DDPG}\label{vi-advantages-and-disadvantages-of-ddpg}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Advantages
+\end{enumerate}
+
+Off-policy: high sample efficiency and faster than PPO (meaning that fewer interactions are needed).
+
+Handles continuous control: fills DQN's gap in continuous action spaces.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Disadvantages
+\end{enumerate}
+
+Sensitive to hyperparameters: very difficult to tune (particularly the learning rate and noise).
+
+Overestimated Q values: the Critic's update target is essentially like DQN's r+gamma*maxQ(s,a). Because the max operation is more likely to select overestimated values, the resulting Q values can easily become inflated and mislead the policy. The later TD3 (Twin Delayed DDPG) algorithm solves this problem by taking the minimum of two Critics.
+
+Less stable than PPO: prone to convergence to local optima or oscillations.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-60}{%
+\subsection{References}\label{references-60}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Lillicrap, T. P., Hunt, J. J., Pritzel, A., et al.~(2016). \href{https://arxiv.org/abs/1509.02971}{Continuous control with deep reinforcement learning}. ICLR 2016.
+\item
+  Fujimoto, S., van Hoof, H., \& Meger, D. (2018). \href{https://proceedings.mlr.press/v80/fujimoto18a.html}{Addressing Function Approximation Error in Actor-Critic Methods}. ICML 2018.
+\end{itemize}
+
+\clearpage

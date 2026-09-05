@@ -1,0 +1,736 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{ppoux7b97ux6cd5ux5728ux5f3aux5316ux5faeux8c03ux4e2dux7684ux5e94ux7528}{%
+\section{PPO算法在强化微调中的应用}\label{ppoux7b97ux6cd5ux5728ux5f3aux5316ux5faeux8c03ux4e2dux7684ux5e94ux7528}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ppoux7b97ux6cd5ux7684ux76eeux6807ux51fdux6570ux548cux524dux9762ux5728ux5f3aux5316ux5b66ux4e60ux90e8ux5206ux4e2dux4ecbux7ecdux7684ux76f8ux540c}{%
+\subsection{一、PPO算法的目标函数（和前面在强化学习部分中介绍的相同）}\label{ux4e00ppoux7b97ux6cd5ux7684ux76eeux6807ux51fdux6570ux548cux524dux9762ux5728ux5f3aux5316ux5b66ux4e60ux90e8ux5206ux4e2dux4ecbux7ecdux7684ux76f8ux540c}}
+
+\Needspace{5\baselineskip}
+策略的目标函数：
+
+\[
+J^{\mathrm{CLIP}}(\theta)
+=
+\mathbb{E}_t\left[
+\min\left(
+r_t(\theta)A_t,
+\mathrm{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)A_t
+\right)
+\right]
+\]
+
+\Needspace{5\baselineskip}
+其中：
+
+\[
+r_t(\theta)=\frac{\pi_\theta(a_t \mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  \(r_t(\theta)\)：新策略与旧策略在动作 \(a_t\) 上的概率比。
+\item
+  \(A_t\)：当前动作的优势估计，表示它相对平均水平好多少。
+\item
+  \(\epsilon\)：裁剪范围，用来限制策略更新幅度。
+\Needspace{5\baselineskip}
+  价值 \(A_t\) 的估计方法：
+\end{itemize}
+
+\Needspace{5\baselineskip}
+如果我们只看一步未来，那么动作 \(a_t\) 的 \(Q\) 值可以被估计为 \(r_t + \gamma V(s_{t+1})\)。此时，\(A_t\) 的估计值直接等于 TD Error：
+
+\[
+\hat{A}_t^{(1)}
+=
+\underbrace{r_t + \gamma V(s_{t+1})}_{\approx Q(s_t,a_t)}
+- V(s_t)
+=
+\delta_t
+\]
+
+\Needspace{5\baselineskip}
+PPO 默认使用 GAE 来计算优势函数。这个设计非常精妙，它将 TD Error 进行了指数加权移动平均：
+
+\[
+\hat{A}_t^{\mathrm{GAE}}
+=
+\delta_t
++
+(\gamma\lambda)\delta_{t+1}
++
+(\gamma\lambda)^2\delta_{t+2}
++
+\cdots
+\]
+
+其中 \(\lambda\) 是范围在 \([0,1]\) 之间的超参数。
+
+\Needspace{5\baselineskip}
+通过 \(\lambda\) 调节 TD Error 的作用：
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  当 \(\lambda = 0\) 时，高偏差、低方差：
+\end{itemize}
+
+\[
+\hat{A}_t = \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+\]
+
+此时 \(A_t\) 完全等于当前的单步 TD Error。
+
+\begin{itemize}
+\tightlist
+\item
+  优点：方差小，只依赖一步随机奖励 \(r_t\)。
+\item
+  缺点：偏差大，严重依赖 Critic 网络 \(V(s_{t+1})\) 的准确性；如果 Critic 没训练好，估计就是错的。
+\item
+\Needspace{5\baselineskip}
+  当 \(\lambda = 1\) 时，无偏差、高方差：
+\end{itemize}
+
+\[
+\hat{A}_t
+=
+\sum_{l=0}^{\infty}\gamma^l\delta_{t+l}
+=
+\left(\sum_{l=0}^{\infty}\gamma^l r_{t+l}\right)
+- V(s_t)
+\]
+
+此时公式展开后，中间的 \(V\) 项会相互抵消，最终变成 Monte Carlo Returns（真实回报）减去 Baseline。
+
+\begin{itemize}
+\tightlist
+\item
+  优点：偏差小，真实回报是最准确的``事实''。
+\item
+  缺点：方差极大，因为累加了每一步环境的随机性。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cppoux7b97ux6cd5ux8fd0ux7528ux4e8eux5f3aux5316ux5faeux8c03ux7684ux5de5ux4f5cux6d41ux548cux524dux9762ux4ecbux7ecdux7684ux7565ux6709ux4e0dux540c}{%
+\subsection{二、PPO算法运用于强化微调的工作流（和前面介绍的略有不同）}\label{ux4e8cppoux7b97ux6cd5ux8fd0ux7528ux4e8eux5f3aux5316ux5faeux8c03ux7684ux5de5ux4f5cux6d41ux548cux524dux9762ux4ecbux7ecdux7684ux7565ux6709ux4e0dux540c}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  数据采集阶段
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+在机器人控制等传统RL的环境中，智能体连续与环境持续交互（如2048次），形成一条长轨迹序列，后续再将序列随机打乱成小批量计算梯度。但LLM微调中的PPO使用的是向量化环境，我们可以并行处理一系列Prompt，各自并行生成轨迹并存入Replay Buffer：
+
+``2048 步''实际上是所有并行环境生成的 Token 总数。
+
+假设你的显卡并行能力允许你同时处理 \(N\) 个 Prompt（并行环境数，比如 \(N = 16\)）。
+
+\begin{itemize}
+\tightlist
+\item
+  时刻 \(t = 1\)：模型同时看到了 16 个不同的 Prompt，并发出了 16 个 Token（每个 Prompt 一个）。这在计数器上算作 16 个 Steps。
+\item
+  时刻 \(t = 2\)：模型基于之前的 Token，又并发生成了 16 个 Token。
+\item
+  以此类推。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+计算公式是：
+
+\[
+\text{Total Steps }(2048)
+=
+\mathcjk{并行 Prompt \mathcjk{数量}}
+\times
+\mathcjk{每个回复的平均长度}
+\]
+
+\Needspace{5\baselineskip}
+举个例子：如果图片里写``运行 2048 步''，它实际上可能发生了以下情况：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  系统从数据集里抽出了 16 个不同的 Prompt。
+\item
+  模型对这 16 个 Prompt 并行生成回答。
+\item
+  每个回答平均生成了 128 个 Token 就结束了。
+\item
+  总收集的数据量（Steps）为 \(16 \times 128 = 2048\)。
+\end{enumerate}
+
+所以，这 2048 步里包含了 16 个不同 Prompt 的完整故事，而不是 1 个 Prompt 的超长故事。
+\Needspace{8\baselineskip}
+2. 优势计算阶段（和传统RL中一致）
+
+初始化：初始化 Actor 网络 \(\pi_\theta\) 和 Critic 网络 \(V_\phi\)。
+
+\Needspace{5\baselineskip}
+大循环（For each iteration）：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  数据收集阶段（Interaction）：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    使用当前策略 \(\pi_{\theta_{\mathrm{old}}}\) 在环境中运行 \(T\) 步，例如 2048 步。
+  \item
+    收集轨迹数据：\(\{s_t, a_t, r_t, s_{t+1}, \log \pi_{\theta_{\mathrm{old}}}(a_t \mid s_t)\}\)。
+  \item
+    利用 Critic 网络计算状态价值 \(V(s_t)\)。
+  \end{itemize}
+\item
+\Needspace{5\baselineskip}
+  优势计算阶段（Advantage）：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    计算 TD Error：\(\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)\)。
+  \item
+    计算 GAE（Generalized Advantage Estimation）\(A_t\)。这是一个递归公式，用来在偏差和方差之间做平衡。
+  \end{itemize}
+\item
+  优化更新、同步策略阶段
+\end{enumerate}
+
+收集阶段：显卡像收割机一样，通过并行处理很多 Prompt，迅速填满一个容量为 2048 的经验池（Replay Buffer）。这个池子里面能混杂了 16 个不同问题的问答记录。
+
+打乱（Shuffle）：为了训练稳定、打破数据之间的相关性，我们把这 2048 个 Token（数据点）彻底打乱。
+
+切分（Mini-batch）：把打乱后的 2048 个数据切分成小块，例如 Batch Size 为 64。
+
+\begin{itemize}
+\tightlist
+\item
+  这意味着 \(2048 / 64 = 32\) 个 Mini-batches。
+\item
+  模型会用这 32 个小批次来更新参数。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  优化更新阶段（Optimization）：
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  重要：此时 \(\pi_{\theta_{\mathrm{old}}}\) 固定不动，作为分母；我们优化的是新的 \(\pi_\theta\)，作为分子。
+\item
+  将收集到的 \(T\) 个数据打乱，分成多个 Mini-batch，例如每个 batch 64 个数据。
+\item
+\Needspace{5\baselineskip}
+  Epoch 循环，例如重复 10 次：
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    对每个 Mini-batch，计算新概率比率 \(r_t(\theta)=\frac{\pi_\theta(a \mid s)}{\pi_{\theta_{\mathrm{old}}}(a \mid s)}\)。
+  \item
+    计算 Clip 损失 \(L^{\mathrm{CLIP}}\)。
+  \item
+    计算 Critic 的价值损失 \(L^{\mathrm{VF}} = (V_\phi(s_t) - V_{\mathrm{target}})^2\)。
+  \item
+    计算熵正则项 \(S\)，鼓励探索。
+  \item
+    总损失：\(L = -L^{\mathrm{CLIP}} + c_1 L^{\mathrm{VF}} - c_2 S\)。注意梯度上升/下降符号。
+  \item
+    反向传播更新 \(\theta\) 和 \(\phi\)。
+  \end{enumerate}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  同步策略：
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  本轮更新结束，令 \(\pi_{\theta_{\mathrm{old}}} \leftarrow \pi_\theta\)。
+\item
+  清空数据缓冲区，进入下一次大循环。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09llmux4e3aux4f55ux9009ux62e9ppoux800cux975esacux4e3aux4f55ux9009ux62e9on-policyux800cux975eoff-policy}{%
+\subsection{三、LLM为何选择PPO而非SAC？为何选择On-Policy而非Off-Policy？}\label{ux4e09llmux4e3aux4f55ux9009ux62e9ppoux800cux975esacux4e3aux4f55ux9009ux62e9on-policyux800cux975eoff-policy}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00llmux8f93ux51faux79bbux6563ux800cux975eux8fdeux7eedux52a8ux4f5c}{%
+\subsubsection{（一）LLM输出离散而非连续动作}\label{ux4e00llmux8f93ux51faux79bbux6563ux800cux975eux8fdeux7eedux52a8ux4f5c}}
+
+SAC 的原生设计：SAC 是为连续动作空间（Continuous Action Space）设计的最大熵强化学习算法。在机器人控制中，动作是关节的角度或力矩（实数值）。虽然存在 Discrete SAC 的变体，但在处理高维离散空间时，计算成本极高。
+
+LLM 的场景：LLM 的生成过程是在一个巨大的词表（Vocabulary）中选择下一个 Token。
+
+\begin{itemize}
+\tightlist
+\item
+  动作空间大小 \(|A|\)：通常在 \(32,000\) 到 \(128,000\) 甚至更大，例如 GPT-4 或 Qwen 的词表。
+\item
+  维度灾难：在 Actor-Critic 架构中，Critic 网络需要评估动作价值 \(Q(s,a)\)。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    对于 Discrete SAC，为了计算目标值（Target \(Q\)）和策略的熵，通常需要对所有可能的动作进行边缘化（Marginalization）或 Softmax 计算。
+  \item
+\Needspace{5\baselineskip}
+    公式会涉及计算 \(\pi(a' \mid s') \cdot [Q(s',a') - \alpha \log \pi(a' \mid s')]\) 的期望，也就是：
+  \end{itemize}
+\end{itemize}
+
+\[
+\mathbb{E}_{a'\sim \pi(\cdot \mid s')}
+\left[
+Q(s',a')-\alpha\log\pi(a'\mid s')
+\right]
+=
+\sum_{a'\in A}\pi(a'\mid s')
+\left[
+Q(s',a')-\alpha\log\pi(a'\mid s')
+\right]
+\]
+
+这意味着每一步更新都要对 \(50,000+\) 个 Token 做全概率计算，在计算上极其昂贵。
+
+那或许你会说，既然词表大小高达 10 万，那么它看起来确实很像一个连续空间。如果我们把Policy的输出改成一个连续嵌入向量，而不是一个10万维的概率分布，显存和计算量岂不是大大降低？但在实践中，这条路目前被证明是走不通的。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  ``梯度阻断''：如何在离散的悬崖上求导？
+\end{enumerate}
+
+这是最核心的数学死结。
+
+\begin{itemize}
+\tightlist
+\item
+  连续动作的假象：假设 Actor 网络输出一个连续向量 \(\mathbf{v}\in\mathbb{R}^d\)，例如 \(d=4096\)。为了把这个向量输入给环境，或者用来预测下一个 Token，必须把它映射回真实词表。
+\item
+\Needspace{5\baselineskip}
+  最近邻搜索（Nearest Neighbor Search）：必须在 Embedding Table 中找到与 \(\mathbf{v}\) 距离最近的那个 Token Embedding \(\mathbf{e}_k\)：
+\end{itemize}
+
+\[
+k
+=
+\underset{j\in V}{\arg\min}\,
+\lVert \mathbf{v}-\mathbf{e}_j\rVert_2
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  梯度的噩梦：这个 \(\arg\min\) 操作不可导，或者说梯度几乎处处为 0。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    如果输出向量 \(\mathbf{v}\) 在空间中只移动一点点，且没有跨过最近邻边界，最近邻 Token 仍然是 \(k\)，此时梯度为 0，因为输出不变，Loss 不变。
+  \item
+    如果它突然跨过边界，最近邻变成了 Token \(m\)，这又是阶跃跳变（Step Function），导数无穷大或未定义。
+  \end{itemize}
+\end{itemize}
+
+没有梯度，反向传播就断了，Actor 网络学不到任何东西。虽然有 Gumbel-Softmax 这样的松弛技巧（Relaxation），但在 10 万维空间中，它的方差极大，训练极其不稳定。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  ``无人区''问题：Embedding 空间的稀疏性
+\end{enumerate}
+
+你可能会想：``那我不要 argmax，我直接把输出的连续向量 \(\mathbf{v}\) 喂给下一层网络不就行了？''
+
+这里涉及流形假设（Manifold Hypothesis）。
+
+\begin{itemize}
+\tightlist
+\item
+  词向量不是均匀分布的：在 4096 维的高维空间中，有效的 Token Embedding 只占据极小的一部分点（Point Cloud）。绝大多数空间都是无效的空白区域（Void Space），也就是所谓的``无人区''。
+\item
+  连续控制的灾难：RL 的探索（Exploration）通常是在动作上加高斯噪声。如果在连续向量 \(\mathbf{v}\) 上加噪声，你会大概率落入``无人区''。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    结果：这个向量既不像``苹果''，也不像``香蕉''，而是一个没有任何语义信息的杂乱向量。
+  \item
+    语言模型崩塌：当你把这个无意义的向量传给下一层，整个 Transformer 的注意力机制就会处理混乱的信息，导致后续生成的全是乱码。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  计算效率的悖论：KNN 比 Matrix Multiply 慢
+\end{enumerate}
+
+你提出用连续方法是为了提升效率，但实际上可能更慢。
+
+\begin{itemize}
+\tightlist
+\item
+  离散方法（现状）：输出层是一个线性变换（Linear Layer）\(W\cdot h_o\)。虽然 \(W\) 很大，例如 \(4096\times100000\)，但这只是一个大规模矩阵乘法，GPU 对此已经优化到极致（Tensor Cores）。
+\item
+  连续方法（设想）：如果 Actor 输出一个向量，要把它变成具体的词，或者为了给人类看、计算 Reward，需要做全库最近邻搜索。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    每一轮生成，都要计算该向量与 10 万个 Embedding 的距离。
+  \item
+    这本质上仍然是 \(1\times4096\) 和 \(4096\times100000\) 的矩阵运算，再加上排序或 \(\arg\min\) 操作。
+  \item
+    它并不比直接输出 Logits 快，反而因为多了索引操作而变慢。
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cllmux66f4ux9002ux5408on-policyux800cux975eoff-policy}{%
+\subsubsection{（二）LLM更适合On-Policy而非Off-Policy}\label{ux4e8cllmux66f4ux9002ux5408on-policyux800cux975eoff-policy}}
+
+在传统强化学习，例如机器人控制、游戏 AI 的语境下，大家绞尽脑汁想要实现 Off-Policy，因为``数据利用率''（Sample Efficiency）被视为圣杯。
+
+但在大语言模型（LLM）的语境下，On-Policy 不仅是妥协，甚至变成了一种核心优势。这完全颠覆了传统 RL 的经验法则。我们可以从数学本质、计算架构以及对齐目标三个维度来拆解这个现象。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  数学维度的崩塌：重要性采样的``诅咒''
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Off-Policy 算法的核心在于能够利用``旧策略''产生的数据来更新``新策略''。为了纠正分布差异，通常需要用到重要性采样（Importance Sampling, IS）权重：
+
+\[
+\rho_t
+=
+\frac{\pi_{\mathrm{new}}(a_t \mid s_t)}
+{\pi_{\mathrm{old}}(a_t \mid s_t)}
+\]
+
+\Needspace{5\baselineskip}
+在机器人控制中，动作序列通常很短，或者动作空间很简单，这个 \(\rho_t\) 是可控的。但在 LLM 中，情况完全失控：
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  序列长度的连乘效应：LLM 的一个``轨迹''（Trajectory）通常包含数百甚至上千个 Token。整个轨迹的概率比是每一步概率比的连乘：
+\end{itemize}
+
+\[
+\rho_{\mathrm{trajectory}}
+=
+\prod_{t=1}^{T}
+\frac{\pi_{\mathrm{new}}(a_t\mid s_t)}
+{\pi_{\mathrm{old}}(a_t\mid s_t)}
+\]
+
+\Needspace{5\baselineskip}
+在Off-Policy算法中，我们会利用旧策略产生的数据来更新新策略。根据估计价值的方式，我们分别讨论两种不同情况：
+
+\Needspace{8\baselineskip}
+（1）无Q网络的情形
+
+\Needspace{5\baselineskip}
+新策略的目标可以写成：
+
+\[
+J(\pi_{\mathrm{new}})
+=
+\mathbb{E}_{\tau\sim\pi_{\mathrm{new}}}[R(\tau)]
+=
+\int P(\tau\mid\pi_{\mathrm{new}})R(\tau)d\tau
+\]
+
+\Needspace{5\baselineskip}
+因为我们只有 \(\pi_{\mathrm{old}}\) 的数据，所以必须使用重要性采样：
+
+\[
+J(\pi_{\mathrm{new}})
+=
+\mathbb{E}_{\tau\sim\pi_{\mathrm{old}}}
+\left[
+\frac{P(\tau\mid\pi_{\mathrm{new}})}
+{P(\tau\mid\pi_{\mathrm{old}})}
+R(\tau)
+\right]
+\]
+
+\Needspace{5\baselineskip}
+展开轨迹概率 \(P(\tau)\)，环境动力学项消掉后，剩下的就是动作概率的比率：
+
+\[
+\frac{P(\tau\mid\pi_{\mathrm{new}})}
+{P(\tau\mid\pi_{\mathrm{old}})}
+=
+\frac{\prod_{t=0}^{T}\pi_{\mathrm{new}}(a_t\mid s_t)}
+{\prod_{t=0}^{T}\pi_{\mathrm{old}}(a_t\mid s_t)}
+=
+\prod_{t=0}^{T}
+\frac{\pi_{\mathrm{new}}(a_t\mid s_t)}
+{\pi_{\mathrm{old}}(a_t\mid s_t)}
+=
+\prod_{t=0}^{T}\rho_t
+\]
+
+\Needspace{5\baselineskip}
+这就是``连乘''的来源：
+
+\[
+\text{Off-Policy Gradient}
+\propto
+\mathbb{E}
+\left[
+\left(\prod_{t=0}^{T}\rho_t\right)R(\tau)
+\right]
+\]
+
+\Needspace{5\baselineskip}
+在 LLM 中，\(T\approx1024\)，只要 \(\rho_t\) 稍微偏离 1，连乘结果就会在 0 和 \(+\infty\) 之间剧烈震荡，方差爆炸。例如当 \(T=1024\) 时，即使新旧策略每一步只有很小差异：
+
+\begin{itemize}
+\tightlist
+\item
+  若单步比值为 \(1.01\)，则 \(1.01^{1024}\approx 26,739\)。
+\item
+  若单步比值为 \(0.99\)，则 \(0.99^{1024}\approx 0.00003\)。
+\end{itemize}
+
+这会让 IS 权重的方差几乎不可控。PPO 的 On-Policy 优势在于，它强制 \(\pi_{\mathrm{new}}\approx\pi_{\mathrm{old}}\)，并通过 Clip 和短 rollout 限制策略漂移，使得 \(\rho_t\approx1\)，从而规避长序列带来的数值爆炸。
+
+\Needspace{8\baselineskip}
+（2）有Q网络的情况：避免了方差爆炸，却可能导致偏差爆炸
+
+在 LLM 中，生成一个回复通常需要 \(T=1000\) 步。假设 Q 网络有一个微小的估计误差 \(\epsilon\)，这在 70B 参数的模型和稀疏奖励下几乎是必然的。
+
+\[
+Q_{\mathrm{target}}(s_{T-1})
+=
+r_{T-1}
++\mathrm{EndValue}
++\epsilon
+\]
+
+\[
+Q_{\mathrm{target}}(s_{T-2})
+=
+r_{T-2}
++\gamma Q_{\mathrm{target}}(s_{T-1})
++\epsilon
+\]
+
+\Needspace{5\baselineskip}
+继续向前递推，误差会沿着长序列不断累积：
+
+\[
+Q_{\mathrm{target}}(s_0)
+=
+\sum_{t=0}^{T-1}\gamma^t r_t
++
+\sum_{k=0}^{T-1}\gamma^k \epsilon
+\]
+
+由于 Q 值高估问题，\(\epsilon\) 往往为正值，累加起来会让 Critic 的判断失灵。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  计算架构的倒置：重计算比生成更贵
+\end{enumerate}
+
+在传统 RL 中，环境交互慢（物理时间），神经网络计算快，所以我们要把存下来的数据反复在 GPU 上跑。
+
+在 LLM RLHF 中，环境交互（生成文本）就是神经网络计算，而且极其昂贵。
+
+如果你想用 Off-Policy，例如 SAC 或 IMPALA，来利用旧数据，你需要知道旧数据在当前新参数下的概率分布，以计算 \(\log\pi_{\mathrm{new}}\) 或 KL 散度。这意味着你需要把旧数据（Prompt + Response）重新输入到当前的 70B 模型中做一次 Forward Pass。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  对齐目标的特殊性：我们要``微调''而非``寻找全局最优''
+\end{enumerate}
+
+这是最本质的区别。
+
+\begin{itemize}
+\tightlist
+\item
+  传统 RL，例如围棋 AlphaGo：目标是全局最优。我们希望 AI 发现人类从未见过的神之一手。Off-Policy 允许 Agent 在 Replay Buffer 中保留那些偶然发现的``高分怪异动作''，并不断强化它。
+\item
+  LLM 对齐（RLHF）：目标是受限微调。我们不希望 LLM 另辟蹊径去发明一种新的语言，也不希望它通过输出乱码来 Hack 奖励模型。我们希望 LLM 保持在 SFT（监督微调）模型的邻域内，只是在风格和安全性上做微小调整。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Off-Policy 的危险：它倾向于探索远离当前策略的区域，极易导致模型崩塌（Model Collapse），即模型为了刷高 Reward 而开始胡言乱语。
+  \end{itemize}
+\end{itemize}
+
+Off-Policy之所以容易偏离策略，和它自身的特性有关。
+
+机制：Off-Policy 算法将历史产生的所有数据 \((s,a,r,s')\) 都存入 Replay Buffer，并在训练时随机采样。
+
+后果：Buffer 里可能包含 100 个 Epoch 之前的策略 \(\pi_{\mathrm{old}}\) 产生的数据。
+
+\begin{itemize}
+\tightlist
+\item
+  那时候的策略可能非常随机，例如还在探索初期，偶然尝试了一个极其离谱的动作。在 LLM 中，这可能表现为输出一个生僻的乱码单词，但恰好被 Reward Model 误判为高分（Reward Hacking）。
+\item
+  虽然当前策略 \(\pi_{\mathrm{new}}\) 已经很成熟，绝对不会主动输出那个乱码，但当 Off-Policy 算法从 Buffer 中捞出这条数据时，它会发现：``这里有个动作得分为 100！''
+\item
+  于是，算法会更新当前策略，强行把它拉向那个历史上的``离谱高分区域''。
+\end{itemize}
+
+对比：On-Policy（PPO）生成完数据就扔了。如果刚才偶然出现了一个离谱的高分，但之后没再出现，PPO 很快就会遗忘它，不会反复``回味''那个错误。
+
+On-Policy是在现有策略下求解策略梯度，据此``走一步''调整概率分布，往往不会过度偏离现有解。在``大模型研究中的现象解释与理论分析''部分也证明了，On-Policy方法本质上是反复在Feasible Policies和Optimal Policies中做投影，最终收敛的策略理论上是所有最优策略中，距离初始策略KL散度最小的那一个。
+
+另外，对``未见区域''的高估问题也是容易让它偏离策略的一个原因。
+
+Q 值的泛化误差：神经网络具有泛化能力。对于当前策略 \(\pi\) 从未访问过的状态-动作对 \((s,a_{\mathrm{unseen}})\)，Q 网络也会给出一个预测值。
+
+高估倾向：由于缺乏对这些 \((s,a_{\mathrm{unseen}})\) 的真实数据约束，Q 网络的预测往往方差很大。而在 \(y=r+\gamma\max Q\) 的更新公式中，\(\max\) 操作会特意挑选出那些被错误高估的值。
+
+结果：Q 网络会产生一种幻觉：``虽然我没去过那里，但我觉得那里满地黄金。''
+
+行动：于是 Actor 网络就会被这种幻觉吸引，去探索那些远离当前分布、且实际上可能没有高回报的区域。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09llmux5faeux8c03ux9700ux8981ux63a7ux5236ux66f4ux65b0ux5e45ux5ea6}{%
+\subsubsection{（三）LLM微调需要控制更新幅度}\label{ux4e09llmux5faeux8c03ux9700ux8981ux63a7ux5236ux66f4ux65b0ux5e45ux5ea6}}
+
+LLM 的微调必须控制好更新幅度。如果模型参数更新幅度过大，LLM 会迅速发生``语言崩塌''，为了奖励最大化而破坏在预训练中获得的语言能力，开始输出乱码或重复无意义的字符（也是一种 Reward Hacking）。
+
+\Needspace{5\baselineskip}
+PPO 的核心在于通过 Clip 操作限制新旧策略之间的差异。其目标函数如下：
+
+\[
+L^{\mathrm{CLIP}}(\theta)
+=
+\mathbb{E}_t
+\left[
+\min
+\left(
+r_t(\theta)\hat{A}_t,
+\mathrm{clip}(r_t(\theta),1-\epsilon,1+\epsilon)\hat{A}_t
+\right)
+\right]
+\]
+
+其中，\(r_t(\theta)=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}\) 是概率比率。
+
+\begin{itemize}
+\tightlist
+\item
+  作用：\(\epsilon\) 通常为 0.2，强制策略 \(\pi_\theta\) 不能偏离 \(\pi_{\theta_{\mathrm{old}}}\) 太远。
+\item
+  结果：这保证了 LLM 在学习人类偏好的同时，保留了预训练阶段获得的语言能力，例如语法和逻辑。
+\end{itemize}
+
+除了 Clip 操作限制一步更新中策略变化的幅度之外，在现代大模型中往往还会加入与参考分布（预训练模型输出分布）之间的 KL 项，避免多次微小的策略更新积累起来之后偏得太远。
+
+\Needspace{5\baselineskip}
+SAC 的目标是在最大化累积奖励的同时最大化熵（Entropy）：
+
+\[
+J(\pi)
+=
+\sum_{t=0}^{T}
+\mathbb{E}_{(s_t,a_t)\sim\rho_\pi}
+\left[
+r(s_t,a_t)
++\alpha\mathcal{H}(\pi(\cdot\mid s_t))
+\right]
+\]
+
+风险：虽然熵能鼓励探索，但在 RLHF 中，我们通常希望模型输出确定性高、逻辑严密的回答，而不是为了探索而尝试高熵、随机的 Token。过强的熵正则化可能导致 LLM 生成内容发散且不连贯。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux7a00ux758fux5956ux52b1ux4e0bqux7f51ux7edcux8badux7ec3ux7684ux7a33ux5b9aux6027ux96beux9898}{%
+\subsubsection{（四）稀疏奖励下Q网络训练的稳定性难题}\label{ux56dbux7a00ux758fux5956ux52b1ux4e0bqux7f51ux7edcux8badux7ec3ux7684ux7a33ux5b9aux6027ux96beux9898}}
+
+\begin{itemize}
+\tightlist
+\item
+  SAC（Actor-Critic 强耦合）：SAC 严重依赖 Critic（Q 网络）的准确性。在 LLM 中，训练一个能够准确评估``这句话好不好''的 Critic 网络，也就是 Reward Model 的代理，本身就非常困难。如果 Critic 发散或估计不准，Actor 会迅速学坏。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    在大规模稀疏奖励场景下，Q-learning 类方法的 bootstrapping 容易导致价值估计偏差（Overestimation Bias）。
+  \end{itemize}
+\item
+  PPO（类似蒙特卡洛的回归）：PPO 使用 GAE（Generalized Advantage Estimation）来计算优势函数 \(\hat{A}_t\)。虽然它也使用 Critic（Value Network），但它更多地利用了整个轨迹的实际回报（Returns）。相比于 SAC 这种高度依赖 bootstrapping 的 TD-learning，PPO 在长序列生成任务（Episode Length 很大）中通常更鲁棒。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-84}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-84}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schulman, J., Moritz, P., Levine, S., Jordan, M., \& Abbeel, P. (2015). \href{https://arxiv.org/abs/1506.02438}{High-Dimensional Continuous Control Using Generalized Advantage Estimation}. arXiv:1506.02438.
+\item
+  Schulman, J., Wolski, F., Dhariwal, P., Radford, A., \& Klimov, O. (2017). \href{https://arxiv.org/abs/1707.06347}{Proximal Policy Optimization Algorithms}. arXiv:1707.06347.
+\item
+  Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Haarnoja, T., Zhou, A., Hartikainen, K., et al.~(2018). \href{https://arxiv.org/abs/1812.05905}{Soft Actor-Critic Algorithms and Applications}. arXiv:1812.05905.
+\end{itemize}
+
+\clearpage

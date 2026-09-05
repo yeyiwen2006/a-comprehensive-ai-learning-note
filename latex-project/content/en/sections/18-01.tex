@@ -1,0 +1,372 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{model-quantization}{%
+\section{Model Quantization}\label{model-quantization}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-core-idea-of-model-quantization}{%
+\subsection{I. The Core Idea of Model Quantization}\label{i.-the-core-idea-of-model-quantization}}
+
+Because large models incur enormous computational and storage costs and take a long time to compute, when deploying them for inference, we consider reducing the precision of numerical values in the model so that it can run without a specialized GPU. We generally convert the model's 32-bit floating-point numbers into an 8-bit integer format (sometimes a 4-bit integer format is chosen).
+
+It is worth noting that training is sensitive to numerical precision: we cannot simply convert all weights, gradients, and optimizer states to low-bit integers. The most common deployment workflow remains post-training quantization (PTQ), but the statement that ``quantization should not be used during training'' is incorrect. Quantization-aware training (QAT) simulates quantization errors during the forward pass, usually retaining higher-precision master weights or gradients; quantized fine-tuning methods such as QLoRA freeze low-bit base weights while training adapters and optimizer states at higher precision. Whether to use these methods should be assessed in light of the hardware, accuracy targets, and training stability. For tasks highly sensitive to numerical errors, such as physical simulation, whether the quantization error is acceptable should also be verified first.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-8-bit-quantization}{%
+\subsection{II. 8-Bit Quantization}\label{ii.-8-bit-quantization}}
+
+8-bit quantization quantizes values to integers in the range {[}-128,127{]}, giving 256 possible values.
+
+\Needspace{5\baselineskip}
+\hypertarget{symmetric-quantization}{%
+\subsubsection{1. Symmetric Quantization}\label{symmetric-quantization}}
+
+In this example tensor, the largest absolute value is \(10.8\). To maintain symmetric quantization, the effective floating-point range is expanded to \([-10.8, 10.8]\) and then mapped to the symmetric INT8 interval.
+
+\begin{longtable}[]{@{}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
+\toprule
+Floating-point value \(x\) & Corresponding INT8 value \(q\) \\
+\midrule
+\endhead
+\(-7.59\) & \(-89\) \\
+\(-4.57\) & \(-54\) \\
+\(-1.95\) & \(-23\) \\
+\(0\) & \(0\) \\
+\(3.08\) & \(36\) \\
+\(5.47\) & \(64\) \\
+\(10.8\) & \(127\) \\
+\bottomrule
+\end{longtable}
+
+Find the maximum absolute value: to preserve symmetry, the largest absolute value in the data must serve as the boundary defining the new quantization clipping range.
+
+\[
+\alpha = \max(|-7.59|, |10.8|) = 10.8
+\]
+
+The effective floating-point range for quantization is therefore expanded to \([-10.8, 10.8]\).
+
+Calculate the scale factor \(S\): map this floating-point range to the symmetric INT8 interval \([-127, 127]\).
+
+\[
+S = \frac{10.8}{127} \approx 0.085039
+\]
+
+\Needspace{5\baselineskip}
+Apply the quantization formula: because \(Z = 0\), the formula is very simple:
+
+\[
+q = \mathrm{round}\left(\frac{x}{S}\right)
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{asymmetric-quantization}{%
+\subsubsection{2. Asymmetric Quantization}\label{asymmetric-quantization}}
+
+Asymmetric quantization directly uses the original floating-point range \([-7.59, 10.8]\), whose maximum is \(10.8\) and minimum is \(-7.59\).
+
+\begin{longtable}[]{@{}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedleft\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
+\toprule
+Floating-point value \(x\) & Corresponding INT8 value \(q\) \\
+\midrule
+\endhead
+\(-7.59\) & \(-128\) \\
+\(-4.57\) & \(-86\) \\
+\(-1.95\) & \(-50\) \\
+\(0\) & \(-23\) \\
+\(3.08\) & \(20\) \\
+\(5.47\) & \(53\) \\
+\(10.8\) & \(127\) \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+Determine the ranges:
+
+\begin{itemize}
+\tightlist
+\item
+  Floating-point range: \(x_{\min} = -7.59, x_{\max} = 10.8\)
+\item
+  Integer range (INT8): \(q_{\min} = -128, q_{\max} = 127\)
+\end{itemize}
+
+\Needspace{5\baselineskip}
+Calculate the scale factor \(S\):
+
+\[
+S = \frac{x_{\max} - x_{\min}}{q_{\max} - q_{\min}}
+  = \frac{10.8 - (-7.59)}{127 - (-128)}
+  = \frac{18.39}{255}
+  \approx 0.072117
+\]
+
+Note: the \(S\) for asymmetric quantization (\(0.072\)) is smaller than the \(S\) for symmetric quantization (\(0.085\)), indicating finer quantization granularity and higher precision.
+
+Calculate the zero point \(Z\): calculate the integer value \(Z\) corresponding to the floating-point number \(0.0\).
+
+\[
+Z = \mathrm{round}\left(q_{\max} - \frac{x_{\max}}{S}\right)
+\]
+
+\Needspace{5\baselineskip}
+Substituting the values:
+
+\[
+Z = \mathrm{round}\left(127 - \frac{10.8}{0.072117}\right)
+  \approx \mathrm{round}(127 - 149.75)
+  \approx -23
+\]
+
+This means that the floating-point number \(0.0\) maps to the integer \(-23\).
+
+\Needspace{5\baselineskip}
+Apply the quantization formula:
+
+\[
+q = \mathrm{round}\left(\frac{x}{S} + Z\right)
+\]
+
+\Needspace{5\baselineskip}
+Example calculations:
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  For \(10.8\):
+\end{itemize}
+
+\[
+q = \mathrm{round}\left(\frac{10.8}{0.072117} - 23\right)
+  = \mathrm{round}(149.75 - 23)
+  = 127
+\]
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  For \(-7.59\):
+\end{itemize}
+
+\[
+q = \mathrm{round}\left(\frac{-7.59}{0.072117} - 23\right)
+  = \mathrm{round}(-105.24 - 23)
+  = -128
+\]
+
+Advantage: as shown in the illustration, the original range \([-7.59, 10.8]\) fully covers \([-128, 127]\) without wasting any quantization levels, usually preserving higher precision.
+
+Disadvantage: computation is slightly more complex; dequantization or matrix operations require an additional subtraction involving \(Z\).
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-4-bit-quantization}{%
+\subsection{III. 4-Bit Quantization}\label{iii.-4-bit-quantization}}
+
+4-bit quantization represents each weight as 0000--1111, giving 16 values.
+
+Core idea: the spacing between quantization points should not be equal; instead, the probability intervals of the ``probability quantiles'' represented by the quantization points should be equal. We divide the cumulative distribution function of the (0,1) normal distribution into 16 equal probability intervals, take the value corresponding to the midpoint of each interval, and normalize these values to the range {[}-1,1{]} as the NF4 quantization values. These values correspond one-to-one to quantization indices; for example, -1.0000 corresponds to 0000, -0.6962 to 0001, \ldots, and 1.0000 to 1111.
+
+\Needspace{5\baselineskip}
+Quantization procedure:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Calculate the scale factor \(S\) to map the range of the weight tensor to the range \([-1, 1]\) of the NF4 quantization table.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Calculate the absolute value of each element in the tensor: \([0.45, 0.88, 1.54, 0.12, 0.05, 0.99, 0.33, 2.10]\)
+  \item
+    Find the maximum: \(2.10\)
+  \item
+    Therefore, the scale factor is \(S = 2.10\)
+  \end{itemize}
+\item
+  Normalize the weights by dividing each original weight by the scale factor \(S\), obtaining the normalized weights \(R_{norm} = \frac{R}{S}\).
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(0.45 / 2.10 = 0.214\)
+  \item
+    \(-0.88 / 2.10 = -0.419\)
+  \item
+    \ldots{}
+  \item
+    This gives the normalized tensor \(R_{norm}\):
+
+\[
+[0.214, -0.419, 0.733, -0.057, 0.024, 0.471, -0.157, -1.0]
+\]
+  \end{itemize}
+\item
+  Map each value to the nearest NF4 quantization point and convert it to the corresponding 4-bit NF4 index.
+\item
+\Needspace{5\baselineskip}
+  Store the results. After quantization, two items ultimately need to be stored:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    The 4-bit index array: \([10, 3, 14, 6, 8, 12, 5, 0]\)
+  \item
+    The scale factor \(S\): \(2.10\) (stored in FP32)
+  \end{itemize}
+\end{enumerate}
+
+The original memory consumption of this block was \(8 \times 32\) bits \(= 256\) bits; it is now \(8 \times 4\) bits \(+ 32\) bits \(= 64\) bits, a 75\% reduction in memory.
+
+\Needspace{5\baselineskip}
+Dequantization procedure (conversion back to FP32):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Read the indices and scale factor.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Read the previously stored index array and scale factor \(S = 2.10\) from memory.
+  \end{itemize}
+\item
+  Recover the normalized values from the quantization table: use the indices to look up the corresponding floating-point values in the NF4 quantization table.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(10 \to 0.1906\)
+  \item
+    \(3 \to -0.3949\)
+  \item
+    \ldots{}
+  \item
+    This gives the recovered normalized tensor \(R'_{norm}\):
+
+\[
+[0.1906, -0.3949, 0.6717, -0.0911, 0.0062, 0.4045, -0.1848, -1.0]
+\]
+  \end{itemize}
+\item
+  Multiply by the scale factor to recover the weights: multiply the recovered normalized values by the scale factor \(S\) to obtain the final dequantized weights \(R'\).
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(R' = R'_{norm}S\)
+  \item
+    \(0.1906 \times 2.10 = 0.400\)
+  \item
+    \(-0.3949 \times 2.10 = -0.829\)
+  \item
+    \ldots{}
+  \item
+    This ultimately gives \(R'\): \([0.400, -0.829, 1.411, -0.191, 0.013, 0.849, -0.388, -2.10]\)
+  \end{itemize}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-static-and-dynamic-quantization}{%
+\subsection{IV. Static and Dynamic Quantization}\label{iv.-static-and-dynamic-quantization}}
+
+\Needspace{5\baselineskip}
+\hypertarget{static-quantization}{%
+\subsubsection{1. Static Quantization}\label{static-quantization}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Core idea and procedure
+\end{enumerate}
+
+Static quantization is an ``end-to-end quantization'' strategy. Its core idea is to perform all the heavy work offline.
+
+Calibration: this is the most crucial step in static quantization. Because the model has not yet run, we do not know the ranges of the activations (the outputs of each layer). We therefore feed in a small amount of representative real data (a calibration set), run the model once, and collect the minimum and maximum activation values for each layer, thereby calculating fixed S and Z values in advance.
+
+Conversion: once S and Z are available, all weights and activation-processing logic in the model are converted to the INT8 format.
+
+Inference: at runtime, the model no longer needs any floating-point arithmetic conversions and runs rapidly in the integer domain. (Adding two integers may exceed the INT8 range; in this case, the calculation uses INT32 and then converts the result back to INT8.)
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Advantages, disadvantages, and uses
+\end{enumerate}
+
+Advantage: the fastest inference speed.
+
+Disadvantages: if the real data distribution changes relative to the calibration set (particularly common in NLP tasks), S and Z may no longer be suitable. In scenarios involving transformations such as Softmax (for example, Transformers), small differences introduced by quantization may be sharply amplified by exponentiation. Static quantization is poor at handling ``outliers'' (for example, in attention mechanisms, when setting S and Z, weight distributions often consist of a concentrated majority and some outliers. These outliers often play crucial roles similar to ``attention anchors,'' but accommodating them sharply reduces the precision of most values).
+
+Uses: CNNs, edge devices, and so on.
+
+\Needspace{5\baselineskip}
+\hypertarget{dynamic-quantization}{%
+\subsubsection{2. Dynamic Quantization}\label{dynamic-quantization}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Core idea and procedure
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Dynamic quantization is a ``compromise'' strategy whose core is ``static weights, dynamic activations.'' During preparation, only the model weights are quantized to INT8 in advance. During inference:
+
+Inter-layer transfer: the previous layer's output is FP32, and the next layer's input is also FP32.
+
+Before computation: before entering the core matrix multiplication (MatMul) calculation, the activations are FP32. The system must read these FP32 data, calculate statistics, and then convert them to INT8.
+
+During computation: the core matrix multiplication uses INT8 (producing an INT32 result).
+
+After computation: multiply by the scale factor to dequantize the result back to FP32.
+
+Nonlinear layers: LayerNorm and activation-function layers such as GELU/SiLU usually run directly in FP32, without quantization.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Advantages, disadvantages, and applications
+\end{enumerate}
+
+Advantage: although slower than static quantization, for memory-bound models such as LLMs, the time spent loading weights is much greater than the computation time. Dynamic quantization reduces the weight size by a factor of 4, meaning that loading weights from memory becomes 4 times faster. This is the main source of the performance improvement, whereas the time difference relative to static quantization is comparatively small.
+
+Disadvantages: the range of the current activations must be analyzed in real time. Every inference requires min(), max(), and div() operations, as well as elementwise conversion from FP32 to INT8, increasing the CPU/GPU workload. Frequent data conversions between the INT8 computation core and FP32 GPU memory increase instruction latency.
+
+Applications: for Transformers/LLMs (huge parameter counts and relatively sparse computation), dynamic quantization typically provides a 1.5×--2× inference speedup, because the ``benefit of loading weights'' far exceeds the ``overhead of dynamically calculating quantization parameters.'' For CNNs (such as ResNet, which are computation-intensive), dynamic quantization is often less effective than static quantization and may even be slower than pure FP32, because CNNs reuse weights heavily and perform large amounts of computation, making frequent dynamic-conversion overhead excessively large as a proportion of the total.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-88}{%
+\subsection{References}\label{references-88}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jacob, B., Kligys, S., Chen, B., et al.~(2018). \href{https://arxiv.org/abs/1712.05877}{Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference}. CVPR 2018.
+\item
+  Dettmers, T., Lewis, M., Belkada, Y., \& Zettlemoyer, L. (2022). \href{https://arxiv.org/abs/2208.07339}{LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale}. NeurIPS 2022.
+\item
+  Dettmers, T., Pagnoni, A., Holtzman, A., \& Zettlemoyer, L. (2023). \href{https://arxiv.org/abs/2305.14314}{QLoRA: Efficient Finetuning of Quantized LLMs}. NeurIPS 2023.
+\end{itemize}
+
+\clearpage

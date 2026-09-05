@@ -1,0 +1,173 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{klux6563ux5ea6ux5728rlux4e2dux7684ux5176ux4ed6ux5e94ux7528}{%
+\section{KL散度在RL中的其他应用}\label{klux6563ux5ea6ux5728rlux4e2dux7684ux5176ux4ed6ux5e94ux7528}}
+
+除了在 TRPO 和 PPO 中作为稳定性约束外，KL 散度在 RL 中还有其他几个精妙的应用。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux63a2ux7d22ux4e0eux4fe1ux606fux589eux76ca}{%
+\subsection{1. 探索与信息增益}\label{ux63a2ux7d22ux4e0eux4fe1ux606fux589eux76ca}}
+
+在基于信息增益的探索方法中，KL 散度可以衡量一次观测让智能体对环境动力学参数的信念改变了多少。VIME 是这一思路的代表方法。
+
+\begin{itemize}
+\tightlist
+\item
+  核心思想：智能体应该探索那些能带来最多``新信息''的状态。
+\item
+  如何实现：智能体维护动力学参数 \(\theta\) 的后验分布；观察新的状态转移后，比较更新前后的参数后验。
+\item
+  如果一次状态转换 \((s_t,a_t,s_{t+1})\) 明显改变了智能体对动力学参数的认识，它便带来较高的信息增益，并获得额外的内在奖励。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+数学形式为：
+
+\[
+r_{\mathrm{intrinsic},t}
+=
+D_{\mathrm{KL}}\bigl(
+p(\theta\mid \xi_t,a_t,s_{t+1})
+\Vert
+p(\theta\mid \xi_t)
+\bigr)
+\]
+
+其中 \(\xi_t\) 表示截至时刻 \(t\) 的交互历史，\(\theta\) 表示动力学模型参数。该式比较的是加入新转移数据前后的参数后验，而不是把连续预测分布与单个观测对应的 Dirac 分布直接做 KL 散度。
+
+这鼓励智能体主动探索那些它无法准确预测结果的环境区域，从而更高效地学习世界模型。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6a21ux4effux5b66ux4e60ux4e0eux884cux4e3aux514bux9686}{%
+\subsection{2. 模仿学习与行为克隆}\label{ux6a21ux4effux5b66ux4e60ux4e0eux884cux4e3aux514bux9686}}
+
+在模仿学习中，目标是让智能体的策略 \(\pi_{\mathrm{learner}}\) 尽可能接近专家策略 \(\pi_{\mathrm{expert}}\)。
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  直接最小化 KL 散度：可以将损失函数直接定义为两者之间的 KL 散度：
+\end{itemize}
+
+\[
+L_{\mathrm{imitation}}
+=
+\mathbb{E}_{s\sim d_{\mathrm{expert}}}
+\bigl[
+D_{\mathrm{KL}}\bigl(
+\pi_{\mathrm{expert}}(\cdot\mid s)
+\Vert
+\pi_{\mathrm{learner}}(\cdot\mid s)
+\bigr)
+\bigr]
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  解释：这个损失函数要求学习者的策略，在专家访问过的状态上，其动作分布要与专家的动作分布高度一致。这是一种非常直接且有效的模仿学习方式。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4fe1ux606fux8bbaux6b63ux5219ux5316ux4e0eux6700ux5927ux71b5-rl}{%
+\subsection{3. 信息论正则化与最大熵 RL}\label{ux4fe1ux606fux8bbaux6b63ux5219ux5316ux4e0eux6700ux5927ux71b5-rl}}
+
+在最大熵强化学习（如 SAC、Soft Q-Learning）中，目标不仅是最大化累积奖励，还要最大化策略的熵，即策略的随机性。
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  核心目标：
+\end{itemize}
+
+\[
+J(\pi)
+=
+\mathbb{E}
+\bigl[
+\sum_t \gamma^{t}
+\bigl(
+r(s_t,a_t)+\alpha\mathcal{H}(\pi(\cdot\mid s_t))
+\bigr)
+\bigr]
+\]
+
+其中 \(\mathcal{H}\) 是熵，\(\alpha\) 是温度参数。
+
+\begin{itemize}
+\tightlist
+\item
+  与 KL 散度的联系：这个最大熵目标在数学上等价于在标准 RL 目标上加上一个与均匀分布的 KL 散度正则项。
+\item
+  最大化熵 \(\mathcal{H}(\pi)\) 等价于最小化 \(D_{\mathrm{KL}}(\pi\Vert\mathrm{Uniform})\)，即鼓励策略接近均匀分布，也就是最随机的分布。
+\item
+  在 SAC 中的具体体现：SAC 的策略更新目标实际上包含了与一个引导分布（通常是当前 Q 函数诱导的 Boltzmann 分布）的 KL 散度最小化。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux4efbux52a1ux5b66ux4e60ux4e0eux77e5ux8bc6ux8fc1ux79fb}{%
+\subsection{4. 多任务学习与知识迁移}\label{ux591aux4efbux52a1ux5b66ux4e60ux4e0eux77e5ux8bc6ux8fc1ux79fb}}
+
+\Needspace{5\baselineskip}
+当智能体需要学习多个相关任务时，可以通过策略蒸馏把教师策略中的行为知识迁移到学生策略。此时 KL 散度直接约束学生的动作分布去匹配教师：
+
+\[
+L_{\mathrm{distill}}
+=
+\mathbb{E}_{s\sim\mathcal{D}}
+\left[
+D_{\mathrm{KL}}\bigl(
+\pi_{\mathrm{teacher}}(\cdot\mid s)
+\Vert
+\pi_{\mathrm{student}}(\cdot\mid s)
+\bigr)
+\right]
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  知识迁移：最小化该损失，使学生在数据集 \(\mathcal{D}\) 覆盖的状态上复现教师的动作分布。
+\item
+  防止遗忘：如果旧任务策略充当教师，该约束可帮助保留旧行为，但效果取决于状态数据是否覆盖旧任务。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+弹性权重固化（Elastic Weight Consolidation, EWC）同样用于缓解灾难性遗忘，但它并不直接约束新旧策略的 KL 散度，而是利用旧任务的 Fisher 信息对重要参数的变化施加二次惩罚：
+
+\[
+L_{\mathrm{EWC}}
+=
+L_{\mathrm{new\_task}}
++
+\frac{\lambda}{2}
+\sum_i F_i(\theta_i-\theta_i^{*})^{2}
+\]
+
+其中 \(\theta_i^{*}\) 是旧任务训练结束时的参数，\(F_i\) 衡量参数 \(i\) 对旧任务的重要程度。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-59}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-59}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Houthooft, R., Chen, X., Duan, Y., Schulman, J., De Turck, F., \& Abbeel, P. (2016). \href{https://arxiv.org/abs/1605.09674}{VIME: Variational Information Maximizing Exploration}. NeurIPS 2016.
+\item
+  Ross, S., Gordon, G. J., \& Bagnell, J. A. (2011). \href{https://proceedings.mlr.press/v15/ross11a.html}{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}. AISTATS 2011.
+\item
+  Haarnoja, T., Zhou, A., Abbeel, P., \& Levine, S. (2018). \href{https://arxiv.org/abs/1801.01290}{Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor}. ICML 2018.
+\item
+  Rusu, A. A., Colmenarejo, S. G., Gülçehre, Ç., et al.~(2016). \href{https://arxiv.org/abs/1511.06295}{Policy Distillation}. ICLR 2016.
+\item
+  Kirkpatrick, J., Pascanu, R., Rabinowitz, N., et al.~(2017). \href{https://doi.org/10.1073/pnas.1611835114}{Overcoming catastrophic forgetting in neural networks}. Proceedings of the National Academy of Sciences, 114(13), 3521-3526.
+\end{itemize}
+
+\clearpage

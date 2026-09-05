@@ -1,0 +1,165 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e0aux4e0bux6587ux5de5ux7a0b}{%
+\section{上下文工程}\label{ux4e0aux4e0bux6587ux5de5ux7a0b}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux63d0ux9ad8ux7f13ux5b58ux547dux4e2dux7387}{%
+\subsection{一、提高缓存命中率}\label{ux4e00ux63d0ux9ad8ux7f13ux5b58ux547dux4e2dux7387}}
+
+对于Agent Loop来说，每跑一圈都要把之前的对话历史（包括那些冗长的报错信息、文件内容）重新发给模型，将导致计算复杂度平方级增长。可以采用缓存策略让KV Cache尽可能命中。
+
+从缓存角度，上下文从前到后往往分为：全局缓存（System指令、工具定义）；任务/项目级缓存（如CLAUDE.md，AGENT.md）；会话级缓存（历史对话）；当前会话消息（用户输入、环境反馈结果等）。尽量把静态内容放在前面，动态内容放在后面。对于前面不变的部分，服务器就不需要重新计算，直接调取缓存中的历史记录。
+
+\Needspace{5\baselineskip}
+这样可以让长对话的成本从平方级增长降到线性级。但任何改变System指令/工具定义/历史对话等的操作都会导致缓存失效，如中途换模型、切换工作目录、修改权限配置、改变MCP工具列表等。为尽可能确保缓存命中，有以下方法：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  保持提示前缀稳定。由于LLM的自回归特性，即使是单个标记的差异也会使该标记之后的缓存失效。例如，一些配置修改、工具变更尽量通过在input中附加一条信息，如system propmt的修改可用类似于\texttt{\textless{}system-reminder\textgreater{}}的形式实现，而非完全抛弃缓存。一个常见的错误是在系统提示的开头包含时间戳，尤其是精确到秒的时间戳，这会大大降低缓存命中率。
+\item
+  使会话上下文只追加。避免修改之前的操作或观察。要当心的是许多编程语言和库在序列化JSON对象时不保证键顺序的稳定性，这可能会悄无声息地破坏缓存。上下文精简尽量在缓存本来就要未命中的时候进行。
+\item
+  在需要时明确标记缓存断点。某些模型提供商或推理框架不支持自动增量前缀缓存，而是需要在上下文中手动插入缓存断点。在分配这些断点时，要考虑潜在的缓存过期问题，并至少确保断点包含系统提示的结尾。
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0036.png}
+\caption{围绕 KV Cache 设计上下文}
+\end{figure}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5de5ux5177ux7ba1ux7406}{%
+\subsection{二、工具管理}\label{ux4e8cux5de5ux5177ux7ba1ux7406}}
+
+随着Agent能力的增强，其行动空间自然变得更加复杂，即工具数量爆炸式增长。如果允许用户自定义工具，总会有人将数百个神秘工具插入到行动空间中。结果，模型更可能选择错误的行动或采取低效的路径，Agent变得更加愚蠢。
+
+一个自然的反应是设计一个动态行动空间，使用类似于RAG的方法按需加载工具，上下文中只包含这些被加载的工具。但实验表明，除非绝对必要，避免在迭代过程中动态添加或移除工具。这一方面是因为工具定义在上下文的前部，任何更改都会使后续所有动作和观察的KV缓存失效，另一方面是因为当先前的动作和观察仍然引用当前上下文中不再定义的工具时，模型会感到困惑，如果没有约束解码，这通常会导致模式违规或幻觉动作。
+
+\Needspace{5\baselineskip}
+为了解决这个问题并仍然改进动作选择，有以下方法：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  只在上下文保留``元工具''，调用这些元工具会将模型导引到文件系统中具体工具存储的位置。这种设计本质上也是渐进式披露，好处在于让工具灵活且可扩展。
+\end{enumerate}
+
+以Claude Code的skills为例，\href{https://simonwillison.net/2025/Oct/16/claude-skills/\#skills-depend-on-a-coding-environment}{技能存储在文件系统}中，而非绑定工具，Claude只需调用几个简单的函数（如Bash、文件系统）即可逐步发现和使用技能，然后让模型自主提取需要的技能使用。这个过程只涉及会话上下文的累积，而不涉及上下文最前面工具定义的变化。
+
+Manus也是如此，它只保留了不到20个``原子函数（Atomic Functions）''，如执行Bash命令、读写文件、执行Python代码。复杂的业务逻辑被包装成了沙盒里的CLI（命令行程序），模型不需要知道这几百个MCP工具的JSON Schema。模型只需要知道``我会用Bash''。当它需要使用MCP工具时，它直接在Bash工具里输入类似mcp-cli run some\_tool的命令即可。这里也不需要通过语义相似度的向量索引进行检索。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\item
+  只保留轻量的工具列表，让模型在需要时再检索并加载完整工具定义。GPT-5.4在API中引入的tool search采用了这一思路：模型先接收可用工具的轻量列表和工具搜索能力，需要调用某项工具时再查找其完整定义并把定义追加到会话。该机制不要求工具定义必须存放在文件系统中，具体存储和检索方式由实现决定。
+\item
+  在需要移除工具时，不直接将工具移出上下文，而是在解码过程中掩蔽token的logits，以基于当前上下文阻止（或强制）选择某些动作，或者通过prompt要求模型禁止使用特定工具（但这本质上变成了注意力机制的博弈，模型仍然有概率``违规操作''生成被禁用的工具）。
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0037.png}
+\caption{通过掩蔽而非移除来管理工具}
+\end{figure}
+
+\Needspace{5\baselineskip}
+函数调用通常有三种模式：
+
+自动：模型可以选择调用或不调用函数。通过仅预填充回复前缀实现：\textless\textbar im\_start\textbar\textgreater assistant
+
+必需：模型必须调用函数，但选择不受约束。通过预填充到工具调用令牌实现：\textless\textbar im\_start\textbar\textgreater assistant\textless tool\_call\textgreater{}
+
+指定：模型必须从特定子集中调用函数。通过预填充到函数名称的开头实现：\textless\textbar im\_start\textbar\textgreater assistant\textless tool\_call\textgreater\{``name'': ``browser\_''\}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e0aux4e0bux6587ux7a97ux53e3-ux6587ux4ef6ux7cfbux7edfux5206ux5c42ux7ed3ux6784}{%
+\subsection{三、``上下文窗口-文件系统''分层结构}\label{ux4e09ux4e0aux4e0bux6587ux7a97ux53e3-ux6587ux4ef6ux7cfbux7edfux5206ux5c42ux7ed3ux6784}}
+
+上下文窗口有限，而信息的压缩是不可逆的。为此，我们可以只将重要信息留存在上下文窗口，其余则存储在文件系统中。模型学会按需写入和读取文件，不仅将文件系统用作存储，还用作结构化的外部记忆。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0038.png}
+\caption{将文件系统作为上下文}
+\end{figure}
+
+当上下文将满时，模型触发压缩（即在上下文最后加一条消息表示需要压缩）。对于工具调用结果，除了本轮会话以外，前面各轮会话的工具调用结果都会被压缩为指向文件系统中对应内容的索引。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0039.png}
+\caption{压缩工具调用结果并保留必要内容}
+\end{figure}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux590dux8ff0ux76eeux6807}{%
+\subsection{四、复述目标}\label{ux56dbux590dux8ff0ux76eeux6807}}
+
+在处理复杂任务时，很多Agent会倾向于创建类似于todo.md的计划文件，并在任务进行过程中逐步更新它，勾选已完成的项目。这不仅是为了方便用户审阅，更重要的是，这是在操控注意力，通过将其目标复述到上下文的末尾的方式，避免模型在复杂任务后期偏离目标。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0040.png}
+\caption{通过复述目标操控注意力}
+\end{figure}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux4e0dux8981ux88abux5c11ux6837ux672cux793aux4f8bux6240ux56f0}{%
+\subsection{五、不要被少样本示例所困}\label{ux4e94ux4e0dux8981ux88abux5c11ux6837ux672cux793aux4f8bux6240ux56f0}}
+
+语言模型是优秀的模仿者；它们模仿上下文中的行为模式。如果上下文充满了类似的过去行动-观察对，模型将倾向于遵循该模式，即使这不再是最优的。这在涉及重复决策或行动的任务中可能很危险。例如，当审查20份简历时，代理通常会陷入一种节奏，即仅仅因为这是它在上下文中看到的，就重复与之类似的行动。这导致偏离、过度泛化，或有时产生幻觉。
+
+解决方法是增加多样性，在行动和观察中引入少量的结构化变化，如不同的序列化模板、替代性措辞、顺序或格式上的微小噪音。这种受控的随机性有助于打破模式并调整模型的注意力。
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0041.png}
+\caption{避免少样本示例锁定行为模式}
+\end{figure}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux516dux591aux667aux80fdux4f53ux7684ux4e0aux4e0bux6587ux9694ux79bb}{%
+\subsection{六、多智能体的上下文隔离}\label{ux516dux591aux667aux80fdux4f53ux7684ux4e0aux4e0bux6587ux9694ux79bb}}
+
+在多智能体系统中，主Agent和子Agent（如分别作为规划器和执行器）的上下文会存在一定隔离，如二者的system prompt和tools定义不同的。其余上下文可以不共享，但长上下文的复杂任务中仍建议共享。
+
+\Needspace{5\baselineskip}
+不共享的范式：
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0042.png}
+\caption{主 Agent 与子 Agent 通过通信隔离上下文}
+\end{figure}
+
+部分共享的范式：（如主Agent作为规划者，与子Agent共享完整的上下文，子Agent仍拥有自己的动作空间（工具）和指令，但会获得规划者同样可访问的完整上下文。）
+
+\begin{figure}[htbp]
+\centering
+\includegraphics{images/image-0043.png}
+\caption{主 Agent 与子 Agent 共享上下文}
+\end{figure}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-127}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-127}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Martin, L. (2025). \href{https://rlancemartin.github.io/2025/10/15/manus/}{Context Engineering in Manus}.
+\item
+  Ji, Y. (2025). \href{https://manus.im/zh-cn/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus}{Context Engineering for AI Agents: Lessons from Building Manus}. Manus.
+\item
+  OpenAI. (2026). \href{https://openai.com/index/introducing-gpt-5-4/}{Introducing GPT-5.4}.
+\end{itemize}
+
+\clearpage

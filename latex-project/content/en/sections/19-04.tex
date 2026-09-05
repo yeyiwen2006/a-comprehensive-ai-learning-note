@@ -1,0 +1,105 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{multi-query-and-grouped-query-attention}{%
+\section{Multi-Query and Grouped-Query Attention}\label{multi-query-and-grouped-query-attention}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-the-basic-idea-of-mqa}{%
+\subsection{I. The Basic Idea of MQA}\label{i.-the-basic-idea-of-mqa}}
+
+In MHA, GPU-memory consumption becomes enormous as sequences grow longer. Memory bandwidth becomes the core constraint. Inference primarily involves matrix--vector multiplication (GEMV), a typical memory-bandwidth-bound operation. The GPU spends far more time ``moving KV cache data'' than ``computing.'' The core idea of multi-query attention (MQA) is extremely straightforward: all query heads share the same set of key and value heads.
+
+MHA (multi-head): H query heads, H key heads, H value heads.
+
+MQA (multi-query): H query heads, 1 key head, 1 value head.
+
+\textbf{Parameter Count Comparison}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{MHA}: the total size of the parameter matrices is approximately \(3d_{model}^2\), because the \(Q\), \(K\), and \(V\) projections each account for one copy.
+\item
+  \textbf{MQA}: the parameter matrix \(W_Q\) remains \(d_{model} \times d_{model}\), but both \(W_K\) and \(W_V\) shrink to \(d_{model} \times d_k\).
+\item
+  Because MQA retains only one set of key/value heads, the parameter counts of \(W_K,W_V\) are reduced by a factor of \(H\) relative to MHA.
+\end{itemize}
+
+When calculating attention scores for head \(i\), MQA retains a multi-head query projection, while key/value projections use only one head shared by all query heads.
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{Query projection (remaining multi-head)}:
+\end{itemize}
+
+\[
+Q_i = XW_Q^i, \quad Q_i \in \mathbb{R}^{B \times L \times d_k}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{Key/value projection (single-head)}:
+\end{itemize}
+
+\[
+K = XW_K, \quad V = XW_V, \quad K,V \in \mathbb{R}^{B \times L \times d_k}
+\]
+
+Here, \(K\) and \(V\) have no subscript \(i\), indicating that all heads share this set of keys and values.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Broadcasting and computation}: for row-wise dot-product attention computation, \(K\) and \(V\) must be logically broadcast along the head dimension so that their shapes match \(Q_i\).
+\end{itemize}
+
+\[
+\mathrm{Attention}_i(Q_i,K,V)=\mathrm{softmax}\left(\frac{Q_iK^T}{\sqrt{d_k}}\right)V
+\]
+
+Finally, concatenate the outputs of all heads and pass them through the \(W_O\) output layer.
+
+\textbf{Why Is MQA Faster?}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{KV cache reduced by a factor of \(H\)}: because all heads share \(K,V\), the amount of KV cache data to store becomes \(1/H\) of the original; for example, when \(H=8\), GPU-memory usage is approximately \(1/8\) of the original.
+\item
+  \textbf{Reduced memory-bandwidth pressure}: during inference, the amount of data the GPU must move from GPU memory decreases substantially, alleviating the memory-wall problem.
+\item
+  \textbf{Higher TPS}: after GPU-memory consumption and memory-bandwidth pressure decrease, token generation speed (TPS) usually increases.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-grouped-query-attention-gqa}{%
+\subsection{II. Grouped-Query Attention (GQA)}\label{ii.-grouped-query-attention-gqa}}
+
+MQA improves speed but can readily affect generation quality. To balance MHA's high quality and MQA's high speed, modern models introduce GQA, grouping query heads so that each group shares one key/value head.
+
+For example, 8 query heads are divided into 4 groups, with every 2 query heads sharing 1 KV head.
+
+The KV cache size is 1/2 that of MHA and twice that of MQA.
+
+Effect: speed close to MQA, quality close to MHA.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-94}{%
+\subsection{References}\label{references-94}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Shazeer, N. (2019). \href{https://arxiv.org/abs/1911.02150}{Fast Transformer Decoding: One Write-Head is All You Need}. arXiv:1911.02150.
+\item
+  Ainslie, J., Lee-Thorp, J., de Jong, M., Zemlyanskiy, Y., Lebron, F., \& Sanghai, S. (2023). \href{https://arxiv.org/abs/2305.13245}{GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints}. EMNLP 2023.
+\end{itemize}
+
+\clearpage

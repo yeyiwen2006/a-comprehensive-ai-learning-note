@@ -1,0 +1,190 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6a21ux4effux5b66ux4e60}{%
+\section{模仿学习}\label{ux6a21ux4effux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux884cux4e3aux514bux9686behavioral-cloning-bc}{%
+\subsection{一、行为克隆（Behavioral Cloning, BC）}\label{ux4e00ux884cux4e3aux514bux9686behavioral-cloning-bc}}
+
+行为克隆是模仿学习中最直观、最简单的形式，其核心思想是将模仿学习问题转化为一个监督学习问题。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux7b97ux6cd5ux539fux7406}{%
+\subsubsection{（一）算法原理}\label{ux4e00ux7b97ux6cd5ux539fux7406}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  核心思想：行为克隆假设专家数据是独立同分布的样本。它不关心环境的动力学模型，直接建立从状态空间 \(S\) 到动作空间 \(A\) 的映射。
+\item
+  输入与标签：我们将专家轨迹中的状态 \(s_t\) 作为样本输入，将专家在该状态下采取的动作 \(a_t\) 视为标签。
+\item
+\Needspace{5\baselineskip}
+  优化目标：目标是训练一个策略网络，使其输出尽可能接近专家的动作。数学上，这等价于最小化在专家数据集 \(\mathcal{B}\) 上的期望损失：
+\end{enumerate}
+
+\[
+\theta^{*}
+=
+\arg\min_\theta
+\mathbb{E}_{(s,a)\sim\mathcal{B}}
+\bigl[
+L(\pi_\theta(s),a)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5e94ux7528ux4e3bux8981ux7528ux4e8eux8badux7ec3ux521dux671fux8ba9ux6a21ux578bux8badux7ec3ux80fdux66f4ux5febux7a33ux5b9aux5982alphagoux65e9ux671fux5148ux901aux8fc7ux5b66ux4e60ux4ebaux7c7bux5927ux5e08ux68cbux8c31ux8fdbux884cux6a21ux4effux5b66ux4e60ux540eux7eedux518dux8fd0ux7528ux5176ux4ed6ux65b9ux6cd5ux8ba9ux5176ux81eaux4e3bux63a2ux7d22ux65b0ux7b56ux7565}{%
+\subsubsection{（二）应用：主要用于训练初期，让模型训练能更快稳定。如AlphaGo早期先通过学习人类大师棋谱进行模仿学习，后续再运用其他方法让其自主探索新策略。}\label{ux4e8cux5e94ux7528ux4e3bux8981ux7528ux4e8eux8badux7ec3ux521dux671fux8ba9ux6a21ux578bux8badux7ec3ux80fdux66f4ux5febux7a33ux5b9aux5982alphagoux65e9ux671fux5148ux901aux8fc7ux5b66ux4e60ux4ebaux7c7bux5927ux5e08ux68cbux8c31ux8fdbux884cux6a21ux4effux5b66ux4e60ux540eux7eedux518dux8fd0ux7528ux5176ux4ed6ux65b9ux6cd5ux8ba9ux5176ux81eaux4e3bux63a2ux7d22ux65b0ux7b56ux7565}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6838ux5fc3ux7f3aux9677ux8befux5deeux7d2fux79ef}{%
+\subsubsection{（三）核心缺陷：误差累积}\label{ux4e09ux6838ux5fc3ux7f3aux9677ux8befux5deeux7d2fux79ef}}
+
+在训练时，策略网络只见过专家产生的状态分布。然而，在测试（实际推理）时，策略网络不可避免地会产生微小的预测误差。一旦智能体根据有误差的策略采取了动作，它就会进入一个新的状态。这个状态可能稍稍偏离了专家的轨迹分布。由于智能体从未在训练集中见过这种``偏离后的状态''（比如变成了另一个棋局，看起来和原棋局比较像但实际局面相差很大），它不仅无法纠正错误，反而可能做出更离谱的动作。这种误差会随着时间步呈级联放大，导致智能体的轨迹与专家轨迹渐行渐远。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux751fux6210ux5f0fux5bf9ux6297ux6a21ux4effux5b66ux4e60gailstandford2016}{%
+\subsection{二、生成式对抗模仿学习（GAIL）（Standford，2016）}\label{ux4e8cux751fux6210ux5f0fux5bf9ux6297ux6a21ux4effux5b66ux4e60gailstandford2016}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux539fux7406ux5360ux7528ux5ea6ux91cfux5339ux914d}{%
+\subsubsection{（一）核心原理：占用度量匹配}\label{ux4e00ux6838ux5fc3ux539fux7406ux5360ux7528ux5ea6ux91cfux5339ux914d}}
+
+GAIL 认为，如果一个策略足够好，那么它在环境中产生的状态-动作占用度量（State-Action Occupancy Measure）\(\rho(s,a)\) 应该与专家策略的占用度量 \(\rho_E(s,a)\) 一致。
+
+\begin{itemize}
+\tightlist
+\item
+  占用度量 \(\rho(s,a)\)：可以理解为在长时间运行中，某个特定状态-动作对出现的频率分布。
+\item
+  本质：GAIL 的本质是通过对抗训练，拉近智能体策略产生的分布 \(\rho_\pi\) 和专家分布 \(\rho_E\) 之间的距离，通常使用 Jensen-Shannon 散度。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux67b6ux6784ux4e0eux6570ux5b66ux63a8ux5bfc}{%
+\subsubsection{（二）架构与数学推导}\label{ux4e8cux67b6ux6784ux4e0eux6570ux5b66ux63a8ux5bfc}}
+
+GAIL 包含两个核心组件，它们进行极大极小博弈。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  判别器（Discriminator）\(D_\omega\)：
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  角色：类似于 GAN 中的判别器。它的任务是区分输入的 \((s,a)\) 对究竟是来自专家（Expert）还是智能体（Agent）。
+\item
+  定义：判别器输出 \(D(s,a)\in[0,1]\)。
+\item
+  越近 \(0\)：表示判别器认为这是专家的数据。
+\item
+  越近 \(1\)：表示判别器认为这是智能体的数据。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+判别器损失函数为：
+
+\[
+\mathcal{L}(\omega)
+=
+-
+\mathbb{E}_{\pi}
+\bigl[
+\log D_\omega(s,a)
+\bigr]
+-
+\mathbb{E}_{\pi_E}
+\bigl[
+\log(1-D_\omega(s,a))
+\bigr]
+\]
+
+解释：判别器希望最大化区分度。对于智能体产生的 \((s,a)\)，它希望 \(D(s,a)\) 接近 \(1\)；对于专家产生的 \((s,a)\)，它希望 \(D(s,a)\) 接近 \(0\)。上面的负号是为了转化为最小化问题。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  生成器或策略（Generator/Policy）\(\pi\)：
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  角色：智能体本身。它的任务是生成能够``骗过''判别器的轨迹。
+\item
+  训练方式：GAIL 将判别器的输出转化为强化学习中的奖励信号（Reward Signal）。
+\item
+\Needspace{5\baselineskip}
+  奖励函数：
+\end{itemize}
+
+\[
+r(s,a)
+=
+-
+\log D_\omega(s,a)
+\]
+
+\Needspace{5\baselineskip}
+解释：
+
+\begin{itemize}
+\tightlist
+\item
+  如果判别器认为数据来自智能体，即 \(D\approx 1\)，则 \(\log D\approx 0\)，奖励 \(r\approx 0\)，收益较低。
+\item
+  如果智能体成功骗过判别器，即 \(D\approx 0\)，则 \(\log D\) 是很大的负数，奖励 \(r=-\log D\) 变为很大的正数。
+\item
+  因此，智能体通过最大化这个奖励，被迫生成那些让判别器误以为是专家行为的 \((s,a)\)。
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  算法流程与优势：
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  交互式学习：与 BC 不同，GAIL 要求智能体必须与环境进行交互，采样状态，然后利用 PPO 或 TRPO 等强化学习算法来更新策略。
+\item
+  解决复合误差：因为 GAIL 匹配的是整个分布（Occupancy Measure），而不是单步误差。即使智能体偏离了轨迹，判别器也会给出相应的反馈，促使其回到正确的分布上来。这使得 GAIL 具有长期一致性，鲁棒性远强于 BC。
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-62}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-62}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Ross, S., Gordon, G. J., \& Bagnell, J. A. (2011). \href{https://proceedings.mlr.press/v15/ross11a.html}{A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning}. AISTATS 2011.
+\item
+  Ho, J., \& Ermon, S. (2016). \href{https://arxiv.org/abs/1606.03476}{Generative Adversarial Imitation Learning}. NeurIPS 2016.
+\item
+  Silver, D., Huang, A., Maddison, C. J., et al.~(2016). \href{https://doi.org/10.1038/nature16961}{Mastering the game of Go with deep neural networks and tree search}. Nature, 529, 484--489.
+\end{itemize}
+
+\clearpage

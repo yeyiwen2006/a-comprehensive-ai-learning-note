@@ -1,8 +1,14 @@
 # A Comprehensive AI Learning Note（v2.0）
 
+<!-- language-switch:start -->
+[![简体中文（当前）](https://img.shields.io/badge/简体中文-当前-blue)](README.md) [![English](https://img.shields.io/badge/English-switch-lightgrey)](README_EN.md)
+<!-- language-switch:end -->
+
 这是一份面向人工智能学习者的中文学习笔记暨讲义，内容覆盖深度学习、强化学习、大语言模型、大模型智能体、扩散模型、多模态生成、世界模型与具身智能等方向，覆盖面广于各类经典教材和市面上的绝大部分资料，且讲解详细、易懂。初版于2026年5月10日发布，当前为v2.0版本，共包含35章、168节。按正文（不含参考文献，以中文字符与英文/数字词计）统计，总字数约37.4万字。大家不必完整阅读，而是可以结合后面推荐入口中的目录和初学者学习路径，按需阅读自身感兴趣的内容。
 
-本仓库由作者叶逸文的本地 Word 笔记转换而来。本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本及与之对应的 LaTeX 版本。
+本仓库由作者叶逸文的本地 Word 笔记转换而来。本仓库只保存可搜索、可阅读、便于协作纠错的 Markdown 版本及与之对应的 LaTeX 版本。中文为默认版本，英文版严格从中文版翻译，作者英文署名为 Yiwen Ye。
+
+英文正文约18.7万词，按英文词计，排除参考文献、元数据、代码、图片、公式和链接目标。中文正文仍按中文字符与英文/数字词的既有口径统计。两种语言的可复现统计见 `tools/content_statistics.py`。
 
 ## 分享目的
 
@@ -43,7 +49,9 @@
 
 ## LaTeX 版本
 
-本仓库同时提供 LaTeX 排版项目，位于 [latex-project](latex-project/README.md)。该版本由公开 Markdown 内容整理生成，入口为 `latex-project/main.tex`，可用于本地编译 PDF 或进行排版调整；Markdown 版本仍作为主要阅读和维护版本，若两者存在差异，请以 Markdown 文档为准。
+本仓库同时提供中英文 LaTeX 排版项目，位于 [latex-project](latex-project/README.md)。该版本由公开 Markdown 内容整理生成，中文总书入口为 `latex-project/main.tex`，英文总书入口为 `latex-project/main-en.tex`；也可按节编号单独编译中文或英文 PDF。Markdown 版本仍作为主要阅读和维护版本，若两者存在差异，请以 Markdown 文档为准。
+
+本地构建的 PDF 集中放在 `output/pdf/`：`complete-books/` 保存两本总书，`chinese-sections/` 和 `english-sections/` 各保存168个单节 PDF，`build-reports/` 保存构建报告，`PDF-INDEX.md` 提供总书与全部单节的可点击索引。两本总 PDF 同时保留在 `latex-project/build/`。PDF 和编译中间文件不上传到仓库；具体命令与输出位置规则见 [构建说明](latex-project/README.md)。
 
 ## 贡献与维护说明
 

@@ -1,0 +1,29 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{muonux4f18ux5316ux5668}{%
+\section{Muon优化器}\label{muonux4f18ux5316ux5668}}
+
+Adam/AdamW优化器在实现自适应学习率时，对于每个维度（参数）各自进行除以标量的缩放。但在优化问题中，这只是高维参数空间中的一种坐标系。Muon优化器通过正交化动量矩阵来更新参数，让更新矩阵 \(U\) 成为一个近似的正交矩阵，即满足 \(U^{T}U\approx I\)。
+
+从几何上看，这意味着优化器在参数空间的所有主方向（奇异向量方向）上进行归一化，在这些方向上前进相同步长，类似于牛顿法对于变换的空间执行各方向步长相同的梯度下降（当然，这里的奇异向量方向并不是牛顿法中的方向），而不是像Adam仅仅试图调节各个坐标轴上行进的幅度。
+
+在矩阵正交化计算上，Muon使用Newton-Schulz迭代 来逼近矩阵的``符号函数''，从而实现正交化，极大地减小了计算量。
+
+目前，一些大模型训练采用了 Muon 的改进版本。例如，Kimi K2 使用的是在 Muon 基础上加入 QK-clip 的 MuonClip，而不是未经修改的原始 Muon。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-30}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-30}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Jordan, K., et al.~(2024). \href{https://kellerjordan.github.io/posts/muon/}{Muon: An optimizer for hidden layers in neural networks}.
+\item
+  Kimi Team. (2025). \href{https://arxiv.org/abs/2507.20534}{Kimi K2: Open Agentic Intelligence}. arXiv:2507.20534.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,233 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{synchronous-and-asynchronous-updates}{%
+\section{Synchronous and Asynchronous Updates}\label{synchronous-and-asynchronous-updates}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-synchronous-updates}{%
+\subsection{I. Synchronous Updates}\label{i.-synchronous-updates}}
+
+Large models such as ChatGPT and Llama are trained using Proximal Policy Optimization (PPO) or its variants. Asynchronous updates are almost nonexistent in this setting.
+
+\Needspace{5\baselineskip}
+Process:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Rollout data collection: multiple GPU workers generate text with the LLM in parallel.
+\item
+  Synchronization barrier: the system must wait for every GPU to generate the specified amount of data (for example, 64 samples per card).
+\item
+  Backward gradient computation: compute gradients from the aggregated data.
+\item
+  Gradient averaging through All-Reduce: use distributed training such as Distributed Data Parallel (DDP) to average gradients across all GPUs.
+\item
+  Update: all GPUs update their model parameters simultaneously.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-asynchronous-updates}{%
+\subsection{II. Asynchronous Updates}\label{ii.-asynchronous-updates}}
+
+In some settings, however, dozens of worker threads run simultaneously at vastly different speeds. If thread A finishes and waits for thread B, substantial resources are wasted. Its output is therefore often sent directly to a central server, where the model is updated as soon as enough data arrive, without waiting for B. Examples include:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  AutoML and neural architecture search (NAS): a typical setting
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Scenario: AI designs neural network architectures or tunes hyperparameters.
+\item
+  Action A (fast): train a shallow three-layer network (30 seconds).
+\item
+  Action B (slow): train a deep 100-layer ResNet (two hours).
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  AI for Systems (database/compiler/system optimization)
+\end{enumerate}
+
+This is currently a popular industrial RL application area, with extremely high variance in action duration.
+
+\begin{itemize}
+\tightlist
+\item
+  Scenario A: database parameter tuning
+\item
+  Action: modify the database configuration and run a benchmark.
+\item
+  Difference: changing \texttt{work\_mem} may require only a restart (fast); changing an \texttt{index} strategy may require rebuilding indexes (extremely slow, tens of minutes).
+\item
+  Scenario B: compiler optimization
+\item
+  Action: decide which optimization pass to apply to a code block.
+\item
+  Difference: ``dead-code elimination'' is instantaneous, whereas ``polyhedral optimization'' or ``loop unrolling'' may greatly increase compilation time.
+\end{itemize}
+
+A3C is a classic asynchronous actor--critic algorithm. OpenAI Baselines subsequently introduced the synchronous A2C variant and reported comparable performance to A3C with the same hardware and hyperparameters. Their relative merits therefore depend on implementation, hardware, and task; one cannot categorically claim that A3C is always inferior to A2C.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-time-weighting-for-asynchronous-updates}{%
+\subsection{III. Time Weighting for Asynchronous Updates}\label{iii.-time-weighting-for-asynchronous-updates}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Problems with asynchronous updates
+\end{enumerate}
+
+Asynchronous updates are mainly used where action durations differ greatly. In standard distributed RL frameworks, multiple actors simultaneously generate and execute different code solutions, then send results (code, execution outcomes, and rewards) to a learner for model updates. This causes problems in practice: in 10 minutes (600 seconds), an actor may execute action A 120 times but action B only twice. The learner receives 120 gradient-update signals for A but only two for B. Model parameters are ``flooded'' by A's gradients, making the agent mistakenly believe A is the best policy and trapping it in a local optimum.
+
+Consider the two settings above. When AI chooses neural architectures without additional adjustments, it generates shallow networks at a frantic pace because they produce many gradient updates quickly. Although deep networks perform well, slow feedback causes AI to ``forget'' them. System optimization similarly favors shorter actions.
+
+\Needspace{5\baselineskip}
+The mathematical explanation is:
+
+\Needspace{5\baselineskip}
+The gradient update is usually:
+
+\[
+\nabla J(\theta)=\mathbb{E}_{a\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(a|s)\cdot A(s,a)\right]
+\]
+
+Here \(\pi_\theta\) is the policy distribution and \(A(s,a)\) the advantage function. Note that this expectation assumes sampling according to \(\pi_\theta\).
+
+\Needspace{5\baselineskip}
+In an asynchronous distributed system, data-generation rate is inversely proportional to execution time \(\Delta t\). The actual sampling probability \(P_{sample}(a)\) is no longer simply policy probability \(\pi(a)\); time distorts it:
+
+\[
+P_{sample}(a)\propto \frac{\pi(a)}{\Delta t(a)}
+\]
+
+This artificially amplifies the probability of sampling shorter actions. Updating directly with the collected data therefore optimizes a time-distorted objective rather than the original one.
+In fact, off-policy algorithms with replay buffers (DQN, SAC, DDPG) are theoretically also nonsynchronous: workers simply add data to the buffer (potentially asynchronously), and the learner randomly samples data for training. Asynchronous workers add fast actions more quickly, increasing their representation in the buffer. However, since the learner samples uniformly at random, if the buffer is large and well mixed, the bias is diluted, though not eliminated. When action-speed differences are small, this error is generally ignored.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Solution: time weighting
+\end{enumerate}
+
+Since short durations cause more frequent sampling, weight each update according to its duration.
+
+\Needspace{5\baselineskip}
+One correction for duration bias introduces time \(\Delta t_k\) (the execution duration of action \(k\)) as a multiplicative weight. The corrected gradient estimate \(\hat{g}\) is:
+
+\[
+\hat{g}\approx \Delta t_k\cdot \nabla_\theta\log\pi_\theta(a_k|s_k)\cdot A(s_k,a_k)
+\]
+
+\[
+\begin{aligned}
+\mathbb{E}_{sample}[\hat{g}]
+&= \sum_a P_{sample}(a)\cdot\left(\Delta t(a)\cdot\nabla\log\pi(a)\cdot A(a)\right)\\
+&\propto \sum_a \left(\frac{\pi(a)}{\Delta t(a)}\right)\cdot\Delta t(a)\cdot\nabla\log\pi(a)\cdot A(a)\\
+&= \sum_a \pi(a)\cdot\nabla\log\pi(a)\cdot A(a)\\
+&= \mathbb{E}_{a\sim\pi}\left[\nabla\log\pi(a)\cdot A(a)\right]
+\end{aligned}
+\]
+
+Conclusion: multiplying by \(\Delta t(a)\) exactly cancels the denominator's \(1/\Delta t(a)\) sampling-frequency factor. The expected gradient returns to the unbiased policy distribution \(\pi(a)\), giving long-duration actions ``fair consideration.''
+\Needspace{5\baselineskip}
+Two practical examples:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Quantitative trading
+\end{enumerate}
+
+In finance, RL generates trading policies.
+
+\begin{itemize}
+\tightlist
+\item
+  Scenario: an agent decides whether to open, close, or hold a position.
+\item
+\Needspace{5\baselineskip}
+  Action differences:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    High-frequency scalping: close after holding for seconds to earn tiny spreads. Trades are extremely frequent and data points extremely dense.
+  \item
+    Trend following: hold for days or weeks while waiting for major moves.
+  \end{itemize}
+\item
+  Consequence: in asynchronous frameworks, high-frequency trading produces thousands or tens of thousands of times more samples than trend trading. The learner is overwhelmed by high-frequency noise, making it believe that ``only frequent trading makes money'' and miss major long-term opportunities.
+\item
+  Correction: assign very large weights (\(\Delta t\)) to long-held trades, telling the model, ``This trade took a week but earned 10\%; it is worth learning carefully.''
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Drug discovery and molecular simulation
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Scenario: an agent generates molecular structures and calls physical simulators to verify their properties.
+\item
+\Needspace{5\baselineskip}
+  Action differences:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Low-precision estimation: empirical formulas or coarse surrogate models (seconds).
+  \item
+    High-precision simulation: density functional theory (DFT) or all-atom dynamics simulations (hours or days).
+  \end{itemize}
+\item
+  Consequence: AI favors molecules that ``low-precision simulators can easily calculate,'' avoiding structurally complex, potentially exceptional drugs requiring high-precision computation for verification.
+\end{itemize}
+
+Note: for numerical stability, \(\Delta t\) is usually clipped or normalized to prevent extremely long tasks from causing exploding gradients.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-45}{%
+\subsection{References}\label{references-45}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{Hands-on Reinforcement Learning (translated title; in Chinese)}.
+\item
+  Mnih, V., Badia, A. P., Mirza, M., et al.~(2016). \href{https://proceedings.mlr.press/v48/mniha16.html}{Asynchronous Methods for Deep Reinforcement Learning}. ICML 2016.
+\item
+  Dhariwal, P., et al.~(2017). \href{https://openai.com/index/openai-baselines-acktr-a2c/}{OpenAI Baselines: ACKTR \& A2C}. OpenAI.
+\item
+  Yang, S., He-Yueya, J., \& Liang, P. (2025). \href{https://arxiv.org/abs/2509.01684}{Reinforcement Learning for Machine Learning Engineering Agents}. arXiv:2509.01684.
+\end{itemize}
+
+\clearpage

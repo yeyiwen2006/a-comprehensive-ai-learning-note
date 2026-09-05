@@ -1,0 +1,148 @@
+---
+title: "30.2 Training Methods for Embodied AI Models"
+chapter_title: "Fundamentals of Embodied AI"
+section_id: "30-02"
+language: en
+source_language: zh
+source_docx: "第6部分 具身智能与世界模型/30.具身智能的基本知识/30.2 具身智能模型的训练方法.docx"
+status: "manually-rebuilt-from-current-docx"
+ocr: "all Word-visible images manually transcribed as Markdown/LaTeX after DrawingML crop review"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 30.2 Training Methods for Embodied AI Models
+
+Training the motion-control policy function is crucial in embodied AI.
+
+## I. Classical Control Theory
+
+This is the most traditional approach to robot control.
+
+- Core logic: Based on the robot's precise dynamic equations (such as Lagrangian dynamics), solve a constrained convex or nonlinear optimization problem over a finite future time horizon to compute the optimal current motor torques.
+- Mathematical formulation:
+
+Suppose the “brain” provides a reference state trajectory $x_k^{ref}$ for the next $N$ steps. The MPC “cerebellum” must minimize tracking error and energy consumption while satisfying dynamic and inequality constraints (such as maximum motor torque $u_{max}$ and friction-cone limits at foot contacts):
+
+$$
+\min_{u_{0:N-1}}
+\sum_{k=0}^{N-1}
+\left(
+\|x_k-x_k^{ref}\|_Q^2+\|u_k\|_R^2
+\right)
++
+\|x_N-x_N^{ref}\|_{Q_f}^2
+$$
+
+$$
+\text{s.t.}\quad x_{k+1}=f(x_k,u_k)\quad \text{(rigid-body dynamics)}
+$$
+
+$$
+h(x_k,u_k)\le 0\quad \text{(physical and collision-avoidance constraints)}
+$$
+
+- Workflow:
+  1. Receive instructions: Receive coarse goals from the brain, such as “walk forward one meter,” or specific foot-placement positions.
+  2. Kinematic and dynamic modeling: Update the Jacobian and inertia matrices in real time.
+  3. Real-time optimization: Use a quadratic programming (QP) solver or nonlinear solver (such as a Newton-based interior-point method) to compute the solution $u_0^*$ to the optimization problem in real time at a very high frequency (such as 500 Hz).
+  4. Issue torques: Convert the first computed control command $u_0^*$ into current signals to drive the low-level servo motors, then repeat the process on a rolling basis at the next control cycle.
+
+## II. Imitation Learning
+
+For tasks such as robotic-arm grasping and dexterous-hand manipulation that depend on high-dimensional visual inputs and for which dense reward functions are difficult to design, imitation learning is currently the leading approach to training the “cerebellum.” In recent years, methods based on diffusion policies and action chunking (such as ACT) have dominated.
+
+- Core logic: Bypass trial and error with a reward function and directly use a neural network to fit high-quality demonstration data produced by human experts through teleoperation.
+- Mathematical formulation (taking Diffusion Policy as an example):
+
+Instead of outputting a single deterministic action, a diffusion model formulates action generation as gradual denoising from random noise. Given the brain's instruction $g$ and current visual/proprioceptive observation $o_t$, the model predicts a future action-trajectory sequence $\mathbf{a}_{t:t+H}$ spanning consecutive steps. The core is to train a conditional noise-prediction network $\epsilon_\theta$ to minimize the mean squared error of denoising:
+
+$$
+\begin{aligned}
+\mathcal{L}
+&=
+\mathbb{E}_{\mathbf{a}^0\sim\mathcal{D},\epsilon\sim\mathcal{N}(0,I),k}
+\left[
+\left\|
+\epsilon-\epsilon_\theta(\mathbf{a}^k,o_t,g,k)
+\right\|_2^2
+\right]
+\end{aligned}
+$$
+
+Here, $\mathbf{a}^0$ is the true expert action sequence, $\mathbf{a}^k$ is the action after $k$ steps of forward Gaussian noising, and $\epsilon$ is the noise actually added.
+
+The quantity computed is the mean squared error (MSE) between the true noise and the network's predicted noise.
+
+The terms in the formula mean:
+
+- $\mathcal{L}$: The overall loss function.
+- $\mathbb{E}$: The expectation symbol, indicating that the subscripted variables are randomly sampled during training and their mean is computed.
+- $\mathbf{a}^0\sim\mathcal{D}$: A ground-truth action sequence sampled from the human-expert demonstration dataset $\mathcal{D}$. Superscript 0 indicates the original, uncontaminated clean action. In an action-chunking architecture, this is usually not a single action but a future sequence, such as joint-torque vectors for the next 16 steps.
+- $\epsilon\sim\mathcal{N}(0,I)$: True Gaussian noise sampled from a standard normal distribution.
+- $k$: The diffusion step, usually sampled uniformly at random from 1 to $K$ (for example, $K=100$).
+- $\mathbf{a}^k$: The noisy action sequence. It is obtained by adding noise $\epsilon$ with the intensity corresponding to step $k$ to the true action $\mathbf{a}^0$. The larger $k$ is, the closer $\mathbf{a}^k$ is to pure noise.
+- $o_t,g$: Conditioning variables. $o_t$ is the robot's current physical observation, such as camera images or proprioceptive joint angles; $g$ is a language instruction or global task goal.
+- $\epsilon_\theta(\cdot)$: The neural network to be trained, typically a 1D U-Net or Transformer with cross-attention. $\theta$ denotes its weights. It takes noisy actions $\mathbf{a}^k$ and conditioning variables as input and outputs its estimate of the noise $\epsilon$ originally added to $\mathbf{a}^k$.
+- $\|\cdot\|_2^2$: The squared L2 norm, requiring the predicted noise to match the noise actually added as closely as possible.
+
+Workflow:
+
+1. Data collection: An operator uses motion-capture equipment or VR controllers to control a robot performing specific tasks in a real or simulated environment, recording trajectory tuples $(o_t,g_t,a_t)$.
+2. Noise injection and model training: During training, inject Gaussian noise at different time steps into expert action sequences. Using a CNN- or Transformer-based U-Net architecture, train the model to predict the injected noise conditioned on visual and instruction features.
+3. Closed-loop inference and execution: During deployment, the model receives real-time observations and starts from pure Gaussian noise. Through multiple iterative denoising steps (such as DDIM sampling), it generates a smooth future action trajectory. After executing its first few steps, it observes the environment again and generates a new trajectory through receding-horizon control.
+
+## III. Reinforcement Learning
+
+Imitation learning has substantial limitations. Embodied AI must not merely imitate humans; it must learn autonomously through exploration. Reinforcement learning is therefore central to and at the frontier of embodied AI, particularly for nonlinear dynamics and complex environmental contacts.
+
+The “cerebellum” policy is defined as a parameterized probability distribution $\pi_\theta(a_t|s_t,g_t)$, where $s_t$ is the proprioceptive state (such as joint positions and IMU data), $g_t$ is a subgoal issued by the brain (such as target velocity or pose), and $a_t$ is a low-level control command.
+
+Taking SAC as an example, its objective maximizes not only cumulative rewards but also policy entropy $\mathcal{H}$, encouraging exploration and improving robustness:
+
+$$
+\begin{aligned}
+J(\pi_\theta)
+&=
+\mathbb{E}_{\tau\sim\pi_\theta}
+\left[
+\sum_{t=0}^{T}
+\gamma^t
+\left(
+r(s_t,a_t,g_t)+
+\alpha\mathcal{H}(\pi_\theta(\cdot|s_t,g_t))
+\right)
+\right]
+\end{aligned}
+$$
+
+Workflow (the Sim2Real paradigm):
+
+1. Construct the simulation environment: Build a digital twin of the robot in a high-precision physics simulator such as Isaac Gym or MuJoCo.
+2. Domain randomization: To bridge the simulation-to-reality (Sim2Real) gap, extensively randomize physical parameters during training, including mass, friction coefficients, motor delays, and sensor noise.
+3. Large-scale parallel training: Run thousands of environments in parallel on GPUs, collect trajectories with PPO/SAC, and update the actor network (the “cerebellum” policy) and critic network.
+4. Real-robot deployment through zero-shot transfer: Freeze the trained actor weights and deploy them directly on the real robot controller, outputting actions from real-time states and brain instructions.
+
+The difficulty of reinforcement learning is that it requires trial and error in the environment, making real-robot training extremely expensive. One approach introduces world-model-based reinforcement learning. Taking VLAW as an example:
+
+1. Collect real-world data: Execute the VLA policy in the real world, collect a small amount of trajectory data containing both successes and failures, and label discrete success/failure rewards.
+2. Post-train the world model and reward model: Combine the collected real trajectories with the original robot-manipulation dataset to jointly train and fine-tune the pretrained world model, preventing overfitting to the small dataset and improving physical accuracy on specific tasks. Meanwhile, fine-tune the vision–language reward model (Qwen3-VL-4B-Instruct) with first-round real data to make reward evaluation more conservative and accurate.
+3. Generate reward-labeled synthetic trajectories: Run the VLA policy in the updated world model to autoregressively generate many synthetic trajectories in a closed loop. Then filter these virtual trajectories with a reward model using a preset probability threshold, retaining samples judged successful.
+4. Post-train the VLA policy: Combine the filtered successful real and synthetic trajectories, assign a weight of 1 to successful trajectories and 0 to failed trajectories, and update the VLA policy with a flow-matching objective.
+5. Iterate: Alternate and repeat these steps, continuously improving the world model and VLA policy together.
+
+Later sections will introduce specific ways of combining world models with embodied AI.
+
+## IV. Embodiment-Native Pretraining
+
+Both reinforcement learning and imitation learning can serve only as post-training fine-tuning methods. Early embodied AI models were mainly fine-tuned from multimodal language models. However, the characteristics of the high-dimensional, continuous physical world differ considerably from discrete language, placing a ceiling on embodied models fine-tuned from language models. Recently, many embodied AI models (such as Generalist's GEN series) have shifted to pretraining from scratch entirely on embodied data, followed by fine-tuning through reinforcement learning and other methods.
+
+## References
+
+- Chi, C., Feng, S., Du, Y., Xu, Z., Cousineau, E., Burchfiel, B., & Song, S. (2023). [Diffusion Policy: Visuomotor Policy Learning via Action Diffusion](https://arxiv.org/abs/2303.04137). RSS.
+- Zhao, T. Z., Kumar, V., Levine, S., & Finn, C. (2023). [Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware](https://arxiv.org/abs/2304.13705). RSS.
+- Haarnoja, T., Zhou, A., Abbeel, P., & Levine, S. (2018). [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor](https://proceedings.mlr.press/v80/haarnoja18b.html). ICML.
+- Tobin, J., Fong, R., Ray, A., Schneider, J., Zaremba, W., & Abbeel, P. (2017). [Domain Randomization for Transferring Deep Neural Networks from Simulation to the Real World](https://arxiv.org/abs/1703.06907). IROS.
+- Guo, Y., Lee, T., Shi, L. X., Chen, J., Liang, P., & Finn, C. (2026). [VLAW: Iterative Co-Improvement of Vision-Language-Action Policy and World Model](https://arxiv.org/abs/2602.12063). arXiv:2602.12063.
+- Generalist Team. (2025). [GEN-0: Embodied Foundation Models That Scale with Physical Interaction](https://generalistai.com/blog/gen-0). Generalist.
+- Generalist Team. (2026). [GEN-1: Scaling Embodied Foundation Models to Mastery](https://generalistai.com/blog/gen-1). Generalist.

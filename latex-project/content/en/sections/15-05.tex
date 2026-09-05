@@ -1,0 +1,129 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{bert}{%
+\section{BERT}\label{bert}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-idea-a-transformer-based-bidirectional-context-encoder}{%
+\subsection{I. Core Idea: A Transformer-Based Bidirectional Context Encoder}\label{i.-core-idea-a-transformer-based-bidirectional-context-encoder}}
+
+BERT's central idea is that truly understanding a word requires considering all the context on both its left and right. It accomplishes this through a ``bidirectional encoder'' architecture. BERT is based on the Transformer model proposed by Google in 2017, but uses only its encoder. BERT-base stacks 12 Transformer encoder layers, while BERT-large has 24.
+
+Attention is the core of the Transformer and the key to BERT's bidirectional understanding. It allows any word in a sequence to interact directly with every other word and calculates association weights between them. In this way, the model ``attends'' to information from the entire sentence when processing each word. Positional encoding is also added to the input word embeddings to tell the model the exact position of each word in the sequence.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-key-techniques-two-pretraining-tasks}{%
+\subsection{II. Key Techniques: Two Pretraining Tasks}\label{ii.-key-techniques-two-pretraining-tasks}}
+
+BERT's strong capabilities also come from its pioneering pretraining method. It is trained on vast amounts of unlabeled text through two carefully designed ``fill-in-the-blank'' tasks, learning general-purpose language representations. The following two tasks are generally performed simultaneously.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Masked language model (MLM)
+\end{enumerate}
+
+Operation: randomly mask 15\% of the words in the input sequence (replacing them with the {[}MASK{]} token).
+
+Task: predict the original words that were masked.
+
+Purpose: this is the key to BERT's ``bidirectionality.'' It forces the model to reconstruct masked words from every word in the context (including words on both sides of each masked word), thereby learning deep bidirectional language representations.
+
+Technique: not all of the selected 15\% of words are replaced with {[}MASK{]}. They are replaced with {[}MASK{]} 80\% of the time; replaced with a random word 10\% of the time, introducing noise to prevent overconfidence and improve robustness; and left unchanged 10\% of the time, because fine-tuning inputs consist of real, unmodified words. The unchanged 10\% exposes the model to complete, uncorrupted original sentences during pretraining, making the pretraining and fine-tuning data conditions more similar. It also teaches the model that ``apple'' is appropriate in this context and that a good contextual vector representation should be generated for it.
+
+Improvement: Span-Mask
+
+BERT's pretraining objective (MLM) randomly selects 15\% of the individual tokens in a sequence (tokens can be understood as words or subwords) and replaces them with {[}MASK{]}. For example: The quick brown {[}MASK{]} jumps {[}MASK{]} the lazy dog. The model must independently predict the original token at each {[}MASK{]} position (such as fox and over). It can use jumps and the to predict over without truly understanding the meaning of the phrase jumps over.
+
+Span-Mask improves on this by masking a continuous text ``span'' rather than individual, scattered tokens, replacing every token in that segment. For example, if the span quick brown fox is masked, the input becomes The {[}MASK{]} {[}MASK{]} {[}MASK{]} jumps over the lazy dog. The model must now reconstruct the entire masked quick brown fox segment at once. It must predict not only what the masked tokens are, but also their internal structure (the order and relationships among quick, brown, and fox) and the span length (learning that it should generate three tokens to fill the gap rather than one or two).
+
+In short, this can force the model to learn richer contextual information, the internal structure of a sequence, and the length of a masked segment. It is considered a harder and more effective pretraining task than standard BERT MLM. For protein sequences, for example, the model predicts a contiguous amino-acid segment rather than a single masked amino acid, potentially forcing it to learn local protein structures or functional motifs more effectively.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Next sentence prediction (NSP)
+\end{enumerate}
+
+BERT adds this task to understand relationships between sentences, which is essential for tasks such as question answering and natural language inference.
+
+Operation: during training, two sentences A and B are given to the model. In 50\% of cases, B is the actual sentence following A (labeled IsNext); in the other 50\%, B is drawn randomly from the corpus (labeled NotNext).
+
+Task: determine whether sentence B is the next sentence after A.
+
+Purpose: enable the model to capture logical and semantic relationships between two text segments.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-fine-tuning}{%
+\subsection{III. Fine-Tuning}\label{iii.-fine-tuning}}
+
+Since BERT is fundamentally an encoder, applying it to a specific downstream task (such as sentiment classification, question answering, or named entity recognition) only requires adding a simple output layer after BERT (such as a fully connected layer) and fine-tuning the model end to end on labeled task data. Because the model already has a strong foundation in general language, fine-tuning on a small amount of data can yield excellent results on a specific task.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-input-representations}{%
+\subsection{IV. Input Representations}\label{iv.-input-representations}}
+
+\Needspace{5\baselineskip}
+BERT's input can represent either a single sentence or a sentence pair (such as a question--answer pair) in a unified way. The input sequence is formed by summing three types of embedding vectors:
+
+Token embeddings: vectors obtained by converting each word.
+
+Segment embeddings: learned vectors that distinguish sentence A from sentence B. For example, every word in sentence A uses EA, and every word in sentence B uses EB.
+
+Position embeddings: vectors representing each word's position in the sequence.
+
+In addition, every sequence begins with a special {[}CLS{]} token, whose final output vector is often used for classification tasks such as sentiment analysis. Sentences are separated by {[}SEP{]} tokens.
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-output-representations-semantic-vectors-at-multiple-levels}{%
+\subsection{V. Output Representations: Semantic Vectors at Multiple Levels}\label{v.-output-representations-semantic-vectors-at-multiple-levels}}
+
+\Needspace{5\baselineskip}
+After complex computations and interactions across L Transformer encoder layers (12 for BERT-base), BERT produces a tensor containing rich semantic information. Depending on the downstream task, this output mainly takes two forms:
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Sequence output
+\end{enumerate}
+
+This is BERT's most basic, original output form. Suppose the input sequence length is N (including {[}CLS{]} and {[}SEP{]}) and the hidden dimension is d\_model (768 for BERT-base). The sequence output can then be expressed as an N*d\_model matrix: H = {[}h\_CLS, h\_1, h\_2, \ldots, h\_n, h\_SEP{]}. Each h\_i is a context-dependent, dynamic word vector of dimension 768. Because of attention, although h\_i corresponds to the word at position i, it integrates information from every other word in the sentence. For example, in ``the apple fell to the ground'' and ``the Apple phone launch,'' the input word is ``apple'' in both cases, but the corresponding output vectors h\_apple are completely different.
+
+Applicable tasks: word/token-level tasks such as named entity recognition (classifying each word) and question answering (locating the ``start position'' and ``end position'' of an answer in a passage).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Pooled output
+\end{enumerate}
+
+BERT uses the final vector h\_CLS of the special {[}CLS{]} token at the first sequence position to represent the semantics of the entire sentence. This highly compressed vector integrates the sentence's core intent and serves as an ``identity card'' for the entire input sequence. Usually, h\_CLS is passed through a ``pooling layer'' consisting of a fully connected layer and a tanh activation function, making the output more suitable as features for classification tasks.
+
+Applicable tasks: sentence-level tasks such as sentiment analysis (determining whether a sentence is positive or negative), sentence-relation classification, and next sentence prediction.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-71}{%
+\subsection{References}\label{references-71}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Devlin, J., Chang, M.-W., Lee, K., \& Toutanova, K. (2019). \href{https://arxiv.org/abs/1810.04805}{BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding}. NAACL 2019.
+\item
+  Joshi, M., Chen, D., Liu, Y., Weld, D. S., Zettlemoyer, L., \& Levy, O. (2020). \href{https://arxiv.org/abs/1907.10529}{SpanBERT: Improving Pre-training by Representing and Predicting Spans}. TACL.
+\end{itemize}
+
+\clearpage

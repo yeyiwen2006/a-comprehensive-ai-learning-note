@@ -1,0 +1,145 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{evaluation-metrics-for-classification}{%
+\section{Evaluation Metrics for Classification}\label{evaluation-metrics-for-classification}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-why-do-we-need-multiple-evaluation-metrics}{%
+\subsection{I. Why Do We Need Multiple Evaluation Metrics?}\label{i.-why-do-we-need-multiple-evaluation-metrics}}
+
+During training, cross-entropy loss and Softmax regression guide gradient descent and parameter adjustment. After training, parameters are fixed, and we need a ``human-readable'' report card to judge practical performance. A cross-entropy value such as 0.43 is not intuitive enough. We want to know: ``What kinds of mistakes will this model make in my task, and how much can I trust it?''
+
+Accuracy alone is insufficient. Suppose a classifier detects NAD+-binding proteins, which constitute 0.05\% of the samples. A model that takes a shortcut and predicts every protein as ``not NAD+-binding'' achieves 99.95\% accuracy (0.05\% incorrect and 99.95\% correct), yet is useless because it finds none of the proteins we want.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-core-concepts}{%
+\subsection{II. Core Concepts}\label{ii.-core-concepts}}
+
+\Needspace{5\baselineskip}
+\hypertarget{precision}{%
+\subsubsection{1. Precision}\label{precision}}
+
+Meaning: among all results predicted ``yes'' (positive), the proportion that truly are ``yes.''
+
+\Needspace{5\baselineskip}
+Formula:
+
+\[
+\mathrm{Precision}=\frac{TP}{TP+FP}
+\]
+
+True positive (TP): truly ``yes,'' predicted ``yes.''
+
+False positive (FP): actually ``no,'' but incorrectly predicted ``yes.''
+
+Goal: reduce false positives and avoid classifying false samples as true---``better fewer than incorrect.'' In spam detection, high precision means that a large proportion of messages flagged as spam genuinely are spam, with few legitimate messages wrongly flagged.
+
+\Needspace{5\baselineskip}
+\hypertarget{recall}{%
+\subsubsection{2. Recall}\label{recall}}
+
+Meaning: among all truly positive samples, the proportion successfully predicted ``yes.''
+
+\Needspace{5\baselineskip}
+Formula:
+
+\[
+\mathrm{Recall}=\frac{TP}{TP+FN}
+\]
+
+False negative (FN): truly ``yes,'' but incorrectly predicted ``no''---a missed case.
+
+Goal: reduce missed cases, ``preferring a thousand false alarms to missing one target.'' In infectious-disease screening, high recall means the model successfully identifies the vast majority of actual patients, with few missed diagnoses, finding everyone who should be found.
+
+\Needspace{5\baselineskip}
+\hypertarget{the-precisionrecall-trade-off}{%
+\subsubsection{3. The Precision--Recall Trade-Off}\label{the-precisionrecall-trade-off}}
+
+These metrics usually conflict. A model outputs a probability score (such as 0\%--100\%), not simply ``yes'' or ``no.'' A decision threshold (such as 50\%) determines when the score counts as ``yes.'' A very high threshold, such as 99\%, makes the model ``cautious'': precision is high, but FN is high and recall low. A low threshold, such as 10\%, makes it ``lenient,'' predicting ``yes'' whenever there is even a small possibility. Recall is high, but FP is also high (many negatives are misclassified), giving low precision.
+
+\Needspace{5\baselineskip}
+\hypertarget{the-precisionrecall-curve}{%
+\subsubsection{4. The Precision--Recall Curve}\label{the-precisionrecall-curve}}
+
+Sweep the decision threshold from high to low, record each corresponding (recall, precision) point, and connect them.
+
+X axis: recall.
+
+Y axis: precision.
+
+At a threshold of 100\%, the model predicts nothing as ``yes,'' giving recall 0. Gradually lowering the threshold (99\%, 98\%, and so forth) produces more positive predictions, so recall increases monotonically or remains unchanged. Precision usually fluctuates downward. Plotting and connecting all (recall, precision) points gives the P--R curve.
+
+\Needspace{5\baselineskip}
+The P--R curve is a powerful evaluation tool, especially for imbalanced data (such as 99\% negative and 1\% positive):
+
+Ideal model: a perfect curve reaches the top-right corner (1, 1), maintaining 100\% precision (no incorrect predictions) at 100\% recall (all positives found).
+
+Excellent model: the curve stays as close as possible to the top-right corner.
+
+Poor model: the curve lies close to the bottom-left corner.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-common-metrics-based-on-these-concepts}{%
+\subsection{III. Common Metrics Based on These Concepts}\label{iii.-common-metrics-based-on-these-concepts}}
+
+\Needspace{5\baselineskip}
+\hypertarget{area-under-the-precisionrecall-curve-aupr}{%
+\subsubsection{1. Area Under the Precision--Recall Curve (AUPR)}\label{area-under-the-precisionrecall-curve-aupr}}
+
+For a correct pairing, compute the model's precision and recall for that pairing and the area beneath its P--R curve. A larger area, closer to 1.0, indicates stronger overall performance across thresholds.
+
+When many samples can be paired in multiple ways (such as one-to-many protein--function pairings), each pairing has an AUPR value, and these values are often averaged over all pairing types.
+
+Mean AUPR (sometimes simply called AUPR) measures global average performance across pairing decisions: it is ``pair-centered.'' It does not focus on individual paired objects, but evaluates millions of ``Does (A, B) match?'' decisions.
+
+For protein--function pairing, for example, it ``flattens'' all possible function predictions for all proteins and computes one overall precision--recall area. It asks: ``How well does the model perform across all its function-assignment decisions?'' Under this calculation, common functions---those occurring in many proteins---have greater influence on the total AUPR.
+
+\Needspace{5\baselineskip}
+\hypertarget{maximum-f-score-f-max}{%
+\subsubsection{2. Maximum F-Score (F-max)}\label{maximum-f-score-f-max}}
+
+\(F_{\max}\) is ``centered on the objects being paired.''
+
+Consider protein--function pairing. The output for each pair is a probability from 0 to 1, requiring a threshold, such as 0.5, to decide whether to assign that function.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  First, evaluate each protein at a given threshold \(t\) using the \(F\)-measure (\(F\)-score), the harmonic mean of precision and recall.
+\end{enumerate}
+
+Why the harmonic mean? It penalizes extreme weaknesses more harshly. It is high only when both precision and recall are high; if either is poor, it gives a much lower value than the arithmetic mean. In classification, particularly imbalanced tasks such as protein-function annotation, severely uneven performance is undesirable. Suppose model A at threshold \(t\) has precision \(P=1.0\) (every prediction correct) but recall \(R=0.01\) (missing \(99\%\) of targets). It is almost useless in practice because it finds virtually nothing.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Next, average the \(F\)-scores over all proteins, producing a function of \(t\). Try every possible threshold \(t\) and find the \(t\) maximizing the mean \(F\)-score. Report this ``best-case'' mean \(F\)-score as \(F_{\max}\).
+\end{enumerate}
+
+Here, \(F_{\max}\) asks: ``For an ordinary protein, how accurately can the model predict its function list at its best-performing threshold?'' It reveals average performance for individual proteins, regardless of whether their functions are rare.
+
+\Needspace{5\baselineskip}
+\hypertarget{combining-the-two}{%
+\subsubsection{3. Combining the Two}\label{combining-the-two}}
+
+A good model must excel on both dimensions. For example, it could have high \(F_{\max}\) (correctly guessing several functions per protein on average) but low AUPR (making many small errors across common functions). Such a model is not good enough.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-33}{%
+\subsection{References}\label{references-33}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Davis, J., \& Goadrich, M. (2006). \href{https://doi.org/10.1145/1143844.1143874}{The Relationship Between Precision-Recall and ROC Curves}. ICML 2006.
+\item
+  Radivojac, P., Clark, W. T., Oron, T. R., et al.~(2013). \href{https://www.nature.com/articles/nmeth.2340}{A large-scale evaluation of computational protein function prediction}. Nature Methods.
+\end{itemize}
+
+\clearpage

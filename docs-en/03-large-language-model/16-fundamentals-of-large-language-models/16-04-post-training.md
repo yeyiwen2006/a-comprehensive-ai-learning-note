@@ -1,0 +1,148 @@
+---
+title: "16.4 Post-Training"
+chapter_title: "Fundamentals of Large Language Models"
+section_id: "16-04"
+language: en
+source_language: zh
+source_docx: "第3部分 大语言模型/16.大语言模型的基本原理/16.4 后训练.docx"
+status: "auto-converted"
+ocr: "no pending image placeholders in public Markdown"
+license: "CC BY-NC-SA 4.0"
+local_only: false
+---
+
+# 16.4 Post-Training
+
+Although pretraining teaches a model vast amounts of knowledge from text (and possibly other data types), the resulting model often cannot yet meet actual human needs. Large models generally require post-training, that is, transfer learning. Specifically, knowledge learned by a model pretrained on a “source task” is “transferred” and applied to a new but related “target task.”
+
+## I. Why Is Transfer Learning So Important?
+
+Transfer learning arose to address two central challenges in traditional machine learning:
+
+1. Data scarcity: in many real-world applications, such as medical imaging or identifying particular species, obtaining large amounts of high-quality labeled data is difficult and expensive.
+
+2. Training costs: training a large deep learning model from scratch (such as ResNet or VGG in vision, or BERT or GPT in NLP) requires enormous computational resources (weeks of GPU/TPU time) and large datasets such as ImageNet.
+
+Transfer learning solves both problems by “standing on the shoulders of giants.” A research institution can first train a powerful “foundation model” on a large, general-purpose dataset (ImageNet, for example, contains over one million general images), allowing it to learn thoroughly how to extract image features layer by layer. For a specific target task with only 1,000 X-ray images, there is no need to train from scratch. The foundation model can be loaded and then trained quickly and efficiently for the X-ray task.
+
+## II. Comparing Two Strategies
+
+1. Fixed-encoder learning: freeze all parameters in the pretrained model's main body (its “encoder” or “backbone”), leaving them unchanged during training. Treat this frozen model as a fixed “feature extractor.” Remove the original output layer (such as ImageNet's 1,000-class output) and replace it with a small classification/regression “head” designed for the target task (usually one or more fully connected layers). Train only the new head.
+
+Suitable setting: the target dataset is very small, and source and target tasks are highly similar, for example both are natural-image classification.
+
+2. Full-model tuning: initially freeze all parameters in the main body to avoid large gradients destroying pretrained knowledge. Later in training, once the loss gradients for the added head are small, unfreeze the model weights and fine-tune the whole model using an extremely small learning rate. Its principles are explained in more detail later.
+
+Suitable setting: the target dataset is relatively sufficient, or the source and target tasks differ to some degree. Almost all LLMs use this approach for post-training.
+
+3. LoRA fine-tuning (Microsoft, ICLR 2022)
+
+(1) Core principle
+
+LoRA rests on a central assumption: when an overparameterized large model adapts to a specific task, its weight-update matrix (W_t+1-W_t) has a very low “intrinsic rank,” denoted r (usually 4 or 8; beyond 8, outputs generally cease to improve). This means the endpoints of all vectors in W_t+1-W_t lie in an r-dimensional space (with only r basis vectors). The design freezes the original parameters W_0 (assumed to be a d*k matrix), trains a low-rank r*k matrix A and a low-rank d*r matrix B, and obtains final parameters W=W_0+B*A.
+
+For Transformer-based models, we generally fine-tune only W_Q and W_V.
+
+(2) Parameter initialization
+
+Matrix A is initialized from a random Gaussian distribution, and matrix B is initialized to zero.
+
+If both are zero matrices, the chain rule makes the output gradients with respect to A and B both zero, preventing updates.
+
+If both use Gaussian initialization, A*B is nonzero. This amounts to adding a random noise matrix directly to pretrained weights, damaging valuable knowledge learned from vast amounts of data.
+
+(3) Learning rate
+
+LoRA fine-tuning generally uses a higher learning rate than full-model fine-tuning. Full-model fine-tuning can alter all dimensions and must be extremely cautious. LoRA can alter only r dimensions of the high-dimensional space (a low-dimensional manifold), so its risk is relatively smaller.
+
+(4) Multi-task c-LoRA
+
+Suppose A1*B1, A2*B2, ... are trained separately on different task datasets. Directly setting W=W0+A1*B1+A2*B2+... performs poorly because the task-specific matrices interfere. For example, if A1*B1 represents moving 5 units in a direction and A2*B2 represents moving 4 units in the same direction, their sum is 9, far from either original update. Possible solutions are:
+
+Orthogonalization: make Ai*Bi and Aj*Bj orthogonal. Although matrix A is written with m rows and n columns, geometrically updating m n-dimensional weight vectors is equivalent to updating one long m*n vector. Orthogonality means the long vectors have zero dot product, so the movements represented by the two matrices do not interfere overall. It suffices to force entries of Aj*Bj to zero wherever Ai*Bi is nonzero; it suffices to force entries of Aj to zero wherever Ai is nonzero.
+
+MoE architecture: use models fine-tuned in different ways as different experts.
+
+Merging (averaging or weighted averaging): this takes intermediate values or convex combinations of the parameters. Since loss as a function of parameters is approximately convex, the results are often acceptable.
+
+## III. Supervised Fine-Tuning
+
+1. Core method of supervised fine-tuning
+
+Pretraining on enormous amounts of unlabeled text gives an LLM rich knowledge and language abilities. Its output, however, is essentially “I will assemble related text about whatever you want to know,” with little inclination to adopt a question-answering format. We therefore use a dataset of instruction–answer pairs and train the LLM to predict the answer tokens. Unlike pretraining, the task is “read the full instruction and the first t-1 answer tokens, then predict answer token t.” Although the model also makes predictions while reading the instruction, their correctness does not matter. A loss mask sets the instruction portion's loss to 0.
+
+Supervised fine-tuning datasets can be manually constructed, synthesized through distillation (generated by other AI models), or synthesized through self-improvement (self-generation, self-scoring, and refinement). It is important to balance sample counts across task types and vary question wording when training LLMs.
+
+2. Overall supervised fine-tuning procedure
+
+Suppose an AI must distinguish cats from dogs with only 100 photographs. A large pretrained model may not recognize the specific cat or dog breeds in question, but it has seen millions of images and already understands low-level features (edges, corners, colors), intermediate features (textures such as fur and grass, or circles such as eyes and wheels), and high-level features (faces, legs, car shapes).
+
+(1) Load the pretrained model's main body
+
+In frameworks such as Keras or PyTorch, this takes a single line. For example: model = ResNet50(weights='imagenet', include_top=False). Here, weights='imagenet' tells the framework to load all the knowledge (weights) learned on ImageNet. include_top=False means “discard the final 1,000-class layer; I only want the powerful feature-extraction layers before it.”
+
+(2) Manually add our new layers
+
+For example: x = model.output obtains the “body's” output, and predictions = Dense(2, activation='softmax')(x) adds a new “head” with only two outputs. This new Dense(2, ...) layer is entirely untrained, with randomly initialized weights.
+
+(3) Freeze the pretrained body's weights
+
+Otherwise, the randomly initialized Dense(2) layer makes completely random, poor guesses, and backpropagation attempts to correct them with a huge “correction signal” (gradient), damaging all the pretrained knowledge learned from the enormous dataset. A line of code therefore tells the model that the “giant's body” (for example, all ResNet50 layers) is already excellent and must remain “read-only” during training. In Keras, this is expressed as model.layers[i].trainable = False. All correction signals are used only to train the newly added layers.
+
+(4) Unfreeze and fine-tune carefully
+
+The “giant's body” has learned excellent knowledge from enormous datasets such as ImageNet, including how to identify “fur” and “eyes,” but that knowledge is general. It is not yet optimized specifically for distinguishing cats from dogs.
+
+Once the new head has been trained and no longer sends chaotic signals, the uppermost layers of the pretrained body can be unfrozen. Lower layers such as image edge/color detectors usually remain frozen. These layers are then trained again with an extremely small learning rate (such as learning rate=0.00001), allowing them to fine-tune themselves for the specific task. They are already well-trained “experts.” A conventional learning rate (such as 0.001) still produces too strong a correction signal, like repairing a precision watch with a sledgehammer, and can destroy them instantly. An extremely small learning rate lets them lean slightly toward the task while retaining their existing knowledge.
+
+3. Expert distillation (DeepSeek-V3.2, 2025)
+
+Expert distillation combines supervised fine-tuning and model distillation (see the model-compression section). Its central idea is that specialized expert models learn different tasks, and their capabilities are then combined into a unified large model.
+
+Starting from the same DeepSeek-V3.2 base checkpoint, the team trains dedicated models for six specialized task categories: mathematics, programming, logical reasoning, general agents, agentic coding, and agentic search. These models use data in both thinking and direct-answer modes and are strengthened through large-scale RL so that every expert reaches a high level in its own domain.
+
+The experts then generate high-quality domain data to train a unified large model. Experiments show that a model distilled from expert data already performs very close to the individual experts. Subsequent RL fine-tuning can essentially eliminate the remaining gap.
+
+## IV. Reinforcement Fine-Tuning
+
+During pretraining, the model learns self-supervised from training data by making its predicted next token close to the actual text. During supervised fine-tuning (SFT), it imitates human response patterns in the training data by making its answers close to human annotations.
+
+The common weakness is that the model can only imitate the logic in the data like a parrot and has weak generalization. Some tasks are also easy for humans to evaluate but difficult to solve directly: comparing which of two jokes is funnier is easy, but writing an excellent joke is difficult.
+
+Reinforcement learning can address this. Rather than teaching the model how to write every word, we only need to score its answers. It can explore independently and discover paths to high scores, potentially developing methods beyond human performance. AlphaGo is an example.
+
+1. LLMs and Markov decision processes
+
+For an LLM, its condition after each generated token can be viewed as a “state” in a Markov decision process, while generating a token x_t is an “action” (for agents, this can also be a function call, API execution, or code-fragment output). This transitions the state from (x_1,...,x_t-1) to (x_1,...,x_t). The “policy” is the probability of selecting each token. The reward function depends on criteria such as output correctness, format compliance, and successful program execution.
+
+When answering the same specific question, probabilistic randomness in each generated token (each action) produces many different answers. Taking N answers corresponds to sampling N complete start-to-end trajectories in reinforcement learning, which can be used for Monte Carlo estimation—estimating probabilities from frequencies.
+
+2. The concept of reinforcement fine-tuning
+
+Before LLMs, RL had been used productively in games, board games, and other domains, but those models struggled to achieve genuinely general intelligence. After LLMs emerged, researchers found that pretraining on vast amounts of data gave them strong semantic understanding and pattern matching, but their essence remained probabilistic “compression” and “imitation,” preventing capabilities beyond the training data. RL, by contrast, explores and optimizes through environmental interaction based only on an objective. It can generate methods beyond existing patterns, such as AlphaGo's “Move 37.” Traditional RL struggles to converge when extended to general problems, largely because it lacks an LLM prior.
+
+A new paradigm followed: apply RL fine-tuning to an LLM already rich in knowledge and understanding to expand its capabilities, such as reasoning. Compared with traditional reinforcement learning, reinforcement fine-tuning generally has a larger action space and fewer samples.
+
+Reinforcement fine-tuning is further divided into reinforcement learning from human feedback (RLHF) and reinforcement learning targeting capabilities such as reasoning. The former requires giving high scores to responses aligned with human preferences. Since human feedback is expensive and inefficient, a reward model is often trained to imitate those preferences and score the model being trained. The latter likewise requires clear scoring criteria or a strong evaluator, such as training reasoning on mathematics or programming problems and rewarding correct results.
+
+Specific algorithms are introduced in the reinforcement fine-tuning section.
+
+3. Reinforcement learning from human feedback (RLHF)
+
+After supervised fine-tuning and reasoning-oriented reinforcement fine-tuning, a model may be extremely capable yet difficult to use. It may mix Chinese and English, repeat itself, or speak aggressively, because it focuses on solving the problem rather than making its answer comfortable for humans to read. Safety issues may also arise if its values are not aligned with humans.
+
+Rewards are crucial in reinforcement learning, but humans cannot score every training response. Instead, the model generates two or more answers to a question, humans rank them, and the answer–ranking data trains a reward model. The reward model is encouraged to assign higher scores to better responses and lower scores to worse ones.
+
+4. Reinforcement learning from verifiable rewards (RLVR)
+
+Choosing an appropriate reward is essential in reinforcement fine-tuning: it determines whether RL can model the problem correctly. RLHF uses human feedback as the reward signal for reinforcement learning. However, human reviewers cannot easily tell within seconds whether 500 lines of Python truly contain no bugs or whether a complex mathematical proof is rigorous. The model can therefore learn shortcuts: producing attractive but incorrect code or plausible-sounding nonsense to obtain higher rewards. This is reward hacking. Because of limitations in the reward function, maximizing it does not always best achieve the intended objective; a model may receive high rewards while performing poorly on real-world tasks.
+
+RLVR uses objective, verifiable outcomes such as mathematical answers and programming outputs as reward signals, effectively avoiding reward hacking. During training, the model independently explores optimal paths to correct answers. These paths may even be methods humans have never invented, meaning RLVR can potentially produce superhuman performance on the corresponding tasks.
+
+## References
+
+- Hu, E. J., Shen, Y., Wallis, P., et al. (2022). [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685). ICLR 2022.
+- DeepSeek-AI. (2025). [DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models](https://arxiv.org/abs/2512.02556). arXiv:2512.02556.
+- Silver, D., Huang, A., Maddison, C. J., et al. (2016). [Mastering the game of Go with deep neural networks and tree search](https://www.nature.com/articles/nature16961). Nature.
+- Ouyang, L., Wu, J., Jiang, X., et al. (2022). [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155). NeurIPS 2022.
+- DeepSeek-AI. (2025). [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning](https://arxiv.org/abs/2501.12948). arXiv:2501.12948.

@@ -1,0 +1,43 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux968fux673aux68afux5ea6ux4e0bux964dsgd}{%
+\section{随机梯度下降（SGD）}\label{ux968fux673aux68afux5ea6ux4e0bux964dsgd}}
+
+随机梯度下降（SGD），即对于随机打乱顺序的样本，每次取一个或取一个批量（Batch）进行梯度下降。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux5728ux8badux7ec3ux4e2dsgdux9762ux4e34ux7684ux95eeux9898}{%
+\subsection{一、在训练中SGD面临的问题}\label{ux4e00ux5728ux8badux7ec3ux4e2dsgdux9762ux4e34ux7684ux95eeux9898}}
+
+收敛速度问题：在特定地形（如狭长``峡谷''或鞍点）下收敛极其缓慢。
+
+学习率选择问题：所有参数共享一个学习率，难以适应不同参数（特征）的梯度尺度。
+
+Adam 优化器正是为了同时解决这两个问题，它结合了两种先进的优化思想：Momentum (动量法) 和 RMSProp。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8csgdux5728ux5f3aux5316ux5faeux8c03ux4e2dux6548ux679cux53cdux800cux53efux80fdux4e0dux900aux4e8eadamw2025}{%
+\subsection{二、SGD在强化微调中效果反而可能不逊于AdamW（2025）}\label{ux4e8csgdux5728ux5f3aux5316ux5faeux8c03ux4e2dux6548ux679cux53cdux800cux53efux80fdux4e0dux900aux4e8eadamw2025}}
+
+论文《Reinforcement Learning Finetunes Small Subnetworks in Large Language Models》指出，在强化微调中，大部分参数事实上是不变的，强化微调具有内生稀疏性。本质上说，语义关联性已经在预训练中学习好了，强化微调主要是调整它们的概率分布，以强化正确的推理路径。因此局部优化曲面简单，不需要AdamW这种复杂系统。在AdamW中，由于自带动量和自适应机制，局部梯度很小也会更新，导致参数改动大，实际上很多是噪音；在SGD中，只有梯度显著的才会被调整，符合强化微调实际需求。
+
+实验证明，用SGD进行全量微调，实际修改的参数可能比LoRA还少，效果却不逊于用AdamW进行全量微调。学习率需要取较大的值（1e-1左右）。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-25}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-25}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Robbins, H., \& Monro, S. (1951). \href{https://doi.org/10.1214/aoms/1177729586}{A Stochastic Approximation Method}. The Annals of Mathematical Statistics.
+\item
+  Bottou, L., Curtis, F. E., \& Nocedal, J. (2018). \href{https://epubs.siam.org/doi/10.1137/16M1080173}{Optimization Methods for Large-Scale Machine Learning}. SIAM Review.
+\item
+  Mukherjee, S., Yuan, L., Hakkani-Tur, D., \& Peng, H. (2025). \href{https://arxiv.org/abs/2505.11711}{Reinforcement Learning Finetunes Small Subnetworks in Large Language Models}. NeurIPS 2025.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,224 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{positional-encoding}{%
+\section{Positional Encoding}\label{positional-encoding}}
+
+The standard Transformer processing pipeline does not account for differences arising from tokens occupying different positions in a sequence. To add this ``patch,'' sinusoidal positional encoding is generally used.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-sinusoidal-positional-encoding-in-the-classic-transformer}{%
+\subsection{I. Sinusoidal Positional Encoding in the Classic Transformer}\label{i.-sinusoidal-positional-encoding-in-the-classic-transformer}}
+
+\Needspace{5\baselineskip}
+\hypertarget{formulas}{%
+\subsubsection{(1) Formulas}\label{formulas}}
+
+Suppose an input sequence has length \(L\), and the model's hidden-layer embedding dimension is \(d_{model}\). For a word at position \(pos\) in the sequence (\(0 \le pos < L\)), and dimension \(i\) of its word vector (\(0 \le i < d_{model}\)), its positional encoding \(PE\) is calculated as follows:
+
+\[
+PE_{(pos,2i)}=\sin\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]
+
+\[
+PE_{(pos,2i+1)}=\cos\left(\frac{pos}{10000^{2i/d_{model}}}\right)
+\]
+
+For each position, these functions generate a positional vector, which is added to the word's embedding vector. This ``addition'' means fusion: while learning information about a token, the model also learns positional information.
+
+\Needspace{5\baselineskip}
+\hypertarget{explanation-of-the-principles}{%
+\subsubsection{(2) Explanation of the Principles}\label{explanation-of-the-principles}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Why use sine and cosine?
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Boundedness: every dimension of the positional-encoding vector stays within \([-1,1]\), preventing it from overwhelming the semantic information.
+\item
+\Needspace{5\baselineskip}
+  Adaptability to sequences of different lengths:
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Suppose a maximum length \(L_{max}\) is specified, with position \(pos\) encoded as:
+
+\[
+PE(pos)=\frac{pos}{L_{max}}
+\]
+
+If \(L_{max}\) is set dynamically according to the current sentence length, a fatal flaw arises: inconsistent step sizes. For example, in sentence A of length 5, the first word is 0.0, the second is 0.2, and the adjacent distance is 0.2. In sentence B of length 100, the first word is 0.0, the second is 0.01, and the adjacent distance is 0.01. The model cannot learn a stable notion of ``adjacency.''
+
+If \(L_{max}\) is a very large global constant (such as 10000), a large \(L_{max}\) makes the difference between adjacent positions, \(\Delta=\frac{1}{10000}\), extremely small. In deep neural networks, such tiny numerical differences are easily overwhelmed by noise, making it difficult to distinguish position 100 from position 101. By comparison, the high-frequency components of sinusoidal encoding vary sharply, making adjacent positions easier to distinguish.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Positional additivity: from the trigonometric identities
+\end{enumerate}
+
+\[
+\sin(\alpha+\beta)=\sin\alpha\cos\beta+\cos\alpha\sin\beta
+\]
+
+\[
+\cos(\alpha+\beta)=\cos\alpha\cos\beta-\sin\alpha\sin\beta
+\]
+
+\Needspace{5\baselineskip}
+we obtain:
+
+\[
+\begin{pmatrix}
+PE_{(pos+k,2i)} \\
+PE_{(pos+k,2i+1)}
+\end{pmatrix}
+=
+\begin{pmatrix}
+\cos(\omega_i k) & \sin(\omega_i k) \\
+-\sin(\omega_i k) & \cos(\omega_i k)
+\end{pmatrix}
+\begin{pmatrix}
+PE_{(pos,2i)} \\
+PE_{(pos,2i+1)}
+\end{pmatrix}
+\]
+
+This is a standard rotation matrix. The conclusion is that \(PE_{(pos+k)}\) can indeed be obtained by multiplying \(PE_{(pos)}\) by a linear transformation matrix that is independent of \(pos\) and depends only on \(k\). This makes it easy for self-attention to learn to attend to words ``\(k\) units away from the current word,'' giving it the ability to capture relative positions.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Why is positional encoding a \(d_{model}\)-dimensional vector with a different value for each feature dimension \(i\)?
+\end{enumerate}
+
+First, although semantic and positional encodings have the same number of dimensions, there is no physical one-to-one correspondence between their i-th dimensions.
+
+Why does positional encoding need \(d_{model}\) dimensions? Representing information in a long sequence with only one dimension causes serious problems. For example, if a sequence contains one million tokens, then over a full rotation of \(2\pi\) radians, the angle between the 5th and 15th tokens is \(2 \times 10^{-5}\pi\). After applying trigonometric functions, the difference is nearly zero and disappears into random noise.
+
+Using the same positional-encoding value in every dimension also introduces two problems. First, it shifts the semantic vector along the uniform direction \((1,1,\ldots)\), which might already represent another semantic meaning. Second, layer normalization normalizes each vector:
+
+\[
+\mathrm{LN}(x)=\frac{x-\mu}{\sigma}\cdot\gamma+\beta
+\]
+
+This directly ``washes away'' the positional encoding.
+
+We therefore need more dimensions. Just as a one-bit Boolean value can represent only 0 or 1, while eight bits can represent 256 values, the rotational properties of trigonometric functions suggest using a ``clock'' with \(d_{model}\) hands. The high-order digits of the encoding are stored in slowly rotating ``hour hands,'' while low-order digits are stored in rapidly rotating ``second hands'':
+
+\Needspace{5\baselineskip}
+The denominator \(10000^{2i/d_{model}}\) can be understood as a wavelength, or its reciprocal as a frequency. Letting \(\omega_i=\frac{1}{10000^{2i/d_{model}}}\) denote the frequency simplifies the formulas to:
+
+\[
+PE_{(pos,2i)}=\sin(\omega_i\cdot pos)
+\]
+
+\[
+PE_{(pos,2i+1)}=\cos(\omega_i\cdot pos)
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Low-index dimensions (small \(i\)): \(\omega_i\) is large, the wavelength is short, and the rate of change is high.
+\item
+  High-index dimensions (large \(i\)): \(\omega_i\) is extremely small, the wavelength is extremely long, and the rate of change is low.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+In the Transformer formula, the denominator \(10000^{2i/d}\) is the wavelength \(\lambda_i\). For example:
+
+\begin{itemize}
+\tightlist
+\item
+  When \(i=0\) (dimension 0), the denominator is \(10000^0=1\). This is an extremely short wave: each increase of \(2\pi\) in \(pos\) (about 6 words) completes one full sinusoidal cycle. Role: like a ``vernier caliper,'' it precisely distinguishes small changes between adjacent positions (such as \(pos=5\) and \(pos=6\)).
+\item
+  When \(i=256\) (dimension 512), the denominator is \(10000^1=10000\). This is an extremely long wave: \(pos\) must increase by \(10000\cdot2\pi\) (about 60,000 words) to complete one cycle. Role: like an ``odometer,'' it is nearly a straight line within a short sentence and provides coarse, global positioning.
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Why must wavelengths grow exponentially as \(10000^{2i/d}\) rather than linearly?
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Imagine using a few numbered dials to represent numbers from 0 to 10000:
+
+\begin{itemize}
+\tightlist
+\item
+  Linear scheme (extremely inefficient): with three dials representing 1s, 2s, and 3s, respectively, the representable range is very narrow; otherwise, thousands of dials are required to count to 10000.
+\item
+\Needspace{5\baselineskip}
+  Exponential scheme (decimal/place-value notation): three dials represent:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Dial A: \(10^0=1\) (ones)
+  \item
+    Dial B: \(10^1=10\) (tens)
+  \item
+    Dial C: \(10^2=100\) (hundreds)
+  \end{itemize}
+\end{itemize}
+
+Notice that 1, 10, and 100 grow exponentially. Just three dimensions (ones, tens, and hundreds) cover a large range, with a unique representation for each number.
+
+The Transformer's 512 dimensions follow the same logic. We do not want dimensions 10 and 11 to have almost identical wavelengths (such as 50 and 51), which would be wasteful. We want their wavelengths to grow multiplicatively. Exponentially allocating wavelengths allows the 512 dimensions to cover the enormous range from \(2\pi\) to \(10000\cdot2\pi\) evenly, giving the model uniform resolution on a logarithmic scale.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-rotary-position-embedding-rope}{%
+\subsection{II. Rotary Position Embedding (RoPE)}\label{ii.-rotary-position-embedding-rope}}
+
+RoPE is currently the standard positional-encoding method in major mainstream language models such as LLaMA and Qwen. Instead of directly ``adding'' a positional vector as above, it injects positional information through ``rotation'' in the complex plane, inherently providing sensitivity to relative positions.
+
+For an input vector \(x=[x_1,x_2,\ldots,x_d]^T\) at position \(m\), RoPE treats each pair of adjacent dimensions as two-dimensional coordinates and multiplies them by a rotation matrix determined by \(m\). Its full block-diagonal rotation matrix \(R_{\Theta,m}^{d}\) is:
+
+\[
+\begin{pmatrix}
+\cos(m\theta_1) & -\sin(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+\sin(m\theta_1) & \cos(m\theta_1) & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & \cos(m\theta_2) & -\sin(m\theta_2) & \cdots & 0 & 0 \\
+0 & 0 & \sin(m\theta_2) & \cos(m\theta_2) & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & \cos(m\theta_{d/2}) & -\sin(m\theta_{d/2}) \\
+0 & 0 & 0 & 0 & \cdots & \sin(m\theta_{d/2}) & \cos(m\theta_{d/2})
+\end{pmatrix}
+\]
+
+Here, the rotation angle is \(\theta_i=10000^{-2(i-1)/d}\). The feature vector with positional information injected is \(x'_m=R_{\Theta,m}^{d}x\).
+
+For non-one-dimensional sequences such as video, since video is 3D data (time, height, and width), V-JEPA 2 uses a 3D extension of 1D-RoPE. Specifically, the total feature dimension \(d\) is divided into three approximately equal parts: \(d_t\) (time axis), \(d_h\) (height axis), and \(d_w\) (width axis). For a video patch with temporal coordinate \(t\) and spatial coordinates \((h,w)\), the corresponding one-dimensional rotations are applied separately to these three feature segments.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-70}{%
+\subsection{References}\label{references-70}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Vaswani, A., Shazeer, N., Parmar, N., et al.~(2017). \href{https://arxiv.org/abs/1706.03762}{Attention Is All You Need}. NeurIPS 2017.
+\item
+  Su, J., Lu, Y., Pan, S., Murtadha, A., Wen, B., \& Liu, Y. (2021). \href{https://arxiv.org/abs/2104.09864}{RoFormer: Enhanced Transformer with Rotary Position Embedding}. arXiv:2104.09864.
+\item
+  Assran, M., Bardes, A., Fan, D., et al.~(2025). \href{https://arxiv.org/abs/2506.09985}{V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning}. arXiv:2506.09985.
+\end{itemize}
+
+\clearpage

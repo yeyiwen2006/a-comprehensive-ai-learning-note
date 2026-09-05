@@ -1,0 +1,285 @@
+\setcounter{section}{7}
+
+\Needspace{5\baselineskip}
+\hypertarget{choosing-kl-divergence}{%
+\section{Choosing KL Divergence}\label{choosing-kl-divergence}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-kl-divergence-in-llms}{%
+\subsection{I. KL Divergence in LLMs}\label{i.-kl-divergence-in-llms}}
+
+In large language models, KL divergence measures the difference between output probability distributions. It is calculated over a vocabulary of size \(V\), rather than over the hidden-layer dimensions before the output, because the outputs of large language models are fundamentally discrete tokens.
+
+\(D(P \Vert Q)=\sum_{i=1}^{V}p_i\log\frac{p_i}{q_i}\) is equivalent to the expectation of \(\log(p_i/q_i)\) under the distribution \(p\).
+
+\Needspace{5\baselineskip}
+For an LLM, the KL divergence for an autoregressive output of \(n\) tokens is:
+
+\[
+D_{KL}(P(Y) \Vert Q(Y))=\sum_Y P(Y)\log\frac{P(Y)}{Q(Y)}
+\]
+
+\Needspace{5\baselineskip}
+Because directly summing over all possible sequences is infeasible (there are \(V^n\) possibilities), we need to use the autoregressive property to decompose it:
+
+\[
+\begin{aligned}
+D_{KL}(P(Y) \Vert Q(Y))
+&= \mathbb{E}_{Y\sim P}\left[\sum_{t=1}^{n}\left(\log P(y_t\mid y_{<t})-\log Q(y_t\mid y_{<t})\right)\right] \\
+&= \sum_{t=1}^{n}\mathbb{E}_{Y\sim P}\left[\log\frac{P(y_t\mid y_{<t})}{Q(y_t\mid y_{<t})}\right]
+\end{aligned}
+\]
+
+The difficulty here lies in \(Y\sim P\), which requires considering the probability distribution of the entire sequence. Notice that the conditional probabilities on the right are conditioned on \(y_{<t}\). Given a known distribution of \(y_{<t}\), the autoregressive property also determines the distribution of \(y_t\), so the distribution of \(Y=\{y_1,\ldots,y_t\}\) is known as well. We can therefore rewrite the expression as:
+
+\[
+D_{KL}(P(Y) \Vert Q(Y))
+=\sum_{t=1}^{n}\mathbb{E}_{y_{<t}\sim P(y_{<t})}\left[
+D_{KL}\left(P(y_t\mid y_{<t}) \Vert Q(y_t\mid y_{<t})\right)
+\right]
+\]
+
+This means that the KL divergence between two sequence distributions equals the sum of the expected KL divergences between their conditional probability distributions at each step (where the expectation is calculated over histories generated from distribution P). Using Monte Carlo estimation, averaging over trajectories generated under policy P approximates the expectation under policy P.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-the-k1-and-k3-estimators}{%
+\subsection{II. The K1 and K3 Estimators}\label{ii.-the-k1-and-k3-estimators}}
+
+\Needspace{5\baselineskip}
+For a sequence of length T:
+
+\textbf{The Naïve K1 Estimator}
+
+\Needspace{5\baselineskip}
+This is the most intuitive Monte Carlo estimate: it directly calculates the log-likelihood ratio:
+
+\[
+K1=\sum_{t=1}^{T}K1_t
+=\sum_{t=1}^{T}\log\frac{\pi_\theta(y_t\mid x,y_{<t})}{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}
+\]
+
+Properties: it is an unbiased estimate of \(D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})\), but has relatively high variance in practice.
+
+\textbf{The Schulman K3 Estimator}
+
+\Needspace{5\baselineskip}
+Proposed by John Schulman to reduce variance, it uses the property \(\log(x)\le x-1\) for approximation:
+
+\[
+K3=\sum_{t=1}^{T}K3_t
+=\sum_{t=1}^{T}\left(
+\frac{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}
+-1
+-\log\frac{\pi_{\mathrm{ref}}(y_t\mid x,y_{<t})}{\pi_\theta(y_t\mid x,y_{<t})}
+\right)
+\]
+
+Properties: it is also an unbiased estimate of \(D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})\) (its expectation is the KL divergence), and has lower variance than K1.
+
+The KL divergence term can be subtracted from the reward or added to the loss. In actual training, K1 in the loss and K3 in the reward are unstable; K3 in the loss (lower variance) or K1 in the reward (unbiased gradient) is generally used. GRPO uses the former by default, but research in 2025 showed that the latter may actually perform better, because the former is itself unbiased but has a biased gradient.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii-proving-that-k1-in-the-reward-has-an-unbiased-gradient-and-k3-in-the-loss-has-a-biased-gradient}{%
+\subsubsection{(III) Proving That K1 in the Reward Has an Unbiased Gradient and K3 in the Loss Has a Biased Gradient}\label{iii-proving-that-k1-in-the-reward-has-an-unbiased-gradient-and-k3-in-the-loss-has-a-biased-gradient}}
+
+\Needspace{5\baselineskip}
+The gradient of the true objective we need to optimize (reverse KL) is:
+
+\[
+\nabla_\theta D_{KL}(\pi_\theta \Vert \pi_{\mathrm{ref}})
+=\mathbb{E}_{y\sim\pi_\theta}\left[
+\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\nabla_\theta\log\pi_\theta
+\right]
+\]
+
+Note: to simplify the notation, the condition \(x\) and summation signs are omitted so that we can focus on the core terms.
+
+\textbf{Derivation 1: K1 in the Reward (Unbiased)}
+
+\Needspace{5\baselineskip}
+When K1 is placed in the reward, we do not differentiate K1 itself (it is treated as a constant reward). Instead, we use the properties of REINFORCE/PPO:
+
+\[
+\mathrm{Gradient}
+=\mathbb{E}_{y\sim\pi_\theta}\left[K1\cdot\nabla_\theta\log\pi_\theta\right]
+\]
+
+\Needspace{5\baselineskip}
+Substituting \(K1=\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\):
+
+\[
+\mathrm{Gradient}
+=\mathbb{E}_{y\sim\pi_\theta}\left[
+\left(\log\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\right)
+\nabla_\theta\log\pi_\theta
+\right]
+\]
+
+Conclusion: this is identical to the expression for the true reverse KL gradient, so it is unbiased.
+
+\textbf{Derivation 2: K3 in the Loss (Biased)}
+
+When K3 is placed in the loss, we directly calculate the expectation of \(\nabla_\theta K3\). Let the ratio be \(r=\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\); then \(K3=r-1-\log r\). Note that \(\log r=\log\pi_{\mathrm{ref}}-\log\pi_\theta\).
+
+\Needspace{5\baselineskip}
+We need to calculate \(\mathbb{E}_{y\sim\pi_\theta}[\nabla_\theta K3]\). First, consider the terms in \(\nabla_\theta K3\):
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \(\nabla_\theta r=\nabla_\theta(\pi_{\mathrm{ref}}\cdot\pi_\theta^{-1})=\pi_{\mathrm{ref}}\cdot(-1)\pi_\theta^{-2}\cdot\nabla_\theta\pi_\theta=-\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\cdot\frac{\nabla_\theta\pi_\theta}{\pi_\theta}=-r\nabla_\theta\log\pi_\theta\)
+\item
+  \(\nabla_\theta(-1)=0\)
+\item
+  \(\nabla_\theta(-\log r)=\nabla_\theta(\log\pi_\theta-\log\pi_{\mathrm{ref}})=\nabla_\theta\log\pi_\theta\) (assuming \(\pi_{\mathrm{ref}}\) is fixed)
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Combining these terms gives \(\nabla_\theta K3\):
+
+\[
+\nabla_\theta K3
+=-r\nabla_\theta\log\pi_\theta+\nabla_\theta\log\pi_\theta
+=(1-r)\nabla_\theta\log\pi_\theta
+\]
+
+\Needspace{5\baselineskip}
+Now calculate its expectation:
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}[\nabla_\theta K3]
+=\mathbb{E}_{y\sim\pi_\theta}\left[(1-r)\nabla_\theta\log\pi_\theta\right]
+\]
+
+\[
+\begin{aligned}
+&=\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta\right]
+-\mathbb{E}_{y\sim\pi_\theta}\left[
+\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla_\theta\log\pi_\theta
+\right] \\
+&=-\mathbb{E}_{y\sim\pi_\theta}\left[
+\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla_\theta\log\pi_\theta
+\right]
+\end{aligned}
+\]
+
+The first term is \(0\) (the score function property).
+
+\Needspace{5\baselineskip}
+Comparison with the true gradient:
+
+\begin{itemize}
+\tightlist
+\item
+  True reverse KL gradient: \(\mathbb{E}\left[\log\left(\frac{\pi_\theta}{\pi_{\mathrm{ref}}}\right)\nabla\log\pi_\theta\right]\)
+\item
+  K3-in-loss gradient: \(\mathbb{E}\left[-\frac{\pi_{\mathrm{ref}}}{\pi_\theta}\nabla\log\pi_\theta\right]\)
+\end{itemize}
+
+In fact, the gradient of the K3 estimator becomes the gradient of the corresponding forward KL divergence, rather than reverse KL divergence. This makes model training more inclined to cover existing modes than to explore the regions with the highest rewards within those modes.
+
+\Needspace{5\baselineskip}
+The score function property is explained below:
+
+\textbf{1. Why: Mathematical Derivation}
+
+\Needspace{5\baselineskip}
+We want to prove:
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]=0
+\]
+
+\Needspace{5\baselineskip}
+The proof proceeds as follows:
+
+\textbf{Step 1: Expand the definition of the expectation.} The expectation \(\mathbb{E}\) is a weighted sum over all possible \(y\) (a sum for discrete LLM token sequences, and an integral for a continuous space).
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]
+=\sum_y \pi_\theta(y)\cdot\nabla_\theta\log\pi_\theta(y)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{Step 2: Apply the log-derivative trick.} By the chain rule in calculus, \(\nabla\log f(x)=\frac{\nabla f(x)}{f(x)}\). Applying it to \(\log\pi_\theta(y)\):
+
+\[
+\nabla_\theta\log\pi_\theta(y)
+=\frac{\nabla_\theta\pi_\theta(y)}{\pi_\theta(y)}
+\]
+
+\Needspace{5\baselineskip}
+\textbf{Step 3: Substitute back and cancel.} Substitute the result of Step 2 into the expression in Step 1:
+
+\[
+\sum_y \pi_\theta(y)\cdot
+\frac{\nabla_\theta\pi_\theta(y)}{\pi_\theta(y)}
+=\sum_y \nabla_\theta\pi_\theta(y)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{Step 4: Exchange the order of summation and differentiation.} Under certain regularity conditions, we can exchange the summation sign \(\sum\) and gradient operator \(\nabla_\theta\):
+
+\[
+\sum_y \nabla_\theta\pi_\theta(y)
+=\nabla_\theta\left(\sum_y \pi_\theta(y)\right)
+\]
+
+\Needspace{5\baselineskip}
+\textbf{Step 5: Use probability normalization.} This is the crucial step. For any probability distribution, the probabilities of all possible events must always sum to 1:
+
+\[
+\sum_y \pi_\theta(y)=1
+\]
+
+\Needspace{5\baselineskip}
+Therefore:
+
+\[
+\nabla_\theta\left(\sum_y \pi_\theta(y)\right)
+=\nabla_\theta(1)=0
+\]
+
+\Needspace{5\baselineskip}
+Hence:
+
+\[
+\mathbb{E}_{y\sim\pi_\theta}\left[\nabla_\theta\log\pi_\theta(y)\right]=0
+\]
+
+\textbf{2. Intuitive Understanding}
+
+``Conservation of probability mass'': the gradient \(\nabla_\theta\pi_\theta(y)\) represents whether the probability of sample \(y\) increases or decreases when we make a small adjustment to the parameters \(\theta\).
+
+\begin{itemize}
+\tightlist
+\item
+  If we increase the probabilities of some samples (positive gradients), then the probabilities of other samples must decrease (negative gradients) so that the total probability always remains 1.
+\item
+  The expression \(\mathbb{E}[\nabla\log\pi]=\sum\nabla\pi\) actually calculates the sum of the probability changes across all possible samples.
+\item
+  Because the total probability (the size of this ``cake'') is fixed at 1, all the changes must sum to 0.
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-86}{%
+\subsection{References}\label{references-86}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schulman, J. (2020). \href{http://joschu.net/blog/kl-approx.html}{Approximating KL Divergence}.
+\item
+  Liu, K., Liu, J. K., Chen, M., \& Liu, Y. (2025). \href{https://arxiv.org/abs/2510.01555}{Rethinking KL Regularization in RLHF: From Value Estimation to Gradient Optimization}. arXiv:2510.01555.
+\item
+  Ziegler, D. M., Stiennon, N., Wu, J., et al.~(2019). \href{https://arxiv.org/abs/1909.08593}{Fine-Tuning Language Models from Human Preferences}. arXiv:1909.08593.
+\item
+  Ouyang, L., Wu, J., Jiang, X., et al.~(2022). \href{https://arxiv.org/abs/2203.02155}{Training language models to follow instructions with human feedback}. NeurIPS 2022.
+\item
+  Ahmadian, A., Cremer, C., Gallé, M., et al.~(2024). \href{https://arxiv.org/abs/2402.14740}{Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs}. ACL 2024.
+\end{itemize}
+
+\clearpage

@@ -1,0 +1,47 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{attention-residuals}{%
+\section{Attention Residuals}\label{attention-residuals}}
+
+\begin{quote}
+This article is a paper-reading note. Its content represents the corresponding paper's method or the author's understanding and should not be treated directly as field consensus or engineering best practice.
+\end{quote}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-background-3}{%
+\subsection{I. Background}\label{i.-background-3}}
+
+Residual connections inside mainstream large models add each layer's processed result to its original input and pass the sum to the next layer. After accumulation at each layer, information is compressed into a mixed state. This mixed state grows increasingly bloated at later layers. As the network deepens, its numerical values grow larger, causing PreNorm dilution: the deeper the layer, the more its contribution is diluted. Experiments show that removing quite a few layers from a very deep model barely changes its performance. We are actually wasting substantial computation.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-the-core-idea}{%
+\subsection{II. The Core Idea}\label{ii.-the-core-idea}}
+
+In current mainstream architectures, each layer's input = the network input + the outputs of all preceding layers (with equal weights). The Kimi team proposes that each layer instead use the network input + the outputs of all preceding layers (summed with weights according to need), with those weights learned by the layer itself.
+
+Specifically, attention lets the model decide which layers to attend to. Each layer has its own small vector (only one, making it extremely lightweight), which is used to calculate similarities with the outputs of all preceding layers. Higher similarity gives a larger weight, lower similarity a smaller weight, and the results are summed with these weights. Notably, attention layers and MLP layers can attend to different historical layers.
+
+In this way, information from early layers is not overwhelmed and can be retrieved as needed. The total number of added parameters is negligible relative to a large model with billions of parameters, but performance improves to 1.25 times the original, equivalent to saving 20\% of the computation at the same performance.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-block-attention-residuals}{%
+\subsection{III. Block Attention Residuals}\label{iii.-block-attention-residuals}}
+
+The engineering problem is that each layer must store the outputs of all preceding layers in order to attend to them. Modern large models generally have over a hundred layers, and during training they are split into many parts distributed across different machines (pipeline parallelism). Every machine must maintain all layer outputs, so memory and communication pressure increase dramatically.
+
+Kimi's solution is to store groups rather than individual layers. All layers are divided into several blocks; within each block, outputs are still accumulated in the traditional way, but the entire block is compressed into a vector and stored. Attention then selects across blocks. Storage therefore changes from being proportional to the number of layers to being proportional to the number of blocks. Experiments find that dividing the model into approximately 8 blocks recovers most of the effectiveness of full attention residuals, while requiring only a small fraction of the original memory and communication overhead.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-104}{%
+\subsection{References}\label{references-104}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Kimi Team. (2026). \href{https://arxiv.org/abs/2603.15031}{Attention Residuals}. arXiv:2603.15031.
+\end{itemize}
+
+\clearpage

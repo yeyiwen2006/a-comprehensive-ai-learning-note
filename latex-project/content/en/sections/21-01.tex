@@ -1,0 +1,300 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{dapo}{%
+\section{DAPO}\label{dapo}}
+
+\begin{quote}
+This article is a paper-reading note. Its content represents the corresponding paper's method or the author's understanding and should not be treated directly as field consensus or engineering best practice.
+\end{quote}
+
+DeepSeek's success demonstrates the effectiveness and superiority of the GRPO paradigm. However, GRPO still has stability problems and can readily cause training to collapse. DeepSeek has enough data to make it tend toward stability. For small- and medium-scale reinforcement fine-tuning with smaller data batches, however, the algorithm itself must be improved.
+
+Decoupled Clip and Dynamic Sampling Policy Optimization (DAPO) is one such improvement. It largely follows the algorithmic principles of GRPO while making several engineering changes.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-improvements}{%
+\subsection{I. Improvements}\label{i.-improvements}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Clip-Higher mechanism (decoupled clipping)
+\end{enumerate}
+
+This is DAPO's most prominent mathematical improvement.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Principle}: traditional PPO/GRPO uses a symmetric clipping range \((1-\epsilon, 1+\epsilon)\). DAPO decouples the upper and lower bounds, setting them to \((1-\epsilon_{\mathrm{low}}, 1+\epsilon_{\mathrm{high}})\).
+\item
+  \textbf{Purpose}: early in training, the model needs to explore tokens that originally have low probabilities but may be correct.
+\item
+  \textbf{Operation}: increasing \(\epsilon_{\mathrm{high}}\) (for example, setting it higher than \(\epsilon_{\mathrm{low}}\)) allows the model to take larger steps in the ``improving'' direction, when the probability ratio \(r_t(\theta)>1\), without premature clipping. This can significantly increase the model's entropy early in training, that is, its exploration ability.
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Dynamic sampling
+\end{enumerate}
+
+This is an improvement in data efficiency.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Principle}: in tasks such as mathematical reasoning, if all \(G\) answers \(\{o_1,\ldots,o_G\}\) sampled for the same question \(q\) are correct (all rewards are 1) or incorrect (all rewards are 0), the group provides very limited or even ineffective gradient information because there is no contrast.
+\item
+\Needspace{5\baselineskip}
+  \textbf{Operation}: DAPO introduces a filtering condition:
+\end{itemize}
+
+\[
+0 < \left|\{o_i \mid \mathrm{isEquivalent}(a,o_i)\}\right| < G
+\]
+
+Training occurs only when a group contains both positive and negative samples. This means that it automatically filters out prompts that are ``too easy'' or ``too difficult,'' retaining only samples with ``effective gradients.''
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Token-level policy gradient loss (why this is fairer is explained later)
+\end{enumerate}
+
+This improves how the loss is aggregated.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Principle}: standard implementations usually calculate each sample's loss and then average over the batch size. But this ignores differences in sample length. Long sequences contain more tokens; simply averaging over samples dilutes the contribution of each token in a long sequence.
+\item
+\Needspace{5\baselineskip}
+  \textbf{Operation}: DAPO sums and averages over all tokens in the batch, dividing by the total token count:
+\end{itemize}
+
+\[
+\mathcal{L}
+=
+\frac{1}{\sum_i |o_i|}
+\sum_i \sum_t \mathcal{L}_{i,t}.
+\]
+
+This ensures that every token contributes fairly to the gradient, regardless of response length.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Overlength reward adjustment
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Principle}: prevent the model from generating endlessly long nonsense to ``farm points,'' a form of reward hacking.
+\item
+  \textbf{Operation}: define a maximum-length threshold and impose a soft penalty beyond it, with longer outputs penalized more heavily.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii-workflow-comparison}{%
+\subsubsection{(II) Workflow Comparison}\label{ii-workflow-comparison}}
+
+\Needspace{5\baselineskip}
+GRPO:
+
+\Needspace{5\baselineskip}
+Standard GRPO workflow:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Rollout}: for each question \(q\), sample a group of \(G\) outputs \(\{o_1,o_2,\ldots,o_G\}\) from the old policy \(\pi_{\theta_{\mathrm{old}}}\).
+\item
+  \textbf{Reward evaluation}: calculate the reward of each output, \(\{r_1,r_2,\ldots,r_G\}\).
+\item
+\Needspace{5\baselineskip}
+  \textbf{Advantage estimation}:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Calculate the mean and standard deviation of rewards within the group.
+  \item
+\Needspace{5\baselineskip}
+    Standardize the advantage:
+  \end{itemize}
+\end{enumerate}
+
+\[
+A_i
+=
+\frac{r_i-\mathrm{mean}(r)}
+{\mathrm{std}(r)+\epsilon}.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{Loss calculation}:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Calculate each sample's PPO loss.
+  \item
+\Needspace{5\baselineskip}
+    Aggregate by averaging the losses of the \(G\) samples:
+  \end{itemize}
+\end{enumerate}
+
+\[
+\frac{1}{G}\sum_i \mathcal{L}_i.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  \textbf{Backpropagation}: update the model parameters.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+DAPO:
+
+\Needspace{5\baselineskip}
+DAPO workflow:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Oversampling}: for each question \(q\), first sample, possibly more than \(G\) outputs, or sample \(G\) and then filter.
+\item
+  \textbf{Reward evaluation}: calculate rewards and determine whether each answer is correct (reward 1 or 0).
+\item
+\Needspace{5\baselineskip}
+  \textbf{Dynamic sampling filter}:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Inspect the reward distribution of this group.
+  \item
+    If all answers are correct (all rewards are 1) or incorrect (all rewards are 0), discard the entire group without training on it.
+  \item
+    The principle is that all-correct or all-incorrect groups have no differences in ``relative advantage,'' producing ineffective or noisy gradients. DAPO trains only on boundary samples where the model is ``between understanding and not understanding.''
+  \end{itemize}
+\item
+  \textbf{Advantage estimation}: for retained valid groups, calculate the within-group relative advantage \(\hat{A}_{i,t}\).
+\item
+\Needspace{5\baselineskip}
+  \textbf{Decoupled loss calculation}:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Calculate token-level probability ratios \(r_{i,t}(\theta)\).
+  \item
+    \textbf{Clip-Higher}: calculate the loss using the asymmetric clipping range \([1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}]\).
+  \item
+\Needspace{5\baselineskip}
+    \textbf{Aggregation}: do not average over samples; sum over all tokens and divide by the total token count:
+  \end{itemize}
+\end{enumerate}
+
+\[
+\frac{1}{\sum_i |o_i|}
+\sum_i \sum_t \mathcal{L}_{i,t}.
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  \textbf{Backpropagation}: update the model parameters.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii-why-average-the-objective-over-tokens}{%
+\subsubsection{(III) Why Average the Objective over Tokens?}\label{iii-why-average-the-objective-over-tokens}}
+
+Two concepts must be distinguished here: ``sample weight'' and ``decision weight (token weight).''
+
+In a large language model, generating each token is an individual decision, or action.
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Short sample (10 tokens)}: the model makes 10 decisions.
+\item
+  \textbf{Long sample (1000 tokens)}: the model makes 1000 decisions.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+With standard GRPO/PPO sample-level averaging:
+
+\[
+\mathcal{L}
+=
+\frac{1}{\mathrm{BatchSize}}
+\sum_i \mathcal{L}_{\mathrm{sample},i}
+\]
+
+This is equivalent to giving the same weight to ``an exam requiring 10 decisions'' and ``an exam requiring 1000 decisions.''
+
+\begin{itemize}
+\tightlist
+\item
+  In the short sample, each token (each decision) has gradient weight \(\frac{1}{10}\).
+\item
+  In the long sample, each token (each decision) has gradient weight \(\frac{1}{1000}\).
+\end{itemize}
+
+The conclusion is that this GRPO approach strongly favors short samples. It treats each word in a short sample as 100 times more important than each word in a long sample, encouraging the model to take shortcuts because correction of errors in the middle of long reasoning chains is diluted.
+
+\Needspace{5\baselineskip}
+With DAPO's token-level averaging:
+
+\[
+\mathcal{L}
+=
+\frac{1}{\mathrm{TotalTokens}}
+\sum_i \sum_t \mathcal{L}_{i,t}
+\]
+
+This is equivalent to saying that every decision (token) is equal. Whether in a short sentence or a lengthy response, every token contributes a gradient weight of \(\frac{1}{\mathrm{TotalTokens}}\).
+
+Summary and applications: GRPO better ensures sufficient training on each sample, while DAPO prevents gradients for key logical steps in long-chain reasoning samples with binary rewards from becoming too small. It is more suitable for improving convergence efficiency and logical density in complex reasoning. An appropriate training method can be selected according to the particular need.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-109}{%
+\subsection{References}\label{references-109}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Yu, Q., Zhang, Z., Zhu, R., et al.~(2025). \href{https://arxiv.org/abs/2503.14476}{DAPO: An Open-Source LLM Reinforcement Learning System at Scale}. arXiv:2503.14476.
+\end{itemize}
+
+\clearpage

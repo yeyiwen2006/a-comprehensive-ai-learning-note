@@ -1,0 +1,35 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux591aux4e13ux5bb6on-policy-distillation}{%
+\section{多专家On-policy Distillation}\label{ux591aux4e13ux5bb6on-policy-distillation}}
+
+DeepSeek-V4采用了多专家On-policy Distillation的方法，先基于预训练模型，用SFT和RL训练多个领域专家，再将其知识蒸馏到统一的学生模型中。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux9886ux57dfux4e13ux5bb6ux6a21ux578bux8badux7ec3}{%
+\subsection{一、领域专家模型训练}\label{ux4e00ux9886ux57dfux4e13ux5bb6ux6a21ux578bux8badux7ec3}}
+
+基于预训练模型，用SFT和GRPO训练一批领域专家模型，领域包括数学、代码、Agent、指令跟随等。业界一般还会给每个领域训练多种推理强度的子版本，分别对应Non-think、Think、Think Max，三种模式在RL时用不同的length penalty和context window。
+
+做Agent类专家时还引入了~Quick Instruction~机制，聊天产品里有很多附加任务，比如判断是否触发搜索、识别意图。传统做法是另一个小模型做这些，导致每次上下文变化，要重新进行预填充。V4 的做法是给输入序列直接附一组special token，每个token对应一个附加任务，复用现成的KV cache，降低首字延迟。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8con-policy-distillation}{%
+\subsection{二、On-Policy Distillation}\label{ux4e8con-policy-distillation}}
+
+运用On-Policy蒸馏方法，把所有专家的知识融合到统一的学生模型里。相比于Off-policy方法而言，On-policy更能避免灾难性遗忘。具体而言，即让学生在自己生成的轨迹上学习多个专家模型的输出概率分布。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-106}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-106}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  DeepSeek-AI. (2026). \href{https://arxiv.org/abs/2606.19348}{DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence}. arXiv:2606.19348.
+\end{itemize}
+
+\clearpage

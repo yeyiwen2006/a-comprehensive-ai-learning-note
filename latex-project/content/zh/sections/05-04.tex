@@ -1,0 +1,170 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{adamux4f18ux5316ux5668}{%
+\section{Adam优化器}\label{adamux4f18ux5316ux5668}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00adam-ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}{%
+\subsection{一、Adam 解决了什么问题？}\label{ux4e00adam-ux89e3ux51b3ux4e86ux4ec0ux4e48ux95eeux9898}}
+
+针对优化过程中遇到的各种问题，Adam优化器既利用了Momentum 的``惯性''``动量''特性，以加速收敛、抑制震荡，并冲过鞍点；也利用了RMSProp的``自适应学习率''特性，以为不同参数分配合理的更新步长。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cadam-ux5982ux4f55ux89e3ux51b3ux95eeux9898}{%
+\subsection{二、Adam 如何解决问题？}\label{ux4e8cadam-ux5982ux4f55ux89e3ux51b3ux95eeux9898}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  它是两种思路的集大成者，同时跟踪了两个``矩''的指数移动平均值：
+\end{enumerate}
+
+一阶矩（First Moment）：梯度的平均值 \(m_t\)（Momentum部分），用于决定更新的方向和动量。
+
+二阶矩（Second Moment）：梯度平方的平均值 \(v_t\)（RMSProp部分），用于自适应地缩放每个参数的学习率（像RMSProp）。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  关键改进：偏差修正（Bias Correction）
+\end{enumerate}
+
+Adam 论文的作者发现一个问题：\(m_t\) 和 \(v_t\) 都在 \(t=0\) 时被初始化为 \(0\)。由于 \(\beta_1\) 和 \(\beta_2\) 都非常接近 \(1\)（例如 \(0.9\) 和 \(0.999\)），在训练刚开始的几个步骤中，\(m_t\) 和 \(v_t\) 会严重地偏向 \(0\)（Bias towards zero）。为此，他们将 \(m_t\) 和 \(v_t\) 的表达式根据时间参数进行了缩放。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6570ux5b66ux8868ux8fbe-2}{%
+\subsection{三、数学表达}\label{ux4e09ux6570ux5b66ux8868ux8fbe-2}}
+
+超参数包括 \(\alpha\)（学习率）、\(\beta_1\)（例如 \(0.9\)）、\(\beta_2\)（例如 \(0.999\)）和 \(\epsilon\)（例如 \(10^{-8}\)）。初始化为 \(m_0=0\)（一阶矩向量）、\(v_0=0\)（二阶矩向量）、\(t=0\)。
+
+\Needspace{5\baselineskip}
+在时间步 \(t\)：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  令 \(t \leftarrow t+1\)。
+\item
+\Needspace{5\baselineskip}
+  计算梯度：
+\end{enumerate}
+
+\[
+g_t = \nabla_\theta J(\theta_{t-1})
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  更新有偏的一阶矩（Momentum）：
+\end{enumerate}
+
+\[
+m_t = \beta_1 \cdot m_{t-1} + (1-\beta_1)\cdot g_t
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  更新有偏的二阶矩（RMSProp）：
+\end{enumerate}
+
+\[
+v_t = \beta_2 \cdot v_{t-1} + (1-\beta_2)\cdot (g_t \odot g_t)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  计算偏差修正后的一阶矩：
+\end{enumerate}
+
+\[
+\hat{m}_t = \frac{m_t}{1-\beta_1^t}
+\]
+
+当 \(t\) 很小时，\(1-\beta_1^t\) 接近 \(0\)，起到了放大 \(m_t\) 的作用。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  计算偏差修正后的二阶矩：
+\end{enumerate}
+
+\[
+\hat{v}_t = \frac{v_t}{1-\beta_2^t}
+\]
+
+当 \(t\) 很大时，\(\beta^t \to 0\)，分母 \(\to 1\)，修正作用消失。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{6}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  执行参数更新：
+\end{enumerate}
+
+\[
+\theta_t = \theta_{t-1} - \alpha \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux5e94ux7528}{%
+\subsection{四、应用}\label{ux56dbux5e94ux7528}}
+
+Adam（及其变体，如AdamW）是当今深度学习领域绝大多数任务的默认首选优化器。
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  在语言模型中：对于模型中的``词嵌入层''（Embedding Layer），输入是各种文段，输出是需要的对该文段的综合向量表示（以进行下一步处理）。例如词汇表有 50,000 个词，每个词是一个300维向量，那这一层的参数量就是15,000,000。现在我们要更新参数，通过参数的正确收敛（每个词嵌入向量能有效表达语义），实现对输入文段的正确输出表示。但在任何一个句子中，只都涉及少数几个词，这些词的参数被激活和更新，结果常用词的梯度更新频繁，而稀有词（如 ``aardvark''）的梯度更新极少。SGD会导致常用词训练过度，而稀有词训练不足。Adam 的自适应学习率完美解决了这个问题。稀有词的梯度长期为 \(0\)，导致 \(v_t\) 非常小，以指数形式衰减并趋近于 \(0\)。一旦这个稀有词在输入文段中出现，一个非零的 \(g_t\) 会除以一个极小的值，从而产生一个巨大的有效学习率，使其得到充分更新。
+\item
+  处理大型复杂模型时：大模型动辄拥有数千亿甚至数万亿的参数。Adam的动量特性有助于在如此复杂和高维的损失空间中平滑地导航，避免``卡''在鞍点或平坦区域，从而大大加快收敛速度。
+\item
+  搭建一个新的CV模型时：SGD+Momentum 可能需要一个精心设计和调试的``学习率衰减策略''（learning rate schedule）才能收敛，而Adam对学习率的初始选择不那么敏感，通常使用默认值（如α=0.001）就能快速得到一个非常好的结果。
+\item
+  在生成模型训练中：如GANs的训练是一个``二人零和游戏''（生成器vs判别器），双方需要精妙的平衡。如果一方训练过快，另一方就会崩溃，导致训练失败。Adam 的自适应学习率有助于自动平衡两者的训练速度，防止某一方的梯度爆炸或消失，大大提高了 GAN 训练的成功率。又如扩散模型非常庞大且训练成本高昂。它们依赖 Adam 来确保在海量数据上进行稳定且高效的训练。
+\item
+  在强化学习中：智能体一边学习，一边改变其策略，这导致它采集到的数据分布（即``经验''）是不断变化的。RL中的奖励信号往往是稀疏且延迟的，这导致计算出的梯度方差极大，噪声很大。Adam的二阶矩 \(v_t\)（RMSProp部分）能有效估计梯度的方差，而一阶矩 \(m_t\)（Momentum部分）能平滑噪声，增强鲁棒性。这使其成为在RL这种高噪声、非平稳环境中进行稳定训练的理想选择。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-28}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-28}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Kingma, D. P., \& Ba, J. (2015). \href{https://arxiv.org/abs/1412.6980}{Adam: A Method for Stochastic Optimization}. ICLR 2015.
+\end{itemize}
+
+\clearpage

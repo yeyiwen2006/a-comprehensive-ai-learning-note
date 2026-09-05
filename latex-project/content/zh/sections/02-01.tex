@@ -1,0 +1,278 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6a21ux578bux6b63ux5219ux5316}{%
+\section{模型正则化}\label{ux6a21ux578bux6b63ux5219ux5316}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux6b63ux5219ux5316ux7684ux6570ux5b66ux57faux7840}{%
+\subsection{一、模型正则化的数学基础}\label{ux4e00ux6a21ux578bux6b63ux5219ux5316ux7684ux6570ux5b66ux57faux7840}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  偏差与方差
+\end{enumerate}
+
+偏差大：预测数据均值偏离实际均值，欠拟合。
+
+方差大：预测数据学到了太多噪声，过拟合。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  贝叶斯公式
+\end{enumerate}
+
+先验概率p(A)是对一个事件概率如疾病发病率的初始估计；
+
+p(B\textbar A)是A发生的情况下，能观测到证据B如阳性的概率；
+
+p(B)是A发生与否两种情况下观测到证据B的概率和；
+
+p(A\textbar B)是观测到证据B的情况下，对概率估计的进一步更新。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  贝叶斯公式在正则化中的应用
+\end{enumerate}
+
+\Needspace{8\baselineskip}
+（1）基本量
+
+p(参数)：先验项，也就是对``参数值为X''这一事件发生概率的初始估计，若无正则化项则可忽略本项。
+
+p(输出\textbar 参数)：这里的``输出''指的是，在已知``参数值为X''的条件下，出现输出Y的概率；损失函数最小时，p(输出\textbar 参数)最大（最大似然估计得到）。
+
+p(输出)：尝试过所有参数后，得到该输出Y的平均概率，一般认为是常数（从可输出的词的列表中完全随机抽取）。
+
+\Needspace{8\baselineskip}
+（2）基本解释
+
+p(参数\textbar 输出)=p(输出\textbar 参数)\emph{p(参数)/p(输出)，或者说认为p(参数\textbar 输出)正比于p(输出\textbar 参数)}p(参数)，我们的目的是在给定输出的情况下，求出最可能产生这样输出的参数，也就是p(参数\textbar 输出)最大，在设计损失函数时，会把这种情形定义为损失函数最小（如loss=-logp(参数\textbar 输出)），一轮轮训练中通过梯度下降一步步接近该参数组合，每次训练的过程就是把参数初始概率分布变成考虑输出后的概率分布，并通过梯度下降让参数接近概率最大似然估计的参数值。
+
+\Needspace{8\baselineskip}
+（3）正常情况
+
+没有加入正则化项时，我们对p(参数)没有任何事先估计【初始权重值从高斯分布取样是为了能进行梯度操作而不至于全0，仅为优化起点，不代表先验估计】，这时p(参数\textbar 输出)正比于p(输出\textbar 参数)，也就是我们认为，当某个给定参数的模型最可能产生某个输出时，想要让另一个模型实现该输出的最好方法就是拟合该模型的参数。
+
+\Needspace{8\baselineskip}
+（4）过拟合
+
+训练时有时会落入一个p(输出\textbar 参数)很大的参数组合，但其实出现了过拟合，在测试集中p(输出\textbar 参数)反而小【注意计算贝叶斯后验不能用测试集，只能用训练集，原因前面讲过】，为了我们抑制过拟合，必须手动调整p(参数)的分布，让p(参数\textbar 输出)最大的情形同时受训练时得出正确输出概率p(输出\textbar 参数)和先验分布p(参数)的影响。
+
+\Needspace{8\baselineskip}
+（5）加入正则化后
+
+在loss中加入正则化项，也就等价于通过控制初始概率分布函数p(参数)，使其不为定值，从而在估计中加入我们的额外偏好，p(输出\textbar 参数)大不一定代表loss小（如一些正则化项会给予复杂模型惩罚），让包含实现对参数最终分布的调整。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cl2ux6b63ux5219ux5316ux6743ux91cdux8870ux51cf}{%
+\subsection{二、L2正则化（权重衰减）}\label{ux4e8cl2ux6b63ux5219ux5316ux6743ux91cdux8870ux51cf}}
+
+即给损失函数加上``lamda\emph{1/2}参数平方和''项。lamda为正则化强度；1/2是为了在求正则项关于参数向量W的梯度时求导等于lamda*W而没有其他系数。
+
+概率本质：由前面损失函数是取log得到的可知，p(参数)其实就是该参数下的高斯函数的值，等价于高斯先验，默认各参数接近0的概率大。
+
+收敛方式：由于在0附近导数约为0，接近0时收敛极慢（收敛速度趋于0），一般不会收敛到0；但不会出现很大的参数（惩罚比L1大）。
+
+\Needspace{5\baselineskip}
+对减小模型复杂度的作用：
+
+（1）所有参数向零收缩，显著削弱高阶项，类似于限制多项式中高阶项系数。
+
+（2）避免特征共线性带来的权重抵消问题（这种情形的惩罚值会很大）。
+
+\Needspace{5\baselineskip}
+权重抵消效应的产生机制：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  参数解的不确定性
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+当特征高度相关时（如 \(X_1\approx kX_2\)），模型无法区分每个特征的独立贡献。例如：
+
+\begin{itemize}
+\tightlist
+\item
+  真实关系：\(Y=2X_1+3X_2\)。
+\item
+  若 \(X_1\) 与 \(X_2\) 强相关（如 \(X_2\approx 0.5X_1\)），则以下解均可能成立：\(Y=4X_1+0\cdot X_2\)、\(Y=0\cdot X_1+6X_2\)、\(Y=5000X_1-4998X_2\)。
+\end{itemize}
+
+其中最后一种情况就是权重抵消：\(X_1\) 和 \(X_2\) 的系数符号相反且绝对值极大，它们的贡献相互抵消。最终组合结果仍接近真实值，但单个系数的可解释性较差。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  梯度更新的不稳定性
+\end{enumerate}
+
+在梯度下降优化过程中，高度相关特征的梯度方向可能冲突。若特征 \(X_1\) 和 \(X_2\) 相关且量级差异大（如 \(X_2=100X_1\)），则权重 \(w_2\) 的微小变化会导致 \(w_1\) 剧烈震荡，最终可能收敛到 \(w_1\) 为负、\(w_2\) 为正的抵消状态。
+
+\Needspace{5\baselineskip}
+权重抵消效应会带来三类影响：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  模型可解释性降低。例如在房价预测中，若``房间数量''和``房间数量平方''同时作为特征，模型可能赋予前者正权重、后者负权重，导致``房间数量增加反而降低房价''的反常误读。
+\item
+  参数估计方差增大。共线性会使权重方差膨胀，样本中的微小扰动可能导致系数剧烈波动，使模型稳定性下降。
+\item
+  特征重要性失真。在线性模型中，权重符号和大小常用于判断特征与目标的关系，权重抵消可能使实际正相关的特征在模型中表现为负相关。
+\end{enumerate}
+
+其他好处：避免梯度爆炸，避免矩阵病态。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09l1ux6b63ux5219ux5316}{%
+\subsection{三、L1正则化}\label{ux4e09l1ux6b63ux5219ux5316}}
+
+给损失函数加上``lamda*参数绝对值和''项，等价于对参数的初始估计为拉普拉斯先验，由于一次函数处处斜率相等，部分参数会被归零（L2在参数接近0的时候梯度也接近0，参数再向0的更新几乎停滞），剩余参数接近0的程度没有L2那么大（L2对偏离较大的值惩罚更强烈）。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux77e9ux9635ux75c5ux6001ux95eeux9898ux7684ux4f18ux5316}{%
+\subsection{四、矩阵病态问题的优化}\label{ux56dbux77e9ux9635ux75c5ux6001ux95eeux9898ux7684ux4f18ux5316}}
+
+用拟合方式求解正规方程：输入矩阵（已知）A×参数矩阵（待求解）X＝输出矩阵（已知）b，由之前的分析知这也就是最小化目标函数：\textbar\textbar AX-b\textbar\textbar\^{}2。
+
+用线性变换思想：参数矩阵由多个原向量（每列都是一个即将被变换的向量）构成，参数矩阵代表线性变换，输出矩阵代表各个原向量分别变换后的向量。
+
+若输入矩阵X列相关程度大，相当于这个矩阵代表的线性变换把空间``压缩到一起''，这时参数矩阵即矩阵方程的解即原向量就会因变换后向量的微小波动而变化巨大，正则化效果在数学上等价于通过改变线性变换矩阵来解决病态问题：（岭回归就是L2正则化，下面是由目标函数推导正规方程的过程；在维数匹配的前提下，矩阵乘法对加法满足分配律）
+
+\Needspace{5\baselineskip}
+岭回归的目标函数为：
+
+\[
+J(\mathbf{x})=\lVert A\mathbf{x}-\mathbf{b}\rVert^2+\lambda^2\lVert\mathbf{x}\rVert^2
+\]
+
+其中，\(A\) 是 \(m\times n\) 的设计矩阵（\(m\) 个样本、\(n\) 个特征），\(\mathbf{x}\) 是 \(n\times 1\) 的待求参数向量，\(\mathbf{b}\) 是 \(m\times 1\) 的观测值向量，\(\lambda>0\) 是正则化参数。
+
+\Needspace{5\baselineskip}
+将目标函数展开为矩阵形式：
+
+\[
+\begin{aligned}
+J(\mathbf{x})
+&=(A\mathbf{x}-\mathbf{b})^\top(A\mathbf{x}-\mathbf{b})
++\lambda^2\mathbf{x}^\top\mathbf{x}\\
+&=\mathbf{x}^\top A^\top A\mathbf{x}
+-2\mathbf{b}^\top A\mathbf{x}
++\mathbf{b}^\top\mathbf{b}
++\lambda^2\mathbf{x}^\top\mathbf{x}.
+\end{aligned}
+\]
+
+\Needspace{5\baselineskip}
+对目标函数求梯度，并使用矩阵求导法则 \(\nabla_{\mathbf{x}}(\mathbf{x}^\top B\mathbf{x})=2B\mathbf{x}\)（当 \(B\) 对称时）和 \(\nabla_{\mathbf{x}}(\mathbf{c}^\top\mathbf{x})=\mathbf{c}\)，可得：
+
+\[
+\nabla_{\mathbf{x}}J(\mathbf{x})
+=2A^\top A\mathbf{x}-2A^\top\mathbf{b}+2\lambda^2\mathbf{x}
+\]
+
+\Needspace{5\baselineskip}
+令梯度为零以最小化目标函数：
+
+\[
+2A^\top A\mathbf{x}-2A^\top\mathbf{b}+2\lambda^2\mathbf{x}=0
+\]
+
+\Needspace{5\baselineskip}
+提取公因子 \(\mathbf{x}\)，并引入单位矩阵 \(I\)：
+
+\[
+(A^\top A+\lambda^2I)\mathbf{x}=A^\top\mathbf{b}
+\]
+
+\Needspace{5\baselineskip}
+这就是岭回归的正规方程。额外项 \(\lambda^2I\) 加到 \(A^\top A\) 上，能确保矩阵 \(A^\top A+\lambda^2I\) 更接近严格正定，从而缓解 \(A^\top A\) 不可逆或病态的问题。若该矩阵可逆，则有唯一解：
+
+\[
+\mathbf{x}=(A^\top A+\lambda^2I)^{-1}A^\top\mathbf{b}
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux6682ux9000ux6cd5dropout}{%
+\subsection{五、暂退法（Dropout）}\label{ux4e94ux6682ux9000ux6cd5dropout}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  基本思想
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Dropout 在训练阶段以概率 \(p\) 随机将神经元的激活值置零（称为``丢弃''），迫使网络不依赖特定神经元或特征组合，从而提升鲁棒性。其数学表达为：
+
+\[
+h'=
+\begin{cases}
+0, & \mathcjk{概率为 }p,\\
+\dfrac{h}{1-p}, & \mathcjk{否则}
+\end{cases}
+\]
+
+其中缩放操作 \(\dfrac{h}{1-p}\) 确保激活值的期望不变，即 \(E[h']=h\)，避免训练与测试时的数据尺度不一致。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  作用机制
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  打破共适应性：神经元无法依赖固定组合，需要独立学习有效特征，减少对噪声的敏感度。
+\item
+  集成学习效应：每次迭代训练不同的子网络，最终模型相当于多个子网络的集成，提升泛化性。
+\end{itemize}
+
+暂退法通过随机丢弃神经元来打破神经网络中的``共适应性''（Co-adaptation）。共适应性指神经元之间形成过度依赖的固定组合，导致模型对训练数据的噪声敏感而泛化能力下降。
+
+共适应性的本质是神经网络的脆弱依赖。若某些神经元通过复杂权重组合学习特定特征时过度依赖其他神经元的输出，例如神经元 A 仅在神经元 B 激活时才有效，两者就形成``共生关系''。这种依赖会带来过拟合、脆弱性和冗余性降低：模型可能过度依赖训练数据中的噪声或偶然特征组合；当测试数据中部分特征缺失时，依赖链断裂会导致预测失效；模型也难以学习多组独立特征表示。
+
+暂退法通过动态随机丢弃神经元，强制网络避免固定依赖路径。每次迭代会随机屏蔽部分神经元，剩余神经元组成新的子网络，这迫使每个神经元必须独立有效、减少特定伙伴依赖，也让相同功能由多组神经元分散承担。训练时还会把保留神经元的输出放大 \(\dfrac{1}{1-p}\) 倍，测试时直接输出原值，保证整体激活强度稳定，避免因丢弃导致信号衰减。
+
+注：可以认为比如每个特征由一个神经元负责，一个识别动物的神经网络中，老虎这个输出和黄色、条纹等特征虽然需要相关，但不能过度依赖这些表层特征（也就是对这些特征过拟合，形成比较固定的神经元之间的组合），也不能一个特征只有一个神经元负责（风险大且数字只能上下调，灵活性差），这会使模型在训练数据略有变化时（如例子里说的黄色缺失）泛化性、鲁棒性差。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-6}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-6}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. (2023). \href{https://D2L.ai}{Dive into Deep Learning}. Cambridge University Press.
+\item
+  Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., \& Salakhutdinov, R. (2014). \href{https://jmlr.org/papers/v15/srivastava14a.html}{Dropout: A Simple Way to Prevent Neural Networks from Overfitting}. Journal of Machine Learning Research.
+\end{itemize}
+
+\clearpage

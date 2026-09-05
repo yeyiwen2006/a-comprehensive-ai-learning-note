@@ -1,0 +1,89 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{data-processing-and-alignment}{%
+\section{Data Processing and Alignment}\label{data-processing-and-alignment}}
+
+Beyond scale and diversity, how embodied AI data is processed and aligned with training needs deserves close attention.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-ux3c00.7-processing-data-through-prompts}{%
+\subsection{I. π0.7: Processing Data through Prompts}\label{i.-ux3c00.7-processing-data-through-prompts}}
+
+\Needspace{5\baselineskip}
+The key to π0.7's emergent compositional generalization is processing diverse data with diverse prompts. Earlier VLA training provided only ``clean the refrigerator,'' yielding a single signal. π0.7 expands the prompt into four layers:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Task instructions, such as cleaning the kitchen.
+\item
+  Subtask instructions, such as opening the refrigerator, taking out ingredients, and cleaning the tabletop.
+\item
+  Subgoal images, specifying ``what the next frame should look like.''
+\item
+  Episode metadata, such as data-quality scores, whether errors occurred, and execution speed.
+\end{enumerate}
+
+This rich context lets the model distinguish good from bad, fast from slow, and correct from incorrect training data, making previously unusable data useful: failed rollouts, low-quality demonstrations, and fragments from other robots. The added prompt layer tells the model ``what quality this data has and which strategy produced it.''
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-qwen-robotmanip-data-alignment}{%
+\subsection{II. Qwen-RobotManip: Data Alignment}\label{ii.-qwen-robotmanip-data-alignment}}
+
+Data from many robots and datasets cannot simply be gathered together. The same action, ``push the cup to the edge of the table,'' may be recorded very differently. One robot records how much each of seven joints rotated, another records end-effector position and orientation in its base coordinates, and a dexterous hand may have more than twenty independently moving joints. Although these numbers describe similar actions, they are not the same ``language.'' Mixing them directly makes it difficult for the model to recognize equivalent changes, often causing it to learn noise. Qwen-RobotManip aligns and cleans data at multiple levels and observes steadily improving performance as data grows.
+
+\Needspace{5\baselineskip}
+\hypertarget{format-alignment-across-data-sources}{%
+\subsubsection{(1) Format Alignment across Data Sources}\label{format-alignment-across-data-sources}}
+
+\hypertarget{aligning-action-dimension-definitions}{%
+\paragraph{1. Aligning Action-Dimension Definitions}\label{aligning-action-dimension-definitions}}
+
+Robot structures differ greatly: single or dual arms, ordinary grippers or dexterous hands with a dozen or even dozens of degrees of freedom. Their original state and action dimensions differ completely. Qwen-RobotManip represents states and actions uniformly as 80-dimensional vectors. The first 58 dimensions are divided equally between two arms, each with seven joint-position dimensions, nine end-effector-pose dimensions, one gripper-state dimension, and twelve dexterous-hand-joint dimensions; the remaining 22 are reserved. Missing components are padded with zeros.
+
+Because padded zeros are not real data, a binary 0--1 mask identifies padded dimensions. Only dimensions that actually exist contribute to errors and gradient updates during training.
+
+\hypertarget{coordinate-system-alignment}{%
+\paragraph{2. Coordinate-System Alignment}\label{coordinate-system-alignment}}
+
+Suppose two robots both move an arm ten centimeters forward. Different base mounting positions, orientations, and coordinate conventions may encode that motion as entirely different numbers in their respective base frames. Qwen-RobotManip therefore favors changes in end-effector pose in camera coordinates over absolute positions in original coordinates, avoiding problems from different origins. The model also receives camera mounting positions and orientations and end-effector types.
+
+\hypertarget{providing-current-robot-characteristics-in-context}{%
+\paragraph{3. Providing Current-Robot Characteristics in Context}\label{providing-current-robot-characteristics-in-context}}
+
+The preceding discussion addresses learning effectively from different robots. At inference, however, the model faces one specific robot, and we want strong specialization: it should infer what robot it is handling from a short execution history. Besides images, it therefore receives robot platform, operating speed, FPS, and recent observations and actions, allowing temporary adaptation to the current embodiment through an in-context-learning-like method.
+
+\Needspace{5\baselineskip}
+\hypertarget{aligning-modalities-within-each-data-sample}{%
+\subsubsection{(2) Aligning Modalities within Each Data Sample}\label{aligning-modalities-within-each-data-sample}}
+
+Even after all robots use a unified representation, each sample's modalities must be mutually consistent. A robot-training sample usually contains images, other states, actions, and text instructions. Real data often has misalignment: video and robot logs are not fully synchronized, some action chunks deviate substantially from reality, or instructions contradict images and actions.
+
+Qwen-RobotManip does not attempt to check all four modalities for complete consistency at once. Instead, it ensures pairwise alignment: one pipeline checks state--action consistency, another checks instruction--image consistency, and another checks image--state consistency. Each check handles only part of the relationships, but repeated filtering leaves substantially more coherent data overall.
+
+\Needspace{5\baselineskip}
+\hypertarget{data-cleaning-and-correctness-checks}{%
+\subsubsection{(3) Data Cleaning and Correctness Checks}\label{data-cleaning-and-correctness-checks}}
+
+Qwen-RobotManip checks robot logs themselves, first verifying plausible temporal changes in states and actions. If a robot's state consistently moves in one direction while actions show the opposite trend, the data may be wrong. A joint angle suddenly jumping from a normal value to an extreme may likewise indicate sensor or recording errors. After filtering these anomalies, the robot's kinematic model checks whether end-effector positions computed from joint states match recorded data. Coordinate directions across datasets are also unified.
+
+These steps are necessary. Without prior cleaning, many erroneous samples enter training, and the model learns collection errors instead of how the robot should actually act.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-165}{%
+\subsection{References}\label{references-165}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  具身纪元. (2026). \href{https://www.jintiankansha.com/t/8QXVctCOWG}{The Secret of Pretraining Lies in More Than Scale and Diversity} (translated title; in Chinese). WeChat public-account article, published July 4, 2026.
+\item
+  Physical Intelligence. (2026). \(\pi_{0.7}\): \href{https://arxiv.org/abs/2604.15483}{A Steerable Generalist Robotic Foundation Model with Emergent Capabilities}. arXiv:2604.15483.
+\item
+  Yuan, H., Liang, Z., Chen, A., et al.~(2026). \href{https://arxiv.org/abs/2606.17846}{Qwen-RobotManip Technical Report: Alignment Unlocks Scale for Robotic Manipulation Foundation Models}. arXiv:2606.17846.
+\end{itemize}
+
+\clearpage

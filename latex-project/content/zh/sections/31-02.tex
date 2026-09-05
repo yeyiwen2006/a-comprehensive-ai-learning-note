@@ -1,0 +1,331 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{vlaux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}{%
+\section{VLA模型的强化学习}\label{vlaux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00vlaux6a21ux578bux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}{%
+\subsection{一、VLA模型强化学习的难点}\label{ux4e00vlaux6a21ux578bux5f3aux5316ux5b66ux4e60ux7684ux96beux70b9}}
+
+\Needspace{5\baselineskip}
+普通连续控制策略一般写作：
+
+\[
+a_t\sim\pi_\theta(a_t\mid s_t)
+\]
+
+\Needspace{5\baselineskip}
+以高斯策略为例：
+
+\[
+\pi_\theta(a\mid s)=\mathcal{N}\bigl(\mu_\theta(s),\sigma_\theta(s)\bigr)
+\]
+
+\Needspace{5\baselineskip}
+于是SAC、PPO等算法可以直接计算 \(\log\pi_\theta(a_t\mid s_t)\)，并据此得到策略梯度项：
+
+\[
+\nabla_\theta\log\pi_\theta(a_t\mid s_t)A_t
+\]
+
+对于自回归VLA，策略是每一步概率的积，对数策略是每一步对数概率的和；但扩散/流匹配VLA就难以计算对数策略了。而且如果让RL梯度穿过完整的10-50步diffusion/flow trajectory，不仅显存和计算量大，还很容易不稳定。
+
+所以VLA RL一个很重要的研究问题其实就是：到底应该在哪里做RL？是整个VLA？action head？action token？flow denoising trajectory？还是latent noise？
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cvla-rlux76f4ux63a5ux5bf9vlaux6574ux4f53ux7528ppoux4f18ux5316}{%
+\subsection{二、VLA-RL：直接对VLA整体用PPO优化}\label{ux4e8cvla-rlux76f4ux63a5ux5bf9vlaux6574ux4f53ux7528ppoux4f18ux5316}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-14}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-14}}
+
+\Needspace{5\baselineskip}
+它的想法跟LLM的RLHF/PPO非常接近。OpenVLA原本做的是：
+
+\[
+(\text{image},\text{instruction})
+\longrightarrow
+[v_1,v_2,\ldots,v_7]
+\longrightarrow
+a_t
+\]
+
+\Needspace{5\baselineskip}
+其中7个Token对应7个机器人动作维度。因为它采用自回归方式：
+
+\[
+\pi_\theta(a_t\mid o_t,l)=\prod_{i=1}^{7}p_\theta(v_i\mid v_{<i},o_t,l)
+\]
+
+\Needspace{5\baselineskip}
+所以动作的对数概率可以直接得到：
+
+\[
+\log\pi_\theta(a_t\mid o_t,l)=\sum_{i=1}^{7}\log p_\theta(v_i\mid v_{<i},o_t,l)
+\]
+
+对于OpenVLA这类自回归动作分词器，动作概率很容易计算。论文只需把单步机器人的多模态观测与动作看成类似LLM的多轮对话，然后直接使用PPO与GAE更新VLA。
+
+运用标准PPO算法，对整个VLA模型进行训练即可。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7a00ux758fux53cdux9988ux95eeux9898ux53caux5176ux89e3ux51b3}{%
+\subsubsection{（二）稀疏反馈问题及其解决}\label{ux4e8cux7a00ux758fux53cdux9988ux95eeux9898ux53caux5176ux89e3ux51b3}}
+
+机器人任务反馈稀疏，比如任务：把杯子放进柜子。可能执行100步后，环境才反馈结果，那么前面第20步``机械臂已经正确抓住杯子''到底好不好，单靠terminal reward很难判断。VLA-RL运用Process Reward Model，根据夹爪开闭的显著变化划分milestone/subtask，并结合末端执行器速度接近零等信息找关键进展状态，从而给中间动作提供过程奖励。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux3c0rlux8ba9ux6d41ux5339ux914dvlaux6a21ux578bux4e5fux53efux6574ux4f53ux7528rlux8badux7ec3}{%
+\subsection{三、πRL：让流匹配VLA模型也可整体用RL训练}\label{ux4e09ux3c0rlux8ba9ux6d41ux5339ux914dvlaux6a21ux578bux4e5fux53efux6574ux4f53ux7528rlux8badux7ec3}}
+
+πRL 中提出的Flow-Noise等方法在原有流匹配VLA模型的基础上引入可学习的噪声网络，将去噪过程重塑为离散时间的MDP，从而可用传统RL算法，既解决了流匹配缺失随机性、无法计算动作概率似然的问题，又通过可学习、有方向的探索解决了高维空间盲目探索往往失败的问题。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-15}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-15}}
+
+传统流匹配是在连续时间内求解常微分方程（ODE），缺乏随机性，难以像PPO那样计算对数似然。Flow-Noise的创新在于，它在原本确定性的去噪路径中主动注入一个可学习的噪声网络，将去噪过程重塑为离散时间的马尔可夫决策过程（Discrete-time MDP）。这样，模型在每一步生成时既有探索能力，又能获得精确的动作对数似然，从而完整适配传统Actor-Critic在线强化学习算法。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7b97ux6cd5ux539fux7406}{%
+\subsubsection{（二）算法原理}\label{ux4e8cux7b97ux6cd5ux539fux7406}}
+
+Flow-Noise放弃了纯确定性的ODE采样，引入可学习的噪声网络（Learnable Noise Network），将原本连续的去噪轨迹离散化为若干步，并在每一步注入受控随机性。
+
+\Needspace{5\baselineskip}
+在该内部去噪MDP中：
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  状态空间：在去噪时间步 \(\tau\)，内部状态定义为当前环境观测与当前噪声动作块的组合：
+\end{itemize}
+
+\[
+\bar{s}_t^\tau=(o_t,A_t^\tau).
+\]
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  动作空间：内部``动作''是为流模型生成下一离散时间步隐状态。当 \(\tau<1\) 时，策略输出：
+\end{itemize}
+
+\[
+\bar{a}_t^\tau=A_t^{\tau+\delta}.
+\]
+
+当 \(\tau=1\) 时，输出最终动作 \(A_t^1\)。
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  随机转移与可学习噪声：从 \(A_t^\tau\) 到 \(A_t^{\tau+\delta}\) 的转移被建模为高斯分布：
+\end{itemize}
+
+\[
+A_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\delta\cdot\varepsilon,
+\qquad \varepsilon\sim\mathcal{N}(0,I).
+\]
+
+其中 \(\mu_\tau\) 由流匹配网络 \(v_\theta\) 预测的均值方向决定， \(\sigma_\tau\) 则是可学习噪声网络输出的标准差。
+
+\Needspace{5\baselineskip}
+该设计带来两点效果：
+
+\begin{itemize}
+\tightlist
+\item
+  自适应探索：在生成轨迹的安全区域，网络会输出较大的方差以鼓励广泛探索；当进入对噪声敏感的高频细节生成区域时， \(\Sigma_\phi\) 会自动收敛，输出较小方差，甚至趋近于0。
+\item
+  维度解耦：网络可以学习在不重要的背景特征维度上加大探索，而在关键的语义维度上保持克制，从而实现高维空间中的精细探索。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+由于每一步 \(\tau\to\tau+\delta\) 都服从已知的高斯分布，整条去噪轨迹的联合概率密度可以按链式法则分解：
+
+\[
+\log\pi_\theta(a_t\mid o_t)=\sum_{\tau=0}^{1-\delta}\log p_\theta
+\bigl(A_t^{\tau+\delta}\mid A_t^\tau,o_t\bigr).
+\]
+
+因为 \(p_\theta\) 是由参数化高斯分布构成的，上式可以直接计算，从而可用于PPO等基于策略梯度的强化学习目标。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux5de5ux4f5cux6d41}{%
+\subsubsection{（三）工作流}\label{ux4e09ux5de5ux4f5cux6d41}}
+
+\textbf{步骤1：环境交互与初始化（外部循环起点）}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  智能体从仿真环境或现实世界获取当前时间步 \(t\) 的观测状态 \(o_t\)，如摄像头图像、本体感受数据。
+\item
+  在模型内部，初始化流匹配的起点，从标准高斯噪声采样 \(A_t^0\sim\mathcal{N}(0,I)\)。
+\end{enumerate}
+
+\textbf{步骤2：离散化去噪过程（内部MDP循环）}
+
+\Needspace{5\baselineskip}
+开启一个从 \(\tau=0\) 到 \(\tau=1\)、步长为 \(\delta\) 的离散去噪循环。对于每一步：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  构建内部状态，将环境观测与当前变量组合为 \(\bar{s}_t^\tau=(o_t,A_t^\tau)\) 。
+\item
+  网络推理：将内部状态 \(\bar{s}_t^\tau\) 输入VLA骨干网络（如Transformer），预测当前速度场 \(v_\theta\)，进而计算期望去噪方向 \(\mu_\tau\)。
+\item
+  噪声评估：辅助的可学习噪声网络根据当前状态输出标准差 \(\sigma_\tau\)。
+\item
+  采样与记录：采样随机噪声 \(\varepsilon\)，计算下一步隐变量 \(A_t^{\tau+\delta}=\mu_\tau+\sigma_\tau\delta\cdot\varepsilon\)；同时，将该步的对数似然 \(\log p_\theta(A_t^{\tau+\delta}\mid A_t^\tau,o_t)\) 记录到缓存中。
+\end{enumerate}
+
+\textbf{步骤3：动作执行与奖励获取（外部循环终点）}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  当内部去噪循环到达 \(\tau=1\) 时，得到无噪声的确定性物理动作 \(a_t=A_t^1\)。
+\item
+  将动作 \(a_t\) 下发给环境执行。
+\item
+  观测状态更新，并返回单步奖励 \(r_t\)，例如抓取任务成功时返回稀疏的 \(+1\) 奖励。
+\end{enumerate}
+
+\textbf{步骤4：强化学习策略更新（RL反向传播）}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  收集到一个或多个Episode的完整轨迹后，计算累计优势函数。
+\item
+  提取步骤2中精确计算的联合对数似然总和 \(\sum\log p_\theta\)。
+\item
+  应用PPO算法的截断代理目标函数计算策略梯度。
+\item
+  更新VLA模型网络参数及噪声网络参数，使得在相似观测下，能获得高环境奖励的去噪轨迹生成概率最大化。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914dux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}{%
+\subsubsection{（四）该方法如何解决流匹配``脱离最优传输后步数激增''的问题}\label{ux56dbux8be5ux65b9ux6cd5ux5982ux4f55ux89e3ux51b3ux6d41ux5339ux914dux8131ux79bbux6700ux4f18ux4f20ux8f93ux540eux6b65ux6570ux6fc0ux589eux7684ux95eeux9898}}
+
+在传统流匹配中，轨迹弯曲会导致ODE求解器在积分时产生巨大的截断误差，从而必须将步长 \(\Delta t\) 切得很小，即增加函数评估次数（NFE）。Flow-Noise从根本上绕开了ODE求解器：它将整个生成过程重构为一个离散时间MDP，环境转移函数被强行定义为
+
+\[
+x_{t-\Delta t}=a_t.
+\]
+
+这意味着模型不再预测一条连续的``切线方向''，而是直接跳跃到下一个离散状态。强化学习算法优化的是这一离散跳跃点的累积奖励，既不再需要用连续微分方程求积分，也能绕开弯曲轨迹导致截断误差的问题，模型因而可以在较少步数内得到高奖励结果。
+
+这让Flow-Noise看起来很像扩散模型，但同时又具备了流匹配模型自身去噪轨迹接近直线、速度快的优点。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbpolicy-agnostic-rlux8ba9rlux68afux5ea6ux4f18ux5316ux8f93ux51faactionux800cux975evlaux6a21ux578b}{%
+\subsection{四、Policy Agnostic RL：让RL梯度优化输出Action而非VLA模型}\label{ux56dbpolicy-agnostic-rlux8ba9rlux68afux5ea6ux4f18ux5316ux8f93ux51faactionux800cux975evlaux6a21ux578b}}
+
+既然直接优化policy很困难，那可以先直接优化action。
+
+当前策略为
+
+\[
+a_i\sim\pi_\phi(a_i\mid s).
+\]
+
+先生成一组候选动作 \(a_1,a_2,\ldots,a_K\)，然后由Critic \(Q_\theta(s,a_i)\) 给每个动作评分。
+
+\Needspace{5\baselineskip}
+对每个候选动作执行梯度上升：
+
+\[
+a_i^{j+1}=a_i^j+\alpha\nabla_a Q_\theta(s,a_i^j).
+\]
+
+注意这里直接对Action做梯度上升，计算的是对Action而不是对VLA模型参数的梯度。
+
+经过迭代后，可以得到最优动作 \(a^\ast\)，或者得到一组优化后的动作 \(a_1^\ast,a_2^\ast,\ldots\)。
+
+\Needspace{5\baselineskip}
+这时只需用监督学习将其蒸馏给VLA：
+
+\Needspace{5\baselineskip}
+例如，对OpenVLA可采用负对数似然蒸馏：
+
+\[
+\mathcal{L}=-\log\pi_\phi(a^\ast\mid s).
+\]
+
+\Needspace{5\baselineskip}
+对Diffusion Policy可采用去噪目标蒸馏：
+
+\[
+\mathcal{L}=\left\|\varepsilon-\varepsilon_\phi(a_t,s,t)\right\|^2.
+\]
+
+RL gradient不直接进入VLA。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94dsrlvlaux6839ux672cux4e0dux8badux7ec3ux53eaux8badux7ec3ux9009ux4ec0ux4e48ux566aux58f0}{%
+\subsection{五、DSRL：VLA根本不训练，只训练``选什么噪声''}\label{ux4e94dsrlvlaux6839ux672cux4e0dux8badux7ec3ux53eaux8badux7ec3ux9009ux4ec0ux4e48ux566aux58f0}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-16}{%
+\subsubsection{（一）核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-16}}
+
+一般情况下，扩散模型在推理时会随机选取噪声。论文《Steering Your Diffusion Policy with Latent Space Reinforcement Learning》提出，可以让RL梯度不训练模型，而是训练选择噪声的策略，在冻结模型的前提下，通过输出不同方向的初始噪声将模型的输出指引向不同的动作模式（如w1代表向左、w2代表抓得更深等）。
+
+\Needspace{5\baselineskip}
+对比：
+
+一般方法：随机噪声 → 经RL训练后的模型 → 输出动作
+
+DSRL：经RL优化的噪声 → 冻结的预训练模型 → 输出动作
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8ccriticux8badux7ec3ux4e2dux7684noise-aliasing}{%
+\subsubsection{（二）Critic训练中的noise aliasing}\label{ux4e8ccriticux8badux7ec3ux4e2dux7684noise-aliasing}}
+
+DSRL中，Critic模型Q(s,a)需要输入状态s和策略模型给出的机器人动作a。而冻结的策略模型a=F(s,w)，这里F是冻结的，w是输入的噪声，即a是w的函数，即使某个w从来没在真实机器人上执行过，只要知道它映射到什么action，就可以估计它的价值。故Q(s,a)=Q(s,F(s,w))=Q\_w(s,w)。
+
+DSRL-NA先用机器人数据(s,a,s',r)训练出Q(s,a)，进而就可以训练得到Q\_w(s,w)，方法为：对于每一个w，通过函数a=F(s,w)得到a，让Q\_w(s,w)蒸馏Q(s,a)的输出。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux516drldgrlux53eaux8d1fux8d23ux751fux4ea7ux76d1ux7763ux5b66ux4e60ux6837ux672c}{%
+\subsection{六、RLDG：RL只负责生产监督学习样本}\label{ux516drldgrlux53eaux8d1fux8d23ux751fux4ea7ux76d1ux7763ux5b66ux4e60ux6837ux672c}}
+
+论文《RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning》提出，可用RL分别训练不同任务的较小``专家模型''，然后让它们各自rollout expert trajectories，用这些数据作为大模型监督学习的样本，不用RL直接微调大模型。
+
+由于RL的策略比没有人类策略中存在的少量犹豫、停顿、晃动等，且rollout轨迹里常存在从错误状态恢复的数据，故该方法得到的样本用于训练的效果在一些情况下可能反超人类数据。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-153}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-153}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Lu, G., Guo, W., Zhang, C., et al.~(2025). \href{https://arxiv.org/abs/2505.18719}{VLA-RL: Towards Masterful and General Robotic Manipulation with Scalable Reinforcement Learning}. arXiv:2505.18719.
+\item
+  Chen, K., Liu, Z., Zhang, T., et al.~(2025). \href{https://arxiv.org/abs/2510.25889}{πRL: Online RL Fine-tuning for Flow-based Vision-Language-Action Models}. arXiv:2510.25889.
+\item
+  Mark, M. S., Gao, T., Sampaio, G. G., et al.~(2024). \href{https://arxiv.org/abs/2412.06685}{Policy Agnostic RL: Offline RL and Online RL Fine-Tuning of Any Class and Backbone}. arXiv:2412.06685.
+\item
+  Wagenmaker, A., Nakamoto, M., Zhang, Y., et al.~(2025). \href{https://arxiv.org/abs/2506.15799}{Steering Your Diffusion Policy with Latent Space Reinforcement Learning}. arXiv:2506.15799.
+\item
+  Xu, C., Li, Q., Luo, J., \& Levine, S. (2024). \href{https://arxiv.org/abs/2412.09858}{RLDG: Robotic Generalist Policy Distillation via Reinforcement Learning}. arXiv:2412.09858.
+\end{itemize}
+
+\clearpage

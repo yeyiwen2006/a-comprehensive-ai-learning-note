@@ -1,0 +1,140 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux57faux4e8eux7b56ux7565ux7684ux5f3aux5316ux5b66ux4e60ux7684ux57faux672cux601dux60f3}{%
+\section{基于策略的强化学习的基本思想}\label{ux57faux4e8eux7b56ux7565ux7684ux5f3aux5316ux5b66ux4e60ux7684ux57faux672cux601dux60f3}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux57faux4e8eux4ef7ux503cux7684ux65b9ux6cd5ux7684ux7f3aux9677}{%
+\subsection{一、基于价值的方法的缺陷}\label{ux4e00ux57faux4e8eux4ef7ux503cux7684ux65b9ux6cd5ux7684ux7f3aux9677}}
+
+基于价值的强化学习方法依赖于学习Q(s,a)，即给定状态下动作的价值函数。这意味着需要枚举所有（X个）动作以选择最优，其输出是离散的，对于连续动作（如机械臂控制），神经网络有几个输出节点，就最多只能拟合几种离散动作，导致动作僵硬；否则，拟合Q函数涉及几乎无限多个策略的期望比较、选择最优，需要的参数几乎无限多。因此，我们引入基于策略的强化学习。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux57faux4e8eux7b56ux7565ux7684ux5f3aux5316ux5b66ux4e60}{%
+\subsection{二、基于策略的强化学习}\label{ux4e8cux57faux4e8eux7b56ux7565ux7684ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  总体思想
+\end{enumerate}
+
+直接学习每个状态下的动作的概率分布，并按此分布采样动作。类似于学骑车（或者一些机器人的精密连续的动作），无法计算哪种状态价值期望最优，直接让智能体在对应状态下不断选择策略（准确说是策略的概率分布，比如也以小狗寻路为例，它会学习：在某个路口在70％左转30％右转），每次走完全程、得到累积奖励G（不同于Q函数是按最优策略计算的期望值）。我们的终极目标是找到一个策略π，使得累积奖励的期望J最大化。当策略由一个参数向量 θ（例如神经网络的权重）表示时，这个问题就转化为寻找最优的 θ。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  神经网络函数
+\end{enumerate}
+
+神经网络的输入为状态s，输出为动作值或动作相关参数。这个神经网络拟合了π函数，也即给定状态下动作值向量或动作相关参数的概率分布（对于连续的值，相当于概率密度函数），它是基于经验的（经验记忆在神经网络的参数θ中）。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  目标函数（损失函数）
+\end{enumerate}
+
+设初始状态为s0（确定），目标是让每一次完整动作链的累积奖励期望J=E\_τ\textasciitilde π(R(τ))最大，这里R(τ)表示沿着动作链τ走完全程获得的奖励，期望是按策略π对应的动作链概率分布求出的。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  策略梯度
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+所有动作的累积奖励的期望（也就是R(τ)的期望）J对参数向量 θ的梯度：
+
+梯度表达：我们从目标函数的定义出发，并利用期望的积分形式和对数导数技巧（Log-Likelihood Trick）进行转换。
+
+\[
+\nabla_\theta J(\theta)
+=\nabla_\theta\int P(\tau|\theta)R(\tau)d\tau
+=\int\nabla_\theta P(\tau|\theta)R(\tau)d\tau
+\]
+
+\Needspace{5\baselineskip}
+利用对数导数技巧 \(\nabla_\theta P(\tau|\theta)=P(\tau|\theta)\nabla_\theta\log P(\tau|\theta)\)，上式可转化为：
+
+\[
+\nabla_\theta J(\theta)
+=\int P(\tau|\theta)R(\tau)\nabla_\theta\log P(\tau|\theta)d\tau
+=\mathbb{E}_{\tau\sim\pi_\theta}\left[R(\tau)\nabla_\theta\log P(\tau|\theta)\right]
+\]
+
+我们将一个梯度的积分转化为了一个期望。这意味着我们可以通过采样来近似这个梯度。
+
+\Needspace{5\baselineskip}
+我们把动作链τ分解成每一个时间步下的``元动作''：
+
+\Needspace{5\baselineskip}
+分解轨迹概率：一条轨迹 \(\tau=(s_0,a_0,s_1,a_1,\cdots)\) 发生的概率可以分解为：
+
+\[
+P(\tau|\theta)=p(s_0)\prod_{t=0}^{T}\pi_\theta(a_t|s_t)P(s_{t+1}|s_t,a_t)
+\]
+
+\Needspace{5\baselineskip}
+其中只有策略部分 \(\pi_\theta(a_t|s_t)\) 依赖于参数 \(\theta\)。因此，当我们计算其对数梯度时，环境动态部分（初始状态分布 \(p(s_0)\) 和状态转移概率 \(P(s_{t+1}|s_t,a_t)\)）会被消去：
+
+\[
+\nabla_\theta\log P(\tau|\theta)=\sum_{t=0}^{T}\nabla_\theta\log\pi_\theta(a_t|s_t)
+\]
+
+（其中s\_i为状态，a\_i为动作，相当于(动作选择概率*状态转移概率)的累乘）
+
+\Needspace{5\baselineskip}
+得到最终形式：将上述结果代回期望表达式，就得到了策略梯度定理的经典形式：
+
+\[
+\nabla_\theta J(\theta)
+=\mathbb{E}_{\tau\sim\pi_\theta}
+\left[
+R(\tau)\cdot\sum_{t=0}^{T}\nabla_\theta\log\pi_\theta(a_t|s_t)
+\right]
+\]
+
+\(\nabla_\theta\log\pi_\theta(a_t|s_t)\) 是什么？
+
+\begin{itemize}
+\tightlist
+\item
+  这是一个向量，指出了``如何在参数空间中移动，才能增加在状态 \(s_t\) 下选择动作 \(a_t\) 的概率''。
+\item
+  简而言之：它想让这个动作出现的概率变大。
+\end{itemize}
+
+这一项决定了梯度的方向，即θ向量梯度更新的方向。R项则决定正负、大小（对梯度向量进行缩放），正奖励越大，越促进往该方向进行梯度上升，负奖励反之。梯度值为期望，意味着我们通过按π\_θ采样即可获得无偏估计。
+
+由于期望的下标是π\_θ，每一次的目标函数值都会随策略的变化而变化，更新策略与行为策略直接相关，这是一个在线学习算法。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-54}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-54}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Williams, R. J. (1992). \href{https://doi.org/10.1007/BF00992696}{Simple statistical gradient-following algorithms for connectionist reinforcement learning}. Machine Learning, 8, 229-256.
+\item
+  Sutton, R. S., McAllester, D., Singh, S., \& Mansour, Y. (1999). \href{https://proceedings.neurips.cc/paper/1999/hash/464d828b85b0bed98e80ade0a5c43b0f-Abstract.html}{Policy Gradient Methods for Reinforcement Learning with Function Approximation}. NeurIPS 1999.
+\item
+  Sutton, R. S., \& Barto, A. G. (2018). \href{http://incompleteideas.net/book/the-book-2nd.html}{Reinforcement Learning: An Introduction}. MIT Press.
+\end{itemize}
+
+\clearpage

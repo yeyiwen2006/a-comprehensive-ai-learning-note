@@ -1,0 +1,190 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux7f16ux7a0bux667aux80fdux4f53ux6846ux67b6}{%
+\section{编程智能体框架}\label{ux7f16ux7a0bux667aux80fdux4f53ux6846ux67b6}}
+
+Agent Harness（直译为智能体驾驭层，一般也就是智能体框架）负责向模型提供上下文、工具、文件系统、终端、权限、记忆和任务状态，并不断执行``模型推理---工具调用---获得反馈---再次推理''的循环。Coding是其最主要的应用场景之一。接下来将介绍一些具有代表性的Coding Agent框架，它们具有不同的产品形态和设计理念。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00cursor}{%
+\subsection{一、Cursor}\label{ux4e00cursor}}
+
+Cursor是由Anysphere开发的AI原生代码编辑器，以``AI-first code editor''的形式出现。它保留了类似VSCode的IDE形式，但将AI深度嵌入代码编辑、代码库搜索、终端执行、调试、测试和Git工作流中。用户可以选择不同的大语言模型，而Cursor负责为不同模型配置合适的指令、上下文和工具。
+
+（一）主要特点
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  查看代码与运用Agent的结合：在Cursor中，用户仍然可以像传统程序员一样查看和修改代码，同时又可以逐渐把完整任务交给Agent。
+\item
+  多模型设计：它的竞争力并不完全依赖某一个基础模型，而很大程度来自代码检索、工具设计、执行环境和Harness本身，但另一面意味着对于给定的模型而言，在Cursor中使用的表现可能不如模型公司自己的Agent框架中的表现，因为后者在强化学习阶段可能与模型配合训练。
+\end{enumerate}
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  模型层：Cursor是一个多模型Agent Harness。用户可以选择不同模型，Cursor则针对模型调整系统指令和工具定义，使模型更适合完成软件工程任务。
+\item
+  代码上下文系统：Agent会根据当前任务搜索代码库、读取相关文件和目录，并结合项目规则、对话历史以及编辑器当前状态构造上下文。其核心问题不是简单地``把整个代码库塞给模型''，而是判断几十万甚至更多Token的信息中哪些内容与当前任务真正相关。
+\item
+  工具执行系统：Cursor Agent可以搜索文件、编辑代码、调用终端、运行测试、搜索网络，并通过MCP、插件和其他集成访问外部系统。因此模型返回的不只是文字，还可以返回如``读取这个文件''``修改这段代码''``运行 npm test''等工具调用指令。
+\item
+  本地Agent与Cloud Agent：普通Agent可以直接在用户的开发环境中工作，而Cloud Agent则在独立的云端虚拟机中运行。每个Cloud Agent都拥有代码仓库、依赖环境以及被授权的网络和凭证，可以运行数十分钟甚至数小时，而用户关闭电脑后任务仍可继续。
+\item
+  长期任务与多Agent调度：主Agent可以保持一个长期目标，把子任务分配给多个 Subagent；Cloud Agent还可以订阅PR、Slack 消息或定时事件，在出现新情况后自动再次启动。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cclaude-codeux548copenai-codex}{%
+\subsection{二、Claude Code和OpenAI Codex}\label{ux4e8cclaude-codeux548copenai-codex}}
+
+Claude Code是Anthropic开发的Agentic Coding工具。它最初是一款运行在终端中的 Coding Agent，用户只需使用自然语言描述任务，Claude Code就可以完成各类编程工作，后来也扩展到VS Code和桌面应用等界面，但这些界面背后运行的是同一套Claude Code Agent引擎。与Cursor不同，Claude Code在设计之初就推翻了传统编辑器的交互模式，以Agent作为产品的中心。
+
+和Claude Code类似，OpenAI开发的Codex是一套完整的Coding Agent产品和Agent Harness，可以运行在终端、IDE和云端，也可以通过SDK或App Server被嵌入其他软件，其桌面端已合并入ChatGPT APP。Codex可以帮助模型获取上下文、调用工具、维护状态、执行任务、控制权限并在多个回合之间持续工作。
+
+（一）主要特点
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  以Agent为中心：进入Claude Code和Codex，界面的中心是对话框而不是代码文件。这是因为二者在设计之初的一个重要理念就是``用户不需要直接查看代码''。
+\item
+  终端化：可以通过管道接受其他命令的输出，也可以被Shell脚本、CI/CD系统或其他程序调用，因此不仅是一个聊天界面，更像一个能够被组合进传统开发工具链的智能程序。
+\item
+  功能齐全：CLAUDE.md/AGENTS.md、Skills、Hooks、MCP和Subagent等分别对应了Agent系统中的长期指令、可复用能力、确定性自动化、外部工具和多智能体协作，是理解Agent框架的很好的案例。
+\end{enumerate}
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Agent Engine：核心是一个持续运行的Agent Loop。模型分析当前状态后决定读取文件、修改代码还是执行命令，然后根据工具结果继续下一轮推理。
+\item
+  CLAUDE.md/AGENTS.md：项目可以通过Markdown文件告诉Agent项目架构、编码规范、测试命令和开发约定。Claude Code/Codex在每次会话开始时读取这些文件。
+\item
+  Memory：可以自己记录用户偏好、过去被纠正的问题以及难以从源码直接推断出的项目知识，并在之后的会话中重新加载。需要注意的是，这些记忆属于模型上下文，而不是强制执行的程序规则。
+\item
+  Tools与MCP：Claude Code/Codex内置文件、Shell、Git等开发工具，可以读取和编辑代码、运行本地开发工具、执行命令等，同时可以通过Model Context Protocol（MCP）访问外部系统，例如设计文档、数据库等。
+\item
+  Skills与Hooks：Skills可以把常用的工作流程封装成可复用能力；Hooks则可以在Agent执行特定动作之前或之后自动运行程序。例如每次修改文件后自动运行格式化工具，或者Commit前强制执行特定操作等。
+\item
+  Subagent与Agent Team：复杂任务可以被拆给多个具有独立上下文的Agent。例如一个Agent分析后端，一个分析前端，另一个负责测试，主Agent最后整合它们的结果。
+\item
+  Sandbox与Approval：管理``系统允许模型做什么''，如是否可以修改当前工作区的文件，是否可以访问网络或突破工作目录边界，何时需要额外授权等。
+\item
+  SDK与App Server：对于Codex而言，Codex SDK允许程序启动、暂停、恢复Codex Agent；App Server则进一步开放完整的Agent生命周期，包括Thread、Turn、工具事件、流式输出和权限请求等。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09openclaw}{%
+\subsection{三、OpenClaw}\label{ux4e09openclaw}}
+
+作为2026年开年开源社区最具代表性的智能体项目，OpenClaw是一款免费、开源的本地 AI 智能体（Agent）运行框架，可以直接部署在电脑本地。它本身并不包含大语言模型，而是扮演着``智能体运行环境和消息路由器''的角色。它赋予AI直接操作本地计算机的系统权限，让AI自主运行，并将用户常用的通讯软件（如WhatsApp、Discord、Telegram、Signal等）与后端的 LLM（如Claude、ChatGPT等，或通过 LM Studio/Ollama 部署的本地模型）连接起来，从而实现通过通讯软件远程命令AI在电脑上自主操控程序、完成任务。
+
+（一）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  本地网关：作为一个长期运行的后台服务（基于 Node.js），它监听来自聊天平台的API请求，并将其转化为LLM可理解的指令格式。
+\item
+  持久化记忆：将对话历史、用户偏好和工具输出存储为本地的Markdown文档，不仅便于用户手动修改和审查，也能让大模型通过读取文件实现高效率的上下文积累。
+\item
+  主动心跳机制：区别于传统的问答聊天机器人，心跳机制允许智能体在没有用户触发的情况下，后台定时唤醒并自主推进长期任务。
+\item
+  全系统访问权限：通过暴露操作系统API或运行Chrome扩展程序，赋予大模型读写本地文件、执行Shell脚本以及自动化填写网页表单的能力。简单来说，用户具有的各种权限它都有。
+\end{enumerate}
+
+（二）工作流
+
+\Needspace{5\baselineskip}
+当用户通过通讯软件发送一条自然语言指令（例如：``帮我分析本地代码库里的 bug 并生成一份报告''）时，OpenClaw 的底层调度工作流如下：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  输入拦截与解析：消息路由器接收用户的自然语言输入。
+\item
+  上下文组装：系统从本地Markdown文件中读取历史状态、系统提示词以及当前已安装且可用的工具集。
+\item
+  大模型推理：将组装好的Prompt发送给配置好的后端LLM，大模型根据当前状态输出一个工具调用动作。
+\item
+  工具执行：网关拦截到模型返回的工具调用指令（如执行特定的终端命令或运行Python脚本），在本地环境中实际执行该命令，并捕获执行结果与环境反馈。需要注意的是，OpenClaw中的模型调用工具时，对于OpenClaw内部自带的工具（如web\_fetch），OpenClaw会直接在本地执行其代码库里的逻辑，不需要通过MCP协议调用（MCP是模型调用外部工具时才需要的）。
+\item
+  状态更新与反馈循环：系统将执行结果写入持久化记忆中，更新历史上下文记录。随后OpenClaw会判断任务是否已彻底完成。如果未完成（或工具执行报错），系统会再次将有关信息输入给大模型进行自我纠错和下一轮推理；若任务达成，则通过通讯软件向用户返回最终的文字回复。
+\end{enumerate}
+
+（三）安全风险
+
+OpenClaw赋予Agent极高本地权限，这既为用户带来了前所未有的便利，也带来了安全风险，因此社区推荐在单独的物理设备（如Mac mini）或隔离环境运行它。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbdeepseek-harness}{%
+\subsection{四、DeepSeek Harness}\label{ux56dbdeepseek-harness}}
+
+相比Cursor、Claude Code和Codex主要从``一个可直接使用的 Coding Agent''出发，DeepSeek Harness更强调自己是一套用于构造、运行和研究Agent的自进化基础设施。模型负责智能和推理，而以插件形式组合的Harness负责工具、环境、会话、存储、沙箱、循环和调度，使模型能够真正持续地在计算机环境中工作。
+
+（一）主要特点
+
+``Everything is a Plugin''（一切皆插件）：模型、工具、Skill、Session、Sandbox、Storage、Agent Loop、调度器甚至UI等都不是固定写死的组件，而可以通过配置进行替换和重新组合。开发者可以替换模型、Sandbox、工具甚至整个Agent Loop，同时完整观察模型在每一步看到了什么、执行了什么。这使其不仅适合作为Coding Agent，也适合作为研究Agent架构和实现Agent框架自进化的基础平台。
+
+（二）核心架构
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Cordis插件内核：DeepSeek Harness建立在Cordis插件框架之上。Cordis本身只负责管理插件、服务依赖、事件以及插件的加载和卸载，并不限定具体Agent功能。模型适配器、工具注册表、Session Log甚至Agent Loop本身都是插件，因此理论上都可以被替换。
+\item
+  事件溯源 Session：Harness将一次Agent运行中发生的事情记录成一个只追加、不覆盖的事件日志（Append-only Event Log）。用户输入、模型输出、工具调用、工具结果、上下文注入以及Subagent活动都可以成为事件。这个日志是Session的``唯一事实来源''，模型看到的对话历史也是从这些事件重新推导得到的。
+\item
+  可追踪Trajectory：由于运行过程完整记录为事件流，开发者可以查看模型究竟看到了什么、为什么调用某个工具，以及工具返回了什么。Session可以进行Resume、Fork、Search和Replay，因此特别适合调试和研究Agent行为。
+\item
+  默认Agent Loop：默认Agent Loop会获取用户输入，在Session中创建新的Turn，然后组合System Prompt和历史记录，调用模型；如果模型返回Tool Call，则通过工具注册表执行，再把结果写回Session，然后进入下一轮模型调用。
+\item
+  可替换能力层：文件系统、Shell、Web、LSP、Subagent、Sandbox、模型适配器、Session持久化和Storage都被设计成独立能力。如Session Persistence可以使用JSONL或SQLite等不同后端，而无需修改Agent Loop。
+\end{enumerate}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-118}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-118}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Anthropic. (2026). \href{https://www.anthropic.com/research/trustworthy-agents}{Trustworthy agents in practice}. Anthropic Research.
+\item
+  Bonamy, N., \& Choi, D. (2026). \href{https://developers.openai.com/blog/codex-as-a-platform}{Codex as a platform: build on the open agent harness}. OpenAI Developers.
+\item
+  Cursor. (n.d.). \href{https://cursor.com/docs/agent/overview}{Cursor Agent: Overview}. Cursor Documentation. 访问于2026-09-02.
+\item
+  Cursor. (n.d.). \href{https://cursor.com/docs/cloud-agent}{Cloud Agents}. Cursor Documentation. 访问于2026-09-02.
+\item
+  Cursor. (n.d.). \href{https://cursor.com/docs/subagents}{Subagents}. Cursor Documentation. 访问于2026-09-02.
+\item
+  Cursor Team. (2026). \href{https://cursor.com/blog/joining-spacex}{Cursor is now a part of SpaceX}. Cursor.
+\item
+  Anthropic. (n.d.). \href{https://code.claude.com/docs/en/quickstart}{Quickstart}. Claude Code Documentation. 访问于2026-09-02.
+\item
+  Anthropic. (n.d.). \href{https://code.claude.com/docs/en/how-claude-code-works}{How Claude Code works}. Claude Code Documentation. 访问于2026-09-02.
+\item
+  Anthropic. (2025). \href{https://www.anthropic.com/engineering/claude-code-sandboxing}{Beyond permission prompts: making Claude Code more secure and autonomous with sandboxing}. Anthropic Engineering.
+\item
+  Bolin, M. (2026). \href{https://openai.com/index/unrolling-the-codex-agent-loop/}{Unrolling the Codex agent loop}. OpenAI.
+\item
+  Chen, C. (2026). \href{https://openai.com/index/unlocking-the-codex-harness/}{Unlocking the Codex harness: how we built the App Server}. OpenAI.
+\item
+  OpenClaw. (n.d.). \href{https://docs.openclaw.ai/}{OpenClaw Documentation}. 访问于2026-09-02.
+\item
+  DeepSeek-AI. (n.d.). \href{https://github.com/deepseek-ai/deepseek-harness}{DeepSeek Harness developer preview: Everything is a plugin}. GitHub repository. 访问于2026-09-02.
+\item
+  Shi, Y., Zhang, W., \& Cui, T. (2026). \href{https://arxiv.org/abs/2608.25512}{A Programming Paradigm for Spatiotemporal Composability}. arXiv:2608.25512.
+\end{itemize}
+
+\clearpage

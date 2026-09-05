@@ -1,0 +1,120 @@
+\setcounter{section}{0}
+
+\Needspace{5\baselineskip}
+\hypertarget{tool-use-1}{%
+\section{Tool Use}\label{tool-use-1}}
+
+To turn a large language model from merely a ``brain'' into an agent that perceives and acts in real time, we need to give it the ability to call tools. This includes the following aspects.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-basic-workflow-and-strategies}{%
+\subsection{I. Basic Workflow and Strategies}\label{i.-basic-workflow-and-strategies}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Basic workflow: determine whether a tool is needed---select a suitable tool---call the tool---parse its output.
+\item
+  Strategies
+\end{enumerate}
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Prompt-driven: for example, add ``If you think your current knowledge is insufficient or real-time information is needed, use the appropriate tool. If you can answer directly, generate the answer.'' Available tool definitions are usually included in the prompt. Given limited context, in practice, usually only ``meta-tool'' definitions (such as Bash commands that let the model invoke secondary tools) or a tool list are included, letting the model search the filesystem for tools as needed.
+\item
+  The ReAct paradigm (reason + act)
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Earlier, we discussed prompting models to use tools and chains of thought for reasoning. These operate in parallel without good coordination. ReAct combines them, as in this example:
+
+Question: How many Japanese yen equal one US dollar?
+
+Thought: I do not know the current exchange rate, so I should look it up first.
+
+Action: SEARCH{[}USD to JPY exchange rate{]}
+
+Observation: The current exchange rate is 157.5.
+
+Thought: I have the exchange rate and can now calculate.
+
+Action: CALC{[}157.5 × 20{]}
+
+Observation: The result is 3150.
+
+Final Answer: 20 US dollars is approximately 3150 Japanese yen.
+
+Of course, this is still essentially implemented through prompts.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Train with RL so that the model autonomously learns when to call tools.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-tool-categories}{%
+\subsection{II. Tool Categories}\label{ii.-tool-categories}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Information-retrieval tools: analogous to human ``sensory neurons,'' they help the model obtain information or knowledge in real time, such as search engines, knowledge databases, and uploaded-document parsers.
+\item
+  Computation and reasoning tools: analogous to ``central neurons,'' they support precise calculation or reasoning, avoiding errors that probability-based models may make when reasoning on their own. Examples include calculators and code interpreters.
+\item
+  Device-control tools: analogous to ``motor neurons,'' they help models perform tasks in real environments, such as tools controlling operating systems, applications, or robots.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-tool-interfaces}{%
+\subsection{III. Tool Interfaces}\label{iii.-tool-interfaces}}
+
+For the model to understand a tool's purpose and invocation method, we need specific API interfaces that encapsulate tools in a comprehensible form. An interface needs a tool name, purpose description, input parameters, and an explanation of which parameters are required.
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-integrating-multiple-tools}{%
+\subsection{IV. Integrating Multiple Tools}\label{iv.-integrating-multiple-tools}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Tool selection: provide a tool list in the prompt or configure keyword-triggered routing.
+\item
+  Priorities and fallbacks: prefer tools with higher success rates or lower costs; if a call fails, switch to a lower-priority tool. After several failures, answer directly to avoid an infinite loop. Reflection can also encourage the model to assess failure causes and improve its next call.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{v.-compressing-tool-results}{%
+\subsection{V. Compressing Tool Results}\label{v.-compressing-tool-results}}
+
+Tool results can be enormous and fill the context. Pruning can compress earlier outputs before passing them to the LLM. This is lossy compression, but it does not rewrite the result files on disk.
+
+\Needspace{5\baselineskip}
+\hypertarget{vi.-reasoning-context-management-preventing-broken-reasoning-after-tool-calls-deepseek-2025}{%
+\subsection{VI. Reasoning-Context Management: Preventing Broken Reasoning after Tool Calls (DeepSeek, 2025)}\label{vi.-reasoning-context-management-preventing-broken-reasoning-after-tool-calls-deepseek-2025}}
+
+A common workflow for reasoning models with tool use is: user question → model's ``internal reasoning'' (state A) → tool execution → tool result + user question → model's ``internal reasoning'' (state B). State A is not retained when entering B.
+
+DeepSeek designs a mechanism that lets a model complete complex tasks by ``consulting notes'' like a human. The V3.2 workflow is: user question → model generates reasoning\_content\_A (on ``scratch paper'') → tool execution → tool result + user question + reasoning\_content\_A (as input context) → model continues reasoning from the previous draft and generates reasoning\_content\_B.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-122}{%
+\subsection{References}\label{references-122}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  温睦宁、林江浩、张伟楠、俞勇. (2025). \href{https://haa.boyuai.com/}{\emph{Hands-on Learning of Large-Model Agents}} (translated title; in Chinese). Posts \& Telecom Press. ISBN 978-7-115-68638-1.
+\item
+  Yao, S., Zhao, J., Yu, D., et al.~(2023). \href{https://arxiv.org/abs/2210.03629}{ReAct: Synergizing Reasoning and Acting in Language Models}. ICLR 2023.
+\item
+  DeepSeek-AI. (2025). \href{https://arxiv.org/abs/2512.02556}{DeepSeek-V3.2: Pushing the Frontier of Open Large Language Models}. arXiv:2512.02556.
+\end{itemize}
+
+\clearpage

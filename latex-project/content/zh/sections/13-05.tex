@@ -1,0 +1,268 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ddpgux7b97ux6cd5}{%
+\section{DDPG算法}\label{ddpgux7b97ux6cd5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6838ux5fc3ux601dux60f3-3}{%
+\subsection{一、核心思想}\label{ux4e00ux6838ux5fc3ux601dux60f3-3}}
+
+DDPG算法可以视为DQN的一种改进算法。我们知道，DQN无法用于输出连续动作，是因为它有一个取max的操作。当输出动作有无限多种时，我们无法直接进行``取极大似然''这一操作，或者说无法直接求出这个优化问题的解析解。由此，我们想到训练一个神经网络来学习、输出这个让价值函数取极大的动作。输入是所在状态，输出是动作，这显然是一个策略网络。
+
+由此，它成为了一个结合价值与策略的Actor-Critic架构，但同时又以DQN为基础，后面我们会看到它引入了DQN的经验回放、目标网络等。和REINFORCE、PPO中``输出动作由在概率分布中随机采样''不同，DDPG的输出动作是对概率分布中极大值点的逼近。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7f51ux7edcux67b6ux6784}{%
+\subsection{二、网络架构}\label{ux4e8cux7f51ux7edcux67b6ux6784}}
+
+\Needspace{5\baselineskip}
+DDPG算法引入了``目标网络''思想：
+
+\Needspace{5\baselineskip}
+DDPG 包含四个网络：
+
+\begin{itemize}
+\tightlist
+\item
+  Actor 网络 \(\mu_\theta\)：当前策略网络。输入 \(s\)，输出 \(a\)。
+\item
+  Critic 网络 \(Q_\phi\)：当前价值网络。输入 \(s\) 和 \(a\)，输出 \(Q(s,a)\)。
+\item
+  Target Actor \(\mu_{\theta'}\)：目标策略网络。结构同 Actor，参数滞后更新。
+\item
+  Target Critic \(Q_{\phi'}\)：目标价值网络。结构同 Critic，参数滞后更新。
+\end{itemize}
+
+两个目标网络的用途后续会介绍。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6570ux5b66ux539fux7406ux4e0eux66f4ux65b0ux516cux5f0f}{%
+\subsection{三、数学原理与更新公式}\label{ux4e09ux6570ux5b66ux539fux7406ux4e0eux66f4ux65b0ux516cux5f0f}}
+
+\Needspace{5\baselineskip}
+\hypertarget{critic-ux7684ux66f4ux65b0ux62dfux5408-bellman-ux6700ux4f18ux65b9ux7a0b}{%
+\subsubsection{1. Critic 的更新（拟合 Bellman 最优方程）}\label{critic-ux7684ux66f4ux65b0ux62dfux5408-bellman-ux6700ux4f18ux65b9ux7a0b}}
+
+Critic 的任务是估算 \(Q\) 值。由于 DDPG 是 Off-policy，我们使用 TD Error。
+
+\begin{itemize}
+\tightlist
+\item
+  计算目标值（Target）：这里用到了 Target Actor 和 Target Critic。
+\end{itemize}
+
+\[
+y_i
+=
+r_i
++
+\gamma Q_{\phi'}\bigl(
+s_{i+1},
+\mu_{\theta'}(s_{i+1})
+\bigr)
+\]
+
+注意：这里没有 \(\max\) 操作，因为动作是连续的，无法穷举。DDPG 认为 Target Actor 输出的动作 \(\mu_{\theta'}(s')\) 近似就是那个最优动作。
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  损失函数：
+\end{itemize}
+
+\[
+L_{\mathrm{critic}}
+=
+\frac{1}{N}
+\sum_i
+\bigl(
+y_i-Q_\phi(s_i,a_i)
+\bigr)^{2}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  通过最小化 MSE 来更新 \(Q_\phi\)。
+\end{itemize}
+
+Critic的任务是拟合Q网络，获取环境的价值特征，与自身采取的策略无关，因而损失函数类似于DQN，而没有出现累积奖励J。
+
+\Needspace{5\baselineskip}
+\hypertarget{actor-ux7684ux66f4ux65b0ux786eux5b9aux6027ux7b56ux7565ux68afux5ea6ux5b9aux7406}{%
+\subsubsection{2. Actor 的更新（确定性策略梯度定理）}\label{actor-ux7684ux66f4ux65b0ux786eux5b9aux6027ux7b56ux7565ux68afux5ea6ux5b9aux7406}}
+
+这是 DDPG 的精髓。我们希望 Actor 输出的动作 \(a=\mu_\theta(s)\) 能够让 Critic 打分 \(Q(s,a)\) 最高。
+
+\Needspace{5\baselineskip}
+目标函数为：
+
+\[
+J(\theta)
+=
+\mathbb{E}\bigl[
+Q(s,\mu_\theta(s))
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+利用链式法则求梯度：
+
+\[
+\nabla_\theta J
+\approx
+\mathbb{E}
+\bigl[
+\nabla_a Q_\phi(s,a)
+\big|_{a=\mu_\theta(s)}
+\cdot
+\nabla_\theta \mu_\theta(s)
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+直观解释：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Critic 告诉 Actor：在状态 \(s\)，如果把动作 \(a\) 增大一点，\(Q\) 值会增加多少。这是 \(\nabla_a Q\)。
+\item
+  Actor 收到信号后，计算自己的参数 \(\theta\) 该怎么变，才能让输出的 \(a\) 增大。这是 \(\nabla_\theta\mu\)。
+\item
+  两者相乘，直接通过反向传播更新 \(\theta\)。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux63d0ux9ad8ux8badux7ec3ux7a33ux5b9aux6027ux7684ux6280ux672f}{%
+\subsubsection{（四）提高训练稳定性的技术}\label{ux56dbux63d0ux9ad8ux8badux7ec3ux7a33ux5b9aux6027ux7684ux6280ux672f}}
+
+\textbf{A. 经验回放（Replay Buffer）}
+
+同 DQN。DDPG 是 Off-policy 的，训练时把数据 \((s,a,r,s')\) 存入 Buffer，更新时随机抽取 Batch。这消除了数据的时间相关性，提高了样本效率。
+
+\textbf{B. 软更新（Soft Update）}
+
+\Needspace{5\baselineskip}
+DQN 的目标网络是每隔 \(C\) 步把参数直接复制过去（Hard Update）。DDPG 觉得这样太剧烈了，改用软更新：
+
+\[
+\theta'
+\leftarrow
+\tau\theta+(1-\tau)\theta'
+\]
+
+其中 \(\tau\) 是一个很小的数，如 \(0.001\)。这意味着目标网络的变化非常缓慢，只会平滑地跟随主网络更新，极大地增强了 Critic 训练的稳定性。
+
+\textbf{C. 探索噪声（Exploration Noise）}
+
+\Needspace{5\baselineskip}
+因为策略是确定性的，即输入 \(s\) 必得 \(a\)，Actor 自己不会尝试新动作。为了探索，必须在训练时的动作上手动加噪声：
+
+\[
+a_{\mathrm{train}}
+=
+\mu_\theta(s)+\mathcal{N}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  原论文使用的是 OU 噪声（Ornstein-Uhlenbeck process），因为它具有时间相关性，适合机器人控制。
+\item
+  现在很多实现发现简单的高斯噪声（Gaussian Noise）效果也不错。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux7b97ux6cd5ux5b8cux6574ux6d41ux7a0b}{%
+\subsubsection{（五）算法完整流程}\label{ux4e94ux7b97ux6cd5ux5b8cux6574ux6d41ux7a0b}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化 Actor \(\mu\)、Critic \(Q\) 及其对应的 Target 网络 \(\mu'\)、\(Q'\)。
+\item
+\Needspace{5\baselineskip}
+  循环（Episode）：
+
+  \begin{itemize}
+  \tightlist
+  \item
+    初始化噪声进程 \(\mathcal{N}\)。
+  \item
+\Needspace{5\baselineskip}
+    循环（Step）：
+
+    \begin{enumerate}
+    \def\labelenumii{\arabic{enumii}.}
+    \tightlist
+    \item
+      根据当前状态 \(s_t\)，选择动作 \(a_t=\mu(s_t)+\mathrm{Noise}\)。
+    \item
+      执行动作，得到 \(r_t,s_{t+1}\)。
+    \item
+      存入 Buffer \(R\)。
+    \item
+      采样：从 \(R\) 中随机采一个 Batch。
+    \item
+      算目标：\(y=r+\gamma Q'(s',\mu'(s'))\)。
+    \item
+      更新 Critic：最小化 \((y-Q(s,a))^{2}\)。
+    \item
+      更新 Actor：最大化 \(Q(s,\mu(s))\)。
+    \item
+      软更新 Target：\(\theta'\leftarrow\tau\theta+(1-\tau)\theta'\)。
+    \end{enumerate}
+  \end{itemize}
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux516dddpg-ux7684ux4f18ux7f3aux70b9}{%
+\subsubsection{（六）DDPG 的优缺点}\label{ux516dddpg-ux7684ux4f18ux7f3aux70b9}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  优点
+\end{enumerate}
+
+Off-policy：样本效率高，比PPO快（指需要的交互次数少）。
+
+解决连续控制：填补了DQN在连续动作空间的空白。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  缺点
+\end{enumerate}
+
+对超参数敏感：非常难调（特别是学习率和噪声）。
+
+Q值估计过高：Critic的更新目标实质上和DQN的r+gamma*maxQ(s,a)，由于取max操作，被高估的数值更可能被取到，容易导致结果Q值虚高，误导策略。后来TD3（Twin Delayed DDPG）算法通过用两个Critic取最小值，解决了这个问题。
+
+稳定性不如 PPO：容易收敛到局部最优或震荡。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-60}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-60}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Lillicrap, T. P., Hunt, J. J., Pritzel, A., et al.~(2016). \href{https://arxiv.org/abs/1509.02971}{Continuous control with deep reinforcement learning}. ICLR 2016.
+\item
+  Fujimoto, S., van Hoof, H., \& Meger, D. (2018). \href{https://proceedings.mlr.press/v80/fujimoto18a.html}{Addressing Function Approximation Error in Actor-Critic Methods}. ICML 2018.
+\end{itemize}
+
+\clearpage

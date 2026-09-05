@@ -1,0 +1,205 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{densenet}{%
+\section{DenseNet}\label{densenet}}
+
+ResNet demonstrated the power of skip connections (x + F(x)). DenseNet's authors proposed a more radical idea: to maximize information flow between layers, could every layer connect directly to all subsequent layers?
+
+In this connection pattern, every layer receives the ``collective knowledge'' of all preceding layers as input and passes its own feature maps to all subsequent layers.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-core-components-dense-blocks-and-transition-layers}{%
+\subsection{I. Core Components: Dense Blocks and Transition Layers}\label{i.-core-components-dense-blocks-and-transition-layers}}
+
+DenseNet alternates between two core types of modules.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Dense block
+\end{enumerate}
+
+The dense block is DenseNet's basic building unit. Within a block, every layer connects directly to every subsequent layer.
+
+Mathematically, let layer l's output be x\_l. Its input concatenates all preceding layer outputs: x\_l = H\_l({[}x\_0, x\_1, \ldots, x\_\{l-1\}{]}).
+Here, {[} \ldots{} {]} denotes concatenation along the channel dimension, and H\_l(·) is a composite function such as BN-ReLU-Conv.
+
+\Needspace{5\baselineskip}
+Structure:
+
+Composite function H\_l: typically a standard sequence of batch normalization (BN), ReLU, and 3x3 convolution (Conv). This convolution generally produces only a few feature maps (for example, k=32). The number k is called the growth rate.
+
+Concatenation: each layer adds its k output feature maps to the block's ``collective knowledge.'' Later layers therefore have more input channels because their inputs concatenate all preceding outputs.
+
+Local connectivity: dense connections occur only within a dense block. Different blocks are not directly densely connected.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Transition layer
+\end{enumerate}
+
+Concatenation rapidly increases feature-map channel counts within a block. For example, in a 10-layer block with growth rate k=32, the last layer's input-channel count may reach 3 + 10*32 = 323. Transition layers must therefore be inserted between dense blocks to control model complexity and computation.
+
+Role: reduce dimensions by compressing feature-map spatial sizes and channel counts.
+
+\Needspace{5\baselineskip}
+Structure: typically three components:
+
+Batch normalization (BN).
+
+1x1 convolution: introduced in DenseNet-C to reduce channels. Typically, channels are reduced by a proportion (such as to half the original number), which is a hyperparameter.
+
+2x2 average pooling: stride 2, halving feature-map height and width for spatial downsampling.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-overall-architecture}{%
+\subsection{II. Overall Architecture}\label{ii.-overall-architecture}}
+
+An example of a complete DenseNet is: initial 7\emph{7 convolution with stride 2 → max pooling → dense layer → transition layer (1}1 convolution + 2*2 average pooling) → dense layer → transition layer → dense layer → transition layer → dense layer → global average pooling → classifier.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-advantages-and-challenges-of-densenet}{%
+\subsection{III. Advantages and Challenges of DenseNet}\label{iii.-advantages-and-challenges-of-densenet}}
+
+\Needspace{5\baselineskip}
+Advantages:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Strong resistance to overfitting: extremely parameter-efficient, using far fewer parameters than comparably performing ResNet or VGG models. It therefore performs well when datasets are not exceptionally large.
+\item
+  Greatly improved gradient flow: dense connections let gradients propagate directly to early layers, making training easy.
+\item
+  Encouraging feature reuse: every layer can directly use the lowest-level original features and all intermediate composite features, making the model efficient.
+\item
+  Built-in regularization: the architecture itself suppresses overfitting.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+Challenges and drawbacks:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  High memory consumption: DenseNet's most notable disadvantage. Keeping all intermediate feature maps for concatenation consumes substantial GPU memory during training. Many studies seek to improve memory efficiency.
+\item
+  Potential computational overhead: numerous concatenation operations can also add computation.
+\item
+  Deeper is not always better: explosive channel growth limits DenseNet depth (usually to at most a few hundred layers), unlike ResNet, which can readily reach thousands of layers.
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{iv.-the-explosion-in-channel-count}{%
+\subsection{IV. The ``Explosion'' in Channel Count}\label{iv.-the-explosion-in-channel-count}}
+
+\Needspace{5\baselineskip}
+Consider a DenseNet dense block with the following parameters:
+
+Input channels: suppose the feature map entering the first dense block has C0 = 64 channels.
+
+Growth rate k: one of DenseNet's most important hyperparameters, defining how many new feature maps each convolutional layer produces. Suppose k = 32. Every H\_l layer (BN-ReLU-Conv) therefore outputs 32 channels.
+
+Composite function: every layer executes H\_l: BN → ReLU → 3×3 Conv (outputting k channels).
+
+Layer 0 (input): feature map entering the block: {[}channels = C0 = 64{]}.
+
+Layer 1: apply H\_1 (3x3 convolution) to this 64-channel input and produce k = 32 new feature maps.
+
+Current total: 64 (existing) + 32 (new) = 96 channels.
+
+Layer 2: apply H\_2 to the 96-channel input, producing 32 new feature maps.
+
+Current total: 96 + 32 = 128 channels.
+
+Layer 3: produce 32 new feature maps.
+
+Current total: 128 + 32 = 160 channels.
+
+And so on\ldots{} Layer l has C0 + k × (l - 1) input channels.
+
+A dense block containing L layers has total output-channel count C\_\{output\} = C0 + k * L.
+
+Although mathematically linear, this growth has ``explosive'' consequences in deep learning practice.
+
+Exploding memory usage: in a network with L layers, layer l's output feature maps must be reused by all subsequent layers. Mainstream frameworks such as PyTorch and TensorFlow allocate separate memory for each concatenation result, so those features must be stored L−l+1 times. Total network memory is therefore approximately O(L2) (quadratic), compared with O(L) (linear) for conventional networks such as ResNet. Backpropagation relies on intermediate forward feature maps to compute gradients. DenseNet's dense connections require storing all intermediate features, consuming enormous GPU memory and creating a major training bottleneck.
+
+Increasing computation: although each layer produces only k=32 channels, the Conv2D operation computing them receives an ever-growing number of input channels, increasing its computational cost.
+
+\Needspace{5\baselineskip}
+DenseNet's solutions:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Transition layers. A 1x1 convolution, introduced in DenseNet-C, compresses channels: if the preceding block outputs C channels, it reduces them to θC, where θ is the compression factor (usually θ=0.5). This directly addresses excessive channel count. A 2x2 average-pooling operation halves height and width, further reducing computation.
+\item
+  Further optimizations
+\end{enumerate}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\tightlist
+\item
+  Memory-efficient implementation
+\end{enumerate}
+
+Shared buffers: preallocate a fixed buffer for reuse by all concatenation layers, avoiding repeated memory allocations and reducing GPU memory usage from O(L2) to O(L).
+
+Gradient reconstruction: dynamically reconstruct intermediate features during backpropagation to reduce storage requirements (see \emph{Memory-Efficient Implementation of DenseNets}).
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Architectural compression
+\end{enumerate}
+
+Bottleneck layers (DenseNet-B): add a 1×1 convolution before each 3×3 convolution to compress channels and reduce computation.
+
+Transition-layer compression (DenseNet-C): reduce feature-map channels with compression factor θ (such as 0.5).
+
+DenseNet-BC: combine bottlenecks and transition compression to optimize memory and computation together.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Alternative architectures
+\end{enumerate}
+
+VoVNet (One-Shot Aggregation): aggregate features from all preceding layers only at the module's final layer, retaining multiscale features while reducing MAC to a level comparable with ResNet.
+
+Max-Feature-Map (MFM) is not structured channel pruning. It groups feature maps and takes elementwise maxima, preserving features through competitive activation and potentially reducing output-channel count.
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-15}{%
+\subsection{References}\label{references-15}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Huang, G., Liu, Z., van der Maaten, L., \& Weinberger, K. Q. (2017). \href{https://arxiv.org/abs/1608.06993}{Densely Connected Convolutional Networks}. CVPR 2017.
+\item
+  Pleiss, G., Chen, D., Huang, G., Li, T., van der Maaten, L., \& Weinberger, K. Q. (2017). \href{https://arxiv.org/abs/1707.06990}{Memory-Efficient Implementation of DenseNets}. arXiv:1707.06990.
+\item
+  Lee, Y., Hwang, J., Lee, S., Bae, Y., \& Park, J. (2019). \href{https://openaccess.thecvf.com/content_CVPRW_2019/html/CEFRL/Lee_An_Energy_and_GPU-Computation_Efficient_Backbone_Network_for_Real-Time_Object_CVPRW_2019_paper.html}{An Energy and GPU-Computation Efficient Backbone Network for Real-Time Object Detection}. CVPR Workshops 2019. (VoVNet)
+\item
+  Wu, X., He, R., Sun, Z., \& Tan, T. (2018). \href{https://arxiv.org/abs/1511.02683}{A Light CNN for Deep Face Representation with Noisy Labels}. \emph{IEEE Transactions on Information Forensics and Security}, 13(11), 2884--2896. (MFM)
+\end{itemize}
+
+\clearpage

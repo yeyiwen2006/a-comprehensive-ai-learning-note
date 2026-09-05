@@ -1,0 +1,89 @@
+\setcounter{section}{3}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux6570ux636eux7684ux5904ux7406ux4e0eux5bf9ux9f50}{%
+\section{数据的处理与对齐}\label{ux6570ux636eux7684ux5904ux7406ux4e0eux5bf9ux9f50}}
+
+对于具身智能的数据，除了规模和多样性之外，数据如何进行处理、如何与训练的需要对齐也非常值得注重。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux3c00.7ux7528promptux5904ux7406ux6570ux636e}{%
+\subsection{一、π0.7：用Prompt处理数据}\label{ux4e00ux3c00.7ux7528promptux5904ux7406ux6570ux636e}}
+
+\Needspace{5\baselineskip}
+π0.7涌现出组合泛化能力的关键在于用多样化的prompt处理多样化的数据。过去VLA训练只喂一句清理冰箱，模型得到的信号是单一的。π0.7把prompt展开成四层：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  任务指令。例如，要清理厨房。
+\item
+  子任务指令。例如，要打开冰箱、取出食材、清理桌面等。
+\item
+  子目标图像，即``下一帧画面应该长什么样''。
+\item
+  episode元数据，即这条数据质量几分、有没有出错、速度多快等。
+\end{enumerate}
+
+有了这些丰富的context，模型就能分得清训练数据里的好坏、快慢、对错，从而可以用好以前用不了的数据，如失败的rollouts、低质量的演示、其他机器人的片段等。π0.7加的这层prompt，就是让模型知道``这段数据是什么质量、用什么策略做的''。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cqwen-robotmanipux6570ux636eux7684ux5bf9ux9f50}{%
+\subsection{二、Qwen-RobotManip：数据的对齐}\label{ux4e8cqwen-robotmanipux6570ux636eux7684ux5bf9ux9f50}}
+
+处理来自大量机器人和数据集的数据时，不能简单把它们收集到一起。比如，同样是``把杯子推到桌子边缘''这个动作，不同机器人记录它的方式可能完全不同。有的机器人记录7个关节分别转了多少角度；有的记录机械臂末端在机器人基座坐标系里的位置和姿态；还有一些灵巧手，本身就有二十多个可以独立运动的关节。这些数字虽然描述的是类似的动作，但它们并不是同一种``语言''。如果直接把它们混在一起训练，模型很难知道哪些变化其实代表同一个动作，最后往往会学到噪声。Qwen-RobotManip在多个层面对数据进行对齐和清晰，观察到模型的性能随着数据量的增大稳步提升。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4e0dux540cux6570ux636eux7684ux683cux5f0fux5bf9ux9f50}{%
+\subsubsection{（一）不同数据的格式对齐}\label{ux4e00ux4e0dux540cux6570ux636eux7684ux683cux5f0fux5bf9ux9f50}}
+
+\hypertarget{ux52a8ux4f5cux7ef4ux5ea6ux5b9aux4e49ux5bf9ux9f50}{%
+\paragraph{1. 动作维度定义对齐}\label{ux52a8ux4f5cux7ef4ux5ea6ux5b9aux4e49ux5bf9ux9f50}}
+
+不同机器人的身体结构差别很大。有单臂机器人，有双臂机器人；有普通夹爪，也有十几个甚至几十个自由度的灵巧手。它们原始的状态和动作维度完全不同。Qwen-RobotManip把机器人的状态和动作统一表示成一个80维向量，前58维均分给两条手臂，每条手臂内部关节位置7维、末端位姿9维、夹爪状态1维，灵巧手关节12维；后22维备用。某台机器人没有的部件，对应位置就补成0。
+
+由于补出来的0并不是真实数据，模型会使用一个0-1二值掩码，以确定哪些维度是补0。训练时，只有真实存在的维度参与计算误差和更新梯度。
+
+\hypertarget{ux5750ux6807ux7cfbux5bf9ux9f50}{%
+\paragraph{2. 坐标系对齐}\label{ux5750ux6807ux7cfbux5bf9ux9f50}}
+
+假设两台机器人都让机械臂向前移动10厘米，因为它们的底座安装位置、朝向和坐标定义不同，在各自的基座坐标系里，这个动作可能会变成完全不同的一组数字。故Qwen-RobotManip不直接使用原始坐标系里的绝对位置，而是更多地使用相机坐标系下的末端位姿变化量，避免了坐标系原点不同带来的麻烦。此外，模型还会获取关于摄像机安装位置、朝向以及末端执行器类型的信息。
+
+\hypertarget{ux5728ux4e0aux4e0bux6587ux4e2dux63d0ux4f9bux5f53ux524dux673aux5668ux4ebaux7684ux7279ux5f81}{%
+\paragraph{3. 在上下文中提供当前机器人的特征}\label{ux5728ux4e0aux4e0bux6587ux4e2dux63d0ux4f9bux5f53ux524dux673aux5668ux4ebaux7684ux7279ux5f81}}
+
+前面讲到了如何让模型有效学习各种不同机器人的数据，而推理时，模型面对的是特定的一种机器人，我们希望模型具有良好的特化性能，能根据当前一小段执行历史，判断自己面对的是怎样的一台机器人。故除了画面外，模型还会获得机器人平台、运行速度、FPS，以及之前一段时间的观察和动作数据，让模型通过类似上下文学习的方法临时适配当前机器人本体。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux540cux4e00ux6570ux636eux7684ux6a21ux6001ux5bf9ux9f50}{%
+\subsubsection{（二）同一数据的模态对齐}\label{ux4e8cux540cux4e00ux6570ux636eux7684ux6a21ux6001ux5bf9ux9f50}}
+
+在所有机器人已经使用统一的表示方式的情况下，还要确保每条数据本身不同模态之间没有互相矛盾。一条机器人训练数据通常画面、其他状态、动作、文本指令等模态，真实的数据中常出现不同模态间的错位，如视频和机器人日志没有完全同步，action中部分块数值严重偏离实际，指令与画面、动作不符等。
+
+Qwen-RobotManip没有试图一次检查四种模态是否全部严格一致，而是先各自确保两种模态之间的对齐，如一条管线负责检查state和action是否匹配，另一条管线负责检查instruction和image是否匹配，还有一条管线负责检查image和state是否匹配等。每一道检查只负责一部分关系，但经过多轮筛选之后，最终留下来的数据整体一致性就会高很多。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux6570ux636eux6e05ux6d17ux548cux6b63ux786eux6027ux68c0ux67e5}{%
+\subsubsection{（三）数据清洗和正确性检查}\label{ux4e09ux6570ux636eux6e05ux6d17ux548cux6b63ux786eux6027ux68c0ux67e5}}
+
+Qwen-RobotManip会检查机器人日志本身。首先检查状态和动作随时间的变化是否合理。如机器人状态明明一直向一个方向运动，但action却显示相反趋势，这可能就是错误数据；某个关节角突然从正常值跳到一个极端数值，也可能是传感器或者记录错误。过滤掉这些异常之后，还会利用机器人的运动学模型再次检查：根据这些关节状态计算出来的末端位置，是否真的和数据记录的一致。除此之外，不同数据集使用的坐标方向也会被重新统一。
+
+这些步骤是必要的。如果不先清洗数据，大量错误样本就会直接进入训练。这时候模型学到的并不是机器人真正应该怎样行动，而是数据采集过程中产生的错误。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-165}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-165}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  具身纪元. (2026). \href{https://www.jintiankansha.com/t/8QXVctCOWG}{预训练的秘密，不只在规模和多样性}. 微信公众号文章，2026年7月4日发布.
+\item
+  Physical Intelligence. (2026). \(\pi_{0.7}\): \href{https://arxiv.org/abs/2604.15483}{A Steerable Generalist Robotic Foundation Model with Emergent Capabilities}. arXiv:2604.15483.
+\item
+  Yuan, H., Liang, Z., Chen, A., et al.~(2026). \href{https://arxiv.org/abs/2606.17846}{Qwen-RobotManip Technical Report: Alignment Unlocks Scale for Robotic Manipulation Foundation Models}. arXiv:2606.17846.
+\end{itemize}
+
+\clearpage

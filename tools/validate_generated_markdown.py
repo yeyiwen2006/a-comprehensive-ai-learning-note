@@ -46,7 +46,14 @@ def parse_args() -> argparse.Namespace:
     repo_root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description="Validate generated Markdown repository.")
     parser.add_argument("--repo-root", type=Path, default=repo_root)
+    parser.add_argument("--allow-partial-english", action="store_true", help="Development only; not a release acceptance")
     return parser.parse_args()
+
+
+def is_local_artifact(path: Path, repo_root: Path) -> bool:
+    relative = path.relative_to(repo_root).as_posix()
+    return any(relative == prefix or relative.startswith(prefix + "/") for prefix in
+               (".git", "local-only", "latex-project/build", "output/pdf", "tmp/pdfs"))
 
 
 def fail(message: str, failures: list[str]) -> None:
@@ -304,6 +311,8 @@ def validate_no_banned_files(repo_root: Path, failures: list[str]) -> None:
     local_only_warned = False
     for path in repo_root.rglob("*"):
         relative = path.relative_to(repo_root)
+        if is_local_artifact(path, repo_root):
+            continue
         if ".git" in relative.parts:
             continue
         if "local-only" in relative.parts:
@@ -332,6 +341,8 @@ def validate_markdown_files(repo_root: Path, failures: list[str]) -> None:
         return
 
     for path in markdown_files:
+        if is_local_artifact(path, repo_root):
+            continue
         relative_posix = str(path.relative_to(repo_root)).replace("\\", "/")
         if relative_posix.startswith("local-only/"):
             continue
@@ -366,17 +377,60 @@ def validate_required_files(repo_root: Path, failures: list[str]) -> None:
 
 
 def validate_directory_links(repo_root: Path, failures: list[str]) -> None:
-    directory = repo_root / "目录.md"
-    if not directory.exists():
-        return
-    text = directory.read_text(encoding="utf-8", errors="replace")
-    links = re.findall(r"\[[^\]]+\]\(([^)]+)\)", text)
-    for link in links:
-        if link.startswith("http://") or link.startswith("https://"):
+    for path in repo_root.rglob("*.md"):
+        if is_local_artifact(path, repo_root):
             continue
-        target = repo_root / unquote(link)
-        if not target.exists():
-            fail(f"目录链接指向不存在的文件: {link}", failures)
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        fenced = fenced_code_lines(lines)
+        text = "\n".join(line for i, line in enumerate(lines) if not fenced[i])
+        for link in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+            if re.match(r"^(?:https?://|mailto:|#)", link):
+                continue
+            target = (path.parent / unquote(link.split("#", 1)[0])).resolve()
+            if not target.is_relative_to(repo_root) or not target.exists():
+                fail(f"本地链接失效或越出仓库: {path.relative_to(repo_root)} -> {link}", failures)
+
+
+def validate_bilingual_mapping(repo_root: Path, failures: list[str], allow_partial: bool) -> None:
+    from collections import Counter
+    mappings = {}
+    for language, folder in (("zh", "docs"), ("en", "docs-en")):
+        files = sorted((repo_root / folder).rglob("*.md"))
+        ids = []
+        for path in files:
+            match = re.match(r"^(\d{2}-\d{2})-", path.name)
+            if not match:
+                fail(f"节文件名缺少稳定编号: {path.relative_to(repo_root)}", failures)
+                continue
+            ids.append(match[1])
+            if language == "en":
+                text = path.read_text(encoding="utf-8")
+                front_match = re.match(r"\A\ufeff?---[ \t]*\r?\n(.*?)\r?\n---(?:[ \t]*\r?\n|[ \t]*\Z)", text, re.S)
+                if not front_match:
+                    fail(f"英文文件缺少完整元数据前言: {path.relative_to(repo_root)}", failures)
+                    continue
+                front = front_match[1]
+                for key, value in (("language", "en"), ("source_language", "zh"), ("section_id", match[1])):
+                    if not re.search(rf'^{key}:\s*["\']?{re.escape(value)}["\']?\s*$', front, re.M):
+                        fail(f"英文元数据不匹配 {key}: {path.relative_to(repo_root)}", failures)
+        duplicates = [key for key, count in Counter(ids).items() if count > 1]
+        if duplicates:
+            fail(f"{language} 节编号重复: {duplicates}", failures)
+        mappings[language] = set(ids)
+        print(f"[OK] {language} section IDs: {len(ids)}")
+    if len(mappings["zh"]) != 168:
+        fail("中文必须恰好168节", failures)
+    if mappings["en"] - mappings["zh"]:
+        fail("英文包含没有中文对应的节编号", failures)
+    if not allow_partial and mappings["zh"] != mappings["en"]:
+        fail(f"英文尚未完整对应168节，缺失: {sorted(mappings['zh'] - mappings['en'])}", failures)
+    english_roots = ["README_EN.md", "TABLE_OF_CONTENTS_EN.md", "BEGINNER_LEARNING_PATH_EN.md",
+                     "DISCLAIMER_EN.md", "CONTRIBUTING_EN.md", "CHANGELOG_EN.md", "latex-project/README_EN.md"]
+    if not allow_partial:
+        for name in english_roots:
+            if not (repo_root / name).is_file():
+                fail(f"缺少英文入口文档: {name}", failures)
 
 
 def validate_license(repo_root: Path, failures: list[str]) -> None:
@@ -398,6 +452,7 @@ def main() -> int:
     validate_markdown_files(repo_root, failures)
     validate_directory_links(repo_root, failures)
     validate_license(repo_root, failures)
+    validate_bilingual_mapping(repo_root, failures, args.allow_partial_english)
 
     docs_count = len(list((repo_root / "docs").rglob("*.md"))) if (repo_root / "docs").exists() else 0
     if docs_count == 0:

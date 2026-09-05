@@ -1,0 +1,97 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{momentum}{%
+\section{Momentum}\label{momentum}}
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-what-problems-does-momentum-address}{%
+\subsection{I. What Problems Does Momentum Address?}\label{i.-what-problems-does-momentum-address}}
+
+Momentum primarily addresses SGD's convergence speed and stability on certain landscapes.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Oscillations in narrow ``ravines''
+\end{enumerate}
+
+Description: imagine loss-function contours resembling a long, narrow valley. Gradients are large in the steep direction (the valley walls) but small in the gentle direction leading toward the optimal solution at the bottom.
+
+SGD's problem: large gradients cause it to overshoot back and forth in the steep direction, resulting in very slow progress along the gentle direction.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Saddle points and flat regions
+\end{enumerate}
+
+Description: local minima are relatively uncommon in high-dimensional spaces; saddle points are more common. At a saddle point, gradients in all directions are close to zero.
+
+SGD's problem: as gradients approach 0, its update steps also approach zero, leaving the optimizer ``stuck'' and no longer updating.
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-how-does-momentum-address-these-problems}{%
+\subsection{II. How Does Momentum Address These Problems?}\label{ii.-how-does-momentum-address-these-problems}}
+
+Momentum introduces the physical concepts of ``momentum'' and ``inertia.'' Imagine a ball rolling downhill: its motion depends not only on the local slope but also on velocity accumulated in the past (its ``momentum'').
+
+In the steep direction, gradients \(g_t\) alternate (\(+C, -C, +C, -C, \ldots\)). As they accumulate into momentum \(m_t\), opposite signs cancel, reducing that component of \(m_t\) and suppressing oscillations.
+
+In the gentle direction, gradients \(g_t\) consistently point the same way (\(-c, -c, -c, \ldots\)). Momentum \(m_t\) accumulates these aligned gradients, increasing the component of \(m_t\) in that direction and accelerating progress.
+
+At a saddle point, the current gradient \(g_t\) may be close to \(0\), but as long as the ball carries past momentum (\(m_{t-1}>0\)), its ``inertia'' can carry it through the flat region toward the optimum.
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-mathematical-expression}{%
+\subsection{III. Mathematical Expression}\label{iii.-mathematical-expression}}
+
+Momentum introduces a hyperparameter β1 close to 1, representing the decay rate of ``inertia.'' Instead of updating with the gradient directly, it uses the moving average ``past gradient\emph{β1 + current gradient}(1-β1),'' multiplied by the learning rate.
+
+\Needspace{5\baselineskip}
+Compute the gradient:
+
+\[
+g_t = \nabla_\theta J(\theta_{t-1})
+\]
+
+\Needspace{5\baselineskip}
+Update momentum (the first-moment estimate):
+
+\[
+m_t = \beta_1 \cdot m_{t-1} + (1-\beta_1)\cdot g_t
+\]
+
+\(m_t\) is the exponential moving average of \(g_t\). \(\beta_1\) controls how quickly past gradients are ``forgotten.'' With \(\beta_1=0.9\), approximately \(90\%\) of current \(m_t\) comes from previous momentum and \(10\%\) from the current gradient.
+
+Note: some classic implementations use \(m_t=\beta_1\cdot m_{t-1}+g_t\). Adam uses the EMA form, which is used consistently here.
+
+\Needspace{5\baselineskip}
+Update parameters:
+
+\[
+\theta_t = \theta_{t-1} - \alpha \cdot m_t
+\]
+
+The update direction now follows smoothed \(m_t\), not \(g_t\).
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-26}{%
+\subsection{References}\label{references-26}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Polyak, B. T. (1964). \href{https://doi.org/10.1016/0041-5553(64)90137-5}{Some methods of speeding up the convergence of iteration methods}. USSR Computational Mathematics and Mathematical Physics.
+\item
+  Sutskever, I., Martens, J., Dahl, G., \& Hinton, G. (2013). \href{https://proceedings.mlr.press/v28/sutskever13.html}{On the importance of initialization and momentum in deep learning}. ICML 2013.
+\end{itemize}
+
+\clearpage

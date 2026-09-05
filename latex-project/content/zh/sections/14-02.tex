@@ -1,0 +1,509 @@
+\setcounter{section}{1}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux57faux4e8eux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}{%
+\section{基于模型的强化学习}\label{ux57faux4e8eux6a21ux578bux7684ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux9884ux6d4bux63a7ux5236model-predictive-control-mpc}{%
+\subsection{一、模型预测控制（Model Predictive Control, MPC）}\label{ux4e00ux6a21ux578bux9884ux6d4bux63a7ux5236model-predictive-control-mpc}}
+
+以下棋为例。在无模型（Model-Free）的算法中，我们看到当前棋局，直接凭经验落子（策略网络直接输出动作）。而MPC则是：看到当前棋局，我在脑海里（环境模型）推演：如果我下A处，对手可能下B，那我再下C\ldots\ldots 推演H步之后，发现局势大好，于是我决定现在的第一步就走A。
+
+MPC 的核心是滚动时域控制（receding horizon control）：在当前状态 \(s_t\) 下，先用环境模型规划未来 \(H\) 步的动作序列，
+
+\[
+a^*_{t:t+H-1}=\arg\max_{a_{t:t+H-1}}\sum_{\tau=t}^{t+H-1}r(s_\tau,a_\tau),
+\quad s_{\tau+1}=f(s_\tau,a_\tau)
+\]
+
+虽然优化的是一整段动作序列，但真实执行时只执行第一步 \(a_t^*\)。执行后环境到达新状态 \(s_{t+1}\)，算法再从新状态重新规划未来 \(H\) 步。也就是说，MPC 一边执行一边重算计划，避免一次性相信很长的模型预测。
+
+\Needspace{5\baselineskip}
+由于动作空间可能是连续且高维的，直接用数学公式解出上面的argmax很难。为此，我们可以采取如下操作：
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6253ux9776ux6cd5}{%
+\subsubsection{（一）打靶法}\label{ux4e00ux6253ux9776ux6cd5}}
+
+简单粗暴，随机生成1000条动作轨迹，扔进模型里跑一下，看哪条轨迹得分最高，就选哪条。在高维空间中，随机乱猜很难猜中最优解，效率极低。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux4ea4ux53c9ux71b5ux65b9ux6cd5cross-entropy-method-cem}{%
+\subsubsection{（二）交叉熵方法（Cross-Entropy Method, CEM）}\label{ux4e8cux4ea4ux53c9ux71b5ux65b9ux6cd5cross-entropy-method-cem}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  核心步骤
+\end{enumerate}
+
+（1）初始化：假设动作服从某个分布（比如正态分布）。
+
+（2）采样：从这个分布里采样一批动作序列。
+
+（3）评估：用模型评估这些序列的得分。
+
+（4）筛选精英：挑出得分最高的那些序列（比如前10\%）。
+
+（5）进化：用这些精英序列的统计特征（均值和方差）来更新分布的参数。让分布的中心向高分区域移动，并缩小方差（更确信）。
+
+（6）迭代：重复上述过程，直到分布收敛。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  和交叉熵的关系
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+CEM是一种进化算法，它从当前分布中生成一堆样本，挑出表现最好的精英样本，它认为：``这前10\%的精英样本就是真理，就是正确答案。''于是它倾向于更新分布参数（比如高斯分布的u和sigma），使得这个分布生成这些``精英样本''的概率最大，即我们让当前的分布去拟合精英样本的分布。衡量这两个分布差异的指标就是交叉熵，推导如下：
+
+设 \(z\) 表示一条候选动作序列，当前采样分布为 \(Q(z;\theta)\)。CEM 的目标不是直接求一个动作，而是找到新的分布参数 \(\theta_{\mathrm{new}}\)，使 \(Q(z;\theta_{\mathrm{new}})\) 更接近精英样本所代表的理想分布 \(P_{\mathrm{ideal}}(z)\)。
+
+\Needspace{5\baselineskip}
+用 KL 散度衡量两者差异：
+
+\[
+D_{\mathrm{KL}}(P_{\mathrm{ideal}}\Vert Q)
+=\sum_z P_{\mathrm{ideal}}(z)\log\frac{P_{\mathrm{ideal}}(z)}{Q(z;\theta)}
+\]
+
+\Needspace{5\baselineskip}
+展开可得：
+
+\[
+D_{\mathrm{KL}}(P_{\mathrm{ideal}}\Vert Q)
+=\sum_z P_{\mathrm{ideal}}(z)\log P_{\mathrm{ideal}}(z)
+-\sum_z P_{\mathrm{ideal}}(z)\log Q(z;\theta)
+\]
+
+\Needspace{5\baselineskip}
+第一项只与 \(P_{\mathrm{ideal}}\) 有关，和 \(\theta\) 无关。因此，最小化 KL 散度等价于最小化交叉熵项：
+
+\[
+\arg\min_\theta D_{\mathrm{KL}}(P_{\mathrm{ideal}}\Vert Q)
+\Longleftrightarrow
+\arg\min_\theta\left(-\sum_z P_{\mathrm{ideal}}(z)\log Q(z;\theta)\right)
+\]
+
+\Needspace{5\baselineskip}
+如果把理想分布理解为只在精英样本上有质量的经验分布，上式就等价于最大化精英样本在当前分布下的似然：
+
+\[
+\arg\max_\theta\sum_{z\in\mathrm{Elites}}\log Q(z;\theta)
+\]
+
+当 \(Q\) 取高斯分布时，这个最大似然估计有解析更新式：新的均值取精英样本的均值，新的方差取精英样本的方差。因此，CEM 的每轮更新就是``用高分样本重新估计采样分布''，使下一轮采样更集中在高分区域。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cpetsux7b97ux6cd5probabilistic-ensembles-with-trajectory-samplinguc-berkeleyneurips-2018}{%
+\subsection{二、PETS算法（Probabilistic Ensembles with Trajectory Sampling）（UC Berkeley，NeurIPS 2018）}\label{ux4e8cpetsux7b97ux6cd5probabilistic-ensembles-with-trajectory-samplinguc-berkeleyneurips-2018}}
+
+模型是不完美的。如果环境模型预测错了，MPC就会根据错误的信息规划出错误的策略。PETS引入了概率（Probabilistic）和集成（Ensembles）来量化这种风险。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux4e24ux79cdux4e0dux786eux5b9aux6027}{%
+\subsubsection{（一）两种不确定性}\label{ux4e00ux4e24ux79cdux4e0dux786eux5b9aux6027}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  偶然不确定性（aleatoric uncertainty）
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+这种不确定性来自环境本身的随机性，即使模型已经学得很好也无法完全消除。PETS 的环境模型不只输出一个确定的下一个状态，而是输出高斯分布的均值和方差：
+
+\[
+p_\theta(s_{t+1}\mid s_t,a_t)=N(\mu_\theta(s_t,a_t),\sigma_\theta^2(s_t,a_t))
+\]
+
+\Needspace{5\baselineskip}
+对应的负对数似然损失可写为：
+
+\[
+\mathcal L(\theta)=\sum_{i=1}^{N}-\log p_\theta(s_{t+1}^{(i)}\mid s_t^{(i)},a_t^{(i)})
+\]
+
+\Needspace{5\baselineskip}
+若展开为高斯形式，并省略常数项，则单个样本的损失为：
+
+\[
+\mathrm{loss}
+=\frac{(s_{t+1}-\mu_\theta(s_t,a_t))^2}{2\sigma_\theta^2(s_t,a_t)}
++\log\sigma_\theta(s_t,a_t)
+\]
+
+这里的核心仍是：PETS 用高斯输出的均值和方差来建模偶然不确定性。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  认知不确定性（epistemic uncertainty）
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+这种不确定性来自模型知识不足，数据越少、模型越没有见过类似状态动作对，不确定性越高。PETS 用 ensemble 来刻画它：
+
+\begin{itemize}
+\tightlist
+\item
+  同时训练多个环境模型，例如 \(M_1,\ldots,M_5\)。
+\item
+  每个模型可以有不同初始化，并通过 bootstrap 看到略有差异的数据子集。
+\item
+  如果多个模型对同一动作序列的预测差异很大，说明模型在该区域知识不足。
+\item
+  如果多个模型预测相近，说明该区域更可信。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cpetsux7684ux7b56ux7565}{%
+\subsubsection{（二）PETS的策略}\label{ux4e8cpetsux7684ux7b56ux7565}}
+
+\Needspace{5\baselineskip}
+PETS 先收集真实交互数据集：
+
+\[
+\mathcal D=\{(s,a,r,s')\}
+\]
+
+\Needspace{5\baselineskip}
+然后初始化多个概率环境模型：
+
+\[
+f_{\theta_1},f_{\theta_2},\ldots,f_{\theta_5}
+\]
+
+每个模型输入 \((s,a)\)，输出下一个状态或状态差分的高斯分布参数 \(N(\mu,\sigma)\)。训练时通过 bootstrap 让不同模型看到不同的数据子集，从而形成 ensemble。
+
+后续第二、三阶段为利用模型的输出进行前向计算。若干次前向计算后，我们会用收集到的数据训练环境模型，损失函数见后面（三）部分所示。
+
+\Needspace{5\baselineskip}
+规划时，PETS 将 MPC 与 CEM 结合：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化动作序列分布。
+\item
+  从该分布中采样 \(N\) 条候选动作序列。
+\item
+  对每条候选动作序列生成 \(P\) 个粒子，例如 \(P=20\)。
+\item
+  这些粒子的初始状态都等于当前真实观测状态 \(s_0\)。
+\end{enumerate}
+
+轨迹采样（trajectory sampling）的关键是让粒子经过不同的环境模型。假设有 5 个模型 \(M_1,\ldots,M_5\)，20 个粒子可以按组分配给模型，例如粒子 1-4 使用 \(M_1\)，粒子 5-8 使用 \(M_2\)，依此类推。
+
+\Needspace{5\baselineskip}
+每个粒子沿着候选动作序列向前模拟若干步，并累计奖励。对同一条候选动作序列，PETS 会把 20 个粒子的奖励取平均，作为该动作序列的评分 \(A_i\)：
+
+\[
+A_i=\frac{1}{P}\sum_{p=1}^{P}\sum_{\tau=t}^{t+H-1}r(s_{\tau}^{(p)},a_{\tau})
+\]
+
+\Needspace{5\baselineskip}
+随后执行 CEM 式的精英筛选和分布更新：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  按 \(A_i\) 对候选动作序列排序。
+\item
+  选取得分最高的前 10\% 作为精英样本。
+\item
+  用精英动作序列重新估计采样分布的均值和方差。
+\item
+  重复若干轮采样、评估、筛选和更新。
+\item
+  最终取更新后分布均值对应的第一步动作作为 \(a^*\)。
+\end{enumerate}
+
+第二、三阶段是前向计算，也就是``走一步''。走一定步数之后，模型会用这些步数采集到的数据训练环境模型。
+
+执行阶段采用 receding horizon 的方式：只执行 \(a^*\) 的第一步，观察真实环境得到下一个状态 \(s_{t+1}\)，把新转移加入 \(\mathcal D\)，然后从新的真实状态重新规划或周期性更新模型。
+
+从直观上看，PETS 像一次蒙特卡洛模拟：它为同一条候选动作序列构造多个``平行推演''。如果大多数模型和粒子都认为这条动作序列好，它才会得到高评分；如果只有单个模型乐观，其余模型并不认可，平均得分就会被拉低。
+
+也就是说，对那些总体得分较高且各环境模型之间没有较大分歧的动作，模型才会给它们较高的A\_i值，使其被选进前10％``精英''中，被采用进真实动作分布。这种策略对一些容错率低的环境尤其有用。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux73afux5883ux6a21ux578bm1-m5ux7684ux635fux5931ux51fdux6570}{%
+\subsubsection{（三）环境模型（M1-M5）的损失函数}\label{ux4e09ux73afux5883ux6a21ux578bm1-m5ux7684ux635fux5931ux51fdux6570}}
+
+本质上，这是在强制用高斯分布拟合的前提下，取预测正确概率的最大似然。
+
+\Needspace{5\baselineskip}
+设模型输入为 \(x=(s_t,a_t)\)，预测目标为 \(y=s_{t+1}\) 或状态差分。PETS 用高斯分布建模：
+
+\[
+p_\theta(y\mid x)=N(\mu_\theta(x),\sigma_\theta^2(x))
+\]
+
+\Needspace{5\baselineskip}
+最大化似然等价于最小化负对数似然。高斯概率密度为：
+
+\[
+p_\theta(y\mid x)=\frac{1}{\sqrt{2\pi}\sigma_\theta(x)}
+\exp\left(-\frac{(y-\mu_\theta(x))^2}{2\sigma_\theta^2(x)}\right)
+\]
+
+\Needspace{5\baselineskip}
+去掉常数项后，损失为：
+
+\[
+L(\theta)=\frac{(y-\mu_\theta(x))^2}{2\sigma_\theta^2(x)}+\log\sigma_\theta(x)
+\]
+
+\Needspace{5\baselineskip}
+其中第一项是加权均方误差（weighted MSE）：
+
+\[
+\frac{(y-\mu_\theta(x))^2}{2\sigma_\theta^2(x)}
+\]
+
+当模型认为某个区域不确定性很高，即 \(\sigma_\theta^2(x)\) 较大时，同样大小的预测误差会受到较小惩罚；当模型很自信，即 \(\sigma_\theta^2(x)\) 较小时，预测错误会受到更大惩罚。
+
+\Needspace{5\baselineskip}
+第二项是 uncertainty penalty：
+
+\[
+\log\sigma_\theta(x)
+\]
+
+它会惩罚过大的不确定性，防止模型把 \(\sigma_\theta(x)\) 无限增大来逃避 weighted MSE。整体效果是：难预测区域可以适当增大方差，但要付出 \(\log\sigma\) 惩罚；易预测区域则应减小方差，提高预测置信度并降低整体损失。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09mbpoux7b97ux6cd5model-based-policy-optimization}{%
+\subsection{三、MBPO算法（Model-Based Policy Optimization）}\label{ux4e09mbpoux7b97ux6cd5model-based-policy-optimization}}
+
+MBPO结合了Model-Based的高数据利用效率和Model-Free（如SAC）的高性能。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux57faux4e8eux6a21ux578bux65b9ux6cd5ux7684ux590dux5408ux8befux5deeux95eeux9898}{%
+\subsubsection{（一）基于模型方法的复合误差问题}\label{ux4e00ux57faux4e8eux6a21ux578bux65b9ux6cd5ux7684ux590dux5408ux8befux5deeux95eeux9898}}
+
+纯粹的 Model-Based 方法（如PETS）完全依赖模型推演。如果模型第一步预测偏了 1\%，第二步就是基于偏了的数据再预测，误差会指数级累积。推演越长，结果越不可信。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cmbpoux7684ux521bux65b0ux5206ux652fux63a8ux6f14}{%
+\subsubsection{（二）MBPO的创新：分支推演}\label{ux4e8cmbpoux7684ux521bux65b0ux5206ux652fux63a8ux6f14}}
+
+\Needspace{5\baselineskip}
+传统思路是从s\_0开始一直用模型推演到底，但MBPO并不如此。它的步骤如下：
+
+\Needspace{5\baselineskip}
+MBPO 的分支推演从真实经验池中的状态出发：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  真实环境产生转移 \((s,a,r,s')\)，存入真实经验池 \(\mathcal D_{\mathrm{env}}\)。
+\item
+  从 \(\mathcal D_{\mathrm{env}}\) 采样真实状态 \(s_{\mathrm{real}}\)。
+\item
+  用当前策略在 \(s_{\mathrm{real}}\) 上生成动作。
+\item
+  用学习到的环境模型生成短 rollout。
+\item
+  将模型生成的转移写入模型经验池 \(\mathcal D_{\mathrm{model}}\)。
+\item
+  用真实经验池和模型经验池的混合数据训练无模型策略，例如 SAC。
+\end{enumerate}
+
+每次推演都从``真实状态''出发，好比每走几步就看一眼地图（真实数据），消除了累积误差。虽然只推演几步，但可以生成成千上万条这样的短数据。对于SAC这样的算法来说，数据量越大，训练越稳。MBPO证明了，只要模型推演的步数k控制得当（平衡了模型误差和数据增益），基于模型的方法可以比无模型方法快很多倍（采样效率高），且最终效果一样好。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09mbpoux7684ux5de5ux4f5cux6d41}{%
+\subsubsection{（三）MBPO的工作流}\label{ux4e09mbpoux7684ux5de5ux4f5cux6d41}}
+
+初始化与预热
+
+\Needspace{5\baselineskip}
+初始化阶段包括：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  初始化 Actor 和 Critic，也就是 SAC 的策略网络与价值网络。
+\item
+  初始化 ensemble dynamics model。
+\item
+  初始化真实经验池 \(\mathcal D_{\mathrm{env}}\) 和模型经验池 \(\mathcal D_{\mathrm{model}}\)。
+\item
+  用随机策略 warm-up 若干步，把真实交互数据先填入 \(\mathcal D_{\mathrm{env}}\)。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+大循环：
+
+总的来说，MBPO继承了PETS的集成环境模型（M1-M5）以及其更新过程（即第二阶段）。但MBPO没有采用PETS那种直接用环境模型决定策略的方式，而是像Dyna-Q那样，取一个过去出现过的真实状态，由当前策略生成动作，再让环境模型生成辅助训练数据（即第三阶段），主算法利用真实数据和模型数据进行更新（即第四阶段）。
+
+第一阶段：真实交互
+
+\Needspace{5\baselineskip}
+当前策略与真实环境交互一步：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  在真实状态 \(s_{\mathrm{real}}\) 下，由当前策略采样动作 \(a_t\)。
+\item
+  真实环境返回奖励 \(r_t\) 和下一个真实状态 \(s'_{\mathrm{real}}\)。
+\item
+  将 \((s_{\mathrm{real}},a_t,r_t,s'_{\mathrm{real}})\) 写入真实经验池 \(\mathcal D_{\mathrm{env}}\)。
+\item
+  回到主循环，继续积累真实数据。
+\end{enumerate}
+
+第二阶段：环境模型更新（把最新现实输入给环境模型，类似PETS，对集成环境模型M1-M5进行更新，损失函数也和PETS完全相同）
+
+\Needspace{5\baselineskip}
+环境模型更新阶段：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  从真实经验池 \(\mathcal D_{\mathrm{env}}\) 采样 mini-batch。
+\item
+  用最大似然或负对数似然训练集成模型。
+\item
+  模型输入为 \((s,a)\)，目标是预测下一个状态和奖励的分布 \(N(\mu,\sigma)\)。
+\item
+  不必每一步都完整重训模型，实际实现中可以每隔一定真实交互步数训练一次，例如每 250 步更新一次。
+\end{enumerate}
+
+第三阶段：分支推演（让环境模型输出推演数据，喂给SAC）
+
+\Needspace{5\baselineskip}
+分支推演阶段：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  从 \(\mathcal D_{\mathrm{env}}\) 采样真实状态 \(s_{\mathrm{real}}\) 作为 rollout 起点。
+\item
+  只做短期推演 \(k\) 步，例如 \(k=1\) 或较小的整数。
+\item
+  每一步先由当前策略给出动作，再由 ensemble model 预测下一状态和奖励。
+\item
+  将模型生成的合成转移写入 \(\mathcal D_{\mathrm{model}}\)。
+\item
+  使用短 rollout 是为了控制模型误差累积，同时仍然大量增加可用于策略训练的数据。
+\end{enumerate}
+
+这一阶段与Dyna-Q不同的是，Dyna-Q直接取了(s\_t,a\_t)，仅仅预测s\_t+1,r\_t。而这里只取一个s\_real，后面都根据当前策略推演。
+
+第四阶段：策略优化（利用真实数据和环境模型数据，训练SAC）
+
+\Needspace{5\baselineskip}
+策略优化阶段训练 SAC：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{混合采样}：从两个池子中按照一定比例采样构建训练 Batch。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    从 \(\mathcal D_{\mathrm{env}}\) 采一小部分，保证真实性。
+  \item
+    从 \(\mathcal D_{\mathrm{model}}\) 采绝大部分，利用模型的高效性。
+  \item
+    例如：Batch Size = 256，其中真实数据 10\%，模型数据 90\%。
+  \end{itemize}
+\item
+  \textbf{SAC 更新}：利用这个混合 Batch 更新 Actor 和 Critic 的参数（梯度下降）。
+
+  \begin{itemize}
+  \tightlist
+  \item
+    注：MBPO 的特点是``环境动一步，网络练多步''。通常真实环境每走 1 步，SAC 会进行 \(G\) 次（例如 20 次）梯度更新。这极大地提高了样本利用率。
+  \end{itemize}
+\item
+  这样既利用模型数据提升样本效率，又保留 SAC 在连续控制任务中的稳定优化能力。
+\end{enumerate}
+
+这里的第四阶段类似于把Dyna-Q的``利用上次真实交互更新''和``利用环境更新''合为一体，更好地并行计算。
+
+\Needspace{5\baselineskip}
+伪代码：
+
+\begin{verbatim}
+初始化;
+
+先随机玩 5000 步存入真实池;
+
+for epoch in range(total_epochs):
+
+--- 步骤 A: 真实交互 ---
+
+根据SAC的策略执行一步交互;
+
+存入真实经验池;
+
+--- 步骤 B: 训练/更新模型 ---
+
+if epoch % 250 == 0: # 每 250 步真实交互，重新训练一次模型
+
+使用真实数据训练模型，以最小化Negative Log-Likelihood;
+
+--- 步骤 C: 分支推演 (数据生成) ---
+
+从真实池中选取起点;
+
+for i in range(k_steps): # k步推演
+
+由当前策略产生动作，随机选一个模型网络预测下一个状态和奖励;
+
+存入模型经验池;
+
+状态更新，准备下一步推演;
+
+--- 步骤 D: 策略更新 (SAC) ---
+
+for _ in range(G_updates): # 环境每走1步，SAC训练G次(如 20 次)
+
+混合采样(模型数据占比通常很高);
+
+更新SAC参数;
+\end{verbatim}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-63}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-63}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{《动手学强化学习》}.
+\item
+  Chua, K., Calandra, R., McAllister, R., \& Levine, S. (2018). \href{https://arxiv.org/abs/1805.12114}{Deep Reinforcement Learning in a Handful of Trials using Probabilistic Dynamics Models}. NeurIPS 2018.
+\item
+  Janner, M., Fu, J., Zhang, M., \& Levine, S. (2019). \href{https://arxiv.org/abs/1906.08253}{When to Trust Your Model: Model-Based Policy Optimization}. NeurIPS 2019.
+\end{itemize}
+
+\clearpage

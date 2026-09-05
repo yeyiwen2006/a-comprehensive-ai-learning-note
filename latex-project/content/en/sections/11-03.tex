@@ -1,0 +1,415 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{temporal-difference-algorithms}{%
+\section{Temporal-Difference Algorithms}\label{temporal-difference-algorithms}}
+
+Temporal difference estimates a policy's value function by combining ideas from Monte Carlo and dynamic programming. Like Monte Carlo, it learns from sampled data without prior knowledge of the environment, specifically through ``sampling plus a moving average.'' Like dynamic programming, it follows the Bellman equation's idea of using the ``next state's'' estimated value to update the ``current state's'' estimated value.
+
+\Needspace{5\baselineskip}
+\hypertarget{i.-sarsa}{%
+\subsection{I. Sarsa}\label{i.-sarsa}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Original Sarsa
+\end{enumerate}
+
+Since temporal difference can estimate a value function, a natural question is whether reinforcement learning can proceed similarly to policy iteration. Temporal difference already provides policy evaluation, but how can policy improvement occur without known reward and transition functions? The answer is to estimate action values \(Q\) directly with temporal difference:
+
+\[
+Q(s_t,a_t)\leftarrow Q(s_t,a_t)+\alpha[r_t+\gamma Q(s_{t+1},a_{t+1})-Q(s_t,a_t)]
+\]
+
+Then greedily select the highest-value action in each state, \(\arg\max_a Q(s,a)\). This appears to form a complete RL algorithm: select actions greedily from action values to interact with the environment, then update the estimates with temporal difference using the resulting data.
+
+However, two issues require further consideration. First, accurate temporal-difference estimation of a policy's state values requires enormous numbers of samples. In practice, we can ignore this and evaluate with only some samples before updating the policy, because improvement can occur before evaluation is complete. Recall that value iteration (Section 4.4) does exactly this, reflecting generalized policy iteration. Second, always producing a deterministic greedy policy may prevent some state-action pairs \((s,a)\) from ever appearing in sampled sequences. Their values then cannot be estimated, so policy improvement is not guaranteed to improve the policy. Chapter 2 discussed this in detail. A simple, common solution replaces pure greediness with an \(\epsilon\)-greedy policy: choose the highest-value action with probability \(1-\epsilon\) and a random action with probability \(\epsilon\):
+
+\[
+\pi(a|s)=
+\begin{cases}
+\epsilon/|A|+1-\epsilon, & \text{if }a=\arg\max_{a'}Q(s,a')\\
+\epsilon/|A|, & \text{other actions}
+\end{cases}
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  n-step Sarsa
+\end{enumerate}
+
+Monte Carlo uses every subsequent reward without value estimates, whereas temporal difference uses only one reward and the next state's estimated value. What distinguishes them? Generally, Monte Carlo is unbiased but has relatively high variance: every state transition is uncertain, and the different rewards from actions at each step accumulate, greatly affecting the final value estimate. Temporal difference has very low variance because it considers only one transition and reward, but is biased because it uses the next state's estimated rather than true value. Can their strengths be combined? Yes: multistep temporal difference! Use \(n\) rewards and then the subsequent state's value estimate. Replace
+
+\[
+G_t=r_t+\gamma Q(s_{t+1},a_{t+1})
+\]
+
+with
+
+\[
+G_t=r_t+\gamma r_{t+1}+\cdots+\gamma^n Q(s_{t+n},a_{t+n})
+\]
+
+The corresponding multistep Sarsa algorithm replaces the action-value update in Sarsa (see Section 5.3),
+
+\[
+Q(s_t,a_t)\leftarrow Q(s_t,a_t)+\alpha[r_t+\gamma Q(s_{t+1},a_{t+1})-Q(s_t,a_t)]
+\]
+
+with
+
+\[
+Q(s_t,a_t)\leftarrow Q(s_t,a_t)+\alpha[r_t+\gamma r_{t+1}+\cdots+\gamma^n Q(s_{t+n},a_{t+n})-Q(s_t,a_t)]
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ii.-q-learning}{%
+\subsection{II. Q-Learning}\label{ii.-q-learning}}
+
+\Needspace{5\baselineskip}
+Another famous temporal-difference RL algorithm besides Sarsa is Q-learning. Its main difference from Sarsa is the update:
+
+\[
+Q(s_t,a_t)\leftarrow Q(s_t,a_t)+\alpha[R_t+\gamma\max_a Q(s_{t+1},a)-Q(s_t,a_t)]
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{iii.-online-and-offline-learning-policies}{%
+\subsection{III. Online and Offline Learning Policies}\label{iii.-online-and-offline-learning-policies}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Core difference
+\end{enumerate}
+
+The policy pi\_b used to sample data is called the behavior policy, while the policy pi\_t updated using those data is the target policy.
+
+\begin{enumerate}
+\def\labelenumi{(\arabic{enumi})}
+\item
+  Online learning (Sarsa as an example): the target and behavior policies coincide; the policy being optimized is its own behavior policy. Learning (data sampling) is therefore tightly bound to that policy. Once the policy changes, old-policy data become invalid and must be refreshed in real time (for example, A' in Sarsa's tuple (S, A, R, S', A') is ``signed'' by pi\_\{old\}). In classic cliff walking, an earlier foolish policy might often select ``jump off the cliff'' as A' at cliff-edge state S'. A smarter current policy almost always selects ``take the safe path.'' Updating its current Q values using old data containing the ``jump'' A' incorrectly lowers the score. More informally, if the agent is a drunkard (current policy pi) seeking to evaluate its own journey, watching a tightrope master's video might suggest ``this route is safe.'' Believing that could lead it off the cliff. To evaluate its own fate accurately, it must use data it generates itself in real time.
+\item
+  Offline learning (Q-Learning as an example): target and behavior policies differ. Training behavior often explores the environment thoroughly, whereas updates optimize only the best actions and ignore other behavior. With sufficient exploration, the optimal policy depends only on the environment's Markov properties, not on the agent's behavior policy; only objective environmental regularities need to be learned. Offline data (such as Q-Learning's tuple (S,A,R,S')) therefore concern only the environment. If I seek objective truth, anyone's data are useful. In board games, for example, millions of winning and losing game records can be downloaded and fed to Q-Learning. Seeing a novice fall into a trap reveals where not to go; seeing an expert succeed reveals a shortcut.
+\end{enumerate}
+
+Note: policy-based reinforcement learning is generally always online, but the converse need not hold.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Comparing Sarsa and Q-Learning
+\end{enumerate}
+
+\textbf{Q-Learning: removing the ``person'' to reveal the ``world''}
+
+Consider the tuple \((S,A,R,S')\) again.
+
+\begin{itemize}
+\tightlist
+\item
+  \(S\to A\to R,S'\).
+\item
+  What happens in this step depends entirely on the environment's physical engine (such as Newton's second law or game logic).
+\item
+  It contains no information about ``what you intend to do after \(S'\).''
+\end{itemize}
+
+\textbf{Q-Learning's great strength:} it constructs an update target using only this purely physical tuple and a purely mathematical assumption (max).
+
+\[
+Target=\underbrace{R}_{\text{physical outcome}}+\underbrace{\gamma\max_a Q(S',a)}_{\text{mathematical assumption}}
+\]
+
+No ``person (policy)'' appears in this formula. That is why it describes ``objective physical regularities of the environment'': it maps the environment's ``value landscape.'' The map exists whether or not you play, and the peak's height (the optimum) is unchanged.
+
+\textbf{Sarsa: person and world are inseparable}
+
+Consider the tuple \((S,A,R,S',A')\) again.
+
+\begin{itemize}
+\tightlist
+\item
+  \(A'\) is a choice made by the person.
+\item
+\Needspace{5\baselineskip}
+  Sarsa's target is:
+\end{itemize}
+
+\[
+Target=\underbrace{R}_{\text{physical outcome}}+\underbrace{\gamma Q(S',A')}_{\text{human behavior}}
+\]
+
+\Needspace{5\baselineskip}
+Here the ``person (\(A'\))'' enters value evaluation. An analogy:
+
+\begin{itemize}
+\item
+  Physical property (Q-Learning): a Ferrari's maximum speed is 350 km/h, a property of the car independent of how you drive.
+\item
+  Sarsa expectation: your average speed in the Ferrari is 60 km/h because you dare not drive fast or traffic is congested. This combines properties of the car and driver.
+\item
+  Sarsa fits the expected outcome of the joint effects of ``physical environment \(P\)'' and ``behavior policy \(\pi\).''
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Formula: \(E_{s'\sim P,a'\sim\pi}[R+\gamma Q(s',a')]\)
+  \end{itemize}
+\item
+  Q-Learning fits the theoretical limit allowed by ``physical environment \(P\).''
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Formula: \(E_{s'\sim P}[R+\gamma\max_{a'}Q(s',a')]\)
+  \end{itemize}
+\end{itemize}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Illustrating their tendencies with cliff walking
+\end{enumerate}
+
+\textbf{Q-Learning says: I do not care what foolish action you actually take next; I consider only the theoretical maximum.}
+
+\begin{itemize}
+\tightlist
+\item
+  Situation: you stand at the cliff edge \(S'\).
+\item
+  Actual action: because your hand slips (exploration), you choose \(a_2\) and jump.
+\item
+  Q-Learning's calculation: when updating values from the previous step or two, it ignores that you jumped.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    It examines all actions at \(S'\): \(a_1\) (walk back, 100 points), \(a_2\) (jump, -100 points).
+  \item
+    It selects the maximum: \(\max(100,-100)=100\).
+  \item
+    Conclusion: it regards state \(S'\) as worth 100.
+  \end{itemize}
+\end{itemize}
+
+Its underlying message is: ``You slipped and jumped, but that was an execution error. Theoretically, a sufficiently rational person can walk back from the edge, so standing at the edge remains a good state.''
+
+This is an ``offline policy'': it estimates values using the optimal policy (Max), rather than judging actions through the current behavior policy (including random exploration).
+
+\textbf{Sarsa says: your misfortune next must be charged to the present.}
+
+\begin{itemize}
+\tightlist
+\item
+  Situation: you stand at the cliff edge \(S'\).
+\item
+  Actual action: your hand slips (exploration), and you choose \(a_2\) and jump.
+\item
+  Sarsa's calculation: it carefully observes what you actually chose.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    It sees \(a_2\) (jump, -100 points).
+  \item
+    It directly uses the value of this \(a_2\): -100.
+  \item
+    Conclusion: it regards state \(S'\) as worth -100.
+  \end{itemize}
+\end{itemize}
+
+Its underlying message is: ``Do not talk to me about the theoretical optimum. In reality, your hand easily slips at the cliff edge. Since your shaky hand (exploration probability) makes this state frequently fatal, standing there is itself bad and deserves a low score.''
+
+This is an ``online policy'': it must evaluate values using behavior that actually occurs.
+
+\textbf{Q-Learning (off-policy)}
+
+\begin{itemize}
+\tightlist
+\item
+  Learns an optimal path hugging the cliff edge.
+\item
+  Reason: it assumes perfect behavior (Max), without slips. Its values are based on the optimal solution that ``never falls.''
+\item
+  Actual behavior: during training, \(\epsilon\)-greedy exploration still randomly sends it over the cliff with 10\% probability. It learns the optimal route but falls frequently while training.
+\end{itemize}
+
+\textbf{Sarsa (on-policy)}
+
+\begin{itemize}
+\tightlist
+\item
+  Learns a safe path farther from the cliff.
+\item
+  Reason: it knows it may jump randomly with probability \(\epsilon\). A random lapse at the edge is fatal, so Sarsa assigns that state low value (high risk).
+\item
+  Actual behavior: although the route is not theoretically shortest, execution is safer (especially with randomness) and cumulative reward may be higher.
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  If Sarsa depends on a policy, why is it not policy-based?
+\end{enumerate}
+
+Whether an algorithm is ``value-based'' or ``policy-based'' depends not on whether its ``data source'' depends on a policy, but on what it ``ultimately learns.''
+
+Although Sarsa depends on the policy during learning (on-policy), its central maintained and updated object is a \(Q\) table (or \(Q\) network), not policy parameters.
+
+\textbf{Policy-based}
+
+\begin{itemize}
+\tightlist
+\item
+  Train a neural network \(\pi_\theta(a|s)\) with parameters \(\theta\).
+\item
+  Given a state, it directly outputs action probabilities (for example, left 0.8, right 0.2).
+\item
+  Adjust \(\theta\) to increase good actions' probabilities.
+\item
+  There is no \(Q\) table (or \(Q\) is not central).
+\end{itemize}
+
+\textbf{Value-based: Sarsa belongs here}
+
+\begin{itemize}
+\tightlist
+\item
+  Fill a \(Q\) table (or train a \(Q\) network), with \(Q\) values as parameters.
+\item
+  Given a state and action, the network outputs ``how many points this action is worth.''
+\item
+  Where is the policy? It is implicit, a ``byproduct'' of the \(Q\) table.
+\item
+  Sarsa's logic: I am responsible only for accurate \(Q\) values. The policy is a simple ``table lookup'': choose the highest \(Q\) (or use \(\epsilon\)-greedy).
+\item
+  Conclusion: Sarsa's central task is ``estimating value,'' not ``adjusting policy parameters,'' so it is value-based.
+\end{itemize}
+
+\Needspace{5\baselineskip}
+In Sarsa, policy and value have a ``master--servant'' relationship:
+
+\begin{itemize}
+\tightlist
+\item
+  Master: value function \(Q\), the central asset updated iteratively with much effort.
+\item
+  Servant: policy \(\pi\), which has no independent thinking and merely carries \(Q\) values into action.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Sarsa's policy is usually \(\pi(s)=\arg\max_a Q(s,a)\) (with some random noise).
+  \item
+    Once \(Q\) changes, the policy changes automatically; no dedicated policy gradient is needed.
+  \end{itemize}
+\end{itemize}
+
+\Needspace{5\baselineskip}
+In policy-based methods (such as REINFORCE):
+
+\begin{itemize}
+\tightlist
+\item
+  Master: policy \(\pi_\theta\). Its logic is optimized directly.
+\item
+  A value function may not exist or may merely help reduce variance (as in actor--critic).
+\end{itemize}
+
+\textbf{Q-Learning (off-policy)}
+
+\begin{itemize}
+\tightlist
+\item
+  Aims to estimate \(Q^*\) (the optimal policy's value).
+\item
+  Motto: ``I do not care how you play now; I calculate the theoretical best possible score.''
+\end{itemize}
+
+\textbf{Sarsa (on-policy)}
+
+\begin{itemize}
+\tightlist
+\item
+  Aims to estimate \(Q^\pi\) (the current policy's value).
+\item
+  Motto: ``I calculate the score you will actually get if you continue playing as timidly as you do now.''
+\end{itemize}
+
+The key: whether calculating the ``theoretical best score'' or ``current actual score,'' both calculate ``scores,'' or values. If calculating scores is the central task, the method is value-based.
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Improving Sarsa's data utilization
+\end{enumerate}
+
+\textbf{Method A: multistep updates (N-step Sarsa)}
+
+Sarsa need not update after every step. It can take \(n\) steps before updating.
+
+\begin{itemize}
+\tightlist
+\item
+  Accumulate: \(S_1\to S_2\to S_3\to\cdots\to S_n\).
+\item
+  Then update the values of all points along the path in one backward sweep.
+\item
+  This uses the entire data sequence from an interaction, rather than updating only its first point.
+\end{itemize}
+
+\textbf{Method B: eligibility traces, Sarsa(\(\lambda\))}
+
+Eligibility traces are Sarsa's fully developed form.
+
+\begin{itemize}
+\tightlist
+\item
+  Principle: although data from a much older policy cannot be used, there is short-term memory of the path within one task.
+\item
+  Mechanism: mark every visited \((S,A)\) pair with an ``activity-level'' trace.
+\item
+  Result: upon reaching the end and receiving a reward, update not only the last step but all relevant recent steps by following the traces backward.
+\item
+  To address your question: in Sarsa(\(\lambda\)), data are not discarded; traces preserve their short-term influence, allowing values at other positions and actions to be updated together.
+\end{itemize}
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{references-48}{%
+\subsection{References}\label{references-48}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  \href{https://hrl.boyuai.com/}{Hands-on Reinforcement Learning (translated title; in Chinese)}.
+\item
+  Watkins, C. J. C. H., \& Dayan, P. (1992). \href{https://doi.org/10.1007/BF00992698}{Q-learning}. Machine Learning, 8, 279--292.
+\item
+  Rummery, G. A., \& Niranjan, M. (1994). \href{https://www.cs.utexas.edu/~shivaram/readings/b2hd-RummeryNiranjan1994.html}{On-Line Q-Learning Using Connectionist Systems}. Cambridge University Engineering Department, Technical Report CUED/F-INFENG/TR 166.
+\end{itemize}
+
+\clearpage

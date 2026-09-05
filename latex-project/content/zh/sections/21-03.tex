@@ -1,0 +1,195 @@
+\setcounter{section}{2}
+
+\Needspace{5\baselineskip}
+\hypertarget{gspoux7b97ux6cd5}{%
+\section{GSPO算法}\label{gspoux7b97ux6cd5}}
+
+\begin{quote}
+本文是论文阅读笔记，内容代表对应论文方法或作者理解，不应直接视为领域共识或工程最佳实践。
+\end{quote}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux5e8fux5217ux7ea7ux4f18ux5316sequence-level-optimization}{%
+\subsection{一、序列级优化（Sequence-Level Optimization）}\label{ux4e00ux5e8fux5217ux7ea7ux4f18ux5316sequence-level-optimization}}
+
+\Needspace{5\baselineskip}
+GRPO 在``评价''和``优化''上存在着不匹配：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{整体奖励（Global Reward）}：在大多数任务（如数学推理、代码生成）中，环境只会在模型生成完整个回答后，给出一个分数（Reward）。例如``这句话是对的''或者``这个答案是错的''。这个分数是对整个序列（Sequence）的评价，而不是对某个字（Token）的评价。
+\item
+\Needspace{5\baselineskip}
+  \textbf{局部优化（Local Optimization）}：虽然奖励是针对整体的，但在 GRPO 的数学公式中，重要性采样（Importance Sampling）是在 token 级别进行的。回顾 GRPO 的核心项：
+\end{itemize}
+
+\[
+\rho_{i,t}
+=
+\frac{\pi_\theta(\mathrm{token}_t)}
+{\pi_{\mathrm{old}}(\mathrm{token}_t)}.
+\]
+
+这意味着，模型在更新参数时，会逐个审视每一个 token。即使整个句子得分很高，如果某个具体的 token \(t\) 在新策略下的概率变低了（\(\rho<1\)），模型在更新该 token 的参数时仍可能受到抑制。
+
+后果是，这种机制假设每个 token 对最终结果的贡献是独立的。但在长逻辑链中，很多 token 只有组合在一起才有意义。对单个 token 进行独立微调，往往忽略上下文的整体连贯性，容易引入高方差噪声。
+
+\Needspace{5\baselineskip}
+GSPO则将二者进行了统一：
+
+\begin{itemize}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  \textbf{整体优化（Global Optimization）}：GSPO 摒弃逐 token 计算比率的做法，转而计算整个序列的联合概率比率：
+\end{itemize}
+
+\[
+s_i(\theta)
+\approx
+\frac{P_\theta(y_i)}
+{P_{\mathrm{old}}(y_i)}.
+\]
+
+这意味着，模型不再纠结于某个 token 的概率变化，而是看生成整句话的概率是变大了还是变小了。
+
+\begin{itemize}
+\tightlist
+\item
+  如果整句话的奖励很高，GSPO 会统一增强这句话中所有 token 的权重；反之则统一抑制。
+\item
+  裁剪（Clipping）也发生在序列级：一旦整句话的概率变化超标，就停止更新。这保证了模型不会因为某一句话学得太猛而崩塌。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux957fux5ea6ux5f52ux4e00ux5316}{%
+\subsubsection{（二）长度归一化}\label{ux4e8cux957fux5ea6ux5f52ux4e00ux5316}}
+
+\Needspace{5\baselineskip}
+如果不做归一化，序列概率计算公式是所有 token 概率的连乘：
+
+\[
+P(\mathrm{sequence})
+=
+p_1\times p_2\times\cdots\times p_L.
+\]
+
+\Needspace{5\baselineskip}
+这会带来两个致命问题：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{数值下溢（Numerical Underflow）}：每个 token 的概率 \(p_t\) 都是小于 1 的数。例如 0.9，当序列长度 \(L\) 达到几百甚至几千时，连乘结果会迅速趋近于 0，例如 \(0.9^{1000}\approx 1.7\times 10^{-46}\)。计算机无法精确处理这么小的数，计算新旧概率比值时会数值极不稳定。
+\item
+  \textbf{长度偏见（Length Bias）}：长序列的联合概率天然比短序列低得多。短回答（5 个词）的联合概率可能是 \(10^{-5}\)，长回答（100 个词）的联合概率可能是 \(10^{-100}\)。如果不归一化，长回答的概率比率（Importance Ratio）波动会极其剧烈，模型会倾向于只生成短句子，因为短句子的概率更容易优化。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+GSPO使用几何平均：
+
+\[
+s_i(\theta)
+=
+\left(
+\prod_{t=1}^{L}
+\frac{\pi_\theta(t)}
+{\pi_{\mathrm{old}}(t)}
+\right)^{1/L}.
+\]
+
+\Needspace{5\baselineskip}
+取对数后就是概率比值对数的算术平均：
+
+\[
+\log s_i(\theta)
+=
+\frac{1}{L}
+\sum_{t=1}^{L}
+\log\left(
+\frac{\pi_\theta(t)}
+{\pi_{\mathrm{old}}(t)}
+\right).
+\]
+
+这样，每个序列L个概率比值（大小是L次方级别）的1/L次方就和概率的一次方处于同一大小级别了。这样做实际上是在衡量``平均每个Token的生成质量提升了多少''（取对数之后，就是概率比值对数的算术平均），使得长回答（详细推理）和短回答（直接给出答案）站在了同一起跑线上进行比较，消除了长度带来的不公平影响。
+
+\Needspace{5\baselineskip}
+因此，GSPO的梯度更新也就和GRPO不同。GSPO的目标函数在未被截断时为：
+
+\[
+\mathcal{J}_{\mathrm{GSPO}}(\theta)
+=
+\mathbb{E}
+\left[
+s_i(\theta)\cdot \hat{A}_i
+\right].
+\]
+
+\Needspace{5\baselineskip}
+从而策略梯度：
+
+\[
+\nabla \mathcal{J}_{\mathrm{GSPO}}
+\approx
+\sum_{t=1}^{|y_i|}
+\left[
+s_i(\theta)
+\cdot
+\frac{\hat{A}_i}{|y_i|}
+\cdot
+\nabla_\theta \log \pi_\theta(t)
+\right].
+\]
+
+这里将常数项移入了求和内部，便于和 GRPO 对比。关键现象是，缩放系数是 \(s_i(\theta)\cdot \hat{A}_i\)。注意，\(s_i(\theta)\) 是基于整个序列算出来的，对于序列中的第 1 个词还是第 100 个词，这个 \(s_i(\theta)\) 的数值完全一样。
+
+\Needspace{5\baselineskip}
+结果是统一增强或抑制：
+
+\begin{itemize}
+\tightlist
+\item
+  如果整句话奖励高（\(\hat{A}_i>0\)）且序列概率比正常（\(s_i\approx 1\)），整个序列中每一个 token 的 log 概率梯度都会乘以同一个正系数。模型会``一视同仁''地增加这句话中所有词的生成概率。
+\item
+  如果发生 clipping，GSPO 检查的是 \(s_i(\theta)\) 是否越界。一旦 \(s_i\) 越界，剪切操作会让整个序列的梯度变为 0（或被限制）。这意味着要么全改，要么全不改，不会出现``前半句猛改、后半句不改''的分裂情况。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+对比GRPO的策略梯度：
+
+\Needspace{5\baselineskip}
+GRPO 的梯度是局部视角：
+
+\[
+\nabla \mathcal{J}_{\mathrm{GRPO}}
+\approx
+\sum_{t=1}^{|y_i|}
+\left[
+\rho_{i,t}(\theta)
+\cdot
+\hat{A}_i
+\cdot
+\nabla_\theta \log \pi_\theta(t)
+\right].
+\]
+
+这里的缩放系数包含 \(\rho_{i,t}\)，也就是单个 token 的概率比。即使整句话的优势 \(\hat{A}_i\) 是正的，如果句子中间第 5 个词的 \(\rho_{i,5}\) 很小（新模型不太想生成它），那么第 5 个词的更新幅度就会变小，甚至方向可能被 clip 截断。换句话说，每个 token 获得的推力是不一样的。
+
+因此，如果整句话的奖励很高，GSPO会统一增强这句话中所有token的权重；反之则统一抑制。这增强了奖励和惩罚的整体性，能更准确地对不同推理链条做出全局性的判断，避免被某些局部细节过度干扰。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-111}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-111}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zheng, C., et al.~(2025). \href{https://arxiv.org/abs/2507.18071}{Group Sequence Policy Optimization}. arXiv:2507.18071.
+\end{itemize}
+
+\clearpage

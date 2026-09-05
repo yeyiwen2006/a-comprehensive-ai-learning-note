@@ -1,0 +1,506 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux76eeux6807ux5bfcux5411ux7684ux5f3aux5316ux5b66ux4e60}{%
+\section{目标导向的强化学习}\label{ux76eeux6807ux5bfcux5411ux7684ux5f3aux5316ux5b66ux4e60}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76eeux6807ux5bfcux5411ux7684ux5f3aux5316ux5b66ux4e60ux628aux76eeux6807ux53d8ux6210ux53d8ux91cf}{%
+\subsection{一、目标导向的强化学习------把目标变成变量}\label{ux4e00ux76eeux6807ux5bfcux5411ux7684ux5f3aux5316ux5b66ux4e60ux628aux76eeux6807ux53d8ux6210ux53d8ux91cf}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux76eeux6807ux5bfcux5411}{%
+\subsubsection{（一）目标导向}\label{ux4e00ux76eeux6807ux5bfcux5411}}
+
+在强化学习中，有时我们希望模型不仅能完成单一任务，还能迁移到通用任务。
+
+\Needspace{5\baselineskip}
+传统强化学习和目标导向强化学习的差异可以概括为：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+项目 & 传统强化学习 & 目标导向强化学习 \\
+\midrule
+\endhead
+任务形式 & 只学习一个固定任务 & 将目标 \(g\) 作为输入变量，学习一类任务 \\
+价值函数 & \(Q(s,a)\) & \(Q(s,a,g)\) \\
+策略 & \(\pi(a\mid s)\) 或 \(\pi(s)\) & \(\pi(a\mid s,g)\) 或 \(\pi(s,g)\) \\
+奖励 & 奖励主要由状态和动作决定 & 奖励取决于当前状态与目标 \(g\) 的距离或是否达成目标 \\
+\bottomrule
+\end{longtable}
+
+数学上，这意味着MDP（马尔可夫决策过程）多了一个维度g，奖励函数R也不再只看s，而是看s和g的距离。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux7a00ux758fux5956ux52b1ux56f0ux5883}{%
+\subsubsection{（二）稀疏奖励困境}\label{ux4e8cux7a00ux758fux5956ux52b1ux56f0ux5883}}
+
+在机械臂抓取或推球任务中，稀疏奖励会造成严重的数据浪费。大多数探索轨迹都没有刚好到达指定目标，因此只得到失败奖励；只有极少数轨迹碰巧成功，才会给出正奖励。
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+轨迹结果 & 奖励信号 & 学习问题 \\
+\midrule
+\endhead
+多次尝试都没有到达指定目标 & \(r=-1\) 或 \(r=0\) & 模型只知道``没成功''，不知道这次动作把物体推向了哪里 \\
+偶然到达目标 & \(r=+1\) & 成功样本太少，难以支撑稳定训练 \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09herux4e8bux540eux7ecfux9a8cux56deux653e}{%
+\subsubsection{（三）HER（事后经验回放）}\label{ux4e09herux4e8bux540eux7ecfux9a8cux56deux653e}}
+
+HER（Hindsight Experience Replay）的核心思想是：如果智能体本来想去目标 A，但实际到达了目标 B，那么这条经验对目标 A 是失败的，却可以被重新解释为``成功到达 B''的经验。
+
+\Needspace{5\baselineskip}
+原始经验可以写成：
+
+\[
+\{s,a,r=-1,s',\mathrm{Goal}=A\}
+\]
+
+\Needspace{5\baselineskip}
+事后重标目标后，可以得到：
+
+\[
+\{s,a,r=+1,s',\mathrm{Goal}=B\}
+\]
+
+\Needspace{5\baselineskip}
+智能体虽然还没学会怎么去A，但它先学会了怎么去B。随着它学会去的地方越来越多（右边的B,右前方的C,左边的D,正前方的E\ldots），掌握了怎么去不同点的运动规律，最终它就能学会怎么去A。再举一个射箭的例子：
+
+如果射箭时本来瞄准靶心 A，结果射到了旁边的 B，那么从目标 A 的角度看这是失败；但从``如何射到 B''的角度看，这次动作提供了一条有效经验。HER 正是把这种事后解释机制系统化：失败轨迹不再直接丢弃，而是重新标注成对另一个目标的成功样本。
+
+这样，智能体就能从失败中学习了。
+
+\Needspace{5\baselineskip}
+工作流如下：
+
+\Needspace{5\baselineskip}
+HER 的训练流程可以写成：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  采样一条原始轨迹：
+\end{enumerate}
+
+\[
+\tau=(s_0,a_0,s_1,a_1,\ldots,s_T)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  按原始目标 \(g\) 存储普通转移：
+\end{enumerate}
+
+\[
+(s_t,a_t,r_t,s_{t+1},g)
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+\Needspace{5\baselineskip}
+  从同一条轨迹中选取实际达到的未来状态 \(g'=s_k\) 作为新目标，重新计算奖励并存储重标转移：
+\end{enumerate}
+
+\[
+(s_t,a_t,r(s_t,a_t,g'),s_{t+1},g')
+\]
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  将普通经验和重标经验一起放入经验回放池。
+\item
+  使用 DDPG、SAC、DQN 等离策略强化学习算法训练目标条件策略。
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux56dbux4ef7ux503cux51fdux6570}{%
+\subsubsection{（四）价值函数}\label{ux56dbux4ef7ux503cux51fdux6570}}
+
+前面我们得到的数据混杂了多种不同目标下的奖励，无法直接套用DDPG、SAC或DQN算法。因此我们将价值函数改造为通用价值函数近似器（Universal Value Function Approximators, UVFA）。
+
+\Needspace{5\baselineskip}
+UVFA 的改造方式是把目标也输入价值函数和策略网络：
+
+\[
+Q(s,a)\quad\longrightarrow\quad Q(s,a,g)
+\]
+
+\[
+\pi(s)\quad\longrightarrow\quad \pi(s,g)
+\]
+
+\Needspace{5\baselineskip}
+这样g就变成了函数的输入之一，往往以向量表示（如在三维空间中的位置）。由神经网络的泛化性，即便神经网络未到过a，也可以用附近其他目标的数据作出泛化估计。能这样估计的原因有以下三点：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  物理动力学是共享的。目标变了，但环境的状态转移规律并没有变：同一个机械臂、同一个桌面、同一个物体，仍然服从同一套动力学。
+\item
+  目标空间通常具有连续性。目标 \(g_1\) 和 \(g_2\) 如果在空间上很接近，那么到达它们所需的动作序列通常也相近，价值函数输出也应接近。
+\item
+\Needspace{5\baselineskip}
+  相对位置可以迁移。很多任务真正依赖的是相对向量：
+\end{enumerate}
+
+\[
+\Delta=g-s
+\]
+
+当两个任务具有相似的 \(\Delta\) 时，即使起点和终点的绝对位置不同，策略也可以复用类似的动作模式。
+
+这种泛化还可以通过 Bellman 传播理解：如果从当前位置 \(s\) 到中间点 \(B\) 的路径已经学会，而从 \(B\) 到目标 \(g\) 的价值也可估计，那么目标 \(g\) 的价值信息就可以经由 \(B\) 向前传播。
+
+\Needspace{5\baselineskip}
+目标条件 Bellman 目标为：
+
+\[
+y
+=
+r(s,a,g)
++
+\gamma
+\max_{a'}Q(s',a',g)
+\]
+
+\Needspace{5\baselineskip}
+如果使用确定性策略，也可以写成：
+
+\[
+a'=\pi(s',g)
+\]
+
+\[
+y
+=
+r(s,a,g)
++
+\gamma Q(s',\pi(s',g),g)
+\]
+
+\Needspace{5\baselineskip}
+以DDPG + HER为例，具体操作如下：
+
+\Needspace{5\baselineskip}
+网络输入需要把目标拼接进去：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+网络 & 输入 & 输出 \\
+\midrule
+\endhead
+Actor & \(\mathrm{concat}([s,g])\) & 动作 \(a=\pi(s,g)\) \\
+Critic & \(\mathrm{concat}([s,a,g])\) & 目标条件价值 \(Q(s,a,g)\) \\
+\bottomrule
+\end{longtable}
+
+这样就可以把不同目标下的数据混在同一个经验池中训练。经验池里可能同时有目标 \(g_1,g_2,g_3,\ldots\)，但因为目标 \(g\) 本身就是网络输入的一部分，网络学习的是按目标条件化的映射，而不是把所有目标压成同一个标签。换句话说，同一条状态和动作在目标 \(g_A\) 下可能是高价值，在目标 \(g_B\) 下可能是低价值；网络会利用输入的 \(g\) 区分这两种情形，因此不会因为混合不同目标的数据而直接冲突。
+
+\Needspace{5\baselineskip}
+DDPG + HER 的目标网络和损失函数可写为：
+
+\[
+a_i'=\pi'(s_i',g_i)
+\]
+
+\[
+y_i
+=
+r(s_i,a_i,g_i)
++
+\gamma Q'(s_i',a_i',g_i)
+\]
+
+\Needspace{5\baselineskip}
+Critic 损失为：
+
+\[
+L_Q
+=
+\frac{1}{N}
+\sum_i
+\bigl(
+Q(s_i,a_i,g_i)-y_i
+\bigr)^{2}
+\]
+
+\Needspace{5\baselineskip}
+Actor 目标为最大化 Critic 评估的目标条件价值：
+
+\[
+J_\pi
+=
+\frac{1}{N}
+\sum_i
+Q(s_i,\pi(s_i,g_i),g_i)
+\]
+
+这样，网络就变成了一个``通用导航仪''：只要你输入起点s和终点g，它就能利用物理规律告诉你怎么走，而不受限于训练时那个固定的终点。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e94ux76eeux524dux9762ux4e34ux7684ux95eeux9898}{%
+\subsubsection{（五）目前面临的问题}\label{ux4e94ux76eeux524dux9762ux4e34ux7684ux95eeux9898}}
+
+目标导向的强化学习虽然能从失败中学习，但当动作空间巨大、不同任务相关性弱、长时间找不到``主线相关的奖励''时，也无异于盲人摸象。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux81eaux76d1ux7763ux7684ux76eeux6807ux5bfcux5411ux5f3aux5316ux5b66ux4e60neurips-2025}{%
+\subsection{二、自监督的目标导向强化学习（NeurIPS 2025）}\label{ux4e8cux81eaux76d1ux7763ux7684ux76eeux6807ux5bfcux5411ux5f3aux5316ux5b66ux4e60neurips-2025}}
+
+与SAC/PPO这种基于动态规划（贝尔曼方程）的方法不同，这篇论文的方法本质上是一个自监督序列建模问题。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux6a21ux578bux6784ux6210}{%
+\subsubsection{（一）模型构成}\label{ux4e00ux6a21ux578bux6784ux6210}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  输入和输出
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+自监督目标导向方法把同一条轨迹中的未来状态当作目标。给定当前状态 \(s_t\) 和未来状态 \(g=s_{t+k}\)，模型先编码二者：
+
+\[
+z_0=\mathrm{Embed}(s_t,g)
+\]
+
+\Needspace{5\baselineskip}
+然后通过深层网络输出两个头：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+模块 & 输入 & 监督信号 \\
+\midrule
+\endhead
+策略头 \(\pi_\theta\) & 当前状态 \(s_t\) 与目标 \(g=s_{t+k}\) & 预测真实动作 \(a_t\) \\
+价值/距离头 \(V_\theta\) & 当前状态 \(s_t\) 与目标 \(g=s_{t+k}\) & 预测到达目标所需步数 \(k\) \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+总结：
+
+\Needspace{5\baselineskip}
+训练样本可以整理为：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
+\toprule
+输入 & 目标输出 \\
+\midrule
+\endhead
+\((s_t,s_{t+k})\) & 当前动作 \(a_t\) \\
+\((s_t,s_{t+k})\) & 时间距离 \(k\) \\
+\bottomrule
+\end{longtable}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  损失函数和更新方式
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+动作预测采用负对数似然损失：
+
+\[
+L_{\mathrm{action}}(\theta)
+=
+-
+\mathbb{E}
+\bigl[
+\log \pi_\theta(a_t\mid s_t,g=s_{t+k})
+\bigr]
+\]
+
+\Needspace{5\baselineskip}
+如果有距离预测，则还有距离预测损失：
+
+\[
+L_{\mathrm{dist}}(\theta)
+=
+\mathbb{E}
+\bigl[
+\lVert
+V_\theta(s_t,s_{t+k})-k
+\rVert^{2}
+\bigr]
+\]
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  网络架构
+\end{enumerate}
+
+\Needspace{5\baselineskip}
+这类方法强调非常深的残差网络。普通残差块可写为：
+
+\[
+x_{l+1}=x_l+F(x_l)
+\]
+
+\Needspace{5\baselineskip}
+深层 gated ResNet 块会加入谱归一化、归一化层和门控强度，使每一层只做受控的小幅更新：
+
+\[
+x_{l+1}
+=
+x_l
++
+\alpha_l\cdot
+\sigma
+\bigl(
+\mathrm{BN}
+\bigl(
+W_2\,
+\phi
+\bigl(
+\mathrm{BN}(W_1x_l)
+\bigr)
+\bigr)
+\bigr)
+\]
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux6838ux5fc3ux601dux60f3}{%
+\subsubsection{（二）核心思想}\label{ux4e8cux6838ux5fc3ux601dux60f3}}
+
+核心思想是把网络深度看作一种``内部计算时间''。浅层网络只能做很短的局部映射，而几百层、上千层的网络可以在前向传播中逐步修正中间表示，相当于在模型内部做多步搜索。
+
+\Needspace{5\baselineskip}
+可以把不同层数理解为不同程度的推理：
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/2-2\tabcolsep/2\relax}@{}}
+\toprule
+层数 & 能力直觉 \\
+\midrule
+\endhead
+第 10 层 & 主要完成局部特征处理和短程动作预测 \\
+第 500 层 & 可以整合更长范围的轨迹信息 \\
+第 900 层 & 更接近多步规划或内部搜索过程 \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e3aux4ec0ux4e48ux52a0ux6df1ux7f51ux7edcux4e0dux9002ux5408ux4f20ux7edfrlux7b97ux6cd5}{%
+\subsubsection{（三）为什么加深网络不适合传统RL算法？}\label{ux4e09ux4e3aux4ec0ux4e48ux52a0ux6df1ux7f51ux7edcux4e0dux9002ux5408ux4f20ux7edfrlux7b97ux6cd5}}
+
+普通 RL 并不会天然因为网络更深而变好，主要原因在于监督信号较弱。SAC、TD3 等方法通常依赖标量 \(Q\) 值和 bootstrapping 目标，目标本身会随网络更新而变化；网络越深，训练越容易受到误差累积和不稳定目标的影响。
+
+自监督目标导向方法的信号更密集：每条轨迹都能构造许多 \((s_t,s_{t+k})\) 对，每个样本都带有动作预测、距离预测等结构化监督。因此网络容量和训练信号更匹配。
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}
+  >{\raggedright\arraybackslash}p{\dimexpr\linewidth/3-4\tabcolsep/3\relax}@{}}
+\toprule
+方法 & 主要监督信号 & 加深网络的风险或收益 \\
+\midrule
+\endhead
+SAC/TD3 等传统 RL & 标量 \(Q\) 值，且依赖 bootstrapping & 深网络容易放大目标漂移和估计误差 \\
+自监督目标导向 RL & 动作、距离、目标条件轨迹关系等密集信号 & 深度可转化为更长的内部搜索和组合推理能力 \\
+\bottomrule
+\end{longtable}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e09ux4e3aux4ec0ux4e48ux76eeux6807ux5bfcux5411ux65b9ux6cd5ux76eeux524dux4ecdux4e3bux8981ux9650ux4e8eux673aux5668ux4ebaux7b49ux9886ux57df}{%
+\subsection{三、为什么目标导向方法目前仍主要限于机器人等领域？}\label{ux4e09ux4e3aux4ec0ux4e48ux76eeux6807ux5bfcux5411ux65b9ux6cd5ux76eeux524dux4ecdux4e3bux8981ux9650ux4e8eux673aux5668ux4ebaux7b49ux9886ux57df}}
+
+\Needspace{5\baselineskip}
+尽管 GORL 在机器人控制领域非常成功，但在大语言模型中大规模应用面临以下核心挑战：
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  目标的空间无限性与语义模糊性
+\end{enumerate}
+
+在机器人领域，目标通常是坐标(x, y, z)；在LLM中，目标是自然语言指令，如要求完成某道题目。语义空间是离散且高维的，很难有一个自动化、不会被hacking的方式将失败的回答重塑为对另一个目标的成功回答（找出这个目标和验证都不容易）。而且，LLM的状态s中已经包含了上下文，事实上隐含了目标，如果强行把目标和过程拆开来反而是自找麻烦。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  状态表示（State Representation）的难题
+\end{enumerate}
+
+LLM的状态s是已生成的Token序列。在文本生成中，定义``距离目标的距离''变得非常抽象。目前的RLVR只看终点（Outcome-based），而GORL强依赖于状态转移过程的建模。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  算力成本与数据效率
+\end{enumerate}
+
+GORL 需要模型在训练时不断改变目标进行探索。LLM 的推理成本极高。在海量目标空间下进行充分探索，其计算量呈指数级增长。目前的 RLVR（如GRPO算法）通过组内相对比较已经非常耗能，GORL的多目标采样会让训练成本更难以承受。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-66}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-66}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Schaul, T., Horgan, D., Gregor, K., \& Silver, D. (2015). \href{https://proceedings.mlr.press/v37/schaul15.html}{Universal Value Function Approximators}. ICML 2015.
+\item
+  Andrychowicz, M., Wolski, F., Ray, A., et al.~(2017). \href{https://arxiv.org/abs/1707.01495}{Hindsight Experience Replay}. NeurIPS 2017.
+\item
+  Wang, K., Javali, I., Bortkiewicz, M., Trzcinski, T., \& Eysenbach, B. (2025). \href{https://proceedings.neurips.cc/paper_files/paper/2025/hash/e74ee34cc0f2d0780f34ee77d8fba25b-Abstract-Conference.html}{1000 Layer Networks for Self-Supervised RL: Scaling Depth Can Enable New Goal-Reaching Capabilities}. NeurIPS 2025.
+\end{itemize}
+
+\clearpage

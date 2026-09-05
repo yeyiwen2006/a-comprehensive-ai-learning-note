@@ -1,0 +1,62 @@
+\setcounter{section}{5}
+
+\Needspace{5\baselineskip}
+\hypertarget{kvux538bux7f29ux7684ux5176ux4ed6ux65b9ux6cd5}{%
+\section{KV压缩的其他方法}\label{kvux538bux7f29ux7684ux5176ux4ed6ux65b9ux6cd5}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00kv-cacheux91cfux5316ux65b9ux6cd5ux7cbeux5ea6ux7684ux9002ux5f53ux964dux4f4e}{%
+\subsection{一、KV Cache量化方法：精度的适当降低}\label{ux4e00kv-cacheux91cfux5316ux65b9ux6cd5ux7cbeux5ea6ux7684ux9002ux5f53ux964dux4f4e}}
+
+KV Cache 默认通常使用 FP16（16-bit）存储。量化方法的核心思想，是把 Key/Value 缓存从 FP16 压缩到 INT8，甚至进一步压缩到 INT4，从而用更低精度换取更低显存占用。
+
+以 Key 张量的 INT8 量化为例，可以写为 \(K_{int8}=round(K_{fp16}/scale)\)。其中 \(scale\) 是量化缩放因子，用来把 FP16 数值映射到整数表示范围内。
+
+这种方法的效果很直接：如果从 FP16 压缩到 INT8，KV Cache 的显存占用大约减半；如果进一步压缩到 INT4，显存占用可以接近原来的四分之一。对长文本推理来说，KV Cache 占用越大，量化带来的显存收益越明显；具体精度损失取决于位宽、分组方式、模型和任务，不能一概视为``几乎无感''。KIVI 是这一方向的代表方法：它根据 Key 和 Value 的元素分布差异，分别采用按通道和按 token 的非对称 2-bit 量化。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux5b58ux5728ux4fe1ux606fux635fux5931ux7684kvux5e8fux5217ux538bux7f29}{%
+\subsection{二、存在信息损失的K、V序列压缩}\label{ux4e8cux5b58ux5728ux4fe1ux606fux635fux5931ux7684kvux5e8fux5217ux538bux7f29}}
+
+还有一些方法不处理每一个独立的 token，而是将序列总结或聚类成少量原型的``概念''或``块''，然后在这些原型上执行注意力，最后再将结果广播回原始 token。
+
+\Needspace{5\baselineskip}
+典型代表：
+
+Pooling/Clustering：对 K 和 V 进行池化或聚类，减少其数量。
+
+这类方法背后的基本假设是：不是所有 token 都同等重要。像``的''``了''``is''``the''这类 token，在生成完成后可能就不再需要完整保留。
+
+\begin{itemize}
+\tightlist
+\item
+  H2O（Heavy Hitter Oracle）：只保留那些注意力分数比较高的 token，也就是 heavy hitter，同时保留最近生成的 recent token，避免模型完全丢失局部上下文。
+\item
+  KVMerger：根据同一序列中 Key 状态的相似性识别可合并集合，再用高斯核加权合并对应的 KV 状态，从而减少后续需要保留的 KV 数量。这里讨论的是专门用于 KV Cache 的 KVMerger，而不是面向视觉 token 的通用 ToMe 方法。
+\end{itemize}
+
+这类方法目前更适合中等偏低的应用场景，尤其是超长文本推理或资源受限的端侧设备。不过它也有明显缺点：第一，KV Cache 会随着生成过程动态变稀疏，内存不再连续，很难充分利用 GPU 的并行计算能力，反而可能变慢；第二，在``大海捞针''任务中，如果早期剪掉了看似不重要、但实际包含关键信息的 token，例如一个人名，模型后续就可能永远找不到这个信息。
+
+代表技术包括 StreamingLLM 和 H2O。其中 StreamingLLM 通过保留开头的注意力汇聚 token 与最近 token 来支持长文本流式推理，H2O 则强调保留 heavy hitter 与 recent token。
+
+Learned Compressors：使用一个可学习的网络（如低维投影）来压缩 K 和 V。但有损且不可逆：一旦压缩成摘要，原始的逐字逐句信息就丢了，很难做精确引用。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-96}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-96}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Zhang, Z., Sheng, Y., Zhou, T., et al.~(2023). \href{https://arxiv.org/abs/2306.14048}{H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models}. NeurIPS 2023.
+\item
+  Xiao, G., Tian, Y., Chen, B., Han, S., \& Lewis, M. (2023). \href{https://arxiv.org/abs/2309.17453}{Efficient Streaming Language Models with Attention Sinks}. ICLR 2024.
+\item
+  Liu, Z., Yuan, J., Jin, H., et al.~(2024). \href{https://arxiv.org/abs/2402.02750}{KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache}. ICML 2024.
+\item
+  Wang, Z., Jin, B., Yu, Z., \& Zhang, M. (2024). \href{https://arxiv.org/abs/2407.08454}{Model Tells You Where to Merge: Adaptive KV Cache Merging for LLMs on Long-Context Tasks}. arXiv:2407.08454.
+\end{itemize}
+
+\clearpage

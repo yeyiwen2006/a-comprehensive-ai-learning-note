@@ -1,0 +1,145 @@
+\setcounter{section}{4}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux81eaux84b8ux998f}{%
+\section{自蒸馏}\label{ux81eaux84b8ux998f}}
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e00ux57faux4e8eux4e13ux5bb6ux6f14ux793aux7684ux65b9ux6cd5ux81eaux84b8ux998fux5faeux8c03sdft}{%
+\subsection{一、基于专家演示的方法：自蒸馏微调（SDFT）}\label{ux4e00ux57faux4e8eux4e13ux5bb6ux6f14ux793aux7684ux65b9ux6cd5ux81eaux84b8ux998fux5faeux8c03sdft}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  提出背景
+\end{enumerate}
+
+目前，从专家演示中学习的主流范式是监督微调（SFT）。SFT是Off-policy学习，当模型需要顺序适应新任务或新领域时，SFT会导致严重的泛化能力下降和灾难性遗忘现象。虽然On-policy RL可以显著减少遗忘并提升分布外泛化能力，但它通常需要一个明确的奖励函数。在许多现实世界场景中，构建这样精确的奖励函数是非常困难甚至不可用的。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  核心原理
+\end{enumerate}
+
+为了在只有演示或环境反馈数据而没有明确奖励函数的情况下获得同策略学习的优势，自蒸馏让同一个模型在训练中同时扮演``教师''和``学生''两个角色。
+
+学生模型仅接收原始的任务提示词并自回归生成；教师模型接收任务提示词和专家演示，通过大模型的上下文学习能力，每次在学生模型的前 \(i-1\) 个token基础上生成包含正确任务意图的第 \(i\) 个token作为高质量指导信号。
+
+\Needspace{5\baselineskip}
+学生模型和教师模型对应的分布可以写为：
+
+\begin{itemize}
+\tightlist
+\item
+  学生模型：在给定前缀 \(y_{<t}\) 和原始问题 \(x\) 的情况下，预测下一个词元的概率分布 \(\pi_\theta(\cdot \mid y_{<t}, x)\)。
+\item
+  教师模型：在同样前缀下，同时接收专家演示增强提示词 \(c\)，给出更高质量的概率分布 \(\pi(\cdot \mid y_{<t}, x, c)\)。
+\end{itemize}
+
+\Needspace{5\baselineskip}
+其整体序列级别的逆 KL 散度优化目标为：
+
+\[
+\mathcal{L}(\theta)
+= D_{\mathrm{KL}}\left(\pi_\theta(\cdot \mid x)\,\Vert\,\pi(\cdot \mid x,c)\right)
+= \mathbb{E}_{y\sim \pi_\theta(y\mid x)}
+\left[
+\log\frac{\pi_\theta(y\mid x)}{\pi(y\mid x,c)}
+\right].
+\]
+
+式外的期望 \(\mathbb{E}_{y\sim \pi_\theta(y\mid x)}\) 表明，采样的数据分布来自学生策略 \(\pi_\theta\)。
+
+\Needspace{5\baselineskip}
+这其实意味着我们是在对整个词汇表V中所有可能的下一个词元v遍历求和：
+
+\[
+\nabla_\theta D_{\mathrm{KL}}(\pi_\theta\Vert\pi)
+=
+\sum_{v\in V}
+\pi_\theta(v\mid y_{<t})
+\nabla_\theta \log \pi_\theta(v\mid y_{<t})
+\left(
+\log\frac{\pi_\theta(v\mid y_{<t})}{\pi(v\mid y_{<t},c)}
++ 1
+\right).
+\]
+
+\Needspace{5\baselineskip}
+把每个时间步上的词表求和写成解析梯度估计时，需要保留学生分布的概率权重：
+
+\[
+\hat{g}_{\mathrm{analytic}}
+=
+\sum_{t=1}^{T}\sum_{v\in V}
+\pi_\theta(v\mid y_{<t},x)
+\nabla_\theta \log \pi_\theta(v\mid y_{<t},x)
+\left(
+\log\frac{\pi_\theta(v\mid y_{<t},x)}{\pi(v\mid y_{<t},x,c)}
++1
+\right).
+\]
+
+这在物理意义上等同于：学生模型走到任意一步时，看看在这一步全词表所有可能的选项上，自己的概率分布与教师的概率分布有多大差异，并拉近这种差异。
+
+另外，这里的``专家演示''未必要来自外部，也可以是自身根据后来改出的正确答案。可以类似人类在睡眠时巩固一样，和主进程异步地按自己对同一个问题后来得出的正确答案、优秀经验，对最初上下文较少时的错误输出进行纠正。
+
+\Needspace{5\baselineskip}
+\hypertarget{ux4e8cux57faux4e8eux73afux5883ux53cdux9988ux7684ux65b9ux6cd5ux81eaux84b8ux998fux7b56ux7565ux4f18ux5316sdpo}{%
+\subsection{二、基于环境反馈的方法：自蒸馏策略优化（SDPO）}\label{ux4e8cux57faux4e8eux73afux5883ux53cdux9988ux7684ux65b9ux6cd5ux81eaux84b8ux998fux7b56ux7565ux4f18ux5316sdpo}}
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  提出背景
+\end{enumerate}
+
+RL的训练中，我们通常只会给出一个稀疏的标量结果（如``通过：1''或``未通过：0''），掩盖了底层丰富的状态信息，算法只能把整段代码的所有的词元都进行无差别的梯度惩罚，模型很难弄清楚自己到底错在了哪里------是因为某一行语法写错了、逻辑思辨存在漏洞，还是单纯的边界条件没有处理好。我们希望获得更密集的反馈。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  核心原理
+\end{enumerate}
+
+学生模型仅根据原始的指令提示，自回归地生成一个解题尝试。送入可验证环境中执行，环境不仅返回分数，还会输出详细的丰富反馈（如报错信息）。权重相同的教师模型根据原始指令+环境反馈，利用强大的上下文学习能力，在学生模型生成序列的每个位置上，预测下一个词元的正确分布（根据看到的环境反馈得出反思，从而可以纠正学生的错误输出），让学生模型通过最小化KL散度（同前面介绍的反向KL）来逼近这个分布。
+
+\Needspace{4\baselineskip}
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  SDPO的好处
+\end{enumerate}
+
+相比于奖励信号稀疏的RL，SDPO可以精准地为那一个导致错误的词元计算出巨大的梯度，指导模型只去修正真正犯错的地方。原本仅在序列末尾才有的稀疏且单一的标量奖励，被漂亮地转化为了每一个词元生成时的密集指导信号。理论分析证明，这种机制等价于在最大熵强化学习（Maximum Entropy RL）框架下优化由教师定义的隐式奖励。
+
+这种在PyTorch中仅需调用一次 .forward() 就能算出整条序列密集梯度的设计，不仅避开了off-policy带来的偏移，在显存利用率和计算效率上也远超让两个模型各自生成不同长度序列的传统方法。
+
+\FloatBarrier
+\Needspace{5\baselineskip}
+\hypertarget{ux53c2ux8003ux6587ux732e-105}{%
+\subsection{参考文献}\label{ux53c2ux8003ux6587ux732e-105}}
+
+\vspace{0.25em}
+\begin{itemize}
+\tightlist
+\item
+  Shenfeld, I., Damani, M., Hubotter, J., \& Agrawal, P. (2026). \href{https://arxiv.org/abs/2601.19897}{Self-Distillation Enables Continual Learning}. arXiv:2601.19897.
+\item
+  Hübotter, J., Lübeck, F., Behric, L., et al.~(2026). \href{https://arxiv.org/abs/2601.20802}{Reinforcement Learning via Self-Distillation}. arXiv:2601.20802.
+\end{itemize}
+
+\clearpage
